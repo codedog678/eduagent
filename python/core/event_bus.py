@@ -16,7 +16,7 @@ import logging
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Coroutine
+from typing import Any, Callable, Coroutine, Optional
 
 from pydantic import BaseModel, Field
 
@@ -38,16 +38,11 @@ class EventType(str, Enum):
 
     # Tutor Agent 事件
     TEACHING_RESPONSE = "tutor.teaching_response"
-    HINT_NEEDED = "tutor.hint_needed"
-    DIFFICULTY_ADJUSTED = "tutor.difficulty_adjusted"
 
     # Curriculum Agent 事件
-    PATH_UPDATED = "curriculum.path_updated"
     REVIEW_SCHEDULED = "curriculum.review_scheduled"
     NEXT_TOPIC = "curriculum.next_topic"
-
-    # Hint Agent 事件
-    HINT_RESPONSE = "hint.response"
+    REVIEW_REMINDER = "curriculum.review_reminder"
 
     # Engagement Agent 事件
     ENGAGEMENT_ALERT = "engagement.alert"
@@ -79,12 +74,16 @@ class EventBus:
     2. 发布事件时，总线将事件分发给所有订阅者
     3. 支持事件历史记录（Event Sourcing基础）
     4. 支持事件过滤和优先级（可选扩展）
+    5. 支持事件日志持久化到PostgreSQL
     """
 
-    def __init__(self) -> None:
+    MAX_HISTORY = 1000  # 最大历史记录数，防止内存泄漏
+
+    def __init__(self, enable_db_logging: bool = False) -> None:
         self._subscribers: dict[EventType, list[EventHandler]] = {}
         self._event_history: list[Event] = []
         self._lock = asyncio.Lock()
+        self._enable_db_logging = enable_db_logging
 
     def subscribe(self, event_type: EventType, handler: EventHandler) -> None:
         """订阅某类事件。"""
@@ -107,6 +106,9 @@ class EventBus:
         """
         async with self._lock:
             self._event_history.append(event)
+            # 限制历史记录数量，防止内存泄漏
+            if len(self._event_history) > self.MAX_HISTORY:
+                self._event_history = self._event_history[-self.MAX_HISTORY:]
 
         logger.info(
             "[EventBus] %s -> %s (learner=%s)",
@@ -115,6 +117,10 @@ class EventBus:
             event.learner_id,
         )
 
+        # 如果启用了数据库日志，异步写入EventLog表
+        if self._enable_db_logging:
+            await self._log_event_to_db(event)
+
         handlers = self._subscribers.get(event.type, [])
         if not handlers:
             logger.debug("No handlers for event type %s", event.type.value)
@@ -122,6 +128,36 @@ class EventBus:
 
         tasks = [self._safe_handle(handler, event) for handler in handlers]
         await asyncio.gather(*tasks)
+
+    async def _log_event_to_db(self, event: Event) -> None:
+        """
+        将事件写入EventLog表（事件溯源）。
+
+        使用独立 session，避免 session 生命周期问题。
+
+        Args:
+            event: 要记录的事件
+        """
+        try:
+            from models.session import async_session
+            from models.database import EventLog
+
+            async with async_session() as session:
+                event_log = EventLog(
+                    event_id=event.id,
+                    event_type=event.type.value,
+                    source=event.source,
+                    learner_id=event.learner_id,
+                    data=event.data,
+                    correlation_id=event.correlation_id,
+                    created_at=event.timestamp,
+                )
+                session.add(event_log)
+                await session.commit()
+                logger.debug("[EventBus] Event %s logged to database", event.id)
+        except Exception as e:
+            logger.error("[EventBus] Failed to log event to database: %s", e)
+            # 不影响事件分发，继续执行
 
     async def _safe_handle(self, handler: EventHandler, event: Event) -> None:
         """安全执行handler，捕获异常避免影响其他订阅者。"""
@@ -138,6 +174,7 @@ class EventBus:
         self,
         learner_id: str | None = None,
         event_type: EventType | None = None,
+        correlation_id: str | None = None,
         limit: int = 50,
     ) -> list[Event]:
         """查询事件历史，支持按学习者和事件类型过滤。"""
@@ -146,8 +183,70 @@ class EventBus:
             events = [e for e in events if e.learner_id == learner_id]
         if event_type:
             events = [e for e in events if e.type == event_type]
+        if correlation_id:
+            events = [e for e in events if e.correlation_id == correlation_id]
         return events[-limit:]
 
     def clear_history(self) -> None:
         """清空事件历史（用于测试）。"""
         self._event_history.clear()
+
+    async def get_event_history_from_db(
+        self,
+        learner_id: str | None = None,
+        event_type: EventType | None = None,
+        correlation_id: str | None = None,
+        limit: int = 50,
+    ) -> list[Event]:
+        """
+        从PostgreSQL查询事件历史。
+
+        使用独立 session 查询。
+
+        Args:
+            learner_id: 按学习者ID过滤
+            event_type: 按事件类型过滤
+            limit: 返回最大数量
+
+        Returns:
+            Event列表
+        """
+        try:
+            from models.session import async_session
+            from models.database import EventLog
+            from sqlalchemy import select
+
+            async with async_session() as session:
+                query = select(EventLog)
+                if learner_id:
+                    query = query.where(EventLog.learner_id == learner_id)
+                if event_type:
+                    query = query.where(EventLog.event_type == event_type.value)
+                if correlation_id:
+                    query = query.where(EventLog.correlation_id == correlation_id)
+                query = query.order_by(EventLog.created_at.desc()).limit(limit)
+
+                result = await session.execute(query)
+                rows = result.scalars().all()
+
+                events = []
+                for row in rows:
+                    event = Event(
+                        id=row.event_id,
+                        type=EventType(row.event_type),
+                        source=row.source,
+                        learner_id=row.learner_id,
+                        data=row.data or {},
+                        correlation_id=row.correlation_id,
+                        timestamp=row.created_at,
+                    )
+                    events.append(event)
+
+                events.reverse()
+                logger.debug("[EventBus] Retrieved %d events from database", len(events))
+                return events
+
+        except Exception as e:
+            logger.error("[EventBus] Failed to query event history from database: %s", e)
+            # 降级到内存历史
+            return self.get_history(learner_id, event_type, correlation_id, limit)

@@ -54,20 +54,20 @@ async def websocket_endpoint(websocket: WebSocket, learner_id: str):
             orch = websocket.app.state.orchestrator
 
             if action == "submit":
-                events = await orch.submit_answer(
+                result = await orch.submit_answer(
                     learner_id,
                     data.get("knowledge_id", ""),
                     data.get("is_correct", False),
                     data.get("time_spent_seconds", 0),
                 )
             elif action == "question":
-                events = await orch.ask_question(
+                result = await orch.ask_question(
                     learner_id,
                     data.get("knowledge_id", ""),
                     data.get("question", ""),
                 )
             elif action == "message":
-                events = await orch.send_message(
+                result = await orch.send_message(
                     learner_id,
                     data.get("message", ""),
                     data.get("knowledge_id", "general"),
@@ -76,16 +76,8 @@ async def websocket_endpoint(websocket: WebSocket, learner_id: str):
                 await manager.send_to_learner(learner_id, {"error": f"Unknown action: {action}"})
                 continue
 
-            for event in events[-10:]:
-                await manager.send_to_learner(
-                    learner_id,
-                    {
-                        "event_type": event.type.value,
-                        "source": event.source,
-                        "data": event.data,
-                        "timestamp": event.timestamp.isoformat(),
-                    },
-                )
+            for event in result.get("interaction_events", []):
+                await manager.send_to_learner(learner_id, event)
 
     except WebSocketDisconnect:
         manager.disconnect(learner_id)

@@ -11,9 +11,9 @@
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -183,6 +183,9 @@ class LearnerModel:
             "avg_mastery": sum(s.mastery for s in states) / len(states),
             "total_attempts": sum(s.attempts for s in states),
             "total_correct": sum(s.correct_count for s in states),
+            "total_wrong": (
+                sum(s.attempts for s in states) - sum(s.correct_count for s in states)
+            ),
             "accuracy": (
                 sum(s.correct_count for s in states) / max(1, sum(s.attempts for s in states))
             ),
@@ -200,3 +203,136 @@ class LearnerModel:
             "session_start": self.session_start.isoformat(),
             "metadata": self.metadata,
         }
+
+    async def save_to_db(self, session: Any) -> None:
+        """
+        将学习者状态保存到PostgreSQL。
+
+        Args:
+            session: AsyncSession 数据库会话
+        """
+        from sqlalchemy import select
+        from models.database import Learner as LearnerDB
+        from models.database import KnowledgeState as KnowledgeStateDB
+
+        # 获取或创建Learner记录
+        result = await session.execute(
+            select(LearnerDB).where(LearnerDB.learner_id == self.learner_id)
+        )
+        learner_db = result.scalar_one_or_none()
+
+        if learner_db is None:
+            learner_db = LearnerDB(
+                learner_id=self.learner_id,
+                name=f"Learner {self.learner_id}",
+                metadata_=self.metadata,
+            )
+            session.add(learner_db)
+            await session.flush()
+
+        # 保存所有知识点状态
+        for kid, state in self.knowledge_states.items():
+            result = await session.execute(
+                select(KnowledgeStateDB).where(
+                    KnowledgeStateDB.learner_id == self.learner_id,
+                    KnowledgeStateDB.knowledge_id == kid,
+                )
+            )
+            existing = result.scalar_one_or_none()
+
+            if existing is None:
+                state_db = KnowledgeStateDB(
+                    learner_id=self.learner_id,
+                    knowledge_id=kid,
+                    mastery=state.mastery,
+                    alpha=state.alpha,
+                    beta=state.beta,
+                    attempts=state.attempts,
+                    correct_count=state.correct_count,
+                    streak=state.streak,
+                    last_attempt=state.last_attempt,
+                )
+                session.add(state_db)
+            else:
+                existing.mastery = state.mastery
+                existing.alpha = state.alpha
+                existing.beta = state.beta
+                existing.attempts = state.attempts
+                existing.correct_count = state.correct_count
+                existing.streak = state.streak
+                existing.last_attempt = state.last_attempt
+
+        await session.commit()
+        logger.info("[LearnerModel] Saved learner %s to database", self.learner_id)
+
+    @classmethod
+    async def load_from_db(cls, session: Any, learner_id: str) -> Optional["LearnerModel"]:
+        """
+        从PostgreSQL加载学习者状态。
+
+        Args:
+            session: AsyncSession 数据库会话
+            learner_id: 学习者ID
+
+        Returns:
+            LearnerModel 实例，如果不存在则返回None
+        """
+        from sqlalchemy import select
+        from models.database import KnowledgeState as KnowledgeStateDB
+
+        result = await session.execute(
+            select(KnowledgeStateDB).where(KnowledgeStateDB.learner_id == learner_id)
+        )
+        rows = result.scalars().all()
+
+        if not rows:
+            return None
+
+        model = cls(learner_id=learner_id)
+
+        for row in rows:
+            state = KnowledgeState(
+                knowledge_id=row.knowledge_id,
+                mastery=row.mastery,
+                alpha=row.alpha,
+                beta=row.beta,
+                attempts=row.attempts,
+                correct_count=row.correct_count,
+                streak=row.streak,
+                last_attempt=row.last_attempt,
+            )
+            model.knowledge_states[row.knowledge_id] = state
+
+        model.total_interactions = sum(s.attempts for s in model.knowledge_states.values())
+
+        logger.info("[LearnerModel] Loaded learner %s from database (%d knowledge points)",
+                    learner_id, len(model.knowledge_states))
+        return model
+
+    def get_forgetting_curve(self, knowledge_id: str, days_since_last_review: float) -> float:
+        """
+        计算遗忘曲线状态。
+
+        基于艾宾浩斯遗忘曲线：R = e^(-t/S)
+        其中 R 是记忆保持率，t 是时间，S 是记忆强度
+
+        Args:
+            knowledge_id: 知识点ID
+            days_since_last_review: 距离上次复习的天数
+
+        Returns:
+            当前记忆保持率 (0-1)
+        """
+        state = self.get_state(knowledge_id)
+
+        # 记忆强度S与mastery正相关，与streak正相关
+        # mastery越高、连续正确次数越多，记忆越牢固
+        memory_strength = state.mastery * (1 + state.streak * 0.1)
+
+        # 防止除零
+        memory_strength = max(0.1, memory_strength)
+
+        # 艾宾浩斯遗忘曲线公式
+        retention = 2.71828 ** (-days_since_last_review / memory_strength)
+
+        return max(0.0, min(1.0, retention))

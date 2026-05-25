@@ -5,21 +5,53 @@ export interface AgentEvent {
   source: string
   data: Record<string, unknown>
   timestamp: string
+  correlation_id?: string | null
 }
 
-/**
- * WebSocket Hook -- 连接Agent系统的实时通信层。
- *
- * 面试要点：
- * - 自动重连策略（指数退避）
- * - 心跳检测保持连接
- * - React useRef 保持 WebSocket 实例跨渲染稳定
- */
+function interactionKey(event: AgentEvent): string {
+  return event.correlation_id || `${event.timestamp}-${event.event_type}`
+}
+
+function eventKey(event: AgentEvent): string {
+  return `${event.timestamp}-${event.source}-${event.event_type}`
+}
+
 export function useWebSocket(learnerId: string) {
-  const [events, setEvents] = useState<AgentEvent[]>([])
+  const [eventGroups, setEventGroups] = useState<AgentEvent[][]>([])
   const [connected, setConnected] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
   const retryRef = useRef(0)
+
+  const appendInteraction = useCallback((events: AgentEvent[]) => {
+    if (!events.length) return
+    const key = interactionKey(events[0])
+    setEventGroups((prev) => {
+      const next = [...prev]
+      const matchIndex = next.findIndex((group) => group.length > 0 && interactionKey(group[0]) === key)
+      if (matchIndex >= 0) {
+        next.splice(matchIndex, 1)
+      }
+      return [events, ...next].slice(0, 20)
+    })
+  }, [])
+
+  const appendEvent = useCallback((event: AgentEvent) => {
+    const key = interactionKey(event)
+    setEventGroups((prev) => {
+      const next = [...prev]
+      const matchIndex = next.findIndex((group) => group.length > 0 && interactionKey(group[0]) === key)
+      if (matchIndex >= 0) {
+        if (next[matchIndex].some((item) => eventKey(item) === eventKey(event))) {
+          return next
+        }
+        const updatedGroup = [...next[matchIndex], event]
+        next.splice(matchIndex, 1)
+        next.unshift(updatedGroup)
+        return next.slice(0, 20)
+      }
+      return [[event], ...next].slice(0, 20)
+    })
+  }, [])
 
   const connect = useCallback(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -30,21 +62,21 @@ export function useWebSocket(learnerId: string) {
       retryRef.current = 0
     }
 
-    ws.onmessage = (msg) => {
-      const event: AgentEvent = JSON.parse(msg.data)
-      setEvents((prev) => [...prev.slice(-99), event])
+    ws.onmessage = (message) => {
+      const event: AgentEvent = JSON.parse(message.data)
+      appendEvent(event)
     }
 
     ws.onclose = () => {
       setConnected(false)
       const delay = Math.min(1000 * 2 ** retryRef.current, 30000)
-      retryRef.current++
-      setTimeout(connect, delay)
+      retryRef.current += 1
+      window.setTimeout(connect, delay)
     }
 
     ws.onerror = () => ws.close()
     wsRef.current = ws
-  }, [learnerId])
+  }, [appendEvent, learnerId])
 
   useEffect(() => {
     connect()
@@ -57,5 +89,7 @@ export function useWebSocket(learnerId: string) {
     }
   }, [])
 
-  return { events, connected, send }
+  const events = eventGroups.flat()
+
+  return { events, eventGroups, connected, send, appendInteraction }
 }

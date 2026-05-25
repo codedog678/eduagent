@@ -1,17 +1,6 @@
-"""
-Assessment Agent（评估Agent）-- 知识点掌握度评估与学习路径诊断。
+"""Assessment agent for mastery updates after student submissions."""
 
-核心职责：
-1. 接收学生答题结果，用BKT算法更新mastery
-2. 检测薄弱知识点，通知Curriculum Agent调整路径
-3. 定期生成学习报告
-
-面试要点：
-- 为什么用BKT而不是简单的正确率？
-  正确率是静态的，BKT可以追踪动态学习过程，考虑猜测和失误
-- 为什么用Beta分布表示mastery？
-  Beta分布是二项分布的共轭先验，更新方便，能表达不确定性
-"""
+from __future__ import annotations
 
 import logging
 
@@ -22,33 +11,17 @@ logger = logging.getLogger(__name__)
 
 
 class AssessmentAgent(BaseAgent):
-    """评估Agent：实时追踪学生对每个知识点的掌握程度。"""
+    """Update learner mastery and emit assessment-related events."""
 
     @property
     def subscribed_events(self) -> list[EventType]:
-        return [
-            EventType.STUDENT_SUBMISSION,
-            EventType.STUDENT_QUESTION,
-        ]
+        return [EventType.STUDENT_SUBMISSION]
 
     async def handle_event(self, event: Event) -> None:
         if event.type == EventType.STUDENT_SUBMISSION:
             await self._handle_submission(event)
-        elif event.type == EventType.STUDENT_QUESTION:
-            await self._handle_question(event)
 
     async def _handle_submission(self, event: Event) -> None:
-        """
-        处理学生答题提交。
-
-        event.data 结构：
-        {
-            "knowledge_id": "quadratic_eq",
-            "is_correct": true,
-            "answer": "x = 2",
-            "time_spent_seconds": 45
-        }
-        """
         learner_id = event.learner_id
         data = event.data
         knowledge_id = data.get("knowledge_id", "")
@@ -68,6 +41,7 @@ class AssessmentAgent(BaseAgent):
                 "streak": state.streak,
                 "confidence": state.confidence,
             },
+            correlation_id=event.correlation_id,
         )
 
         if state.mastery < 0.3 and state.attempts >= 3:
@@ -78,8 +52,9 @@ class AssessmentAgent(BaseAgent):
                     "knowledge_id": knowledge_id,
                     "mastery": state.mastery,
                     "attempts": state.attempts,
-                    "suggestion": "需要回到前置知识点复习",
+                    "suggestion": "需要先回到前置知识点补一补，再继续当前题型。",
                 },
+                correlation_id=event.correlation_id,
             )
 
         await self.emit(
@@ -91,26 +66,11 @@ class AssessmentAgent(BaseAgent):
                 "mastery": state.mastery,
                 "level": state.level.value,
                 "overall_progress": model.get_overall_progress(),
+                "question": data.get("question", ""),
+                "student_answer": data.get("student_answer", ""),
+                "correct_answer": data.get("correct_answer", ""),
+                "evaluation_feedback": data.get("evaluation_feedback", ""),
+                "explanation": data.get("explanation", ""),
             },
-        )
-
-    async def _handle_question(self, event: Event) -> None:
-        """处理学生提问，分析涉及的知识点。"""
-        learner_id = event.learner_id
-        question = event.data.get("question", "")
-        knowledge_id = event.data.get("knowledge_id", "general")
-
-        model = self.get_learner_model(learner_id)
-        state = model.get_state(knowledge_id)
-
-        await self.emit(
-            EventType.ASSESSMENT_COMPLETE,
-            learner_id,
-            {
-                "knowledge_id": knowledge_id,
-                "question": question,
-                "current_mastery": state.mastery,
-                "current_level": state.level.value,
-                "context": "student_question",
-            },
+            correlation_id=event.correlation_id,
         )

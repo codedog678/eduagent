@@ -15,9 +15,11 @@ Agent 基类 -- 所有Agent的公共接口和行为。
 
 import logging
 from abc import ABC, abstractmethod
+from typing import Any
 
 from core.event_bus import Event, EventBus, EventType
 from core.learner_model import LearnerModel
+from core.memory_manager import MemoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +38,12 @@ class BaseAgent(ABC):
         name: str,
         event_bus: EventBus,
         learner_models: dict[str, LearnerModel],
+        memory_manager: MemoryManager | None = None,
     ) -> None:
         self.name = name
         self.event_bus = event_bus
         self.learner_models = learner_models
+        self.memory_manager = memory_manager
         self._register_handlers()
         logger.info("[%s] Agent initialized", self.name)
 
@@ -60,13 +64,20 @@ class BaseAgent(ABC):
         """子类实现事件处理逻辑。"""
         ...
 
-    async def emit(self, event_type: EventType, learner_id: str, data: dict) -> None:
+    async def emit(
+        self,
+        event_type: EventType,
+        learner_id: str,
+        data: dict,
+        correlation_id: str | None = None,
+    ) -> None:
         """便捷方法：发布事件。"""
         event = Event(
             type=event_type,
             source=self.name,
             learner_id=learner_id,
             data=data,
+            correlation_id=correlation_id,
         )
         await self.event_bus.publish(event)
 
@@ -75,3 +86,29 @@ class BaseAgent(ABC):
         if learner_id not in self.learner_models:
             self.learner_models[learner_id] = LearnerModel(learner_id)
         return self.learner_models[learner_id]
+
+    def get_state_for_save(self, learner_id: str) -> dict[str, Any] | None:
+        """
+        获取需要保存的 Agent 状态。
+
+        子类可以重写此方法来返回需要持久化的状态数据。
+
+        Args:
+            learner_id: 学习者ID
+
+        Returns:
+            状态字典，如果不需要保存则返回 None
+        """
+        return None
+
+    def load_state(self, learner_id: str, state_data: dict[str, Any]) -> None:
+        """
+        从数据库加载 Agent 状态。
+
+        子类可以重写此方法来恢复持久化的状态数据。
+
+        Args:
+            learner_id: 学习者ID
+            state_data: 状态数据
+        """
+        pass
