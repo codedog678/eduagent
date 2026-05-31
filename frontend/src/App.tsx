@@ -78,6 +78,14 @@ interface ReviewSnapshot {
   }>
 }
 
+interface NextTopicRecommendation {
+  knowledge_id: string
+  name: string
+  difficulty: number
+  reason: string
+  alternatives: string[]
+}
+
 interface InteractionResult {
   learner_id: string
   knowledge_id: string
@@ -89,6 +97,7 @@ interface InteractionResult {
     correct_answer?: string
   } | null
   teaching_response?: TeachingResponse | null
+  next_topic_recommendation?: NextTopicRecommendation | null
   review_snapshot?: ReviewSnapshot | null
   interaction_events?: AgentEvent[]
   events_triggered?: number
@@ -169,9 +178,11 @@ function EventCard({ event }: { event: AgentEvent }) {
 function FeedbackPanel({
   interaction,
   quiz,
+  onStartReview,
 }: {
   interaction: InteractionResult | null
   quiz: Quiz | null
+  onStartReview?: (knowledgeId: string) => void
 }) {
   if (!interaction) {
     return (
@@ -334,6 +345,43 @@ function FeedbackPanel({
           )}
         </div>
       )}
+
+      {interaction.next_topic_recommendation && (
+        <div
+          style={{
+            borderRadius: 14,
+            padding: 16,
+            background: '#f0fdf4',
+            border: '1px solid #86efac',
+          }}
+        >
+          <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>
+            Suggested Next Topic
+          </div>
+          <div style={{ color: '#166534', fontSize: 14, marginBottom: 4 }}>
+            {interaction.next_topic_recommendation.name}
+          </div>
+          <div style={{ color: '#475569', fontSize: 13, marginBottom: 8 }}>
+            {interaction.next_topic_recommendation.reason}
+          </div>
+          {onStartReview && (
+            <button
+              onClick={() => onStartReview(interaction.next_topic_recommendation!.knowledge_id)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 10,
+                border: 'none',
+                background: '#059669',
+                color: '#ffffff',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Continue to {interaction.next_topic_recommendation.name}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -353,6 +401,7 @@ function LearningInterface({
   handleSubmitQuiz,
   handleQuestion,
   eventGroups,
+  onStartReview,
 }: {
   learnerId: string
   knowledgeId: string
@@ -364,10 +413,11 @@ function LearningInterface({
   selectedOption: number | null
   setSelectedOption: (value: number | null) => void
   latestInteraction: InteractionResult | null
-  handleGenerateQuiz: () => Promise<void>
+  handleGenerateQuiz: (overrideKnowledgeId?: string) => Promise<void>
   handleSubmitQuiz: () => Promise<void>
   handleQuestion: () => Promise<void>
   eventGroups: AgentEvent[][]
+  onStartReview?: (knowledgeId: string) => void
 }) {
   const feedRef = useRef<HTMLDivElement | null>(null)
 
@@ -403,7 +453,7 @@ function LearningInterface({
               <div style={{ color: '#0f172a', fontSize: 20, fontWeight: 700 }}>Learning Workspace</div>
               <div style={{ color: '#64748b', fontSize: 13 }}>Learner: {learnerId}</div>
             </div>
-            <ReviewReminder learnerId={learnerId} />
+            <ReviewReminder learnerId={learnerId} onStartReview={onStartReview} />
           </div>
 
           <div>
@@ -583,7 +633,7 @@ function LearningInterface({
             </button>
           </div>
 
-          <FeedbackPanel interaction={latestInteraction} quiz={quiz} />
+          <FeedbackPanel interaction={latestInteraction} quiz={quiz} onStartReview={onStartReview} />
         </div>
       </div>
 
@@ -695,7 +745,8 @@ export default function App() {
     window.location.reload()
   }
 
-  async function handleGenerateQuiz() {
+  async function handleGenerateQuiz(overrideKnowledgeId?: string) {
+    const kid = overrideKnowledgeId || knowledgeId
     setQuizLoading(true)
     setSelectedOption(null)
     setLatestInteraction(null)
@@ -703,7 +754,7 @@ export default function App() {
       const response = await fetch('/api/quiz/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ knowledge_id: knowledgeId, difficulty: 0.5 }),
+        body: JSON.stringify({ knowledge_id: kid, difficulty: 0.5 }),
       })
       const data = (await response.json()) as { quiz?: Quiz }
       setQuiz(data.quiz || null)
@@ -711,6 +762,11 @@ export default function App() {
     } finally {
       setQuizLoading(false)
     }
+  }
+
+  function handleStartReview(knowledgeId: string) {
+    setKnowledgeId(knowledgeId)
+    void handleGenerateQuiz(knowledgeId)
   }
 
   async function handleSubmitQuiz() {
@@ -733,7 +789,15 @@ export default function App() {
     const data = (await response.json()) as InteractionResult & { interaction_events?: AgentEvent[] }
     setLatestInteraction(data)
     appendInteraction(data.interaction_events || [])
+
+    const quality = data.evaluation?.is_correct ? 4 : 1
+    void fetch(
+      `/api/review/complete?learner_id=${learnerId}&knowledge_id=${knowledgeId}&quality=${quality}`,
+      { method: 'POST' },
+    )
+
     setScore((previous) => ({
+      correct: previous.correct + (data.evaluation?.is_correct ? 1 : 0),
       correct: previous.correct + (data.evaluation?.is_correct ? 1 : 0),
       total: previous.total + 1,
     }))
@@ -885,6 +949,7 @@ export default function App() {
             handleSubmitQuiz={handleSubmitQuiz}
             handleQuestion={handleQuestion}
             eventGroups={eventGroups}
+            onStartReview={handleStartReview}
           />
         ) : (
           <AnalyticsDashboard learnerId={learnerId} />

@@ -128,7 +128,10 @@ class SpacedRepetition:
             day_items = []
             for item in items:
                 days_until = (item.next_review - now).total_seconds() / 86400
-                if day_offset <= days_until < day_offset + 1:
+                if day_offset == 0:
+                    if days_until < 1:
+                        day_items.append(item.knowledge_id)
+                elif day_offset <= days_until < day_offset + 1:
                     day_items.append(item.knowledge_id)
             if day_items:
                 schedule[date_key] = day_items

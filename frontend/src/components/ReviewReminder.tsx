@@ -94,7 +94,13 @@ function RetentionMeter({ retention }: { retention: number }) {
   )
 }
 
-export default function ReviewReminder({ learnerId }: { learnerId: string }) {
+export default function ReviewReminder({
+  learnerId,
+  onStartReview,
+}: {
+  learnerId: string
+  onStartReview?: (knowledgeId: string) => void
+}) {
   const [schedule, setSchedule] = useState<ReviewSchedule | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -233,6 +239,24 @@ export default function ReviewReminder({ learnerId }: { learnerId: string }) {
                 <div style={{ marginTop: 8, color: '#475569', fontSize: 12 }}>
                   Last reviewed {item.days_since_review.toFixed(1)} day(s) ago
                 </div>
+                {onStartReview && (
+                  <button
+                    onClick={() => onStartReview(item.knowledge_id)}
+                    style={{
+                      marginTop: 8,
+                      padding: '4px 10px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: meta.color,
+                      color: '#ffffff',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Review Now
+                  </button>
+                )}
               </div>
             )
           })}
@@ -253,12 +277,32 @@ export default function ReviewReminder({ learnerId }: { learnerId: string }) {
                 {dueItems.slice(0, 3).map((item) => (
                   <div
                     key={`${item.knowledge_id}-${item.next_review}`}
-                    style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12 }}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, fontSize: 12 }}
                   >
                     <span style={{ color: '#334155' }}>{knowledgeLabel(item.knowledge_id)}</span>
-                    <span style={{ color: '#64748b' }}>
-                      {item.overdue_days > 0 ? `${item.overdue_days} day(s) overdue` : formatDateTime(item.next_review)}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ color: '#64748b' }}>
+                        {item.overdue_days > 0 ? `${item.overdue_days} day(s) overdue` : formatDateTime(item.next_review)}
+                      </span>
+                      {onStartReview && (
+                        <button
+                          onClick={() => onStartReview(item.knowledge_id)}
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            border: 'none',
+                            background: '#2563eb',
+                            color: '#ffffff',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Review
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

@@ -236,6 +236,22 @@ class AgentOrchestrator:
             }
         return None
 
+    def _extract_next_topic(
+        self,
+        events: list[Event],
+    ) -> dict[str, Any] | None:
+        for event in reversed(events):
+            if event.type != EventType.NEXT_TOPIC:
+                continue
+            return {
+                "knowledge_id": event.data.get("knowledge_id", ""),
+                "name": event.data.get("name", ""),
+                "difficulty": event.data.get("difficulty", 0.5),
+                "reason": event.data.get("reason", ""),
+                "alternatives": event.data.get("alternatives", []),
+            }
+        return None
+
     def _build_interaction_result(
         self,
         learner_id: str,
@@ -250,6 +266,7 @@ class AgentOrchestrator:
             "correlation_id": correlation_id,
             "evaluation": evaluation,
             "teaching_response": self._extract_teaching_response(events, knowledge_id),
+            "next_topic_recommendation": self._extract_next_topic(events),
             "review_snapshot": self.curriculum.get_review_snapshot(learner_id, knowledge_id),
             "interaction_events": [self._serialize_event(event) for event in events],
             "events_triggered": len(events),
