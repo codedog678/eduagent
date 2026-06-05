@@ -58,7 +58,7 @@ export default function AnalyticsDashboard({ learnerId }: { learnerId: string })
     async function fetchAnalytics() {
       try {
         setLoading(true)
-        const response = await fetch(`/api/analytics/${learnerId}`)
+        const response = await fetch(`/api/v1/analytics/${learnerId}`)
         if (!response.ok) {
           throw new Error(`Analytics request failed with ${response.status}`)
         }
