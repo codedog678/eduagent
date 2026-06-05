@@ -27,7 +27,7 @@ export default function App() {
   const [quizStartedAt, setQuizStartedAt] = useState<number | null>(null)
 
   async function handleInitDemo() {
-    await fetch(`/api/v1/learner/init?learner_id=${learnerId}`, { method: 'POST' })
+    await fetch(`/api/learner/init?learner_id=${learnerId}`, { method: 'POST' })
     window.location.reload()
   }
 
@@ -37,7 +37,7 @@ export default function App() {
     setSelectedOption(null)
     setLatestInteraction(null)
     try {
-      const response = await fetch('/api/v1/quiz/generate', {
+      const response = await fetch('/api/quiz/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ knowledge_id: kid, difficulty: 0.5 }),
@@ -59,7 +59,7 @@ export default function App() {
     if (!quiz || selectedOption === null) return
 
     const timeSpentSeconds = quizStartedAt ? Math.max(1, Math.round((Date.now() - quizStartedAt) / 1000)) : 1
-    const response = await fetch('/api/v1/quiz/answer', {
+    const response = await fetch('/api/quiz/answer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -78,7 +78,7 @@ export default function App() {
 
     const quality = data.evaluation?.is_correct ? 4 : 1
     void fetch(
-      `/api/v1/review/complete?learner_id=${learnerId}&knowledge_id=${knowledgeId}&quality=${quality}`,
+      `/api/review/complete?learner_id=${learnerId}&knowledge_id=${knowledgeId}&quality=${quality}`,
       { method: 'POST' },
     )
 
@@ -90,7 +90,7 @@ export default function App() {
 
   async function handleQuestion() {
     if (!message.trim()) return
-    const response = await fetch('/api/v1/learner/question', {
+    const response = await fetch('/api/learner/question', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

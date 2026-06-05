@@ -41,14 +41,11 @@ class LearnerService:
             # 从数据库恢复状态
             states = await self.learner_repo.get_knowledge_states(learner_id)
             for state in states:
-                model.update_knowledge_state(
-                    state.knowledge_id,
-                    mastery=state.mastery,
-                    attempts=state.attempts,
-                    correct_count=state.correct_count,
-                    streak=state.streak,
-                    confidence=state.confidence,
-                )
+                ks = model.get_state(state.knowledge_id)
+                ks.mastery = state.mastery
+                ks.attempts = state.attempts
+                ks.correct_count = state.correct_count
+                ks.streak = state.streak
 
             self._learner_models[learner_id] = model
 
@@ -63,12 +60,12 @@ class LearnerService:
     ) -> dict:
         """更新掌握度。"""
         model = await self.get_learner_model(learner_id)
-        old_mastery = model.get_mastery(knowledge_id)
-        model.update(knowledge_id, is_correct, time_spent)
-        new_mastery = model.get_mastery(knowledge_id)
+        state = model.get_state(knowledge_id)
+        old_mastery = state.mastery
+        model.update_mastery(knowledge_id, is_correct)
+        new_mastery = state.mastery
 
         # 持久化到数据库
-        state = model.knowledge_states.get(knowledge_id)
         if state:
             await self.learner_repo.upsert_knowledge_state(
                 learner_id=learner_id,
