@@ -1,4 +1,14 @@
+// frontend/src/components/AnalyticsDashboard.tsx
 import { useEffect, useState } from 'react'
+import { Card, Row, Col, Statistic, Typography, Progress, List, Tag, Spin, Alert } from 'antd'
+import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  BulbOutlined,
+  TrophyOutlined,
+} from '@ant-design/icons'
+
+const { Title, Text } = Typography
 
 interface AnalyticsPayload {
   analytics: {
@@ -30,81 +40,11 @@ interface AnalyticsPayload {
   }>
 }
 
-function formatPercent(value: number): string {
-  return `${Math.round(value * 100)}%`
-}
-
 function formatDateTime(value: string | null): string {
-  if (!value) return 'No activity yet'
+  if (!value) return '暂无活动'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleString()
-}
-
-function StatCard({
-  label,
-  value,
-  accent,
-}: {
-  label: string
-  value: string | number
-  accent: string
-}) {
-  return (
-    <div
-      style={{
-        padding: 18,
-        borderRadius: 18,
-        background: '#ffffff',
-        border: `1px solid ${accent}33`,
-        boxShadow: '0 16px 32px rgba(15, 23, 42, 0.06)',
-      }}
-    >
-      <div style={{ color: '#64748b', fontSize: 12, marginBottom: 8 }}>{label}</div>
-      <div style={{ color: '#0f172a', fontSize: 28, fontWeight: 800 }}>{value}</div>
-    </div>
-  )
-}
-
-function DistributionRow({
-  label,
-  count,
-  total,
-  color,
-}: {
-  label: string
-  count: number
-  total: number
-  color: string
-}) {
-  const width = total > 0 ? (count / total) * 100 : 0
-
-  return (
-    <div style={{ display: 'grid', gap: 6 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 13 }}>
-        <span style={{ color: '#334155' }}>{label}</span>
-        <span style={{ color: '#0f172a', fontWeight: 700 }}>{count}</span>
-      </div>
-      <div
-        style={{
-          width: '100%',
-          height: 10,
-          borderRadius: 999,
-          background: '#e2e8f0',
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            width: `${width}%`,
-            height: '100%',
-            background: color,
-            transition: 'width 0.25s ease',
-          }}
-        />
-      </div>
-    </div>
-  )
 }
 
 export default function AnalyticsDashboard({ learnerId }: { learnerId: string }) {
@@ -145,221 +85,172 @@ export default function AnalyticsDashboard({ learnerId }: { learnerId: string })
   }, [learnerId])
 
   if (loading) {
-    return (
-      <div style={{ padding: 24, color: '#64748b' }}>
-        Loading analytics...
-      </div>
-    )
+    return <Spin size="large" style={{ display: 'block', marginTop: 100, textAlign: 'center' }} />
   }
 
   if (error) {
-    return (
-      <div
-        style={{
-          padding: 24,
-          borderRadius: 18,
-          background: '#fef2f2',
-          border: '1px solid #fecaca',
-          color: '#991b1b',
-        }}
-      >
-        {error}
-      </div>
-    )
+    return <Alert type="error" message={error} showIcon />
   }
 
   if (!data) {
-    return (
-      <div style={{ padding: 24, color: '#64748b' }}>
-        No analytics available yet.
-      </div>
-    )
+    return <Alert type="info" message="暂无分析数据" />
   }
 
-  const distribution = data.knowledge_distribution || {}
-  const totalTracked = Object.values(distribution).reduce((sum, count) => sum + count, 0)
   const stats = data.analytics
+  const distribution = data.knowledge_distribution || {}
 
   return (
-    <div style={{ display: 'grid', gap: 20 }}>
-      <div
-        style={{
-          padding: 24,
-          borderRadius: 22,
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)',
-          border: '1px solid #dbeafe',
-          boxShadow: '0 18px 40px rgba(15, 23, 42, 0.08)',
-        }}
-      >
-        <div style={{ marginBottom: 18 }}>
-          <div style={{ color: '#1d4ed8', fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            Progress Signals
-          </div>
-          <div style={{ color: '#0f172a', fontSize: 28, fontWeight: 800, marginTop: 6 }}>
-            Real Usage Analytics
-          </div>
-          <div style={{ color: '#64748b', fontSize: 14, marginTop: 6 }}>
-            The dashboard now uses backend-tracked progress and hides placeholder distributions.
-          </div>
-        </div>
+    <div style={{ padding: '0 24px' }}>
+      <Title level={3} style={{ marginBottom: 24 }}>
+        学习数据分析
+      </Title>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
-          <StatCard label="Total Questions" value={stats.total_questions} accent="#2563eb" />
-          <StatCard label="Accuracy" value={formatPercent(stats.accuracy)} accent="#059669" />
-          <StatCard label="Study Time" value={`${stats.total_time_spent_minutes} min`} accent="#d97706" />
-          <StatCard label="Hints Used" value={stats.hints_used} accent="#7c3aed" />
-        </div>
-      </div>
+      {/* 统计卡片 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={12} sm={6}>
+          <Card>
+            <Statistic
+              title="总题数"
+              value={stats.total_questions}
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{ color: '#2563eb' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card>
+            <Statistic
+              title="正确率"
+              value={Math.round(stats.accuracy * 100)}
+              suffix="%"
+              prefix={<TrophyOutlined />}
+              valueStyle={{ color: '#059669' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card>
+            <Statistic
+              title="学习时长"
+              value={stats.total_time_spent_minutes}
+              suffix="分钟"
+              prefix={<ClockCircleOutlined />}
+              valueStyle={{ color: '#d97706' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card>
+            <Statistic
+              title="使用提示数"
+              value={stats.hints_used}
+              prefix={<BulbOutlined />}
+              valueStyle={{ color: '#7c3aed' }}
+            />
+          </Card>
+        </Col>
+      </Row>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
-        <div
-          style={{
-            padding: 20,
-            borderRadius: 20,
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 16px 32px rgba(15, 23, 42, 0.06)',
-          }}
-        >
-          <div style={{ color: '#0f172a', fontSize: 18, fontWeight: 700, marginBottom: 14 }}>
-            Knowledge Distribution
-          </div>
-          <div style={{ display: 'grid', gap: 12 }}>
-            <DistributionRow label="Mastered" count={distribution.mastered || 0} total={totalTracked} color="#16a34a" />
-            <DistributionRow label="Proficient" count={distribution.proficient || 0} total={totalTracked} color="#65a30d" />
-            <DistributionRow label="Developing" count={distribution.developing || 0} total={totalTracked} color="#f59e0b" />
-            <DistributionRow label="Beginner" count={distribution.beginner || 0} total={totalTracked} color="#ef4444" />
-            <DistributionRow label="Not Started" count={distribution.not_started || 0} total={totalTracked} color="#94a3b8" />
-          </div>
-
-          <div style={{ marginTop: 16, color: '#64748b', fontSize: 13, lineHeight: 1.6 }}>
-            Covered knowledge points: {stats.knowledge_points_covered.length}
-            <br />
-            Average time per question: {stats.avg_time_per_question} second(s)
-            <br />
-            Last activity: {formatDateTime(stats.last_activity)}
-          </div>
-        </div>
-
-        <div
-          style={{
-            padding: 20,
-            borderRadius: 20,
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 16px 32px rgba(15, 23, 42, 0.06)',
-          }}
-        >
-          <div style={{ color: '#0f172a', fontSize: 18, fontWeight: 700, marginBottom: 14 }}>
-            Weak Points
-          </div>
-
-          {data.weak_points.length === 0 ? (
-            <div
-              style={{
-                padding: 16,
-                borderRadius: 14,
-                background: '#f8fafc',
-                color: '#64748b',
-              }}
-            >
-              No weak points identified yet.
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gap: 10 }}>
-              {data.weak_points.map((item) => (
-                <div
-                  key={item.knowledge_id}
-                  style={{
-                    padding: 14,
-                    borderRadius: 14,
-                    background: '#fff7ed',
-                    border: '1px solid #fdba74',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
-                    <strong style={{ color: '#0f172a' }}>{item.knowledge_id}</strong>
-                    <span style={{ color: '#9a3412', fontSize: 12 }}>
-                      accuracy {formatPercent(item.accuracy)}
-                    </span>
+      <Row gutter={[16, 16]}>
+        {/* 知识点分布 */}
+        <Col xs={24} lg={12}>
+          <Card title="知识点掌握分布" style={{ height: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {Object.entries(distribution).map(([level, count]) => {
+                const labels: Record<string, { text: string; color: string }> = {
+                  mastered: { text: '已掌握', color: '#16a34a' },
+                  proficient: { text: '熟练', color: '#65a30d' },
+                  developing: { text: '发展中', color: '#f59e0b' },
+                  beginner: { text: '初学', color: '#ef4444' },
+                  not_started: { text: '未开始', color: '#94a3b8' },
+                }
+                const info = labels[level] || { text: level, color: '#94a3b8' }
+                return (
+                  <div key={level}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text>{info.text}</Text>
+                      <Text strong>{count}</Text>
+                    </div>
+                    <Progress
+                      percent={stats.total_questions > 0 ? (count / stats.total_questions) * 100 : 0}
+                      strokeColor={info.color}
+                      size="small"
+                      showInfo={false}
+                    />
                   </div>
-                  <div style={{ color: '#475569', fontSize: 13, lineHeight: 1.6 }}>
-                    Mastery {formatPercent(item.mastery)} | Attempts {item.attempts} | Correct {item.correct_count}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
-          )}
-        </div>
-      </div>
+            <div style={{ marginTop: 16 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                已覆盖知识点: {stats.knowledge_points_covered.length} |
+                平均用时: {stats.avg_time_per_question} 秒/题 |
+                最近活动: {formatDateTime(stats.last_activity)}
+              </Text>
+            </div>
+          </Card>
+        </Col>
 
-      <div
-        style={{
-          padding: 20,
-          borderRadius: 20,
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 16px 32px rgba(15, 23, 42, 0.06)',
-        }}
-      >
-        <div style={{ color: '#0f172a', fontSize: 18, fontWeight: 700, marginBottom: 14 }}>
-          Recent Learning Curve
-        </div>
+        {/* 薄弱知识点 */}
+        <Col xs={24} lg={12}>
+          <Card title="薄弱知识点" style={{ height: '100%' }}>
+            {data.weak_points.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 24, color: '#64748b' }}>
+                暂未发现薄弱知识点
+              </div>
+            ) : (
+              <List
+                dataSource={data.weak_points}
+                renderItem={(item) => (
+                  <List.Item>
+                    <List.Item.Meta
+                      title={item.knowledge_id}
+                      description={
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <Tag color="orange">正确率 {Math.round(item.accuracy * 100)}%</Tag>
+                          <Text type="secondary">
+                            掌握度 {Math.round(item.mastery * 100)}% | 答题 {item.attempts} 次 | 正确 {item.correct_count} 次
+                          </Text>
+                        </div>
+                      }
+                    />
+                  </List.Item>
+                )}
+              />
+            )}
+          </Card>
+        </Col>
+      </Row>
 
+      {/* 学习曲线 */}
+      <Card title="最近学习曲线" style={{ marginTop: 16 }}>
         {data.learning_curve.length === 0 ? (
-          <div
-            style={{
-              padding: 16,
-              borderRadius: 14,
-              background: '#f8fafc',
-              color: '#64748b',
-            }}
-          >
-            No recorded activity yet.
+          <div style={{ textAlign: 'center', padding: 24, color: '#64748b' }}>
+            暂无学习记录
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: 10 }}>
-            {data.learning_curve.slice(-10).map((point) => (
-              <div
-                key={`${point.timestamp}-${point.knowledge_id || point.type}`}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  padding: 12,
-                  borderRadius: 14,
-                  background: point.is_correct === false ? '#fff7ed' : '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                }}
-              >
-                <div>
-                  <div style={{ color: '#0f172a', fontWeight: 700, fontSize: 14 }}>
-                    {point.knowledge_id || 'General'} · {point.type}
-                  </div>
-                  <div style={{ color: '#64748b', fontSize: 12 }}>
-                    {formatDateTime(point.timestamp)}
-                  </div>
-                </div>
-                {point.is_correct !== undefined ? (
-                  <div
-                    style={{
-                      alignSelf: 'center',
-                      padding: '4px 10px',
-                      borderRadius: 999,
-                      background: point.is_correct ? '#dcfce7' : '#fee2e2',
-                      color: point.is_correct ? '#166534' : '#991b1b',
-                      fontSize: 12,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {point.is_correct ? 'Correct' : 'Wrong'}
-                  </div>
-                ) : null}
-              </div>
-            ))}
-          </div>
+          <List
+            dataSource={data.learning_curve.slice(-10)}
+            renderItem={(point) => (
+              <List.Item>
+                <List.Item.Meta
+                  title={
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <span>{point.knowledge_id || '通用'} · {point.type}</span>
+                      {point.is_correct !== undefined && (
+                        <Tag color={point.is_correct ? 'success' : 'error'}>
+                          {point.is_correct ? '正确' : '错误'}
+                        </Tag>
+                      )}
+                    </div>
+                  }
+                  description={formatDateTime(point.timestamp)}
+                />
+              </List.Item>
+            )}
+          />
         )}
-      </div>
+      </Card>
     </div>
   )
 }
