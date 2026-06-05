@@ -90,3 +90,61 @@ async def get_analytics(learner_id: str):
         "weak_points": weak_points,
         "learning_curve": learning_curve,
     }
+
+
+@router.get("/statistics/{learner_id}")
+async def get_statistics(learner_id: str):
+    """获取学习统计数据（聚合自 learning_records 表）。"""
+    from models.database import LearningRecord
+    from models.session import async_session
+    from sqlalchemy import func, select
+
+    async with async_session() as session:
+        # 总题数
+        total_questions = await session.scalar(
+            select(func.count(LearningRecord.id))
+            .where(LearningRecord.learner_id == learner_id)
+        )
+
+        # 正确题数
+        correct_answers = await session.scalar(
+            select(func.count(LearningRecord.id))
+            .where(LearningRecord.learner_id == learner_id)
+            .where(LearningRecord.is_correct == True)
+        )
+
+        # 总用时（秒）
+        total_time = await session.scalar(
+            select(func.sum(LearningRecord.time_spent_seconds))
+            .where(LearningRecord.learner_id == learner_id)
+        )
+
+        # 平均用时
+        avg_time = await session.scalar(
+            select(func.avg(LearningRecord.time_spent_seconds))
+            .where(LearningRecord.learner_id == learner_id)
+        )
+
+        # 最后活动时间
+        last_record = await session.execute(
+            select(LearningRecord.created_at)
+            .where(LearningRecord.learner_id == learner_id)
+            .order_by(LearningRecord.created_at.desc())
+            .limit(1)
+        )
+        last_activity = last_record.scalar_one_or_none()
+
+    total_q = total_questions or 0
+    correct_a = correct_answers or 0
+    total_t = total_time or 0
+    avg_t = avg_time or 0
+
+    return {
+        "total_questions": total_q,
+        "correct_answers": correct_a,
+        "wrong_answers": total_q - correct_a,
+        "accuracy": round(correct_a / total_q, 3) if total_q > 0 else 0.0,
+        "total_time_minutes": round(total_t / 60, 1),
+        "avg_time_per_question": round(avg_t, 1),
+        "last_activity": last_activity.isoformat() if last_activity else None,
+    }

@@ -164,6 +164,7 @@ R: 记忆保持率, t: 经过时间, S: 记忆强度
 |------|------|
 | React 18 | UI 框架 |
 | TypeScript 5.5 | 类型安全 |
+| Ant Design 6 | UI 组件库 |
 | Vite 5 | 构建工具与开发服务器 |
 | WebSocket | 实时事件推送 |
 
@@ -271,7 +272,7 @@ npm install
 npm run dev
 ```
 
-访问 http://localhost:5173
+访问 http://localhost:3000
 
 ---
 
@@ -281,19 +282,20 @@ npm run dev
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| `GET` | `/api/health` | 健康检查（含 LLM 状态） |
-| `POST` | `/api/demo/init` | 初始化演示学习者数据 |
-| `POST` | `/api/submit` | 提交答题结果 |
-| `POST` | `/api/question` | 向导师提问 |
-| `POST` | `/api/message` | 发送通用消息 |
-| `GET` | `/api/progress/{learner_id}` | 获取学习者进度 |
-| `GET` | `/api/knowledge-graph` | 获取完整知识图谱 |
-| `GET` | `/api/analytics/overview` | 系统概览分析 |
-| `GET` | `/api/analytics/{learner_id}` | 学习者个人分析 |
-| `GET` | `/api/review-schedule/{learner_id}` | 复习计划与遗忘状态 |
-| `POST` | `/api/review/complete` | 完成一次复习 |
-| `POST` | `/api/quiz/generate` | 生成测验题目 |
-| `POST` | `/api/quiz/answer` | 提交测验答案并获取评估 |
+| `GET` | `/api/v1/health` | 健康检查（含 LLM 状态） |
+| `POST` | `/api/v1/learner/init` | 初始化演示学习者数据 |
+| `POST` | `/api/v1/learner/submit` | 提交答题结果 |
+| `POST` | `/api/v1/learner/question` | 向导师提问 |
+| `POST` | `/api/v1/learner/message` | 发送通用消息 |
+| `GET` | `/api/v1/learner/progress/{learner_id}` | 获取学习者进度 |
+| `GET` | `/api/v1/knowledge/graph` | 获取完整知识图谱 |
+| `GET` | `/api/v1/analytics/overview` | 系统概览分析 |
+| `GET` | `/api/v1/analytics/{learner_id}` | 学习者个人分析 |
+| `GET` | `/api/v1/analytics/statistics/{learner_id}` | 学习统计数据 |
+| `GET` | `/api/v1/review/schedule/{learner_id}` | 复习计划与遗忘状态 |
+| `POST` | `/api/v1/review/complete` | 完成一次复习 |
+| `POST` | `/api/v1/quiz/generate` | 生成测验题目 |
+| `POST` | `/api/v1/quiz/answer` | 提交测验答案并获取评估 |
 
 ### WebSocket
 
@@ -346,9 +348,17 @@ eduagent/
 │   ├── requirements.txt
 │   ├── api/                    # API 层
 │   │   ├── main.py             # FastAPI 入口
-│   │   ├── routes.py           # REST 路由
 │   │   ├── orchestrator.py     # Agent 协调器
-│   │   └── websocket.py        # WebSocket 通道
+│   │   ├── websocket.py        # WebSocket 通道
+│   │   └── v1/                 # 版本化 API 路由
+│   │       ├── __init__.py     # 路由注册
+│   │       ├── health.py       # 健康检查
+│   │       ├── learner.py      # 学习者管理
+│   │       ├── knowledge.py    # 知识图谱
+│   │       ├── learning.py     # 学习路径
+│   │       ├── quiz.py         # 测验
+│   │       ├── analytics.py    # 数据分析
+│   │       └── review.py       # 复习计划
 │   ├── agents/                 # AI Agent 层
 │   │   ├── base.py             # Agent 抽象基类
 │   │   ├── assessment_agent.py # BKT 评估 Agent
@@ -388,9 +398,16 @@ eduagent/
     └── src/
         ├── main.tsx
         ├── App.tsx             # 主应用
+        ├── types/
+        │   └── index.ts        # TypeScript 类型定义
         ├── components/
-        │   ├── AnalyticsDashboard.tsx
-        │   └── ReviewReminder.tsx
+        │   ├── Header.tsx      # 顶部导航栏
+        │   ├── KnowledgeSelect.tsx # 知识点选择
+        │   ├── QuizPanel.tsx   # 测验区
+        │   ├── QuestionInput.tsx # 向导师提问
+        │   ├── FeedbackPanel.tsx # 互动反馈
+        │   ├── ReviewReminder.tsx # 复习提醒
+        │   └── AnalyticsDashboard.tsx # 数据分析
         └── hooks/
             └── useWebSocket.ts # WebSocket 连接管理
 ```

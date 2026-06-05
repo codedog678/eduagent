@@ -16,9 +16,9 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import router
 from api.websocket import ws_router
 from api.orchestrator import AgentOrchestrator
+from api.v1 import api_router
 from config.settings import settings
 from core.llm_service import get_llm_service
 
@@ -85,15 +85,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router, prefix="/api")
+app.include_router(api_router)
 app.include_router(ws_router)
-
-try:
-    from api.v1 import api_router
-    app.include_router(api_router)
-    logging.getLogger(__name__).info("v1 API routes registered")
-except Exception as e:
-    logging.getLogger(__name__).warning("Failed to register v1 routes: %s", e)
 
 if __name__ == "__main__":
     uvicorn.run("api.main:app", host="0.0.0.0", port=8888, reload=True)
