@@ -2,7 +2,7 @@
 import { Select, Typography } from 'antd'
 import { KNOWLEDGE_OPTIONS } from '../types'
 
-const { Label } = Typography
+const { Text } = Typography
 
 interface KnowledgeSelectProps {
   value: string
@@ -15,9 +15,9 @@ export default function KnowledgeSelect({
 }: KnowledgeSelectProps) {
   return (
     <div>
-      <Label strong style={{ marginBottom: 8, display: 'block' }}>
+      <Text strong style={{ marginBottom: 8, display: 'block' }}>
         选择知识点
-      </Label>
+      </Text>
       <Select
         value={value}
         onChange={onChange}

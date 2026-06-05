@@ -1,379 +1,441 @@
-# 🎓 多Agent智能教育与个性化学习系统
+# EduAgent — 多Agent智能教育与个性化学习系统
 
-> **从零到面试 | Java + Go + Python 三语言实现 | 企业级Mesh+事件驱动架构**
+<p align="center">
+  <strong>基于事件驱动Mesh架构的AI英语学习系统</strong><br>
+  4个专业AI Agent协作，提供个性化学习体验
+</p>
 
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](python/)
-[![Java](https://img.shields.io/badge/Java-21+-red.svg)](java/)
-[![Go](https://img.shields.io/badge/Go-1.22+-cyan.svg)](golang/)
-[![React](https://img.shields.io/badge/React-18+-purple.svg)](frontend/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
----
-
-## 📖 这个项目是什么？
-
-这是一个**企业级多Agent智能教育系统**，用5个AI Agent协作完成个性化教学：
-
-- **不是"千人一面"的网课**，而是根据每个学生的薄弱点实时调整教学
-- **不是直接给答案**，而是用苏格拉底式提问引导学生自己思考
-- **不是固定学习路径**，而是基于间隔重复算法动态排期复习
-
-**为什么做这个项目？** 这是一个面向求职者的完整项目，帮助你：
-
-1. 拥有一个**可以在简历上写、面试时讲**的企业级多Agent项目
-2. 理解多Agent系统的**核心架构思想**（Mesh + 事件驱动）
-3. 掌握**面试八股文**、**STAR回答法**、**简历写法**的全套技巧
-4. 用**Java / Go / Python**三种语言实现，适配不同岗位需求
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.13+-blue?logo=python&logoColor=white" alt="Python 3.13+">
+  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React 18">
+  <img src="https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" alt="Docker Compose">
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
+</p>
 
 ---
 
-## 🏗️ 系统架构
-
-### 整体架构图
+## 系统架构
 
 ```
-                    ┌──────────────────────────┐
-                    │   React 前端 (WebSocket)   │
-                    └────────────┬─────────────┘
-                                 │
-                    ┌────────────▼─────────────┐
-                    │   API Gateway / EventBus   │
-                    └────────────┬─────────────┘
-                                 │
-        ┌────────────────────────┼────────────────────────┐
-        │                        │                        │
-   ┌────▼─────┐           ┌─────▼─────┐           ┌──────▼──────┐
-   │Assessment │◄─────────►│  Tutor    │◄─────────►│  Hint       │
-   │  Agent    │           │  Agent    │           │  Agent      │
-   │ (评估)    │           │ (教学)    │           │ (提示)      │
-   └────┬──────┘           └───────────┘           └─────────────┘
-        │                        ▲
-        │                        │
-   ┌────▼──────┐           ┌─────┴─────┐
-   │Curriculum  │◄─────────►│Engagement │
-   │  Agent     │           │  Agent    │
-   │ (课程)     │           │ (互动)    │
-   └────────────┘           └───────────┘
-        │                        │
-        └────────┬───────────────┘
-                 │
-        ┌────────▼────────┐
-        │  共享学习者状态   │
-        │ PostgreSQL+Redis │
-        └─────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                      React Frontend                         │
+│              (TypeScript + Vite, Port 3000)                 │
+└──────────────┬─────────────────────────┬────────────────────┘
+               │ REST API                │ WebSocket
+               ▼                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    FastAPI Backend                           │
+│                   (Python 3.13+, Port 8888)                 │
+│                                                             │
+│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐   │
+│  │   REST API   │  │  Orchestrator │  │    WebSocket     │   │
+│  │  /api/...    │  │   协调器       │  │  /ws/{learner}  │   │
+│  └──────┬──────┘  └──────┬───────┘  └────────┬─────────┘   │
+│         │                │                    │              │
+│         ▼                ▼                    ▼              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              EventBus (异步发布/订阅)                   │    │
+│  └────┬──────────┬──────────┬──────────┬───────────────┘    │
+│       │          │          │          │                     │
+│       ▼          ▼          ▼          ▼                     │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌───────────────┐    │
+│  │Assessment│ │  Tutor  │ │Curriculum│ │  Engagement   │    │
+│  │ Agent    │ │  Agent  │ │  Agent   │ │    Agent      │    │
+│  │ BKT评估  │ │ 苏格拉底 │ │ 学习路径  │ │  情感识别      │    │
+│  └────┬────┘ └────┬────┘ └────┬────┘ └──────┬────────┘    │
+│       │           │           │              │              │
+│       ▼           ▼           ▼              ▼              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │                 LLM Service                         │    │
+│  │   Anthropic / OpenAI / MiniMax / DeepSeek / 模板回退  │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │               PostgreSQL 16 (Async)                  │    │
+│  └─────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 5个Agent职责说明
+### 事件驱动 Mesh 架构
 
-| Agent | 职责 | 核心算法/技术 |
-|-------|------|---------------|
-| **Assessment Agent (评估)** | 知识点掌握度评估、学习路径诊断 | 贝叶斯知识追踪(BKT)、Beta分布 |
-| **Tutor Agent (教学)** | 苏格拉底式提问教学，动态调整难度 | Prompt Engineering、难度自适应 |
-| **Curriculum Agent (课程)** | 动态生成学习路径，间隔重复排期 | SM-2算法、知识图谱拓扑排序 |
-| **Hint Agent (提示)** | 分级提示：暗示→引导→直接答案 | 三级提示策略、尝试次数分析 |
-| **Engagement Agent (互动)** | 监测学习状态，适时鼓励、调整节奏 | 情感分析、响应时间分析 |
+系统采用 **事件驱动的Mesh架构**，Agent之间通过 `EventBus` 进行异步通信，无中心协调器：
 
-### 为什么用 Mesh + 事件驱动？
+1. 用户提交答案 → REST API 接收请求
+2. `EventBus` 发布 `AnswerSubmitted` 事件
+3. 4个Agent各自订阅感兴趣的事件，并行处理
+4. 各Agent发布结果事件（如 `MasteryUpdated`、`HintGenerated`）
+5. 前端通过 WebSocket 实时接收所有事件流
 
-| 编排模式 | 特点 | 适用场景 |
-|----------|------|----------|
-| **Supervisor (监督者)** | 中心化调度，单点瓶颈 | 简单串行任务流 |
-| **Pipeline (管道)** | 线性流转，灵活性低 | 数据处理流水线 |
-| **Mesh + 事件驱动** ✅ | Agent双向通信，松耦合 | **教育场景：需要实时双向交互** |
-
-我们选择 Mesh 的原因：
-- 教学过程中，Tutor 需要随时请求 Hint，Assessment 需要通知 Curriculum 调整路径
-- Agent 之间是**双向、异步、事件驱动**的，不是简单的串行调用
-- 新增 Agent 只需订阅事件，无需修改现有代码（**开闭原则**）
+每个交互都带有 `correlation_id`，可追踪完整事件链路。
 
 ---
 
-## 📂 项目结构
+## 四大AI Agent
 
-```
-multi-agent-education/
-│
-├── 📄 README.md                 ← 你正在看的这个文件
-├── 📄 plan.md                   ← 完整项目计划
-├── 📄 LICENSE                   ← MIT 开源协议
-├── 📄 docker-compose.yml        ← 一键启动全部服务
-├── 📄 .gitignore                ← Git 忽略文件
-├── 📄 .env.example              ← 环境变量模板（不含真实密钥）
-│
-├── 📁 docs/                     ← 文档中心
-│   ├── architecture.md          ← 架构设计详解
-│   ├── interview-guide.md       ← ⭐ 面试完整指南（八股文+STAR+简历）
-│   ├── knowledge-points.md      ← 200+知识点体系
-│   └── deployment.md            ← 部署指南
-│
-├── 📁 python/                   ← 🐍 Python 实现（推荐首选）
-│   ├── README.md                ← Python版详细说明
-│   ├── requirements.txt         ← 依赖清单
-│   ├── agents/                  ← 5个Agent实现
-│   ├── core/                    ← 核心模块（事件总线、算法）
-│   ├── api/                     ← FastAPI 接口层
-│   ├── config/                  ← 配置管理
-│   └── tests/                   ← 单元测试
-│
-├── 📁 java/                     ← ☕ Java 实现（Spring AI）
-│   ├── README.md                ← Java版详细说明
-│   ├── pom.xml                  ← Maven 依赖
-│   └── src/main/java/           ← 源码
-│
-├── 📁 golang/                   ← 🔷 Go 实现
-│   ├── README.md                ← Go版详细说明
-│   ├── go.mod                   ← Go Module
-│   └── internal/                ← 源码
-│
-└── 📁 frontend/                 ← ⚛️ React 前端（三个后端通用）
-    ├── package.json
-    └── src/
-```
+### 1. AssessmentAgent — 知识掌握评估
+
+基于 **BKT（贝叶斯知识追踪）** 算法，实时更新学习者的知识掌握概率：
+
+- 每次答题后更新掌握度（P(L)），使用 Beta 分布拟合
+- 分析错误模式：概念性错误 / 程序性错误 / 粗心错误
+- 识别薄弱知识点，输出学习建议
+- 支持连击追踪（streak tracking）
+
+### 2. TutorAgent — 个性化辅导
+
+苏格拉底式教学，提供渐进式提示：
+
+- **第一级**：元认知提示 — 引导自主思考
+- **第二级**：脚手架提示 — 提供解题框架
+- **第三级**：定向提示 — 直接给出关键信息
+- 管理话题级对话上下文，支持追问和答疑
+
+### 3. CurriculumAgent — 学习路径规划
+
+基于 **知识图谱（DAG）** 和 **SM-2间隔重复** 算法：
+
+- 拓扑排序确定学习顺序（Kahn算法）
+- SM-2 算法安排复习计划（含难度因子）
+- 艾宾浩斯遗忘曲线预测记忆保持率
+- 根据掌握度动态调整推荐内容
+
+### 4. EngagementAgent — 参与度感知
+
+检测学习者情绪状态并触发干预：
+
+| 状态 | 干预策略 |
+|------|---------|
+| 专注 (focused) | 保持当前节奏，提供适当挑战 |
+| 困惑 (struggling) | 降低难度，提供脚手架提示 |
+| 沮丧 (frustrated) | 鼓励安慰，调整学习策略 |
+| 无聊 (bored) | 增加挑战性，切换学习内容 |
+| 疲劳 (fatigued) | 建议休息，安排轻松内容 |
+| 空闲 (idle) | 主动引导，推送学习提醒 |
 
 ---
 
-## 🚀 快速开始（5分钟上手）
+## 核心算法
 
-### 方式一：Python 版（最简单，推荐新手）
+### BKT（贝叶斯知识追踪）
 
-```bash
-# 1. 克隆项目
-git clone https://github.com/你的用户名/multi-agent-education.git
-cd multi-agent-education/python
-
-# 2. 创建虚拟环境
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# 3. 安装依赖
-pip install -r requirements.txt
-
-# 4. 配置环境变量
-cp ../.env.example ../.env
-# 编辑 .env 文件，填入你的 LLM API Key
-
-# 5. 启动服务
-python -m api.main
-
-# 6. 打开浏览器访问 http://localhost:8000/docs 查看 API 文档
+```
+参数: P(L0)=初始掌握率, P(T)=学习率, P(G)=猜测率, P(S)=失误率
+更新: P(L|correct) = P(L)(1-P(S)) / P(L)(1-P(S)) + (1-P(L))P(G)
+      P(L|wrong)   = P(L)P(S) / P(L)P(S) + (1-P/L)(1-P(G))
 ```
 
-### 方式二：Java 版
+### SM-2 间隔重复
 
-```bash
-cd multi-agent-education/java
-
-# 需要 Java 21+ 和 Maven 3.9+
-mvn clean install
-mvn spring-boot:run
-
-# 访问 http://localhost:8080/swagger-ui.html
+```
+难度因子 EF' = EF + (0.1 - (1-q)(0.08 + (1-q)*0.02))
+间隔天数 I(n) = I(n-1) * EF
+其中 q = 答题质量 (0-5)
 ```
 
-### 方式三：Go 版
+### 艾宾浩斯遗忘曲线
 
-```bash
-cd multi-agent-education/golang
-
-# 需要 Go 1.22+
-go mod tidy
-go run cmd/main.go
-
-# 访问 http://localhost:8081/api/v1/health
 ```
-
-### 方式四：Docker 一键启动（全部服务）
-
-```bash
-cd multi-agent-education
-
-# 启动所有服务（Python后端 + React前端 + PostgreSQL + Redis）
-docker-compose up -d
-
-# 访问前端：http://localhost:3000
-# Python API：http://localhost:8000
-# Java API：http://localhost:8080
-# Go API：http://localhost:8081
+R = e^(-t/S)
+R: 记忆保持率, t: 经过时间, S: 记忆强度
 ```
 
 ---
 
-## 🧠 核心算法详解
+## 技术栈
 
-### 1. SM-2 间隔重复算法（Curriculum Agent 使用）
+### 后端
 
-**什么是间隔重复？** 就是"快忘了的时候复习效果最好"。Anki、SuperMemo 都用这个算法。
-
-**核心公式：**
-
-```
-复习间隔计算：
-  I(1) = 1 天（第1次复习）
-  I(2) = 6 天（第2次复习）
-  I(n) = I(n-1) × EF（之后每次间隔 = 上次间隔 × 难度因子）
-
-难度因子更新：
-  EF' = EF - 0.8 + 0.28 × q - 0.02 × q²
-  
-  其中 q 是回答质量（0-5分）：
-    5 = 完美回答  → EF 增大 → 间隔变长
-    4 = 正确但犹豫 → EF 不变
-    3 = 勉强正确  → EF 略降
-    0-2 = 错误    → 重置间隔，从头复习
-```
-
-**代码位置：** [python/core/spaced_repetition.py](python/core/spaced_repetition.py)
-
-### 2. 贝叶斯知识追踪 BKT（Assessment Agent 使用）
-
-**什么是 BKT？** 用概率模型估计学生对每个知识点的掌握程度。
-
-**四个核心参数：**
-
-```
-P(L₀) = 初始掌握概率（先验，通常 0.1-0.3）
-P(T)  = 学习转移概率（每次练习后学会的概率）
-P(G)  = 猜测概率（不会但猜对的概率）
-P(S)  = 失误概率（会但做错的概率）
-
-更新公式：
-  如果学生答对：
-    P(Lₙ|correct) = P(Lₙ₋₁) × (1 - P(S)) / P(correct)
-  如果学生答错：
-    P(Lₙ|wrong) = P(Lₙ₋₁) × P(S) / P(wrong)
-```
-
-**代码位置：** [python/core/learner_model.py](python/core/learner_model.py)
-
-### 3. 苏格拉底式教学策略（Tutor Agent 使用）
-
-**什么是苏格拉底式教学？** 不直接告诉答案，而是通过提问引导学生自己发现答案。
-
-```
-学生："二次函数 y = x² + 2x + 1 的顶点在哪里？"
-
-❌ 直接给答案："顶点是 (-1, 0)"
-
-✅ 苏格拉底式引导：
-  第1轮："你知道二次函数的顶点公式吗？或者，你能把这个式子配方吗？"
-  第2轮："很好！你配成了 y = (x+1)²，那 (x+1)² 最小值是多少？此时 x 等于几？"
-  第3轮："对了！所以顶点坐标是？"
-```
-
-**代码位置：** [python/agents/tutor_agent.py](python/agents/tutor_agent.py)
-
----
-
-## 📋 面试全套准备
-
-> 详细内容见 [docs/interview-guide.md](docs/interview-guide.md)
-
-### 简历怎么写
-
-```
-项目名称：多Agent智能教育与个性化学习系统
-技术栈：LangGraph / Spring AI / Go / PostgreSQL / React / WebSocket
-
-- 设计5-Agent Mesh+事件驱动架构，Agent间通过EventBus双向异步通信，支持实时状态同步
-- Tutor Agent采用苏格拉底式教学Prompt策略，引导率85%（暗示+引导），非直接给答案
-- Curriculum Agent基于SM-2间隔重复算法动态调整学习路径，知识保留率提升35%
-- Assessment Agent使用贝叶斯知识追踪(BKT)模型，持久化学习者模型，跟踪200+知识点掌握度
-- 采用WebSocket实现师生实时交互，Agent响应延迟<500ms，支持1000+并发学习者
-```
-
-### STAR 面试法怎么说
-
-| 维度 | 内容 |
+| 技术 | 用途 |
 |------|------|
-| **S (情境)** | 在线教育"千人一面"，学生遇困难直接看答案或放弃 |
-| **T (任务)** | 设计多Agent系统，实现个性化教学+引导式学习 |
-| **A (行动)** | 5-Agent Mesh架构 + BKT评估 + SM-2排期 + 苏格拉底Prompt |
-| **R (结果)** | 引导率85%，思考时间+60%，保留率+35%，1000+并发 |
+| Python 3.13+ | 主语言 |
+| FastAPI | 异步 REST API + WebSocket |
+| SQLAlchemy 2.0 | 异步 ORM（asyncpg 驱动） |
+| PostgreSQL 16 | 主数据库 |
+| Pydantic / pydantic-settings | 数据校验与配置管理 |
+| Anthropic SDK / OpenAI SDK | LLM 集成 |
+| Uvicorn | ASGI 服务器 |
+| pytest + pytest-asyncio | 测试框架 |
 
-### 面试高频问题速查
+### 前端
 
-| 问题 | 关键回答要点 |
-|------|-------------|
-| 为什么用多Agent不用单Agent？ | 上下文隔离、专业分工、并行执行、独立扩展 |
-| 为什么选Mesh不选Supervisor？ | 教育场景需双向实时交互，非简单串行任务 |
-| Agent之间怎么通信？ | 事件总线（EventBus），发布-订阅模式，异步解耦 |
-| 怎么保证状态一致性？ | 单写者策略 + 乐观锁 + 版本号，参考IntelliCode |
-| SM-2算法原理？ | EF因子 + 指数递增间隔 + 质量评分反馈 |
-| BKT怎么更新mastery？ | 贝叶斯公式：P(L|obs) = P(obs|L)P(L) / P(obs) |
+| 技术 | 用途 |
+|------|------|
+| React 18 | UI 框架 |
+| TypeScript 5.5 | 类型安全 |
+| Vite 5 | 构建工具与开发服务器 |
+| WebSocket | 实时事件推送 |
 
-> 完整50题八股文：[docs/interview-guide.md](docs/interview-guide.md)
+### 基础设施
 
----
-
-## 🔧 技术栈说明
-
-### 三种语言对比
-
-| 维度 | Python | Java | Go |
-|------|--------|------|----|
-| **框架** | LangGraph + FastAPI | Spring Boot + Spring AI | Gin + AgenticGoKit |
-| **Agent编排** | StateGraph 状态机 | Spring Event + @Async | goroutine + channel |
-| **事件总线** | asyncio + pub/sub | ApplicationEventPublisher | Go channel |
-| **WebSocket** | FastAPI WebSocket | Spring WebSocket | gorilla/websocket |
-| **数据库** | SQLAlchemy + asyncpg | Spring Data JPA | GORM |
-| **适合岗位** | AI/ML 工程师 | Java 后端/架构师 | 基础架构/高并发 |
-
-### 参考的企业级开源项目
-
-| 项目 | Stars | 参考了什么 |
-|------|-------|-----------|
-| [CrewAI](https://github.com/crewAIInc/crewAI) | 47,930 | Agent协作模式、Crew编排设计 |
-| [LangGraph](https://github.com/langchain-ai/langgraph) | 10,000+ | StateGraph 状态机、条件路由 |
-| [Solace Agent Mesh](https://github.com/SolaceLabs/solace-agent-mesh) | 2,820 | 事件驱动Mesh架构 |
-| [Spring AI](https://github.com/spring-projects/spring-ai) | 8,335 | Java版Agent实现 |
-| [IntelliCode (论文)](https://arxiv.org/abs/2512.18669) | EACL 2026 | 6-Agent教育架构、集中式学习者模型 |
+| 技术 | 用途 |
+|------|------|
+| Docker Compose | 多服务编排 |
+| Nginx | 静态文件服务 + 反向代理 |
 
 ---
 
-## 📚 学习路线图（从零到面试）
+## 快速开始
 
-### 第一阶段：理解原理（1-2天）
+### 前置要求
 
-1. 阅读 [docs/architecture.md](docs/architecture.md) 了解架构设计
-2. 阅读 [docs/knowledge-points.md](docs/knowledge-points.md) 了解知识点体系
-3. 理解 SM-2 和 BKT 算法的核心公式
+- Docker & Docker Compose
+- Git
 
-### 第二阶段：看懂代码（2-3天）
+### 1. 克隆项目
 
-1. 选择你最熟悉的语言版本（推荐先看 Python）
-2. 从 `core/event_bus` 开始，理解事件驱动机制
-3. 逐个阅读 5 个 Agent 的实现
-4. 运行单元测试 `python -m pytest tests/`
+```bash
+git clone <repo-url>
+cd eduagent
+```
 
-### 第三阶段：动手修改（1-2天）
+### 2. 配置环境变量
 
-1. 尝试添加新的知识点到知识图谱
-2. 修改苏格拉底式 Prompt 模板
-3. 调整 SM-2 算法参数观察效果
+```bash
+cp .env.example .env
+```
 
-### 第四阶段：准备面试（2-3天）
+编辑 `.env` 文件，至少配置一项 LLM Provider 的 API Key：
 
-1. 背熟 [docs/interview-guide.md](docs/interview-guide.md) 的八股文
-2. 用 STAR 法练习项目讲述（对着镜子说3遍）
-3. 准备好"为什么选这个架构"的回答
+```env
+# 任选其一（优先级从高到低）
+ANTHROPIC_API_KEY=sk-ant-xxxxx
+OPENAI_API_KEY=sk-xxxxx
+MINIMAX_API_KEY=xxxxx
+DEEPSEEK_API_KEY=xxxxx
+
+# 数据库
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/eduagent
+```
+
+> 💡 不配置任何 API Key 也可以运行，系统会回退到本地模板模式。
+
+### 3. 启动服务
+
+```bash
+docker compose up --build -d
+```
+
+启动后访问：
+
+| 服务 | 地址 |
+|------|------|
+| 前端界面 | http://localhost:3000 |
+| 后端 API | http://localhost:8888 |
+| API 文档 | http://localhost:8888/docs |
+| 健康检查 | http://localhost:8888/api/health |
+
+### 4. 初始化演示数据
+
+```bash
+curl -X POST http://localhost:8888/api/demo/init
+```
 
 ---
 
-## 🤝 贡献与反馈
+## 开发环境搭建
 
-如果这个项目帮到了你，欢迎：
+### 后端
 
-- ⭐ 给个 Star 支持一下
-- 🐛 提 Issue 反馈问题
-- 🔀 提 PR 贡献代码
-- 📢 分享给需要的朋友
+```bash
+cd python
+
+# 创建虚拟环境
+python -m venv .venv
+.venv/Scripts/activate        # Windows
+# source .venv/bin/activate   # macOS/Linux
+
+# 安装依赖
+pip install -e ".[dev]"
+
+# 启动数据库（需要本地 PostgreSQL 或使用 Docker）
+docker compose up -d postgres
+
+# 初始化数据库
+python -m scripts.init_db
+
+# 启动开发服务器
+uvicorn api.main:app --reload --port 8888
+```
+
+### 前端
+
+```bash
+cd frontend
+
+# 安装依赖
+npm install
+
+# 启动开发服务器（自动代理到后端 8888 端口）
+npm run dev
+```
+
+访问 http://localhost:5173
 
 ---
 
-## 📄 开源协议
+## API 参考
 
-本项目采用 [MIT License](LICENSE) 开源协议，可自由使用、修改、分发。
+### REST 端点
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/health` | 健康检查（含 LLM 状态） |
+| `POST` | `/api/demo/init` | 初始化演示学习者数据 |
+| `POST` | `/api/submit` | 提交答题结果 |
+| `POST` | `/api/question` | 向导师提问 |
+| `POST` | `/api/message` | 发送通用消息 |
+| `GET` | `/api/progress/{learner_id}` | 获取学习者进度 |
+| `GET` | `/api/knowledge-graph` | 获取完整知识图谱 |
+| `GET` | `/api/analytics/overview` | 系统概览分析 |
+| `GET` | `/api/analytics/{learner_id}` | 学习者个人分析 |
+| `GET` | `/api/review-schedule/{learner_id}` | 复习计划与遗忘状态 |
+| `POST` | `/api/review/complete` | 完成一次复习 |
+| `POST` | `/api/quiz/generate` | 生成测验题目 |
+| `POST` | `/api/quiz/answer` | 提交测验答案并获取评估 |
+
+### WebSocket
+
+连接：`ws://localhost:8888/ws/{learner_id}`
+
+**发送消息（JSON）：**
+
+```json
+{
+  "action": "submit",
+  "data": {
+    "question_id": "q1",
+    "answer": "B",
+    "is_correct": true
+  }
+}
+```
+
+支持的 action：`submit` | `question` | `message`
+
+**接收事件流：** 每个事件为独立的 JSON 消息，包含 `type`、`data`、`timestamp` 字段。
 
 ---
 
-*最后更新：2026年4月*
+## 数据库结构
+
+系统使用 6 张核心表：
+
+| 表名 | 说明 |
+|------|------|
+| `learners` | 学习者档案（ID、姓名、邮箱、元数据） |
+| `knowledge_states` | 知识点掌握状态（掌握度、Alpha/Beta参数、尝试次数、连击） |
+| `learning_records` | 答题历史（对错、用时、掌握度前后变化） |
+| `review_items` | SM-2 复习计划（难度因子、间隔天数、下次复习时间） |
+| `event_logs` | 事件溯源日志（事件类型、来源、数据、correlation_id） |
+| `agent_states` | Agent 运行时状态持久化（JSON 格式） |
+
+---
+
+## 项目结构
+
+```
+eduagent/
+├── docker-compose.yml          # Docker 多服务编排
+├── .env.example                # 环境变量模板
+├── LICENSE                     # MIT License
+├── python/                     # 后端
+│   ├── Dockerfile
+│   ├── pyproject.toml
+│   ├── requirements.txt
+│   ├── api/                    # API 层
+│   │   ├── main.py             # FastAPI 入口
+│   │   ├── routes.py           # REST 路由
+│   │   ├── orchestrator.py     # Agent 协调器
+│   │   └── websocket.py        # WebSocket 通道
+│   ├── agents/                 # AI Agent 层
+│   │   ├── base.py             # Agent 抽象基类
+│   │   ├── assessment_agent.py # BKT 评估 Agent
+│   │   ├── tutor_agent.py      # 导师 Agent
+│   │   ├── curriculum_agent.py # 课程规划 Agent
+│   │   └── engagement_agent.py # 参与度 Agent
+│   ├── core/                   # 核心算法
+│   │   ├── event_bus.py        # 异步事件总线
+│   │   ├── learner_model.py    # BKT 算法实现
+│   │   ├── knowledge_graph.py  # 知识图谱（DAG）
+│   │   ├── spaced_repetition.py # SM-2 间隔重复
+│   │   ├── llm_service.py      # LLM 多Provider封装
+│   │   └── memory_manager.py   # 学习者状态缓存
+│   ├── llm/                    # LLM Provider 适配器
+│   │   ├── anthropic_adapter.py
+│   │   ├── openai_adapter.py
+│   │   ├── minimax_adapter.py
+│   │   ├── deepseek_adapter.py
+│   │   └── template_adapter.py # 本地模板回退
+│   ├── models/                 # 数据模型
+│   │   ├── database.py         # SQLAlchemy ORM
+│   │   └── session.py          # 异步会话管理
+│   ├── schemas/                # Pydantic 模型
+│   ├── services/               # 业务服务层
+│   ├── interaction/            # 对话管理
+│   ├── repositories/           # 数据访问层
+│   ├── config/
+│   │   └── settings.py         # 配置管理
+│   └── tests/                  # 测试套件
+│       ├── test_bkt.py         # BKT 算法测试
+│       ├── test_api.py         # API 端点测试
+│       └── test_agents.py      # Agent 集成测试
+└── frontend/                   # 前端
+    ├── Dockerfile
+    ├── package.json
+    ├── nginx.conf              # Nginx 反向代理配置
+    └── src/
+        ├── main.tsx
+        ├── App.tsx             # 主应用
+        ├── components/
+        │   ├── AnalyticsDashboard.tsx
+        │   └── ReviewReminder.tsx
+        └── hooks/
+            └── useWebSocket.ts # WebSocket 连接管理
+```
+
+---
+
+## 运行测试
+
+```bash
+cd python
+
+# 运行全部测试
+python -m pytest tests/ -v
+
+# 仅运行 BKT 算法测试
+python -m pytest tests/test_bkt.py -v
+
+# 仅运行 API 测试
+python -m pytest tests/test_api.py -v
+```
+
+---
+
+## LLM Provider 配置
+
+系统支持 4 种 LLM Provider，按优先级自动选择：
+
+| 优先级 | Provider | 环境变量 |
+|--------|----------|---------|
+| 1 | Anthropic | `ANTHROPIC_API_KEY` |
+| 2 | OpenAI | `OPENAI_API_KEY` |
+| 3 | MiniMax | `MINIMAX_API_KEY` |
+| 4 | DeepSeek | `DEEPSEEK_API_KEY` |
+
+**自动回退机制：** 未配置任何 API Key 时，系统使用 `TemplateAdapter` 提供本地模板化响应，无需网络连接即可完整运行。
+
+在 `.env` 中可指定默认 Provider：
+
+```env
+LLM_PROVIDER=anthropic   # 或 openai / minimax / deepseek
+LLM_MODEL=claude-sonnet-4-20250514
+```
+
+---
+
+## License
+
+[MIT License](LICENSE) © 2026

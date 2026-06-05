@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import logging
+import json
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Optional
 
-from .base_agent import BaseAgent
+from agents.base import BaseAgent
+from config.settings import settings
 from core.event_bus import Event, EventType
 from core.knowledge_graph import KnowledgeGraph, build_english_learning_graph
+from core.learner_model import LearnerModel
+from core.llm_service import get_llm_service
 from core.spaced_repetition import ReviewItem, SpacedRepetition
 
 logger = logging.getLogger(__name__)
@@ -46,17 +50,43 @@ class ReviewReminder:
 
 
 class CurriculumAgent(BaseAgent):
-    """Plan next topics and spaced-review reminders."""
+    """
+    课程 Agent。
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.knowledge_graph: KnowledgeGraph = build_english_learning_graph()
-        self.sr = SpacedRepetition()
+    职责：
+    1. 规划学习路径
+    2. 安排复习计划（SM-2 算法）
+    3. 推荐下一学习主题
+    4. 生成复习提醒
+    5. 处理弱项补救路径
+
+    事件流：
+    - 订阅: MASTERY_UPDATED, WEAKNESS_DETECTED, PACE_ADJUSTMENT
+    - 发布: NEXT_TOPIC, REVIEW_SCHEDULED, REVIEW_REMINDER
+    """
+
+    def __init__(
+        self,
+        event_bus,
+        learner_models: dict[str, LearnerModel] | None = None,
+        name: str = "CurriculumAgent",
+        knowledge_graph=None,
+        spaced_repetition=None,
+        **_: Any,
+    ) -> None:
+        super().__init__(
+            name=name,
+            event_bus=event_bus,
+            description="规划学习路径，安排复习计划",
+            learner_models=learner_models,
+        )
+        self.knowledge_graph = knowledge_graph or build_english_learning_graph()
+        self.sr = spaced_repetition or SpacedRepetition()
         self._review_items: dict[str, dict[str, ReviewItem]] = {}
         self._reminders: dict[str, list[ReviewReminder]] = {}
+        self.register()
 
-    @property
-    def subscribed_events(self) -> list[EventType]:
+    def get_subscribed_events(self) -> list[EventType]:
         return [
             EventType.MASTERY_UPDATED,
             EventType.WEAKNESS_DETECTED,
@@ -127,13 +157,14 @@ class CurriculumAgent(BaseAgent):
             state.attempts = attempts
             state.correct_count = correct
 
-    async def handle_event(self, event: Event) -> None:
+    async def handle_event(self, event: Event) -> Optional[dict[str, Any]]:
         if event.type == EventType.MASTERY_UPDATED:
-            await self._handle_mastery_update(event)
+            return await self._handle_mastery_update(event)
         elif event.type == EventType.WEAKNESS_DETECTED:
-            await self._handle_weakness(event)
+            return await self._handle_weakness(event)
         elif event.type == EventType.PACE_ADJUSTMENT:
-            await self._handle_pace_adjustment(event)
+            return await self._handle_pace_adjustment(event)
+        return None
 
     async def _handle_mastery_update(self, event: Event) -> None:
         learner_id = event.learner_id
@@ -143,6 +174,17 @@ class CurriculumAgent(BaseAgent):
         quality = self._mastery_to_quality(mastery)
         review_item = self._get_review_item(learner_id, knowledge_id)
         self.sr.review(review_item, quality)
+        strategy = await self._build_curriculum_strategy(learner_id, knowledge_id, mastery)
+
+        await self.emit(
+            EventType.LEARNING_PATH_UPDATE,
+            learner_id,
+            {
+                "knowledge_id": knowledge_id,
+                "curriculum_strategy": strategy,
+            },
+            correlation_id=event.correlation_id,
+        )
 
         if mastery >= MASTERY_THRESHOLD:
             await self._check_and_recommend_next(learner_id, event.correlation_id)
@@ -184,8 +226,37 @@ class CurriculumAgent(BaseAgent):
         if not ready:
             return
 
+        # Default fallback: first ready node
         next_topic = ready[0]
         node = self.knowledge_graph.nodes.get(next_topic)
+        reason = "前置知识已经达到可推进水平，可以尝试进入下一知识点。"
+
+        # Try LLM recommendation
+        llm_service = get_llm_service()
+        candidates = []
+        for topic_id in ready[:6]:
+            n = self.knowledge_graph.nodes.get(topic_id)
+            candidates.append({
+                "id": topic_id,
+                "name": n.name if n else topic_id,
+                "difficulty": n.difficulty if n else 0.5,
+            })
+
+        profile = self._build_learner_profile(learner_id)
+        response = await llm_service.generate_next_topic_recommendation(candidates, profile)
+
+        if response.content:
+            try:
+                import json
+                parsed = json.loads(response.content)
+                llm_id = parsed.get("knowledge_id", "")
+                if llm_id and llm_id in {c["id"] for c in candidates}:
+                    next_topic = llm_id
+                    node = self.knowledge_graph.nodes.get(next_topic)
+                    reason = parsed.get("reason", reason)
+            except Exception:
+                pass  # fallback to ready[0]
+
         await self.emit(
             EventType.NEXT_TOPIC,
             learner_id,
@@ -193,11 +264,106 @@ class CurriculumAgent(BaseAgent):
                 "knowledge_id": next_topic,
                 "name": node.name if node else next_topic,
                 "difficulty": node.difficulty if node else 0.5,
-                "reason": "前置知识已经达到可推进水平，可以尝试进入下一知识点。",
-                "alternatives": ready[1:4],
+                "reason": reason,
+                "alternatives": [t for t in ready[1:4] if t != next_topic],
             },
             correlation_id=correlation_id,
         )
+
+    def _build_learner_profile(self, learner_id: str) -> dict[str, Any]:
+        model = self.get_learner_model(learner_id)
+        progress = model.get_overall_progress()
+        weak = model.get_weak_points(limit=5)
+        mastered = [
+            state.knowledge_id
+            for state in model.knowledge_states.values()
+            if state.mastery >= MASTERY_THRESHOLD
+        ]
+        return {
+            "mastered": "、".join(mastered) if mastered else "无",
+            "weak_points": "、".join(w.knowledge_id for w in weak) if weak else "无",
+            "avg_mastery": progress["avg_mastery"],
+            "session_topics": "、".join(mastered[-3:]) if mastered else "无",
+        }
+
+    async def _build_curriculum_strategy(
+        self,
+        learner_id: str,
+        knowledge_id: str,
+        mastery: float,
+    ) -> dict[str, Any]:
+        """让 Curriculum Agent 基于路径、复习和薄弱项给出课程策略。"""
+        model = self.get_learner_model(learner_id)
+        weak = model.get_weak_points(limit=5)
+        mastered = [
+            state.knowledge_id
+            for state in model.knowledge_states.values()
+            if state.mastery >= MASTERY_THRESHOLD
+        ]
+        ready = self.knowledge_graph.get_ready_nodes(set(mastered))
+        candidates = []
+        for topic_id in ready[:6]:
+            node = self.knowledge_graph.nodes.get(topic_id)
+            candidates.append(
+                {
+                    "id": topic_id,
+                    "name": node.name if node else topic_id,
+                    "difficulty": node.difficulty if node else 0.5,
+                }
+            )
+        due_items = self.get_top_due_items(learner_id, limit=5)
+
+        if due_items:
+            fallback_action = "review"
+            fallback_plan = "优先处理到期复习，降低遗忘风险。"
+            fallback_target = due_items[0]["knowledge_id"]
+        elif mastery < 0.4:
+            fallback_action = "remediate"
+            fallback_plan = "当前知识点掌握偏低，先补救再推进。"
+            fallback_target = knowledge_id
+        elif candidates:
+            fallback_action = "advance"
+            fallback_plan = "前置条件基本满足，可以进入下一个可学习知识点。"
+            fallback_target = candidates[0]["id"]
+        else:
+            fallback_action = "practice"
+            fallback_plan = "继续用当前知识点做巩固练习。"
+            fallback_target = knowledge_id
+
+        fallback = {
+            "plan": fallback_plan,
+            "next_action": fallback_action,
+            "target_knowledge_id": fallback_target,
+            "reason": fallback_plan,
+            "generation_mode": "local_policy",
+        }
+
+        if not settings.enable_agent_llm_decisions:
+            return fallback
+
+        response = await get_llm_service().generate_curriculum_strategy(
+            {
+                "knowledge_id": knowledge_id,
+                "mastery": mastery,
+                "weak_points": "、".join(w.knowledge_id for w in weak) if weak else "无",
+                "mastered": "、".join(mastered) if mastered else "无",
+                "candidates": candidates,
+                "due_items": due_items,
+            }
+        )
+        if not response.content:
+            return fallback
+        try:
+            parsed = json.loads(response.content)
+        except Exception:
+            return fallback
+
+        parsed.setdefault("plan", fallback["plan"])
+        parsed.setdefault("next_action", fallback["next_action"])
+        parsed.setdefault("target_knowledge_id", fallback["target_knowledge_id"])
+        parsed.setdefault("reason", fallback["reason"])
+        parsed["generation_mode"] = "remote_llm"
+        return parsed
 
     async def _send_review_schedule(
         self,

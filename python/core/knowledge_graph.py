@@ -176,13 +176,13 @@ def build_english_learning_graph() -> KnowledgeGraph:
     """
     构建英语学习知识图谱。
 
-    包含5个维度：词汇、语法、阅读、写作、听力
+    包含7个维度：词汇、语法、阅读、写作、听力、口语、发音
     知识点之间有依赖关系，如：基础词汇 -> 高级词汇
     """
     graph = KnowledgeGraph()
 
     nodes = [
-        # 词汇类（基础到高级）
+        # ── 词汇类（基础到高级） ──
         KnowledgeNode(
             id="vocab_basic",
             name="基础词汇",
@@ -218,8 +218,17 @@ def build_english_learning_graph() -> KnowledgeGraph:
             prerequisites=["vocab_advanced"],
             tags=["词汇", "学术"],
         ),
+        KnowledgeNode(
+            id="vocab_idioms",
+            name="习语与短语动词",
+            subject="english",
+            difficulty=0.65,
+            description="常见英语习语和短语动词的含义与用法",
+            prerequisites=["vocab_intermediate"],
+            tags=["词汇", "实用"],
+        ),
 
-        # 语法类（从基础到复杂）
+        # ── 语法类（从基础到复杂） ──
         KnowledgeNode(
             id="grammar_tenses",
             name="时态",
@@ -256,8 +265,26 @@ def build_english_learning_graph() -> KnowledgeGraph:
             prerequisites=["grammar_tenses", "vocab_intermediate"],
             tags=["语法", "高级"],
         ),
+        KnowledgeNode(
+            id="grammar_articles",
+            name="冠词用法",
+            subject="english",
+            difficulty=0.45,
+            description="a/an/the 的用法规则与例外",
+            prerequisites=["vocab_basic"],
+            tags=["语法", "基础"],
+        ),
+        KnowledgeNode(
+            id="grammar_prepositions",
+            name="介词搭配",
+            subject="english",
+            difficulty=0.5,
+            description="常见介词搭配与固定用法",
+            prerequisites=["vocab_basic"],
+            tags=["语法", "中级"],
+        ),
 
-        # 阅读类
+        # ── 阅读类 ──
         KnowledgeNode(
             id="reading_skimming",
             name="略读技巧",
@@ -294,8 +321,17 @@ def build_english_learning_graph() -> KnowledgeGraph:
             prerequisites=["reading_skimming"],
             tags=["阅读", "中级"],
         ),
+        KnowledgeNode(
+            id="reading_critical",
+            name="批判性阅读",
+            subject="english",
+            difficulty=0.7,
+            description="分析作者观点、论据和隐含意义",
+            prerequisites=["reading_inference", "vocab_advanced"],
+            tags=["阅读", "高级"],
+        ),
 
-        # 写作类
+        # ── 写作类 ──
         KnowledgeNode(
             id="writing_paragraph",
             name="段落写作",
@@ -332,8 +368,26 @@ def build_english_learning_graph() -> KnowledgeGraph:
             prerequisites=["reading_main_idea", "writing_paragraph"],
             tags=["写作", "中级"],
         ),
+        KnowledgeNode(
+            id="writing_letter",
+            name="书信写作",
+            subject="english",
+            difficulty=0.45,
+            description="正式与非正式书信的格式和表达",
+            prerequisites=["grammar_tenses", "vocab_intermediate"],
+            tags=["写作", "实用"],
+        ),
+        KnowledgeNode(
+            id="writing_report",
+            name="报告写作",
+            subject="english",
+            difficulty=0.65,
+            description="商务报告的结构、数据呈现和结论撰写",
+            prerequisites=["writing_paragraph", "vocab_academic"],
+            tags=["写作", "高级"],
+        ),
 
-        # 听力类
+        # ── 听力类 ──
         KnowledgeNode(
             id="listening_gist",
             name="听力主旨",
@@ -369,6 +423,43 @@ def build_english_learning_graph() -> KnowledgeGraph:
             description="根据上下文预测说话者意图",
             prerequisites=["listening_gist", "reading_inference"],
             tags=["听力", "中级"],
+        ),
+
+        # ── 口语类 ──
+        KnowledgeNode(
+            id="speaking_pronunciation",
+            name="发音基础",
+            subject="english",
+            difficulty=0.35,
+            description="音标、重音、连读等发音规则",
+            tags=["口语", "基础"],
+        ),
+        KnowledgeNode(
+            id="speaking_conversation",
+            name="日常对话",
+            subject="english",
+            difficulty=0.4,
+            description="日常交际用语和对话技巧",
+            prerequisites=["vocab_basic", "grammar_tenses"],
+            tags=["口语", "基础"],
+        ),
+        KnowledgeNode(
+            id="speaking_presentation",
+            name="演讲表达",
+            subject="english",
+            difficulty=0.65,
+            description="公众演讲的结构、语气和肢体语言",
+            prerequisites=["speaking_conversation", "vocab_advanced"],
+            tags=["口语", "高级"],
+        ),
+        KnowledgeNode(
+            id="speaking_discussion",
+            name="讨论辩论",
+            subject="english",
+            difficulty=0.6,
+            description="表达观点、反驳和达成共识",
+            prerequisites=["speaking_conversation", "grammar_conditionals"],
+            tags=["口语", "中级"],
         ),
     ]
 

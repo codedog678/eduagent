@@ -88,5 +88,12 @@ app.add_middleware(
 app.include_router(router, prefix="/api")
 app.include_router(ws_router)
 
+try:
+    from api.v1 import api_router
+    app.include_router(api_router)
+    logging.getLogger(__name__).info("v1 API routes registered")
+except Exception as e:
+    logging.getLogger(__name__).warning("Failed to register v1 routes: %s", e)
+
 if __name__ == "__main__":
     uvicorn.run("api.main:app", host="0.0.0.0", port=8888, reload=True)

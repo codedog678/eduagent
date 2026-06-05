@@ -4,9 +4,6 @@ WebSocket 实时通信端点。
 支持前端与Agent系统的双向实时通信：
 - 学生发送消息/答题 → Agent处理 → 实时推送结果
 
-面试要点：
-- WebSocket vs HTTP轮询：全双工、低延迟、持久连接
-- 断线重连策略：指数退避 + 心跳检测
 """
 
 import json

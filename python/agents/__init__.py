@@ -1,4 +1,4 @@
-from .base_agent import BaseAgent
+from .base import BaseAgent
 from .assessment_agent import AssessmentAgent
 from .tutor_agent import TutorAgent
 from .curriculum_agent import CurriculumAgent

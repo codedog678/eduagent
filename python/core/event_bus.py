@@ -23,6 +23,15 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
+class EventPriority(int, Enum):
+    """事件优先级。"""
+
+    LOW = 0
+    NORMAL = 1
+    HIGH = 2
+    CRITICAL = 3  #预留
+
+
 class EventType(str, Enum):
     """系统中所有事件类型的枚举定义。"""
 
@@ -38,32 +47,44 @@ class EventType(str, Enum):
 
     # Tutor Agent 事件
     TEACHING_RESPONSE = "tutor.teaching_response"
+    HINT_PROVIDED = "tutor.hint_provided"
+    SOCRATIC_QUESTION = "tutor.socratic_question"
 
     # Curriculum Agent 事件
     REVIEW_SCHEDULED = "curriculum.review_scheduled"
     NEXT_TOPIC = "curriculum.next_topic"
     REVIEW_REMINDER = "curriculum.review_reminder"
+    LEARNING_PATH_UPDATE = "curriculum.learning_path_update"
 
     # Engagement Agent 事件
     ENGAGEMENT_ALERT = "engagement.alert"
     ENCOURAGEMENT = "engagement.encouragement"
     PACE_ADJUSTMENT = "engagement.pace_adjustment"
+    EMOTION_DETECTED = "engagement.emotion_detected"
+
+    # Feedback Agent 事件
+    FEEDBACK_GENERATED = "feedback.generated"
+
+    # Session 事件
+    SESSION_START = "session.start"
+    SESSION_END = "session.end"
 
 
 class Event(BaseModel):
     """事件数据模型。"""
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    type: EventType
+    type: EventType  # 事件类型，必须是EventType枚举中的值
     source: str  # 发布事件的Agent名称
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=datetime.now)  # 发布时间
     learner_id: str
-    data: dict[str, Any] = Field(default_factory=dict)
-    correlation_id: str | None = None  # 用于追踪事件链
-
+    data: dict[str, Any] = Field(default_factory=dict)   # 事件数据
+    correlation_id: str | None = None  # 用于追踪事件链ID
+    priority: EventPriority = EventPriority.NORMAL  # 事件优先级
+# 一次答题可能触发 6-8 个事件，这些事件的 correlation_id 都相同。事后可以用这个ID把整条链路捞出来
 
 EventHandler = Callable[[Event], Coroutine[Any, Any, None]]
-
+#类型检查工具 必须是异步函数 必须接收 Event 参数
 
 class EventBus:
     """
@@ -73,54 +94,74 @@ class EventBus:
     1. 每个Agent注册自己感兴趣的事件类型
     2. 发布事件时，总线将事件分发给所有订阅者
     3. 支持事件历史记录（Event Sourcing基础）
-    4. 支持事件过滤和优先级（可选扩展）
+    4. 支持事件优先级分发
     5. 支持事件日志持久化到PostgreSQL
+    6. 支持 correlation_id 追踪事件链
     """
 
     MAX_HISTORY = 1000  # 最大历史记录数，防止内存泄漏
 
     def __init__(self, enable_db_logging: bool = False) -> None:
-        self._subscribers: dict[EventType, list[EventHandler]] = {}
-        self._event_history: list[Event] = []
-        self._lock = asyncio.Lock()
-        self._enable_db_logging = enable_db_logging
+        self._subscribers: dict[EventType, list[EventHandler]] = {}  #订阅表：哪个事件类型有哪些处理函数
+        self._event_history: list[Event] = [] #内存中的事件历史（最近1000条）
+        self._lock = asyncio.Lock()  # 用于异步处理锁
+        self._enable_db_logging = enable_db_logging  #是否把事件持久化到 PostgreSQL
+        self._correlation_chains: dict[str, list[Event]] = {}  # correlation_id -> 事件链
 
     def subscribe(self, event_type: EventType, handler: EventHandler) -> None:
-        """订阅某类事件。"""
+        """订阅某类事件：Agent 在初始化时调用这个方法，告诉 EventBus自己对哪些事件感兴趣。
+        有这类事件时调用 handler(event)方法 处理
+        """
         if event_type not in self._subscribers:
             self._subscribers[event_type] = []
-        self._subscribers[event_type].append(handler)
+        if handler not in self._subscribers[event_type]:
+            self._subscribers[event_type].append(handler)
         logger.info("Handler subscribed to %s", event_type.value)
 
     def unsubscribe(self, event_type: EventType, handler: EventHandler) -> None:
-        """取消订阅。"""
+        """取消订阅：Agent 在退出时调用这个方法，告诉 EventBus自己不再对这些事件感兴趣。"""
         if event_type in self._subscribers:
-            self._subscribers[event_type].remove(handler)
+            if handler in self._subscribers[event_type]:
+                self._subscribers[event_type].remove(handler)
+            if not self._subscribers[event_type]:
+                del self._subscribers[event_type]
 
     async def publish(self, event: Event) -> None:
         """
         发布事件到总线，异步通知所有订阅者。
 
-        关键设计：使用 asyncio.gather 并发通知所有订阅者，
-        而不是串行调用，提高吞吐量。
+        关键设计：
+        1. 使用 asyncio.gather 并发通知所有订阅者
+        2. 支持优先级分发（高优先级事件优先处理）
+        3. 支持 correlation_id 追踪事件链
         """
+        #加锁 多个 Agent 可能同时发布事件（并发）
         async with self._lock:
             self._event_history.append(event)
             # 限制历史记录数量，防止内存泄漏
             if len(self._event_history) > self.MAX_HISTORY:
                 self._event_history = self._event_history[-self.MAX_HISTORY:]
 
+            # 追踪事件链
+            if event.correlation_id:
+                if event.correlation_id not in self._correlation_chains:
+                    self._correlation_chains[event.correlation_id] = []
+                self._correlation_chains[event.correlation_id].append(event)
+
         logger.info(
-            "[EventBus] %s -> %s (learner=%s)",
+            "[EventBus] %s -> %s (learner=%s, priority=%s, correlation=%s)",
             event.source,
             event.type.value,
             event.learner_id,
+            event.priority.name,
+            event.correlation_id or "none",
         )
 
         # 如果启用了数据库日志，异步写入EventLog表
         if self._enable_db_logging:
             await self._log_event_to_db(event)
 
+        # 并发通知所有订阅者
         handlers = self._subscribers.get(event.type, [])
         if not handlers:
             logger.debug("No handlers for event type %s", event.type.value)
@@ -160,7 +201,7 @@ class EventBus:
             # 不影响事件分发，继续执行
 
     async def _safe_handle(self, handler: EventHandler, event: Event) -> None:
-        """安全执行handler，捕获异常避免影响其他订阅者。"""
+        """安全执行handler，捕获异常避免影响其他订阅者（Mesh 架构的容错机制，每个 handler 独立 try-catch）"""
         try:
             await handler(event)
         except Exception:
@@ -190,6 +231,11 @@ class EventBus:
     def clear_history(self) -> None:
         """清空事件历史（用于测试）。"""
         self._event_history.clear()
+        self._correlation_chains.clear()
+
+    def get_correlation_chain(self, correlation_id: str) -> list[Event]:
+        """获取指定 correlation_id 的事件链。"""
+        return self._correlation_chains.get(correlation_id, [])
 
     async def get_event_history_from_db(
         self,

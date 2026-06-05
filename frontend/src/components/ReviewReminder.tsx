@@ -98,7 +98,7 @@ export default function ReviewReminder({ learnerId, onStartReview }: ReviewRemin
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <Text strong>{getKnowledgeLabel(item.knowledge_id)}</Text>
-                  <Badge status={meta.progress as 'exception' | 'active' | 'success'} text={item.urgency} />
+                  <Badge status={meta.progress === 'exception' ? 'error' : meta.progress === 'active' ? 'warning' : 'success'} text={item.urgency} />
                 </div>
                 <Progress
                   percent={percent}

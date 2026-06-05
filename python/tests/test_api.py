@@ -5,22 +5,24 @@ API 端点测试。
 """
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from api.main import app
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def client():
     """创建测试客户端。"""
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client
+    async with app.router.lifespan_context(app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            yield client
 
 
 @pytest.mark.asyncio
 async def test_health_check(client):
     """测试健康检查端点。"""
-    response = await client.get("/health")
+    response = await client.get("/api/health")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
@@ -32,7 +34,7 @@ async def test_health_check(client):
 async def test_submit_answer(client):
     """测试提交答案端点。"""
     response = await client.post(
-        "/submit",
+        "/api/submit",
         json={
             "learner_id": "test_api_user_001",
             "knowledge_id": "vocab_basic",
@@ -50,7 +52,7 @@ async def test_submit_answer(client):
 async def test_submit_wrong_answer(client):
     """测试提交错误答案端点。"""
     response = await client.post(
-        "/submit",
+        "/api/submit",
         json={
             "learner_id": "test_api_user_002",
             "knowledge_id": "grammar_tenses",
@@ -67,7 +69,7 @@ async def test_submit_wrong_answer(client):
 async def test_ask_question(client):
     """测试提问端点。"""
     response = await client.post(
-        "/question",
+        "/api/question",
         json={
             "learner_id": "test_api_user_003",
             "knowledge_id": "vocab_intermediate",
@@ -84,7 +86,7 @@ async def test_ask_question(client):
 async def test_send_message(client):
     """测试发送消息端点。"""
     response = await client.post(
-        "/message",
+        "/api/message",
         json={
             "learner_id": "test_api_user_004",
             "message": "Can you explain the present perfect tense?",
@@ -102,7 +104,7 @@ async def test_get_progress(client):
     # 先提交一些答案
     for i in range(3):
         await client.post(
-            "/submit",
+            "/api/submit",
             json={
                 "learner_id": "test_api_user_005",
                 "knowledge_id": f"vocab_{i}",
@@ -112,7 +114,7 @@ async def test_get_progress(client):
         )
 
     # 获取进度
-    response = await client.get("/progress/test_api_user_005")
+    response = await client.get("/api/progress/test_api_user_005")
     assert response.status_code == 200
     data = response.json()
     assert data["learner_id"] == "test_api_user_005"
@@ -122,7 +124,7 @@ async def test_get_progress(client):
 @pytest.mark.asyncio
 async def test_get_knowledge_graph(client):
     """测试获取知识图谱端点。"""
-    response = await client.get("/knowledge-graph")
+    response = await client.get("/api/knowledge-graph")
     assert response.status_code == 200
     data = response.json()
     assert "nodes" in data
@@ -136,7 +138,7 @@ async def test_get_analytics(client):
     # 先提交一些答案
     for i in range(5):
         await client.post(
-            "/submit",
+            "/api/submit",
             json={
                 "learner_id": "test_api_user_006",
                 "knowledge_id": f"vocab_{i % 3}",
@@ -146,7 +148,7 @@ async def test_get_analytics(client):
         )
 
     # 获取分析数据
-    response = await client.get("/analytics/test_api_user_006")
+    response = await client.get("/api/analytics/test_api_user_006")
     assert response.status_code == 200
     data = response.json()
     assert "analytics" in data
@@ -157,7 +159,7 @@ async def test_get_analytics(client):
 @pytest.mark.asyncio
 async def test_get_analytics_overview(client):
     """测试获取整体统计端点。"""
-    response = await client.get("/analytics/overview")
+    response = await client.get("/api/analytics/overview")
     assert response.status_code == 200
     data = response.json()
     assert "total_learners" in data

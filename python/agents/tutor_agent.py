@@ -5,10 +5,11 @@ from __future__ import annotations
 import logging
 import re
 from difflib import SequenceMatcher
-from typing import Any, Awaitable, Callable
+from typing import Any, Awaitable, Callable, Optional
 
-from .base_agent import BaseAgent
-from core.event_bus import Event, EventType
+from agents.base import BaseAgent
+from core.event_bus import Event, EventBus, EventType
+from core.learner_model import LearnerModel
 from core.llm_service import TeachingReply, get_llm_service
 
 logger = logging.getLogger(__name__)
@@ -27,20 +28,49 @@ def _normalize_text(value: str) -> str:
 
 
 class TutorAgent(BaseAgent):
-    """Generate teacher replies for wrong answers, questions, and hints."""
+    """
+    辅导 Agent。
+
+    职责：
+    1. 回答学生问题
+    2. 生成错题反馈
+    3. 提供分级提示（元认知→脚手架→针对性）
+    4. 苏格拉底式提问
+    5. 管理对话上下文
+
+    事件流：
+    - 订阅: ASSESSMENT_COMPLETE, STUDENT_QUESTION, STUDENT_MESSAGE, ENGAGEMENT_ALERT
+    - 发布: TEACHING_RESPONSE, HINT_PROVIDED, SOCRATIC_QUESTION
+    """
 
     MAX_HISTORY = 16
     MAX_TOPIC_HISTORY = 10
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        event_bus: EventBus,
+        learner_models: dict[str, LearnerModel] | None = None,
+        name: str = "TutorAgent",
+        llm_service=None,
+        **_: Any,
+    ) -> None:
+        super().__init__(
+            name=name,
+            event_bus=event_bus,
+            description="辅导学习者，提供讲解、提示和苏格拉底式提问",
+            learner_models=learner_models,
+        )
+        self.llm_service = llm_service
         self._student_attempts: dict[str, int] = {}
         self._hint_history: dict[str, int] = {}
         self._conversation_history: dict[str, list[dict[str, Any]]] = {}
         self._topic_history: dict[str, dict[str, list[dict[str, Any]]]] = {}
+        self._recent_submissions: dict[str, dict[str, dict[str, str]]] = {}
+        # 苏格拉底式提问配置
+        self._socratic_threshold = 2  # 错误次数超过此值时使用苏格拉底式提问
+        self.register()
 
-    @property
-    def subscribed_events(self) -> list[EventType]:
+    def get_subscribed_events(self) -> list[EventType]:
         return [
             EventType.ASSESSMENT_COMPLETE,
             EventType.STUDENT_QUESTION,
@@ -48,15 +78,16 @@ class TutorAgent(BaseAgent):
             EventType.ENGAGEMENT_ALERT,
         ]
 
-    async def handle_event(self, event: Event) -> None:
+    async def handle_event(self, event: Event) -> Optional[dict[str, Any]]:
         if event.type == EventType.ASSESSMENT_COMPLETE:
-            await self._handle_assessment(event)
+            return await self._handle_assessment(event)
         elif event.type == EventType.STUDENT_QUESTION:
-            await self._handle_student_question(event)
+            return await self._handle_student_question(event)
         elif event.type == EventType.STUDENT_MESSAGE:
-            await self._handle_student_message(event)
+            return await self._handle_student_message(event)
         elif event.type == EventType.ENGAGEMENT_ALERT:
             await self._handle_engagement_alert(event)
+        return None
 
     async def _handle_assessment(self, event: Event) -> None:
         learner_id = event.learner_id
@@ -72,17 +103,43 @@ class TutorAgent(BaseAgent):
         attempt_key = self._build_attempt_key(learner_id, knowledge_id, question, correct_answer)
 
         if question or student_answer:
+            submission_context = {
+                "question": question,
+                "student_answer": student_answer,
+                "correct_answer": correct_answer,
+                "evaluation_feedback": evaluation_feedback,
+                "explanation": str(event.data.get("explanation", "")),
+            }
+            self._recent_submissions.setdefault(learner_id, {})[knowledge_id] = submission_context
             self._add_to_history(
                 learner_id,
                 role="student",
                 content=self._format_submission_summary(question, student_answer, correct_answer),
                 knowledge_id=knowledge_id,
                 context_type="submission",
+                **submission_context,
             )
 
         if is_correct:
             self._student_attempts[attempt_key] = 0
             self._hint_history.pop(attempt_key, None)
+            if question or correct_answer or evaluation_feedback:
+                reply = self._build_correct_answer_reply(
+                    knowledge_id=knowledge_id,
+                    question=question,
+                    student_answer=student_answer,
+                    correct_answer=correct_answer,
+                    evaluation_feedback=evaluation_feedback,
+                )
+                self._record_teacher_reply(learner_id, knowledge_id, reply, "correct_answer")
+                await self._emit_teaching_response(
+                    learner_id=learner_id,
+                    knowledge_id=knowledge_id,
+                    reply=reply,
+                    context_type="correct_answer",
+                    teaching_style="confirmation",
+                    correlation_id=event.correlation_id,
+                )
             return
 
         attempts = self._student_attempts.get(attempt_key, 0) + 1
@@ -112,6 +169,7 @@ class TutorAgent(BaseAgent):
             return
 
         llm_service = get_llm_service()
+        learner_context = self._build_learner_context(learner_id)
         reply = await self._generate_distinct_reply(
             learner_id=learner_id,
             knowledge_id=knowledge_id,
@@ -127,6 +185,7 @@ class TutorAgent(BaseAgent):
                 session_history=self._get_history(learner_id),
                 avoid_responses=avoid_responses,
                 variant_offset=variant_offset,
+                learner_context=learner_context,
             ),
         )
         self._record_teacher_reply(learner_id, knowledge_id, reply, "wrong_answer")
@@ -154,6 +213,8 @@ class TutorAgent(BaseAgent):
         )
 
         llm_service = get_llm_service()
+        learner_context = self._build_learner_context(learner_id)
+        recent_submission = self._get_recent_submission(learner_id, knowledge_id)
         reply = await self._generate_distinct_reply(
             learner_id=learner_id,
             knowledge_id=knowledge_id,
@@ -164,6 +225,8 @@ class TutorAgent(BaseAgent):
                 session_history=self._get_history(learner_id),
                 avoid_responses=avoid_responses,
                 variant_offset=variant_offset,
+                learner_context=learner_context,
+                recent_submission=recent_submission,
             ),
         )
         self._record_teacher_reply(learner_id, knowledge_id, reply, "question")
@@ -190,6 +253,7 @@ class TutorAgent(BaseAgent):
         )
 
         llm_service = get_llm_service()
+        learner_context = self._build_learner_context(learner_id)
         reply = await self._generate_distinct_reply(
             learner_id=learner_id,
             knowledge_id=knowledge_id,
@@ -200,6 +264,7 @@ class TutorAgent(BaseAgent):
                 session_history=self._get_history(learner_id),
                 avoid_responses=avoid_responses,
                 variant_offset=variant_offset,
+                learner_context=learner_context,
             ),
         )
         self._record_teacher_reply(learner_id, knowledge_id, reply, "message")
@@ -237,6 +302,7 @@ class TutorAgent(BaseAgent):
             hint_level = HintLevel.TARGETED
 
         llm_service = get_llm_service()
+        learner_context = self._build_learner_context(learner_id)
         reply = await self._generate_distinct_reply(
             learner_id=learner_id,
             knowledge_id=knowledge_id,
@@ -248,6 +314,7 @@ class TutorAgent(BaseAgent):
                 session_history=self._get_history(learner_id),
                 avoid_responses=avoid_responses,
                 variant_offset=variant_offset,
+                learner_context=learner_context,
             ),
         )
         logger.info(
@@ -357,6 +424,35 @@ class TutorAgent(BaseAgent):
             parts.append(f"参考答案：{correct_answer}")
         return "；".join(parts) if parts else "我刚做完了一道题。"
 
+    def _build_correct_answer_reply(
+        self,
+        knowledge_id: str,
+        question: str,
+        student_answer: str,
+        correct_answer: str,
+        evaluation_feedback: str,
+    ) -> TeachingReply:
+        answer = correct_answer or student_answer or "这个答案"
+        if knowledge_id.startswith("vocab") and "submit" in f"{question} {answer}".lower():
+            response = (
+                f"对，这里选“{answer}”。关键是空格后面直接接的是“their essays”这个名词短语，"
+                "submit 本身可以直接接“提交的东西”，所以用 submit something，不需要加 to。"
+            )
+        elif evaluation_feedback:
+            response = f"对，这次判断是正确的。{evaluation_feedback}"
+        else:
+            response = f"对，这里选“{answer}”。你已经抓住了关键线索，接下来可以再用同样方法判断一题。"
+
+        return TeachingReply(
+            response=response,
+            generation_mode="local_policy",
+            response_variant="correct-confirmation",
+            history_scope="topic_thread",
+        )
+
+    def _get_recent_submission(self, learner_id: str, knowledge_id: str) -> dict[str, str] | None:
+        return self._recent_submissions.get(learner_id, {}).get(knowledge_id)
+
     def _build_attempt_key(
         self,
         learner_id: str,
@@ -401,6 +497,22 @@ class TutorAgent(BaseAgent):
 
     def _get_topic_history(self, learner_id: str, knowledge_id: str) -> list[dict[str, Any]]:
         return list(self._topic_history.get(learner_id, {}).get(knowledge_id, []))
+
+    def _build_learner_context(self, learner_id: str) -> str:
+        model = self.get_learner_model(learner_id)
+        progress = model.get_overall_progress()
+        weak = model.get_weak_points(limit=5)
+        total_points = progress.get("total_knowledge_points", 0)
+        avg_mastery = progress.get("avg_mastery", 0.0)
+        total_attempts = progress.get("total_attempts", 0)
+        parts = [
+            f"已学{total_points}个知识点",
+            f"平均掌握度{avg_mastery:.0%}",
+            f"总答题{total_attempts}次",
+        ]
+        if weak:
+            parts.append("薄弱项：" + "、".join(w.knowledge_id for w in weak))
+        return "，".join(parts)
 
     def _recent_teacher_responses(
         self,

@@ -1,10 +1,11 @@
 """
+怎么量化"一个学生对某个知识点掌握了多少"？
 学习者模型 -- 贝叶斯知识追踪 (BKT)。
 
 每个学习者有一个持久化的知识状态模型，记录其对每个知识点的掌握程度。
 使用贝叶斯知识追踪算法，通过学生的答题表现实时更新mastery概率。
 
-面试要点：
+要点：
 - BKT 四个参数：P(L₀)初始掌握, P(T)转移, P(G)猜测, P(S)失误
 - 为什么用Beta分布：能表达不确定性，(alpha, beta)参数对直觉友好
 - 与 IRT（项目反应理论）的区别：BKT追踪动态变化，IRT是静态模型
@@ -13,7 +14,7 @@
 import logging
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -24,23 +25,24 @@ class MasteryLevel(str, Enum):
     """掌握度等级（用于前端展示和课程规划）。"""
 
     NOT_STARTED = "not_started"  # 未学习
-    BEGINNER = "beginner"  # 初学 (0 - 0.3)
-    DEVELOPING = "developing"  # 发展中 (0.3 - 0.6)
-    PROFICIENT = "proficient"  # 熟练 (0.6 - 0.85)
-    MASTERED = "mastered"  # 掌握 (0.85 - 1.0)
+    BEGINNER = "beginner"  # 初学 (0 - 0.3) 答对过几题，但很不稳定
+    DEVELOPING = "developing"  # 发展中 (0.3 - 0.6) 有一定基础，但还容易出错
+    PROFICIENT = "proficient"  # 熟练 (0.6 - 0.85) 大部分情况能答对
+    MASTERED = "mastered"  # 掌握 (0.85 - 1.0) 基本不会忘了
 
 
 class KnowledgeState(BaseModel):
     """单个知识点的掌握状态。"""
 
     knowledge_id: str
-    mastery: float = 0.1  # P(L) 当前掌握概率
+    mastery: float = 0.1  # P(L) 当前掌握概率 BKT 算法的输出
     alpha: float = 1.0  # Beta分布参数α（成功次数+1）
-    beta: float = 9.0  # Beta分布参数β（失败次数+1）
+    beta: float = 9.0  # Beta分布参数β（失败次数+1）  Beta 分布的先验假设：初始认为学生掌握程度较低（P(L₀)=0.1）
     attempts: int = 0
     correct_count: int = 0
     last_attempt: datetime | None = None
     streak: int = 0  # 连续正确次数
+
 
     @property
     def level(self) -> MasteryLevel:
@@ -59,7 +61,8 @@ class KnowledgeState(BaseModel):
         """置信度：数据越多，置信度越高。"""
         total = self.alpha + self.beta
         return min(1.0, total / 20.0)
-
+# 除以 20 意味着大约答题 20 次后置信度达到 1.0（满分）。
+# 这是经验值——答题太少时 mastery 不太可信，答题多了就稳定了
 
 class BKTParams(BaseModel):
     """贝叶斯知识追踪参数（可按知识点/学科调整）。"""
@@ -82,8 +85,8 @@ class LearnerModel:
 
     def __init__(self, learner_id: str, bkt_params: BKTParams | None = None) -> None:
         self.learner_id = learner_id
-        self.bkt = bkt_params or BKTParams()
-        self.knowledge_states: dict[str, KnowledgeState] = {}
+        self.bkt = bkt_params or BKTParams()   #可以按照学生定制 后续优化方向
+        self.knowledge_states: dict[str, KnowledgeState] = {} # 学生所有知识点状态 知识点ID：知识点掌握状态
         self.session_start: datetime = datetime.now()
         self.total_interactions: int = 0
         self.metadata: dict[str, Any] = {}
@@ -136,8 +139,12 @@ class LearnerModel:
         p_obs = p_l * p_obs_given_l + (1 - p_l) * p_obs_given_not_l
         p_l_given_obs = (p_l * p_obs_given_l) / p_obs if p_obs > 0 else p_l
 
-        # 学习转移
-        p_l_new = p_l_given_obs + (1 - p_l_given_obs) * self.bkt.p_transit
+        # 学习转移只在答对后应用。答错时保留后验结果，避免出现
+        # “答错一次反而 mastery 上升”的产品反直觉表现。
+        if is_correct:
+            p_l_new = p_l_given_obs + (1 - p_l_given_obs) * self.bkt.p_transit
+        else:
+            p_l_new = p_l_given_obs
 
         state.mastery = max(0.0, min(1.0, p_l_new))
         state.attempts += 1
@@ -191,123 +198,6 @@ class LearnerModel:
             ),
             "level_distribution": level_dist,
         }
-
-    def to_dict(self) -> dict[str, Any]:
-        """序列化为字典（用于持久化）。"""
-        return {
-            "learner_id": self.learner_id,
-            "knowledge_states": {
-                kid: state.model_dump() for kid, state in self.knowledge_states.items()
-            },
-            "total_interactions": self.total_interactions,
-            "session_start": self.session_start.isoformat(),
-            "metadata": self.metadata,
-        }
-
-    async def save_to_db(self, session: Any) -> None:
-        """
-        将学习者状态保存到PostgreSQL。
-
-        Args:
-            session: AsyncSession 数据库会话
-        """
-        from sqlalchemy import select
-        from models.database import Learner as LearnerDB
-        from models.database import KnowledgeState as KnowledgeStateDB
-
-        # 获取或创建Learner记录
-        result = await session.execute(
-            select(LearnerDB).where(LearnerDB.learner_id == self.learner_id)
-        )
-        learner_db = result.scalar_one_or_none()
-
-        if learner_db is None:
-            learner_db = LearnerDB(
-                learner_id=self.learner_id,
-                name=f"Learner {self.learner_id}",
-                metadata_=self.metadata,
-            )
-            session.add(learner_db)
-            await session.flush()
-
-        # 保存所有知识点状态
-        for kid, state in self.knowledge_states.items():
-            result = await session.execute(
-                select(KnowledgeStateDB).where(
-                    KnowledgeStateDB.learner_id == self.learner_id,
-                    KnowledgeStateDB.knowledge_id == kid,
-                )
-            )
-            existing = result.scalar_one_or_none()
-
-            if existing is None:
-                state_db = KnowledgeStateDB(
-                    learner_id=self.learner_id,
-                    knowledge_id=kid,
-                    mastery=state.mastery,
-                    alpha=state.alpha,
-                    beta=state.beta,
-                    attempts=state.attempts,
-                    correct_count=state.correct_count,
-                    streak=state.streak,
-                    last_attempt=state.last_attempt,
-                )
-                session.add(state_db)
-            else:
-                existing.mastery = state.mastery
-                existing.alpha = state.alpha
-                existing.beta = state.beta
-                existing.attempts = state.attempts
-                existing.correct_count = state.correct_count
-                existing.streak = state.streak
-                existing.last_attempt = state.last_attempt
-
-        await session.commit()
-        logger.info("[LearnerModel] Saved learner %s to database", self.learner_id)
-
-    @classmethod
-    async def load_from_db(cls, session: Any, learner_id: str) -> Optional["LearnerModel"]:
-        """
-        从PostgreSQL加载学习者状态。
-
-        Args:
-            session: AsyncSession 数据库会话
-            learner_id: 学习者ID
-
-        Returns:
-            LearnerModel 实例，如果不存在则返回None
-        """
-        from sqlalchemy import select
-        from models.database import KnowledgeState as KnowledgeStateDB
-
-        result = await session.execute(
-            select(KnowledgeStateDB).where(KnowledgeStateDB.learner_id == learner_id)
-        )
-        rows = result.scalars().all()
-
-        if not rows:
-            return None
-
-        model = cls(learner_id=learner_id)
-
-        for row in rows:
-            state = KnowledgeState(
-                knowledge_id=row.knowledge_id,
-                mastery=row.mastery,
-                alpha=row.alpha,
-                beta=row.beta,
-                attempts=row.attempts,
-                correct_count=row.correct_count,
-                streak=row.streak,
-                last_attempt=row.last_attempt,
-            )
-            model.knowledge_states[row.knowledge_id] = state
-
-        model.total_interactions = sum(s.attempts for s in model.knowledge_states.values())
-
-        logger.info("[LearnerModel] Loaded learner %s from database (%d knowledge points)",
-                    learner_id, len(model.knowledge_states))
-        return model
 
     def get_forgetting_curve(self, knowledge_id: str, days_since_last_review: float) -> float:
         """

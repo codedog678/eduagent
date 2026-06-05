@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     enable_db_logging: bool = True
+    enable_agent_llm_decisions: bool = False
+    llm_timeout_seconds: float = 12.0
 
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE),
