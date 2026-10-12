@@ -63,8 +63,9 @@ EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持�
 ```mermaid
 flowchart TD
     UI["React 学习界面"] --> API["FastAPI：REST / WebSocket"]
-    API --> ORCH["AgentOrchestrator"]
-    ORCH --> BUS["EventBus：异步发布与订阅"]
+    API --> HARNESS["LearningHarness：去重、超时与检查点"]
+    HARNESS --> ORCH["AgentOrchestrator"]
+    ORCH --> BUS["EventBus：进程内优先级队列"]
     BUS --> A["Assessment"]
     BUS --> T["Tutor"]
     BUS --> C["Curriculum"]
@@ -82,7 +83,7 @@ flowchart TD
     E --> LLM
     ORCH --> LLM
     BUS --> DB["PostgreSQL：事件日志"]
-    ORCH --> STATE["学习状态、答题记录与复习项目"]
+    HARNESS --> STATE["SQLite：执行记录、测验与学习检查点"]
     ORCH --> RESULT["教学反馈、策略、推荐与复习快照"]
     RESULT --> API
 ```
@@ -118,6 +119,22 @@ REST 与 WebSocket 交互统一经过 `LearningHarness`，按请求 ID 和内容
 
 当前采用单个后端进程串行执行交互，并以文件锁阻止多个 worker 共用存储。SQLite 为主链路学习状态与执行结果的权威存储；PostgreSQL 事件日志作为可选诊断记录，失败事件也可能出现在日志中。Docker 使用独立持久卷保存检查点。模型调用等外部副作用不承诺恰好一次。
 
+### 队列与存储
+
+事件队列使用 Python 标准库 `heapq`，保存在当前交互的内存中，不依赖数据库或外部消息服务。Agent 发布后续事件时只入队，当前处理器退出并释放锁后再执行后续事件。默认每次事件链最多入队 64 个事件，每个处理器超时为 15 秒，整次业务执行超时为 45 秒；等待前一个请求释放执行锁的时间不计入业务执行超时。
+
+SQLite 无需安装数据库服务或手动建表。`LearningHarness` 启动时在 `HARNESS_STORE_PATH` 指定的文件中自动创建以下表：
+
+| 表 | 用途 | 关键字段 |
+|---|---|---|
+| `runs` | 请求去重、状态查询和结果重放 | `learner`、`request`、`fingerprint`、`status`、`result`、`error`、`updated` |
+| `checkpoints` | 保存并恢复学习状态与 Agent 上下文 | `learner`、`state`（JSON） |
+| `quizzes` | 服务端保存题目、答案、提示与作答进度 | `id`、`learner`、`body`（JSON） |
+
+不设置路径时，默认文件位于仓库根目录的 `data/harness.sqlite3`；显式配置的相对路径从后端进程启动目录解析。Docker 使用 `/app/data/harness.sqlite3` 并挂载 `harnessdata` 持久卷。原有 PostgreSQL 表结构保持不变。
+
+进程重启后从最后一次已提交检查点恢复学习状态，未完成的内存事件队列不会续跑。上次中断的请求标记为失败，客户端以相同请求 ID 和内容重试时，重新执行整次交互；已经完成的请求直接返回保存结果。
+
 这是本地教学演示应用，学习者 ID 由客户端指定；独立作答、信心与耗时属于行为证据，不能直接视为真实能力或经过验证的情绪测量。
 
 ### 教学决策
@@ -147,7 +164,7 @@ Provider 按已配置的 Key 选择。LLM 用于答疑、错题解释、分级�
 |---|---|
 | 后端 | Python、FastAPI、Uvicorn、asyncio |
 | 模型调用 | Anthropic SDK、OpenAI SDK |
-| 数据与配置 | SQLAlchemy 异步 ORM、asyncpg、PostgreSQL、Pydantic |
+| 数据与配置 | SQLite、SQLAlchemy 异步 ORM、asyncpg、PostgreSQL、Pydantic |
 | 前端 | React 18、TypeScript、Ant Design、Vite |
 | 通信与部署 | REST、WebSocket、Docker Compose、Nginx |
 | 测试 | pytest、pytest-asyncio |
@@ -219,7 +236,7 @@ pip install -r requirements.txt
 uvicorn api.main:app --reload --host 0.0.0.0 --port 8888
 ```
 
-Windows 使用 `.venv\Scripts\activate` 激活虚拟环境。应用启动时初始化数据库表。
+当前 Harness 使用 Unix 文件锁，后端在 macOS 或 Linux 环境运行；Windows 可通过 WSL 或 Docker 启动。应用启动时自动创建 SQLite 执行表，并尝试初始化 PostgreSQL 数据表。
 
 在另一个终端启动前端：
 
