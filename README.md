@@ -9,10 +9,10 @@ EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持�
 ## 学习体验
 
 1. **选择知识点**：围绕词汇、语法、阅读、写作等英语知识点开始练习。
-2. **完成练习**：获取选择题并提交答案，记录作答表现与耗时。
-3. **获得反馈**：查看评估结果、导师解释和当前教学建议。
+2. **完成练习**：获取服务端保存的选择题，提交选项，可选记录把握程度。
+3. **获得反馈**：先获得判断反馈并重试，主动请求提示或查看答案与解析。
 4. **继续追问**：导师结合当前知识点的对话历史及最近题目回答问题。
-5. **接受渐进提示**：重复答错时，逐步获得元认知、支架和针对性提示。
+5. **接受渐进提示**：主动求助时，依次获得思路检查、学科判断框架和选项验证提示。
 6. **安排后续学习**：查看下一知识点推荐、复习快照、到期项目和学习分析。
 
 ## 教育设计
@@ -23,17 +23,19 @@ EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持�
 
 实现包含初始掌握、猜测、失误和学习转移参数；为保持答错反馈的直观性，学习转移仅在答对后应用。掌握状态被用于薄弱点识别、导师上下文及课程推荐。
 
+每道测验只有首次、未求助的作答更新掌握度与复习计划。重试、提示后作答和查看解析分别记录为辅助学习行为，便于区分独立表现与支架支持下的表现。把握程度可选，不额外增加问卷任务。
+
 ### 教学支架
 
-Tutor 根据当前题目、学生答案、掌握水平和近期对话生成反馈。提示分为三个层级：
+测验错答后保留思考机会，Tutor 先提供形成性反馈；答案与解析由学习者主动查看。测验提示使用本地教学策略，分为三个层级：
 
 | 层级 | 教学目的 |
 |---|---|
 | 元认知提示 | 引导学习者检查理解、回忆线索与思考方法 |
-| 支架提示 | 提供关键规则、组织框架或分析方向 |
-| 针对性提示 | 对当前困难提供更具体的指导 |
+| 支架提示 | 提供词汇、语法、阅读或写作的判断框架 |
+| 验证提示 | 引导代回选项、说明依据与排除干扰项 |
 
-提示级别随同一题目的求助进程升级。系统还检查近期回复的相似度，并在回复过于重复时再次生成。
+提示级别随同一测验的求助进程升级。自由答疑结合知识点历史生成回复，并检查近期回复的相似度。
 
 ### 知识依赖与间隔复习
 
@@ -102,11 +104,21 @@ student.submission
 
 ### 事件与上下文
 
-- `asyncio.gather` 并发分发给事件订阅者，各处理器分别捕获异常。
+- 子事件进入当前交互队列，当前处理器释放锁后再分发，按优先级及入队顺序执行。
 - 每次交互使用 `correlation_id` 关联事件链，支持按学习者、类型和交互查询。
 - 事件历史保存在内存中，并可写入 PostgreSQL。
 - Tutor 分别管理会话历史、知识点历史和最近题目上下文。
-- 学习者模型采用缓存优先、数据库懒加载，并在答题后保存状态。
+- 学习者模型、复习项目、导师对话和参与度状态从 Harness 检查点恢复。
+
+### Harness 执行边界
+
+REST 与 WebSocket 交互统一经过 `LearningHarness`，按请求 ID 和内容指纹去重。已完成请求返回已保存结果；同一 ID 换内容返回 `409`。客户端在网络失败时复用同一 ID 重试。
+
+事件链有处理器超时、总执行超时和步数预算；处理器失败会中止执行并回滚本地学习状态。SQLite 事务一起提交学习检查点、测验状态和结果，避免请求重放重复判分。中断的执行在下次启动标记失败，可重新执行。`/api/runs/{learner_id}/{request_id}` 提供执行状态和结果，失败记录包含诊断事件。
+
+当前采用单个后端进程串行执行交互，并以文件锁阻止多个 worker 共用存储。SQLite 为主链路学习状态与执行结果的权威存储；PostgreSQL 事件日志作为可选诊断记录，失败事件也可能出现在日志中。Docker 使用独立持久卷保存检查点。模型调用等外部副作用不承诺恰好一次。
+
+这是本地教学演示应用，学习者 ID 由客户端指定；独立作答、信心与耗时属于行为证据，不能直接视为真实能力或经过验证的情绪测量。
 
 ### 教学决策
 
@@ -127,7 +139,7 @@ student.submission
 
 Provider 按已配置的 Key 选择。LLM 用于答疑、错题解释、分级提示、候选知识点推荐，以及可选的教学策略生成。
 
-出题优先使用对应知识点的本地题库；未命中题库时尝试 LLM 生成。选择题依据标准答案判定；无标准答案的作答支持 LLM 评估。未配置模型或模型调用失败时，各业务方法采用相应的本地反馈与兜底内容。
+出题优先使用对应知识点的本地题库；未命中题库时尝试 LLM 生成。服务端校验题目结构、选项唯一性与答案索引，再保存并只向客户端返回题干、选项和测验 ID。暂无有效题目时给出可重试提示。判分依据保存的答案，客户端不能传入标准答案。
 
 ## 技术栈
 
@@ -191,6 +203,10 @@ DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/edu_agent
 ENABLE_DB_LOGGING=true
 ENABLE_AGENT_LLM_DECISIONS=false
 LLM_TIMEOUT_SECONDS=12
+HARNESS_STORE_PATH=data/harness.sqlite3
+HARNESS_TIMEOUT_SECONDS=45
+HARNESS_MAX_STEPS=64
+QUIZ_TTL_SECONDS=86400
 ```
 
 在后端终端执行：
@@ -223,15 +239,17 @@ Vite 在 `3000` 端口提供页面，并将 `/api` 与 `/ws` 代理到后端 `88
 |---|---|---|
 | GET | `/api/health` | 服务与模型配置状态 |
 | POST | `/api/demo/init` | 初始化指定学习者的演示数据 |
-| POST | `/api/submit` | 提交已判定的答题结果 |
+| POST | `/api/submit` | 记录自我报告，不更新测验掌握度 |
 | POST | `/api/question` | 围绕知识点提问 |
 | POST | `/api/message` | 发送学习消息 |
-| POST | `/api/quiz/generate` | 获取测验题 |
-| POST | `/api/quiz/answer` | 判定作答并触发教学流程 |
+| POST | `/api/quiz/generate` | 以学习者 ID、请求 ID 获取测验；推进模式校验前置知识 |
+| POST | `/api/quiz/answer` | 以测验 ID、选项索引判分并触发教学流程 |
+| POST | `/api/quiz/hint` | 主动获取提示 |
+| POST | `/api/quiz/reveal` | 查看答案与解析并结束本题 |
+| GET | `/api/runs/{learner_id}/{request_id}` | 查询执行状态与保存结果 |
 | GET | `/api/progress/{learner_id}` | 学习进度与薄弱点 |
 | GET | `/api/knowledge-graph` | 知识节点与学习顺序 |
 | GET | `/api/review-schedule/{learner_id}` | 复习计划与保持率估计 |
-| POST | `/api/review/complete` | 更新复习结果 |
 | GET | `/api/analytics/overview` | 整体答题统计 |
 | GET | `/api/analytics/{learner_id}` | 学习者分析 |
 | GET | `/api/statistics/{learner_id}` | 答题次数、正确率与耗时 |
@@ -249,6 +267,8 @@ curl -X POST http://localhost:8888/api/question \
 ```
 
 交互响应包含 `correlation_id`、`teaching_response`、`teaching_decision`、`agent_insights`、`next_topic_recommendation`、`review_snapshot` 和 `interaction_events` 等字段；具体内容随交互类型变化。
+
+测验作答还包含 `learning_evidence`（独立性、尝试次数、提示使用、把握程度）和 `execution`（请求 ID、执行状态）。旧 `/api/review/complete` 返回 `410`，复习通过测验统一更新。分析中的题数与正确率对应独立作答，耗时与辅助行为展示最近 200 次作答。
 
 ### WebSocket
 
@@ -274,6 +294,7 @@ curl -X POST http://localhost:8888/api/question \
 | `python/api/websocket.py` | WebSocket 连接与交互 |
 | `python/agents/` | 四个角色及事件处理基类 |
 | `python/core/event_bus.py` | 事件分发、历史与日志 |
+| `python/core/harness.py` | 执行预算、请求去重、原子检查点与服务端测验 |
 | `python/core/learner_model.py` | 掌握度更新与学习状态 |
 | `python/core/knowledge_graph.py` | 知识依赖与路径算法 |
 | `python/core/spaced_repetition.py` | SM-2 复习算法 |
@@ -297,7 +318,8 @@ python -m pytest \
   tests/test_agents.py \
   tests/test_agent_integration.py \
   tests/v2/test_event_bus.py \
-  tests/v2/test_knowledge_graph.py -q
+  tests/v2/test_knowledge_graph.py \
+  tests/test_learning_harness.py -q
 
 # API 测试
 python -m pytest tests/test_api.py -v

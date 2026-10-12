@@ -8,6 +8,7 @@ WebSocket 实时通信端点。
 
 import json
 import logging
+import uuid
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
@@ -49,28 +50,28 @@ async def websocket_endpoint(websocket: WebSocket, learner_id: str):
             action = data.get("action", "")
 
             orch = websocket.app.state.orchestrator
-
-            if action == "submit":
-                result = await orch.submit_answer(
-                    learner_id,
-                    data.get("knowledge_id", ""),
-                    data.get("is_correct", False),
-                    data.get("time_spent_seconds", 0),
-                )
-            elif action == "question":
-                result = await orch.ask_question(
-                    learner_id,
-                    data.get("knowledge_id", ""),
-                    data.get("question", ""),
-                )
-            elif action == "message":
-                result = await orch.send_message(
-                    learner_id,
-                    data.get("message", ""),
-                    data.get("knowledge_id", "general"),
-                )
-            else:
+            if action not in {"submit", "question", "message"}:
                 await manager.send_to_learner(learner_id, {"error": f"Unknown action: {action}"})
+                continue
+            async def operation():
+                if action == "submit":
+                    result = await orch.submit_answer(
+                        learner_id, data.get("knowledge_id", ""), data.get("is_correct", False),
+                        data.get("time_spent_seconds", 0),
+                        submission_context={"independent": False})
+                elif action == "question":
+                    result = await orch.ask_question(
+                        learner_id, data.get("knowledge_id", ""), data.get("question", ""))
+                else:
+                    result = await orch.send_message(
+                        learner_id, data.get("message", ""), data.get("knowledge_id", "general"))
+                return result, None
+            from fastapi import HTTPException
+            try:
+                result = await orch.harness.run(
+                    learner_id, data.get("request_id") or str(uuid.uuid4()), data, operation)
+            except HTTPException as exc:
+                await websocket.send_json({"error": exc.detail, "status": exc.status_code})
                 continue
 
             for event in result.get("interaction_events", []):

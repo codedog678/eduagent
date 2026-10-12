@@ -11,8 +11,19 @@ from api.main import app
 
 
 @pytest_asyncio.fixture
-async def client():
+async def client(tmp_path, monkeypatch):
     """创建测试客户端。"""
+    from config.settings import settings
+    monkeypatch.setattr(settings, "harness_store_path", str(tmp_path / "api.sqlite3"))
+    monkeypatch.setattr(settings, "enable_db_logging", False)
+    from api.orchestrator import AgentOrchestrator
+    async def no_database(self):
+        return None
+    monkeypatch.setattr(AgentOrchestrator, "init_database", no_database)
+    from core.memory_manager import MemoryManager
+    async def empty(self, learner, session=None):
+        return None
+    monkeypatch.setattr(MemoryManager, "_load_learner_from_db", empty)
     async with app.router.lifespan_context(app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:

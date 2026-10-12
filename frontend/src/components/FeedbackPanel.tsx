@@ -28,7 +28,6 @@ function formatPercent(value: number | null | undefined): string {
 
 export default function FeedbackPanel({
   interaction,
-  quiz,
   onAdvanceToNextTopic,
 }: FeedbackPanelProps) {
   if (!interaction) {
@@ -77,9 +76,11 @@ export default function FeedbackPanel({
                     正确答案: {evaluation.correct_answer}
                   </Text>
                 )}
-                {!positive && quiz?.explanation && (
+                {interaction.learning_evidence && (
                   <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-                    核心要点: {quiz.explanation}
+                    {interaction.learning_evidence.independent
+                      ? '首次独立作答，已记录掌握度证据'
+                      : '辅助练习，记录重试表现与提示使用'}
                   </Text>
                 )}
               </>

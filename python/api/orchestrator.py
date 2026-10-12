@@ -31,10 +31,12 @@ class AgentOrchestrator:
     """
 
     def __init__(self, enable_db_logging: bool = False) -> None:
-        self.event_bus = EventBus(enable_db_logging=enable_db_logging)
+        self.event_bus = EventBus(enable_db_logging=enable_db_logging,
+                                  max_steps=settings.harness_max_steps)
         self.memory_manager = MemoryManager()
         self.learner_models: dict[str, LearnerModel] = {}
         self._db_initialized = False
+        self.harness = None
 
         self.assessment = AssessmentAgent(
             name="AssessmentAgent",
@@ -75,6 +77,10 @@ class AgentOrchestrator:
             logger.error("Failed to close database: %s", exc)
 
     async def get_learner_model(self, learner_id: str) -> LearnerModel:
+        if self.harness:
+            self.harness.load(learner_id)
+        if learner_id in self.learner_models:
+            return self.learner_models[learner_id]
         model = await self.memory_manager.get_or_load(learner_id)
         self.learner_models[learner_id] = model
         return model
@@ -131,7 +137,7 @@ class AgentOrchestrator:
         )
 
         #保存学习者模型状态
-        if self._db_initialized:
+        if self._db_initialized and not self.harness:
             await self._save_learner_state(
                 learner_id=learner_id,
                 knowledge_id=knowledge_id,
@@ -220,7 +226,7 @@ class AgentOrchestrator:
         correlation_id: str,
         limit: int = 30,
     ) -> list[Event]:
-        return await self.event_bus.get_event_history_from_db(
+        return self.event_bus.get_history(
             learner_id=learner_id,
             correlation_id=correlation_id,
             limit=limit,
@@ -412,6 +418,15 @@ class AgentOrchestrator:
             return fallback
         try:
             parsed = json.loads(response.content)
+            if not isinstance(parsed, dict):
+                return fallback
+            if parsed.get("strategy", fallback["strategy"]) not in {
+                "answer_question", "encourage", "remediate", "review", "advance", "practice"
+            } or parsed.get("priority", "normal") not in {"normal", "high"}:
+                return fallback
+            if any(not isinstance(parsed.get(key, fallback[key]), str)
+                   for key in ("summary", "next_action", "rationale")):
+                return fallback
         except Exception:
             return fallback
 

@@ -31,6 +31,9 @@ services:
       - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
       - MODEL_ID=${MODEL_ID:-claude-3-sonnet-20240229}
       - ENABLE_DB_LOGGING=true
+      - HARNESS_STORE_PATH=/app/data/harness.sqlite3
+    volumes:
+      - harnessdata:/app/data
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,3 +50,4 @@ services:
 
 volumes:
   pgdata:
+  harnessdata:

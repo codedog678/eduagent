@@ -14,6 +14,8 @@
 import asyncio
 import logging
 import uuid
+import heapq
+from contextvars import ContextVar
 from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, Coroutine, Optional
@@ -86,6 +88,13 @@ class Event(BaseModel):
 EventHandler = Callable[[Event], Coroutine[Any, Any, None]]
 #类型检查工具 必须是异步函数 必须接收 Event 参数
 
+
+class ExecutionError(RuntimeError):
+    """事件链未完整执行，调用方必须回滚本地学习状态。"""
+
+
+_active_queue: ContextVar = ContextVar("event_queue", default=None)
+
 class EventBus:
     """
     异步事件总线，支持发布-订阅模式。
@@ -101,12 +110,15 @@ class EventBus:
 
     MAX_HISTORY = 1000  # 最大历史记录数，防止内存泄漏
 
-    def __init__(self, enable_db_logging: bool = False) -> None:
+    def __init__(self, enable_db_logging: bool = False, max_steps: int = 64,
+                 handler_timeout: float = 15.0) -> None:
         self._subscribers: dict[EventType, list[EventHandler]] = {}  #订阅表：哪个事件类型有哪些处理函数
         self._event_history: list[Event] = [] #内存中的事件历史（最近1000条）
         self._lock = asyncio.Lock()  # 用于异步处理锁
         self._enable_db_logging = enable_db_logging  #是否把事件持久化到 PostgreSQL
         self._correlation_chains: dict[str, list[Event]] = {}  # correlation_id -> 事件链
+        self.max_steps = max_steps
+        self.handler_timeout = handler_timeout
 
     def subscribe(self, event_type: EventType, handler: EventHandler) -> None:
         """订阅某类事件：Agent 在初始化时调用这个方法，告诉 EventBus自己对哪些事件感兴趣。
@@ -127,6 +139,29 @@ class EventBus:
                 del self._subscribers[event_type]
 
     async def publish(self, event: Event) -> None:
+        # 子事件只入队；当前 handler 退出并释放 Agent 锁后才执行。
+        active = _active_queue.get()
+        if active is not None and active["bus"] is self:
+            if active["count"] >= self.max_steps:
+                raise ExecutionError("event step budget exceeded")
+            if event.learner_id != active["learner"]:
+                raise ExecutionError("cross-learner event rejected")
+            event.correlation_id = active["correlation"]
+            active["count"] += 1
+            heapq.heappush(active["queue"], (-event.priority.value, active["count"], event))
+            return
+        active = {"bus": self, "queue": [], "count": 1, "learner": event.learner_id,
+                  "correlation": event.correlation_id}
+        heapq.heappush(active["queue"], (-event.priority.value, 1, event))
+        token = _active_queue.set(active)
+        try:
+            while active["queue"]:
+                _, _, queued = heapq.heappop(active["queue"])
+                await self._dispatch(queued)
+        finally:
+            _active_queue.reset(token)
+
+    async def _dispatch(self, event: Event) -> None:
         """
         发布事件到总线，异步通知所有订阅者。
 
@@ -147,6 +182,11 @@ class EventBus:
                 if event.correlation_id not in self._correlation_chains:
                     self._correlation_chains[event.correlation_id] = []
                 self._correlation_chains[event.correlation_id].append(event)
+                if len(self._correlation_chains) > self.MAX_HISTORY:
+                    del self._correlation_chains[next(iter(self._correlation_chains))]
+                self._correlation_chains[event.correlation_id] = (
+                    self._correlation_chains[event.correlation_id][-self.MAX_HISTORY:]
+                )
 
         logger.info(
             "[EventBus] %s -> %s (learner=%s, priority=%s, correlation=%s)",
@@ -167,8 +207,9 @@ class EventBus:
             logger.debug("No handlers for event type %s", event.type.value)
             return
 
-        tasks = [self._safe_handle(handler, event) for handler in handlers]
-        await asyncio.gather(*tasks)
+        # 固定订阅顺序便于重现；失败立即中止，不把部分结果冒充成功。
+        for handler in handlers:
+            await self._safe_handle(handler, event)
 
     async def _log_event_to_db(self, event: Event) -> None:
         """
@@ -203,13 +244,16 @@ class EventBus:
     async def _safe_handle(self, handler: EventHandler, event: Event) -> None:
         """安全执行handler，捕获异常避免影响其他订阅者（Mesh 架构的容错机制，每个 handler 独立 try-catch）"""
         try:
-            await handler(event)
-        except Exception:
+            await asyncio.wait_for(handler(event), timeout=self.handler_timeout)
+        except Exception as exc:
             logger.exception(
                 "Error in handler for event %s from %s",
                 event.type.value,
                 event.source,
             )
+            if isinstance(exc, ExecutionError):
+                raise
+            raise ExecutionError(f"{event.type.value}: {type(exc).__name__}") from exc
 
     def get_history(
         self,
@@ -257,6 +301,8 @@ class EventBus:
         Returns:
             Event列表
         """
+        if not self._enable_db_logging:
+            return self.get_history(learner_id, event_type, correlation_id, limit)
         try:
             from models.session import async_session
             from models.database import EventLog

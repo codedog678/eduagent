@@ -167,13 +167,16 @@ class CurriculumAgent(BaseAgent):
         return None
 
     async def _handle_mastery_update(self, event: Event) -> None:
+        if not event.data.get("independent", True):
+            return
         learner_id = event.learner_id
         knowledge_id = event.data.get("knowledge_id", "")
         mastery = float(event.data.get("mastery", 0.0))
 
-        quality = self._mastery_to_quality(mastery)
+        quality = (4 if event.data["is_correct"] else 1) if "is_correct" in event.data else self._mastery_to_quality(mastery)
         review_item = self._get_review_item(learner_id, knowledge_id)
         self.sr.review(review_item, quality)
+        self.clear_reminder(learner_id, knowledge_id)
         strategy = await self._build_curriculum_strategy(learner_id, knowledge_id, mastery)
 
         await self.emit(
@@ -355,6 +358,17 @@ class CurriculumAgent(BaseAgent):
             return fallback
         try:
             parsed = json.loads(response.content)
+            if not isinstance(parsed, dict):
+                return fallback
+            action = parsed.get("next_action", fallback_action)
+            target = parsed.get("target_knowledge_id", fallback_target)
+            allowed = ({c["id"] for c in candidates} if action == "advance" else
+                       {d["knowledge_id"] for d in due_items} if action == "review" else
+                       {knowledge_id})
+            if action not in {"advance", "review", "remediate", "practice"} or target not in allowed:
+                return fallback
+            if any(not isinstance(parsed.get(k, fallback[k]), str) for k in ("plan", "reason")):
+                return fallback
         except Exception:
             return fallback
 
@@ -470,10 +484,6 @@ class CurriculumAgent(BaseAgent):
         items = self._review_items.get(learner_id, {})
 
         if action == "slow_down":
-            for item in items.values():
-                item.interval_days *= 1.5
-                base_time = item.last_review or datetime.now()
-                item.next_review = base_time + timedelta(days=item.interval_days)
             await self.emit(
                 EventType.ENCOURAGEMENT,
                 learner_id,
@@ -484,10 +494,7 @@ class CurriculumAgent(BaseAgent):
                 correlation_id=event.correlation_id,
             )
         elif action == "speed_up":
-            for item in items.values():
-                item.interval_days = max(1, item.interval_days * 0.7)
-                base_time = item.last_review or datetime.now()
-                item.next_review = base_time + timedelta(days=item.interval_days)
+            logger.info("Challenge suggested for %s; review evidence remains unchanged", learner_id)
 
     def get_reminders(self, learner_id: str) -> list[dict[str, Any]]:
         reminders = self._reminders.get(learner_id, [])

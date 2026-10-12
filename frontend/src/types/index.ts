@@ -1,10 +1,10 @@
 // frontend/src/types/index.ts
 
 export interface Quiz {
+  quiz_id: string
+  knowledge_id: string
   question: string
   options: string[]
-  correct_index: number
-  explanation: string
   source?: string
   difficulty?: number
 }
@@ -51,6 +51,13 @@ export interface TeachingDecision {
 }
 
 export interface InteractionResult {
+  learning_evidence?: {
+    independent: boolean
+    mastery_updated: boolean
+    attempt: number
+    hints_used: number
+    outcome: string
+  }
   learner_id: string
   knowledge_id: string
   correlation_id: string

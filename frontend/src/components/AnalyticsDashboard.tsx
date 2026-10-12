@@ -20,6 +20,8 @@ interface AnalyticsPayload {
     wrong_answers: number
     accuracy: number
     hints_used: number
+    guided_attempts: number
+    answers_revealed: number
     knowledge_points_covered: string[]
     avg_time_per_question: number
     last_activity: string | null
@@ -110,7 +112,7 @@ export default function AnalyticsDashboard({ learnerId }: { learnerId: string })
         <Col xs={12} sm={6}>
           <Card>
             <Statistic
-              title="总题数"
+              title="独立作答数"
               value={stats.total_questions}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#2563eb' }}
@@ -151,6 +153,9 @@ export default function AnalyticsDashboard({ learnerId }: { learnerId: string })
         </Col>
       </Row>
 
+      <Alert type="info" style={{ marginBottom: 16 }}
+        message={`辅助练习 ${stats.guided_attempts || 0} 次 · 主动查看解析 ${stats.answers_revealed || 0} 次`}
+        description="掌握度使用首次独立作答更新；重试与求助用于观察学习策略。耗时与辅助记录展示最近 200 次作答。" />
       <Row gutter={[16, 16]}>
         {/* 知识点分布 */}
         <Col xs={24} lg={12}>
@@ -172,7 +177,8 @@ export default function AnalyticsDashboard({ learnerId }: { learnerId: string })
                       <Text strong>{count}</Text>
                     </div>
                     <Progress
-                      percent={stats.total_questions > 0 ? (count / stats.total_questions) * 100 : 0}
+                      percent={stats.knowledge_points_covered.length > 0
+                        ? (count / stats.knowledge_points_covered.length) * 100 : 0}
                       strokeColor={info.color}
                       size="small"
                       showInfo={false}

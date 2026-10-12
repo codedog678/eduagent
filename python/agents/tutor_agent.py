@@ -90,6 +90,26 @@ class TutorAgent(BaseAgent):
         return None
 
     async def _handle_assessment(self, event: Event) -> None:
+        if event.data.get("protected_quiz"):
+            correct = event.data.get("is_correct", False)
+            reply = TeachingReply(
+                response=("判断正确。你可以用一道新题检验是否能独立运用。"
+                          if correct else
+                          "先保留你的解题思路，重新检查题干线索。需要帮助时可以请求提示，或主动查看解析。"),
+                generation_mode="local_policy", response_variant="formative-feedback",
+                history_scope="topic_thread",
+            )
+            self._add_to_history(event.learner_id, "student",
+                                 event.data.get("student_answer", ""),
+                                 knowledge_id=event.data.get("knowledge_id"),
+                                 context_type="submission")
+            self._record_teacher_reply(event.learner_id, event.data.get("knowledge_id", ""),
+                                       reply, "formative_feedback")
+            await self._emit_teaching_response(
+                event.learner_id, event.data.get("knowledge_id", ""), reply,
+                "formative_feedback", "confirmation" if correct else "reflection",
+                event.correlation_id)
+            return
         learner_id = event.learner_id
         knowledge_id = event.data.get("knowledge_id", "")
         mastery = float(event.data.get("mastery", 0.0))
@@ -544,6 +564,9 @@ class TutorAgent(BaseAgent):
         }
 
         state: dict[str, Any] = {}
+        state["conversation_history"] = self._conversation_history.get(learner_id, [])
+        state["topic_history"] = self._topic_history.get(learner_id, {})
+        state["recent_submissions"] = self._recent_submissions.get(learner_id, {})
         if attempts_data:
             state["student_attempts"] = attempts_data
         if hint_data:
@@ -551,6 +574,9 @@ class TutorAgent(BaseAgent):
         return state or None
 
     def load_state(self, learner_id: str, state_data: dict[str, Any]) -> None:
+        self._conversation_history[learner_id] = state_data.get("conversation_history", [])
+        self._topic_history[learner_id] = state_data.get("topic_history", {})
+        self._recent_submissions[learner_id] = state_data.get("recent_submissions", {})
         for suffix, count in state_data.get("student_attempts", {}).items():
             self._student_attempts[f"{learner_id}:{suffix}"] = count
         for suffix, count in state_data.get("hint_history", {}).items():

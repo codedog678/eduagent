@@ -1,9 +1,9 @@
 // frontend/src/components/QuizPanel.tsx
-import { Card, Radio, Button, Typography, Space, Spin } from 'antd'
+import { Alert, Card, Radio, Button, Typography, Space, Spin } from 'antd'
 import { SendOutlined, ReloadOutlined } from '@ant-design/icons'
 import type { Quiz } from '../types'
 
-const { Title, Text, Paragraph } = Typography
+const { Text, Paragraph } = Typography
 
 interface QuizPanelProps {
   quiz: Quiz | null
@@ -12,6 +12,13 @@ interface QuizPanelProps {
   onSelectOption: (index: number) => void
   onGenerateQuiz: () => void
   onSubmitQuiz: () => void
+  busy: boolean
+  finished: boolean
+  support: string
+  confidence: number | null
+  onConfidence: (value: number | null) => void
+  onHint: () => void
+  onReveal: () => void
 }
 
 export default function QuizPanel({
@@ -21,6 +28,7 @@ export default function QuizPanel({
   onSelectOption,
   onGenerateQuiz,
   onSubmitQuiz,
+  busy, finished, support, confidence, onConfidence, onHint, onReveal,
 }: QuizPanelProps) {
   return (
     <Card
@@ -28,7 +36,7 @@ export default function QuizPanel({
         <Space>
           <span style={{ fontSize: 16, fontWeight: 600 }}>测验练习</span>
           <Text type="secondary" style={{ fontSize: 13 }}>
-            题库动态生成，提交后获取导师指导
+            先独立判断，再按需获取提示
           </Text>
         </Space>
       }
@@ -38,6 +46,7 @@ export default function QuizPanel({
           icon={<ReloadOutlined />}
           onClick={onGenerateQuiz}
           loading={loading}
+          disabled={busy}
         >
           {quiz ? '新测验' : '生成测验'}
         </Button>
@@ -68,6 +77,7 @@ export default function QuizPanel({
           </Card>
 
           <Radio.Group
+            disabled={busy || finished}
             value={selectedOption}
             onChange={(e) => onSelectOption(e.target.value)}
             style={{ width: '100%' }}
@@ -92,16 +102,29 @@ export default function QuizPanel({
               ))}
             </Space>
           </Radio.Group>
+          <Space wrap>
+            <Text type="secondary">把握程度（可选）</Text>
+            <Radio.Group value={confidence} disabled={busy || finished}
+              onChange={(event) => onConfidence(event.target.value)}
+              options={[{ label: '不确定', value: 0.25 }, { label: '较确定', value: 0.75 },
+                { label: '很确定', value: 1 }]} />
+          </Space>
+          {support && <Alert type="info" message={support} />}
+          <Space>
+            <Button disabled={busy || finished} onClick={onHint}>给我一个提示</Button>
+            <Button disabled={busy} onClick={onReveal}>查看答案与解析</Button>
+          </Space>
 
           <Button
             type="primary"
             icon={<SendOutlined />}
             onClick={onSubmitQuiz}
-            disabled={selectedOption === null}
+            disabled={selectedOption === null || finished || busy}
+            loading={busy}
             block
             size="large"
           >
-            提交答案
+            {finished ? '本题已完成，开始新题检验' : '提交 / 重试答案'}
           </Button>
         </Space>
       )}

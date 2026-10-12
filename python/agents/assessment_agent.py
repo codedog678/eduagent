@@ -65,7 +65,10 @@ class AssessmentAgent(BaseAgent):
 
         # 1. 更新掌握度
         model = self.get_learner_model(learner_id)
-        state = model.update_mastery(knowledge_id, is_correct)
+        old_mastery = model.get_state(knowledge_id).mastery
+        independent = data.get("independent", True)
+        state = (model.update_mastery(knowledge_id, is_correct) if independent
+                 else model.get_state(knowledge_id))
 
         # 2. 分析错误模式
         error_patterns = []
@@ -101,6 +104,8 @@ class AssessmentAgent(BaseAgent):
                 "is_weakness": is_weakness,
                 "is_strong_point": is_strong_point,
                 "assessment_strategy": strategy,
+                "independent": independent,
+                "is_correct": is_correct,
             },
             correlation_id=event.correlation_id,
         )
@@ -134,6 +139,8 @@ class AssessmentAgent(BaseAgent):
                 "correct_answer": data.get("correct_answer", ""),
                 "evaluation_feedback": data.get("evaluation_feedback", ""),
                 "assessment_strategy": strategy,
+                "protected_quiz": data.get("protected_quiz", False),
+                "independent": independent,
             },
             correlation_id=event.correlation_id,
         )
@@ -141,9 +148,9 @@ class AssessmentAgent(BaseAgent):
         return {
             "mastery_update": {
                 "knowledge_id": knowledge_id,
-                "old_mastery": state.mastery - (0.1 if is_correct else -0.05),
+                "old_mastery": old_mastery,
                 "new_mastery": state.mastery,
-                "delta": 0.1 if is_correct else -0.05,
+                "delta": state.mastery - old_mastery,
                 "attempts": state.attempts,
                 "correct_count": state.correct_count,
                 "streak": state.streak,
@@ -211,6 +218,16 @@ class AssessmentAgent(BaseAgent):
             return fallback
         try:
             parsed = json.loads(response.content)
+            if not isinstance(parsed, dict):
+                return fallback
+            if parsed.get("recommended_action", fallback_action) not in {"advance", "practice", "remediate"}:
+                return fallback
+            confidence = parsed.get("confidence", fallback["confidence"])
+            if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1:
+                return fallback
+            if any(not isinstance(parsed.get(k, fallback[k]), str)
+                   for k in ("diagnosis", "student_message")):
+                return fallback
         except Exception:
             return fallback
 

@@ -21,6 +21,7 @@ from api.websocket import ws_router
 from api.orchestrator import AgentOrchestrator
 from config.settings import settings
 from core.llm_service import get_llm_service
+from core.harness import LearningHarness
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,6 +39,9 @@ async def lifespan(app: FastAPI):
     # 创建编排器，启用数据库日志
     orchestrator = AgentOrchestrator(enable_db_logging=settings.enable_db_logging)
     app.state.orchestrator = orchestrator
+    orchestrator.harness = LearningHarness(
+        orchestrator, settings.harness_store_path, settings.harness_timeout_seconds,
+        settings.quiz_ttl_seconds)
 
     # 初始化数据库
     try:
@@ -55,10 +59,10 @@ async def lifespan(app: FastAPI):
         llm_info["config_source"],
     )
     logging.getLogger(__name__).info("Agent orchestrator started with 4 agents")
-    yield
-
-    # 关闭数据库连接
-    if orchestrator:
+    try:
+        yield
+    finally:
+        orchestrator.harness.close()
         await orchestrator.close_database()
     logging.getLogger(__name__).info("Shutting down")
 

@@ -411,6 +411,7 @@ class EngagementAgent(BaseAgent):
             "recent_results": engagement.recent_results[-20:],
             "recent_response_times": engagement.recent_response_times[-20:],
             "session_start": engagement.session_start.isoformat(),
+            "last_activity": engagement.last_activity.isoformat(),
         }
 
     def load_state(self, learner_id: str, state_data: dict[str, Any]) -> None:
@@ -424,6 +425,8 @@ class EngagementAgent(BaseAgent):
         engagement.recent_response_times = state_data.get("recent_response_times", [])
 
         session_start = state_data.get("session_start")
+        if state_data.get("last_activity"):
+            engagement.last_activity = datetime.fromisoformat(state_data["last_activity"])
         if session_start:
             try:
                 engagement.session_start = datetime.fromisoformat(session_start)

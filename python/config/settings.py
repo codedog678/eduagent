@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -60,6 +60,10 @@ class Settings(BaseSettings):
     enable_db_logging: bool = True
     enable_agent_llm_decisions: bool = False
     llm_timeout_seconds: float = 12.0
+    harness_store_path: str = str(PROJECT_ROOT / "data" / "harness.sqlite3")
+    harness_timeout_seconds: float = Field(default=45.0, gt=0)
+    harness_max_steps: int = Field(default=64, gt=0, le=1000)
+    quiz_ttl_seconds: float = Field(default=86400, gt=0)
 
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE),
