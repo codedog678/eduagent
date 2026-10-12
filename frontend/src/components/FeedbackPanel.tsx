@@ -1,6 +1,7 @@
 // frontend/src/components/FeedbackPanel.tsx
-import { Card, Tag, Typography, Descriptions, Alert } from 'antd'
+import { Alert, Button, Card, Descriptions, Tag, Typography } from 'antd'
 import {
+  ArrowRightOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   MessageOutlined,
@@ -8,11 +9,12 @@ import {
 import type { InteractionResult, Quiz } from '../types'
 import { KNOWLEDGE_OPTIONS } from '../types'
 
-const { Title, Text, Paragraph } = Typography
+const { Text, Paragraph } = Typography
 
 interface FeedbackPanelProps {
   interaction: InteractionResult | null
   quiz: Quiz | null
+  onAdvanceToNextTopic?: (knowledgeId: string) => void
 }
 
 function getKnowledgeLabel(knowledgeId: string): string {
@@ -24,13 +26,17 @@ function formatPercent(value: number | null | undefined): string {
   return `${Math.round(value * 100)}%`
 }
 
-export default function FeedbackPanel({ interaction, quiz }: FeedbackPanelProps) {
+export default function FeedbackPanel({
+  interaction,
+  quiz,
+  onAdvanceToNextTopic,
+}: FeedbackPanelProps) {
   if (!interaction) {
     return (
       <Card>
         <div style={{ textAlign: 'center', padding: 24, color: '#64748b' }}>
           <MessageOutlined style={{ fontSize: 32, marginBottom: 8 }} />
-          <div>完成一次测验或提问后，互动反馈将显示在这里</div>
+          <div>完成一次答题或提问后，互动反馈会显示在这里</div>
         </div>
       </Card>
     )
@@ -38,13 +44,13 @@ export default function FeedbackPanel({ interaction, quiz }: FeedbackPanelProps)
 
   const evaluation = interaction.evaluation
   const teaching = interaction.teaching_response
+  const nextTopic = interaction.next_topic_recommendation
   const review = interaction.review_snapshot
   const positive = evaluation?.is_correct ?? false
 
   return (
     <Card title="最近互动反馈" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* 互动标题 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <Text strong style={{ fontSize: 15 }}>
@@ -59,7 +65,6 @@ export default function FeedbackPanel({ interaction, quiz }: FeedbackPanelProps)
           </Tag>
         </div>
 
-        {/* 评估结果 */}
         {evaluation && (
           <Alert
             type={positive ? 'success' : 'warning'}
@@ -82,7 +87,6 @@ export default function FeedbackPanel({ interaction, quiz }: FeedbackPanelProps)
           />
         )}
 
-        {/* 导师响应 */}
         {teaching && (
           <Card
             size="small"
@@ -101,7 +105,6 @@ export default function FeedbackPanel({ interaction, quiz }: FeedbackPanelProps)
           </Card>
         )}
 
-        {/* 教学决策 */}
         {interaction.teaching_decision && (
           <Card
             size="small"
@@ -131,7 +134,33 @@ export default function FeedbackPanel({ interaction, quiz }: FeedbackPanelProps)
           </Card>
         )}
 
-        {/* 复习快照 */}
+        {nextTopic && (
+          <Card
+            size="small"
+            title="下一知识点"
+            extra={<Tag color="green">可推进</Tag>}
+            style={{ background: '#f0fdf4', border: '1px solid #86efac' }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <Text strong>{getKnowledgeLabel(nextTopic.knowledge_id)}</Text>
+                {nextTopic.reason ? (
+                  <Paragraph style={{ marginTop: 8, marginBottom: 0 }}>
+                    {nextTopic.reason}
+                  </Paragraph>
+                ) : null}
+              </div>
+              <Button
+                type="primary"
+                icon={<ArrowRightOutlined />}
+                onClick={() => onAdvanceToNextTopic?.(nextTopic.knowledge_id)}
+              >
+                进入下一知识点
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {review && (
           <Card size="small" title="复习快照" style={{ background: '#f8fafc' }}>
             <Descriptions size="small" column={2}>
@@ -141,23 +170,24 @@ export default function FeedbackPanel({ interaction, quiz }: FeedbackPanelProps)
               <Descriptions.Item label="记忆保持率">
                 {formatPercent(review.retention)}
               </Descriptions.Item>
-              <Descriptions.Item label="紧急程度">
-                {review.urgency}
-              </Descriptions.Item>
-              <Descriptions.Item label="待复习">
-                {review.is_due ? '是' : '否'}
-              </Descriptions.Item>
+              <Descriptions.Item label="紧急程度">{review.urgency}</Descriptions.Item>
+              <Descriptions.Item label="待复习">{review.is_due ? '是' : '否'}</Descriptions.Item>
             </Descriptions>
             {review.top_due_items.length > 0 && (
               <div style={{ marginTop: 12 }}>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  待复习项目:
+                  待复习项目
                 </Text>
                 {review.top_due_items.slice(0, 3).map((item) => (
-                  <div key={`${item.knowledge_id}-${item.next_review}`} style={{ fontSize: 12, marginTop: 4 }}>
+                  <div
+                    key={`${item.knowledge_id}-${item.next_review}`}
+                    style={{ fontSize: 12, marginTop: 4 }}
+                  >
                     <Text>{getKnowledgeLabel(item.knowledge_id)}</Text>
                     <Text type="secondary" style={{ marginLeft: 8 }}>
-                      {item.overdue_days > 0 ? `逾期 ${item.overdue_days} 天` : new Date(item.next_review).toLocaleString()}
+                      {item.overdue_days > 0
+                        ? `逾期 ${item.overdue_days} 天`
+                        : new Date(item.next_review).toLocaleString()}
                     </Text>
                   </div>
                 ))}

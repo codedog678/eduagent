@@ -32,7 +32,7 @@ export default function ReviewReminder({ learnerId, onStartReview }: ReviewRemin
 
     async function fetchSchedule() {
       try {
-        const response = await fetch(`/api/review/schedule/${learnerId}`)
+        const response = await fetch(`/api/review-schedule/${learnerId}`)
         const data = (await response.json()) as ReviewSchedule
         if (mounted) {
           setSchedule(data)

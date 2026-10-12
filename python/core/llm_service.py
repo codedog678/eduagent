@@ -158,6 +158,34 @@ def _history_to_text(conversation_history: list[dict[str, Any]] | None, limit: i
     return "\n".join(lines)
 
 
+def _extract_compatible_text_block(block: Any) -> tuple[str, str] | tuple[None, None]:
+    """Best-effort extraction for Anthropic-compatible gateways."""
+    candidates = ("text", "thinking", "content", "output_text", "summary")
+    for field in candidates:
+        value = getattr(block, field, None)
+        if isinstance(value, str) and value.strip():
+            return value.strip(), field
+        if isinstance(value, list):
+            parts: list[str] = []
+            for item in value:
+                if isinstance(item, str) and item.strip():
+                    parts.append(item.strip())
+                    continue
+                nested = getattr(item, "text", None)
+                if isinstance(nested, str) and nested.strip():
+                    parts.append(nested.strip())
+            if parts:
+                return "\n".join(parts), field
+
+    if isinstance(block, dict):
+        for field in candidates:
+            value = block.get(field)
+            if isinstance(value, str) and value.strip():
+                return value.strip(), field
+
+    return None, None
+
+
 def _deterministic_index(seed: str, size: int, offset: int = 0) -> int:
     if size <= 0:
         return 0
@@ -359,14 +387,37 @@ class LLMService:
                     messages=[{"role": "user", "content": prompt}],
                 )
                 content = ""
+                content_source = ""
+                block_types = [getattr(block, "type", type(block).__name__) for block in response.content]
                 for block in response.content:
-                    if getattr(block, "type", "") == "text" and getattr(block, "text", ""):
-                        content = block.text
+                    if getattr(block, "type", "") != "text":
+                        continue
+                    extracted, field = _extract_compatible_text_block(block)
+                    if extracted:
+                        content = extracted
+                        content_source = field or "text"
                         break
+
+                if not content:
+                    for block in response.content:
+                        extracted, field = _extract_compatible_text_block(block)
+                        if extracted:
+                            content = extracted
+                            content_source = (
+                                f"{getattr(block, 'type', type(block).__name__)}.{field or 'unknown'}"
+                            )
+                            logger.warning(
+                                "Anthropic-compatible gateway returned no text block; using %s instead. "
+                                "Block types: %s",
+                                content_source,
+                                block_types,
+                            )
+                            break
+
                 if not content:
                     logger.warning(
                         "Anthropic returned no visible text block. Block types: %s",
-                        [getattr(block, "type", type(block).__name__) for block in response.content],
+                        block_types,
                     )
                     return LLMResponse(content="", model=self.model, usage={})
                 usage = {

@@ -27,7 +27,7 @@ export default function App() {
   const [quizStartedAt, setQuizStartedAt] = useState<number | null>(null)
 
   async function handleInitDemo() {
-    await fetch(`/api/learner/init?learner_id=${learnerId}`, { method: 'POST' })
+    await fetch(`/api/demo/init?learner_id=${learnerId}`, { method: 'POST' })
     window.location.reload()
   }
 
@@ -53,6 +53,14 @@ export default function App() {
   function handleStartReview(knowledgeId: string) {
     setKnowledgeId(knowledgeId)
     void handleGenerateQuiz(knowledgeId)
+  }
+
+  function handleAdvanceToNextTopic(nextKnowledgeId: string) {
+    if (!nextKnowledgeId) return
+    setKnowledgeId(nextKnowledgeId)
+    setSelectedOption(null)
+    setLatestInteraction(null)
+    void handleGenerateQuiz(nextKnowledgeId)
   }
 
   async function handleSubmitQuiz() {
@@ -90,7 +98,7 @@ export default function App() {
 
   async function handleQuestion() {
     if (!message.trim()) return
-    const response = await fetch('/api/learner/question', {
+    const response = await fetch('/api/question', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -140,7 +148,11 @@ export default function App() {
             {/* 右侧辅助区域 35% */}
             <Col xs={24} lg={8}>
               <ReviewReminder learnerId={learnerId} onStartReview={handleStartReview} />
-              <FeedbackPanel interaction={latestInteraction} quiz={quiz} />
+              <FeedbackPanel
+                interaction={latestInteraction}
+                quiz={quiz}
+                onAdvanceToNextTopic={handleAdvanceToNextTopic}
+              />
             </Col>
           </Row>
         ) : (

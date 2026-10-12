@@ -24,18 +24,30 @@ _async_engine: AsyncEngine | None = None
 _async_session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
+def _normalize_async_database_url(url: str) -> str:
+    """Accept common PostgreSQL URLs and force the asyncpg driver for async SQLAlchemy."""
+    if url.startswith("postgresql+asyncpg://"):
+        return url
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+    return url
+
+
 def get_engine() -> AsyncEngine:
     """获取或创建异步数据库引擎。"""
     global _async_engine
     if _async_engine is None:
+        database_url = _normalize_async_database_url(settings.database_url)
         _async_engine = create_async_engine(
-            settings.database_url,
+            database_url,
             echo=False,  # 生产环境关闭SQL日志
             pool_size=10,
             max_overflow=20,
             pool_pre_ping=True,  # 连接健康检查
         )
-        logger.info("Database engine created: %s", settings.database_url.split("@")[-1])
+        logger.info("Database engine created: %s", database_url.split("@")[-1])
     return _async_engine
 
 
