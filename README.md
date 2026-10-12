@@ -1,458 +1,310 @@
-# EduAgent — 多Agent智能教育与个性化学习系统
+# EduAgent
 
-<p align="center">
-  <strong>基于事件驱动Mesh架构的AI英语学习系统</strong><br>
-  4个专业AI Agent协作，提供个性化学习体验
-</p>
+**融合学习者建模、教学支架与间隔复习的多 Agent 英语学习应用。**
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.13+-blue?logo=python&logoColor=white" alt="Python 3.13+">
-  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React 18">
-  <img src="https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white" alt="FastAPI">
-  <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL">
-  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" alt="Docker Compose">
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
-</p>
+EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持组织为四个协作角色。系统使用事件驱动方式连接各角色，将学习者表现、知识点依赖和对话上下文用于教学反馈，并通过 React 界面呈现练习、答疑、复习及学习分析。
 
----
+项目结合教育技术中的个性化学习与教学支架设计，以及 Python 异步服务、LLM 集成和事件追踪等工程实践。
+
+## 学习体验
+
+1. **选择知识点**：围绕词汇、语法、阅读、写作等英语知识点开始练习。
+2. **完成练习**：获取选择题并提交答案，记录作答表现与耗时。
+3. **获得反馈**：查看评估结果、导师解释和当前教学建议。
+4. **继续追问**：导师结合当前知识点的对话历史及最近题目回答问题。
+5. **接受渐进提示**：重复答错时，逐步获得元认知、支架和针对性提示。
+6. **安排后续学习**：查看下一知识点推荐、复习快照、到期项目和学习分析。
+
+## 教育设计
+
+### 学习者建模
+
+系统按“学习者 × 知识点”维护掌握概率、尝试次数、正确次数和连续正确次数，利用 BKT（贝叶斯知识追踪）的观测更新估计掌握状态。
+
+实现包含初始掌握、猜测、失误和学习转移参数；为保持答错反馈的直观性，学习转移仅在答对后应用。掌握状态被用于薄弱点识别、导师上下文及课程推荐。
+
+### 教学支架
+
+Tutor 根据当前题目、学生答案、掌握水平和近期对话生成反馈。提示分为三个层级：
+
+| 层级 | 教学目的 |
+|---|---|
+| 元认知提示 | 引导学习者检查理解、回忆线索与思考方法 |
+| 支架提示 | 提供关键规则、组织框架或分析方向 |
+| 针对性提示 | 对当前困难提供更具体的指导 |
+
+提示级别随同一题目的求助进程升级。系统还检查近期回复的相似度，并在回复过于重复时再次生成。
+
+### 知识依赖与间隔复习
+
+英语知识点通过 DAG 表达前置依赖。课程角色检查已掌握知识，筛选可学习的候选节点，再结合学习者画像生成推荐。
+
+复习使用 SM-2 调整间隔与难度因子，同时根据掌握度、连续正确次数和距上次复习时间计算启发式记忆保持率，提供到期提醒和七天复习计划。
+
+### 学习状态支持
+
+系统结合近期正确率、连续答错、答题速度变化及会话时长估计学习状态，并提供鼓励、节奏调整或休息建议。状态估计用于选择支持策略。
+
+## 四个协作角色
+
+| Agent | 输入与职责 | 主要输出 |
+|---|---|---|
+| Assessment | 处理答题结果，更新掌握度，分析错误模式与薄弱点 | 掌握度更新、薄弱点事件、评估策略 |
+| Tutor | 处理评估结果、问题与消息，组织上下文和分级提示 | 教学回复、提示级别与生成方式 |
+| Curriculum | 响应掌握度和节奏变化，检查前置知识与复习状态 | 下一知识点、课程策略、复习安排 |
+| Engagement | 记录交互行为，估计学习状态并选择干预 | 状态建议、鼓励与节奏调整事件 |
+
+各角色运行在同一后端进程中，共享事件总线和学习者模型。Agent 自行订阅相关事件，编排器负责接收交互、发布初始事件、汇总结果并生成教学决策。
 
 ## 系统架构
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      React Frontend                         │
-│              (TypeScript + Vite, Port 3000)                 │
-└──────────────┬─────────────────────────┬────────────────────┘
-               │ REST API                │ WebSocket
-               ▼                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    FastAPI Backend                           │
-│                   (Python 3.13+, Port 8888)                 │
-│                                                             │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐   │
-│  │   REST API   │  │  Orchestrator │  │    WebSocket     │   │
-│  │  /api/...    │  │   协调器       │  │  /ws/{learner}  │   │
-│  └──────┬──────┘  └──────┬───────┘  └────────┬─────────┘   │
-│         │                │                    │              │
-│         ▼                ▼                    ▼              │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │              EventBus (异步发布/订阅)                   │    │
-│  └────┬──────────┬──────────┬──────────┬───────────────┘    │
-│       │          │          │          │                     │
-│       ▼          ▼          ▼          ▼                     │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌───────────────┐    │
-│  │Assessment│ │  Tutor  │ │Curriculum│ │  Engagement   │    │
-│  │ Agent    │ │  Agent  │ │  Agent   │ │    Agent      │    │
-│  │ BKT评估  │ │ 苏格拉底 │ │ 学习路径  │ │  情感识别      │    │
-│  └────┬────┘ └────┬────┘ └────┬────┘ └──────┬────────┘    │
-│       │           │           │              │              │
-│       ▼           ▼           ▼              ▼              │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                 LLM Service                         │    │
-│  │   Anthropic / OpenAI / MiniMax / DeepSeek / 模板回退  │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │               PostgreSQL 16 (Async)                  │    │
-│  └─────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    UI["React 学习界面"] --> API["FastAPI：REST / WebSocket"]
+    API --> ORCH["AgentOrchestrator"]
+    ORCH --> BUS["EventBus：异步发布与订阅"]
+    BUS --> A["Assessment"]
+    BUS --> T["Tutor"]
+    BUS --> C["Curriculum"]
+    BUS --> E["Engagement"]
+    A --> BUS
+    T --> BUS
+    C --> BUS
+    E --> BUS
+    A --> MODEL["共享学习者模型"]
+    T --> MODEL
+    C --> MODEL
+    T --> LLM["LLMService"]
+    A --> LLM
+    C --> LLM
+    E --> LLM
+    ORCH --> LLM
+    BUS --> DB["PostgreSQL：事件日志"]
+    ORCH --> STATE["学习状态、答题记录与复习项目"]
+    ORCH --> RESULT["教学反馈、策略、推荐与复习快照"]
+    RESULT --> API
 ```
 
-### 事件驱动 Mesh 架构
+一次答题的主要事件关系：
 
-系统采用 **事件驱动的Mesh架构**，Agent之间通过 `EventBus` 进行异步通信，无中心协调器：
+```text
+student.submission
+├── Assessment：更新学习者模型
+│   ├── assessment.mastery_updated → Curriculum：更新复习与课程建议
+│   ├── assessment.weakness_detected → Curriculum：分析补救路径
+│   └── assessment.complete
+│       ├── Tutor：生成教学反馈
+│       └── Engagement：估计学习状态与支持需求
+└── Engagement：记录答题行为
 
-1. 用户提交答案 → REST API 接收请求
-2. `EventBus` 发布 `AnswerSubmitted` 事件
-3. 4个Agent各自订阅感兴趣的事件，并行处理
-4. 各Agent发布结果事件（如 `MasteryUpdated`、`HintGenerated`）
-5. 前端通过 WebSocket 实时接收所有事件流
-
-每个交互都带有 `correlation_id`，可追踪完整事件链路。
-
----
-
-## 四大AI Agent
-
-### 1. AssessmentAgent — 知识掌握评估
-
-基于 **BKT（贝叶斯知识追踪）** 算法，实时更新学习者的知识掌握概率：
-
-- 每次答题后更新掌握度（P(L)），使用 Beta 分布拟合
-- 分析错误模式：概念性错误 / 程序性错误 / 粗心错误
-- 识别薄弱知识点，输出学习建议
-- 支持连击追踪（streak tracking）
-
-### 2. TutorAgent — 个性化辅导
-
-苏格拉底式教学，提供渐进式提示：
-
-- **第一级**：元认知提示 — 引导自主思考
-- **第二级**：脚手架提示 — 提供解题框架
-- **第三级**：定向提示 — 直接给出关键信息
-- 管理话题级对话上下文，支持追问和答疑
-
-### 3. CurriculumAgent — 学习路径规划
-
-基于 **知识图谱（DAG）** 和 **SM-2间隔重复** 算法：
-
-- 拓扑排序确定学习顺序（Kahn算法）
-- SM-2 算法安排复习计划（含难度因子）
-- 艾宾浩斯遗忘曲线预测记忆保持率
-- 根据掌握度动态调整推荐内容
-
-### 4. EngagementAgent — 参与度感知
-
-检测学习者情绪状态并触发干预：
-
-| 状态 | 干预策略 |
-|------|---------|
-| 专注 (focused) | 保持当前节奏，提供适当挑战 |
-| 困惑 (struggling) | 降低难度，提供脚手架提示 |
-| 沮丧 (frustrated) | 鼓励安慰，调整学习策略 |
-| 无聊 (bored) | 增加挑战性，切换学习内容 |
-| 疲劳 (fatigued) | 建议休息，安排轻松内容 |
-| 空闲 (idle) | 主动引导，推送学习提醒 |
-
----
-
-## 核心算法
-
-### BKT（贝叶斯知识追踪）
-
-```
-参数: P(L0)=初始掌握率, P(T)=学习率, P(G)=猜测率, P(S)=失误率
-更新: P(L|correct) = P(L)(1-P(S)) / P(L)(1-P(S)) + (1-P(L))P(G)
-      P(L|wrong)   = P(L)P(S) / P(L)P(S) + (1-P/L)(1-P(G))
+编排器汇总本次事件 → 教学决策 + 导师回复 + 推荐 + 复习快照
 ```
 
-### SM-2 间隔重复
+### 事件与上下文
 
-```
-难度因子 EF' = EF + (0.1 - (1-q)(0.08 + (1-q)*0.02))
-间隔天数 I(n) = I(n-1) * EF
-其中 q = 答题质量 (0-5)
-```
+- `asyncio.gather` 并发分发给事件订阅者，各处理器分别捕获异常。
+- 每次交互使用 `correlation_id` 关联事件链，支持按学习者、类型和交互查询。
+- 事件历史保存在内存中，并可写入 PostgreSQL。
+- Tutor 分别管理会话历史、知识点历史和最近题目上下文。
+- 学习者模型采用缓存优先、数据库懒加载，并在答题后保存状态。
 
-### 艾宾浩斯遗忘曲线
+### 教学决策
 
-```
-R = e^(-t/S)
-R: 记忆保持率, t: 经过时间, S: 记忆强度
-```
+默认使用本地策略汇总评估、课程、参与度与导师输出，选择答疑、补救、复习、推进、鼓励或继续练习等建议。
 
----
+设置 `ENABLE_AGENT_LLM_DECISIONS=true` 后，评估策略、课程策略、参与度判断和最终教学决策可使用 LLM 生成结构化建议；无有效输出时采用本地策略。下一知识点推荐还会检查模型返回的知识点是否属于候选集合。
+
+## 模型集成
+
+主运行链路使用 `python/core/llm_service.py`，支持 Anthropic、OpenAI、MiniMax 和 DeepSeek。
+
+| 优先级 | Provider | API Key | 模型配置 |
+|---|---|---|---|
+| 1 | Anthropic | `ANTHROPIC_API_KEY` | `MODEL_ID` |
+| 2 | OpenAI | `OPENAI_API_KEY` | `OPENAI_MODEL` |
+| 3 | MiniMax | `MINIMAX_API_KEY` | `MINIMAX_MODEL` |
+| 4 | DeepSeek | `DEEPSEEK_API_KEY` | `DEEPSEEK_MODEL` |
+
+Provider 按已配置的 Key 选择。LLM 用于答疑、错题解释、分级提示、候选知识点推荐，以及可选的教学策略生成。
+
+出题优先使用对应知识点的本地题库；未命中题库时尝试 LLM 生成。选择题依据标准答案判定；无标准答案的作答支持 LLM 评估。未配置模型或模型调用失败时，各业务方法采用相应的本地反馈与兜底内容。
 
 ## 技术栈
 
-### 后端
+| 层次 | 技术 |
+|---|---|
+| 后端 | Python、FastAPI、Uvicorn、asyncio |
+| 模型调用 | Anthropic SDK、OpenAI SDK |
+| 数据与配置 | SQLAlchemy 异步 ORM、asyncpg、PostgreSQL、Pydantic |
+| 前端 | React 18、TypeScript、Ant Design、Vite |
+| 通信与部署 | REST、WebSocket、Docker Compose、Nginx |
+| 测试 | pytest、pytest-asyncio |
 
-| 技术 | 用途 |
-|------|------|
-| Python 3.13+ | 主语言 |
-| FastAPI | 异步 REST API + WebSocket |
-| SQLAlchemy 2.0 | 异步 ORM（asyncpg 驱动） |
-| PostgreSQL 16 | 主数据库 |
-| Pydantic / pydantic-settings | 数据校验与配置管理 |
-| Anthropic SDK / OpenAI SDK | LLM 集成 |
-| Uvicorn | ASGI 服务器 |
-| pytest + pytest-asyncio | 测试框架 |
+## 快速开始：Docker
 
-### 前端
-
-| 技术 | 用途 |
-|------|------|
-| React 18 | UI 框架 |
-| TypeScript 5.5 | 类型安全 |
-| Ant Design 6 | UI 组件库 |
-| Vite 5 | 构建工具与开发服务器 |
-| WebSocket | 实时事件推送 |
-
-### 基础设施
-
-| 技术 | 用途 |
-|------|------|
-| Docker Compose | 多服务编排 |
-| Nginx | 静态文件服务 + 反向代理 |
-
----
-
-## 快速开始
-
-### 前置要求
-
-- Docker & Docker Compose
-- Git
-
-### 1. 克隆项目
+需要 Git、Docker 与 Docker Compose。
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/codedog678/eduagent.git
 cd eduagent
-```
-
-### 2. 配置环境变量
-
-```bash
 cp .env.example .env
-```
-
-编辑 `.env` 文件，至少配置一项 LLM Provider 的 API Key：
-
-```env
-# 任选其一（优先级从高到低）
-ANTHROPIC_API_KEY=sk-ant-xxxxx
-OPENAI_API_KEY=sk-xxxxx
-MINIMAX_API_KEY=xxxxx
-DEEPSEEK_API_KEY=xxxxx
-
-# 数据库
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/eduagent
-```
-
-> 💡 不配置任何 API Key 也可以运行，系统会回退到本地模板模式。
-
-### 3. 启动服务
-
-```bash
 docker compose up --build -d
 ```
 
-启动后访问：
+默认 Compose 配置通过 `ANTHROPIC_API_KEY`、`ANTHROPIC_BASE_URL` 和 `MODEL_ID` 向后端传入模型配置。可在根目录 `.env` 中填写：
+
+```dotenv
+ANTHROPIC_API_KEY=your-api-key
+ANTHROPIC_BASE_URL=https://api.anthropic.com
+MODEL_ID=your-model-id
+```
+
+不填写 Key 时使用本地模式。使用其他 Provider 的容器部署时，将对应变量加入 `python-api.environment`。
 
 | 服务 | 地址 |
-|------|------|
-| 前端界面 | http://localhost:3000 |
-| 后端 API | http://localhost:8888 |
+|---|---|
+| 学习界面 | http://localhost:3000 |
 | API 文档 | http://localhost:8888/docs |
 | 健康检查 | http://localhost:8888/api/health |
 
-### 4. 初始化演示数据
+可通过界面的初始化按钮，或以下请求创建演示数据：
 
 ```bash
-curl -X POST http://localhost:8888/api/demo/init
+curl -X POST 'http://localhost:8888/api/demo/init?learner_id=student_001'
 ```
 
----
+## 本地开发
 
-## 开发环境搭建
+后端可使用 Python 3.13+，与 `pyproject.toml` 的版本声明一致；依赖安装使用 `requirements.txt`。
 
-### 后端
+先在仓库根目录启动数据库：
+
+```bash
+docker compose up -d postgres
+cp .env.example .env
+```
+
+根目录 `.env` 中的本地数据库连接配置：
+
+```dotenv
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/edu_agent
+ENABLE_DB_LOGGING=true
+ENABLE_AGENT_LLM_DECISIONS=false
+LLM_TIMEOUT_SECONDS=12
+```
+
+在后端终端执行：
 
 ```bash
 cd python
-
-# 创建虚拟环境
-python -m venv .venv
-.venv/Scripts/activate        # Windows
-# source .venv/bin/activate   # macOS/Linux
-
-# 安装依赖
-pip install -e ".[dev]"
-
-# 启动数据库（需要本地 PostgreSQL 或使用 Docker）
-docker compose up -d postgres
-
-# 初始化数据库
-python -m scripts.init_db
-
-# 启动开发服务器
-uvicorn api.main:app --reload --port 8888
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8888
 ```
 
-### 前端
+Windows 使用 `.venv\Scripts\activate` 激活虚拟环境。应用启动时初始化数据库表。
+
+在另一个终端启动前端：
 
 ```bash
 cd frontend
-
-# 安装依赖
 npm install
-
-# 启动开发服务器（自动代理到后端 8888 端口）
 npm run dev
 ```
 
-访问 http://localhost:3000
+Vite 在 `3000` 端口提供页面，并将 `/api` 与 `/ws` 代理到后端 `8888` 端口。
 
----
+## API
 
-## API 参考
+以下路径由当前应用入口挂载，完整参数见 `/docs`。
 
-### REST 端点
+| 方法 | 路径 | 功能 |
+|---|---|---|
+| GET | `/api/health` | 服务与模型配置状态 |
+| POST | `/api/demo/init` | 初始化指定学习者的演示数据 |
+| POST | `/api/submit` | 提交已判定的答题结果 |
+| POST | `/api/question` | 围绕知识点提问 |
+| POST | `/api/message` | 发送学习消息 |
+| POST | `/api/quiz/generate` | 获取测验题 |
+| POST | `/api/quiz/answer` | 判定作答并触发教学流程 |
+| GET | `/api/progress/{learner_id}` | 学习进度与薄弱点 |
+| GET | `/api/knowledge-graph` | 知识节点与学习顺序 |
+| GET | `/api/review-schedule/{learner_id}` | 复习计划与保持率估计 |
+| POST | `/api/review/complete` | 更新复习结果 |
+| GET | `/api/analytics/overview` | 整体答题统计 |
+| GET | `/api/analytics/{learner_id}` | 学习者分析 |
+| GET | `/api/statistics/{learner_id}` | 答题次数、正确率与耗时 |
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| `GET` | `/api/v1/health` | 健康检查（含 LLM 状态） |
-| `POST` | `/api/v1/learner/init` | 初始化演示学习者数据 |
-| `POST` | `/api/v1/learner/submit` | 提交答题结果 |
-| `POST` | `/api/v1/learner/question` | 向导师提问 |
-| `POST` | `/api/v1/learner/message` | 发送通用消息 |
-| `GET` | `/api/v1/learner/progress/{learner_id}` | 获取学习者进度 |
-| `GET` | `/api/v1/knowledge/graph` | 获取完整知识图谱 |
-| `GET` | `/api/v1/analytics/overview` | 系统概览分析 |
-| `GET` | `/api/v1/analytics/{learner_id}` | 学习者个人分析 |
-| `GET` | `/api/v1/analytics/statistics/{learner_id}` | 学习统计数据 |
-| `GET` | `/api/v1/review/schedule/{learner_id}` | 复习计划与遗忘状态 |
-| `POST` | `/api/v1/review/complete` | 完成一次复习 |
-| `POST` | `/api/v1/quiz/generate` | 生成测验题目 |
-| `POST` | `/api/v1/quiz/answer` | 提交测验答案并获取评估 |
+提问示例：
+
+```bash
+curl -X POST http://localhost:8888/api/question \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "learner_id": "student_001",
+    "knowledge_id": "grammar_tenses",
+    "question": "一般过去时和现在完成时有什么区别？"
+  }'
+```
+
+交互响应包含 `correlation_id`、`teaching_response`、`teaching_decision`、`agent_insights`、`next_topic_recommendation`、`review_snapshot` 和 `interaction_events` 等字段；具体内容随交互类型变化。
 
 ### WebSocket
 
-连接：`ws://localhost:8888/ws/{learner_id}`
-
-**发送消息（JSON）：**
+连接 `ws://localhost:8888/ws/{learner_id}`，发送顶层 JSON 字段：
 
 ```json
 {
-  "action": "submit",
-  "data": {
-    "question_id": "q1",
-    "answer": "B",
-    "is_correct": true
-  }
+  "action": "question",
+  "knowledge_id": "grammar_tenses",
+  "question": "现在完成时什么时候使用？"
 }
 ```
 
-支持的 action：`submit` | `question` | `message`
+支持 `submit`、`question` 和 `message`。服务端完成本次处理后，逐条发送事件，消息包含 `event_type`、`source`、`data`、`timestamp` 和 `correlation_id`。
 
-**接收事件流：** 每个事件为独立的 JSON 消息，包含 `type`、`data`、`timestamp` 字段。
+## 代码导航
 
----
+| 路径 | 职责 |
+|---|---|
+| `python/api/main.py` | 应用入口与生命周期 |
+| `python/api/routes.py` | 当前 REST 接口 |
+| `python/api/orchestrator.py` | 组装角色、交互处理与决策汇总 |
+| `python/api/websocket.py` | WebSocket 连接与交互 |
+| `python/agents/` | 四个角色及事件处理基类 |
+| `python/core/event_bus.py` | 事件分发、历史与日志 |
+| `python/core/learner_model.py` | 掌握度更新与学习状态 |
+| `python/core/knowledge_graph.py` | 知识依赖与路径算法 |
+| `python/core/spaced_repetition.py` | SM-2 复习算法 |
+| `python/core/llm_service.py` | 主链路模型调用、提示与降级 |
+| `python/core/memory_manager.py` | 学习者模型缓存与持久化 |
+| `python/models/` | 数据表与异步数据库会话 |
+| `python/config/settings.py` | 环境变量和模型配置 |
+| `python/tests/` | 算法、Agent 协作及 API 测试 |
+| `frontend/src/App.tsx` | 学习交互主界面 |
+| `frontend/src/components/` | 练习、反馈、复习与分析组件 |
 
-## 数据库结构
+## 测试
 
-系统使用 6 张核心表：
-
-| 表名 | 说明 |
-|------|------|
-| `learners` | 学习者档案（ID、姓名、邮箱、元数据） |
-| `knowledge_states` | 知识点掌握状态（掌握度、Alpha/Beta参数、尝试次数、连击） |
-| `learning_records` | 答题历史（对错、用时、掌握度前后变化） |
-| `review_items` | SM-2 复习计划（难度因子、间隔天数、下次复习时间） |
-| `event_logs` | 事件溯源日志（事件类型、来源、数据、correlation_id） |
-| `agent_states` | Agent 运行时状态持久化（JSON 格式） |
-
----
-
-## 项目结构
-
-```
-eduagent/
-├── docker-compose.yml          # Docker 多服务编排
-├── .env.example                # 环境变量模板
-├── LICENSE                     # MIT License
-├── python/                     # 后端
-│   ├── Dockerfile
-│   ├── pyproject.toml
-│   ├── requirements.txt
-│   ├── api/                    # API 层
-│   │   ├── main.py             # FastAPI 入口
-│   │   ├── orchestrator.py     # Agent 协调器
-│   │   ├── websocket.py        # WebSocket 通道
-│   │   └── v1/                 # 版本化 API 路由
-│   │       ├── __init__.py     # 路由注册
-│   │       ├── health.py       # 健康检查
-│   │       ├── learner.py      # 学习者管理
-│   │       ├── knowledge.py    # 知识图谱
-│   │       ├── learning.py     # 学习路径
-│   │       ├── quiz.py         # 测验
-│   │       ├── analytics.py    # 数据分析
-│   │       └── review.py       # 复习计划
-│   ├── agents/                 # AI Agent 层
-│   │   ├── base.py             # Agent 抽象基类
-│   │   ├── assessment_agent.py # BKT 评估 Agent
-│   │   ├── tutor_agent.py      # 导师 Agent
-│   │   ├── curriculum_agent.py # 课程规划 Agent
-│   │   └── engagement_agent.py # 参与度 Agent
-│   ├── core/                   # 核心算法
-│   │   ├── event_bus.py        # 异步事件总线
-│   │   ├── learner_model.py    # BKT 算法实现
-│   │   ├── knowledge_graph.py  # 知识图谱（DAG）
-│   │   ├── spaced_repetition.py # SM-2 间隔重复
-│   │   ├── llm_service.py      # LLM 多Provider封装
-│   │   └── memory_manager.py   # 学习者状态缓存
-│   ├── llm/                    # LLM Provider 适配器
-│   │   ├── anthropic_adapter.py
-│   │   ├── openai_adapter.py
-│   │   ├── minimax_adapter.py
-│   │   ├── deepseek_adapter.py
-│   │   └── template_adapter.py # 本地模板回退
-│   ├── models/                 # 数据模型
-│   │   ├── database.py         # SQLAlchemy ORM
-│   │   └── session.py          # 异步会话管理
-│   ├── schemas/                # Pydantic 模型
-│   ├── services/               # 业务服务层
-│   ├── interaction/            # 对话管理
-│   ├── repositories/           # 数据访问层
-│   ├── config/
-│   │   └── settings.py         # 配置管理
-│   └── tests/                  # 测试套件
-│       ├── test_bkt.py         # BKT 算法测试
-│       ├── test_api.py         # API 端点测试
-│       └── test_agents.py      # Agent 集成测试
-└── frontend/                   # 前端
-    ├── Dockerfile
-    ├── package.json
-    ├── nginx.conf              # Nginx 反向代理配置
-    └── src/
-        ├── main.tsx
-        ├── App.tsx             # 主应用
-        ├── types/
-        │   └── index.ts        # TypeScript 类型定义
-        ├── components/
-        │   ├── Header.tsx      # 顶部导航栏
-        │   ├── KnowledgeSelect.tsx # 知识点选择
-        │   ├── QuizPanel.tsx   # 测验区
-        │   ├── QuestionInput.tsx # 向导师提问
-        │   ├── FeedbackPanel.tsx # 互动反馈
-        │   ├── ReviewReminder.tsx # 复习提醒
-        │   └── AnalyticsDashboard.tsx # 数据分析
-        └── hooks/
-            └── useWebSocket.ts # WebSocket 连接管理
-```
-
----
-
-## 运行测试
+在已安装依赖的后端环境中运行：
 
 ```bash
 cd python
 
-# 运行全部测试
-python -m pytest tests/ -v
+# 算法、事件总线与 Agent 协作
+python -m pytest \
+  tests/test_agents.py \
+  tests/test_agent_integration.py \
+  tests/v2/test_event_bus.py \
+  tests/v2/test_knowledge_graph.py -q
 
-# 仅运行 BKT 算法测试
-python -m pytest tests/test_bkt.py -v
-
-# 仅运行 API 测试
+# API 测试
 python -m pytest tests/test_api.py -v
 ```
 
----
-
-## LLM Provider 配置
-
-系统支持 4 种 LLM Provider，按优先级自动选择：
-
-| 优先级 | Provider | 环境变量 |
-|--------|----------|---------|
-| 1 | Anthropic | `ANTHROPIC_API_KEY` |
-| 2 | OpenAI | `OPENAI_API_KEY` |
-| 3 | MiniMax | `MINIMAX_API_KEY` |
-| 4 | DeepSeek | `DEEPSEEK_API_KEY` |
-
-**自动回退机制：** 未配置任何 API Key 时，系统使用 `TemplateAdapter` 提供本地模板化响应，无需网络连接即可完整运行。
-
-在 `.env` 中可指定默认 Provider：
-
-```env
-LLM_PROVIDER=anthropic   # 或 openai / minimax / deepseek
-LLM_MODEL=claude-sonnet-4-20250514
-```
-
----
+主链路 `LLMService.generate` 在 pytest 环境下跳过远程调用，使用业务降级逻辑验证流程。
 
 ## License
 
-[MIT License](LICENSE) © 2026
+[MIT](LICENSE)
