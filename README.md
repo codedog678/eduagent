@@ -6,12 +6,26 @@ EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持�
 
 项目结合教育技术中的个性化学习与教学支架设计，以及 Python 异步服务、LLM 集成和事件追踪等工程实践。
 
+Harness 的源码参考、设计和实施边界保存在 [设计文档](docs/harness-openmaic-design.md)。
+
+## 跨会话教学 Harness
+
+学生可以开始新会话，并继续同一知识点的教学线程。系统将公开对话、错题评估和受助记录保存在 Harness SQLite 中，为 Tutor 构建带来源和预算的上下文。
+
+配置远程模型后，Tutor 使用原生工具协议查询历史、阅读证据、查询知识关系或提出澄清问题。模型请求、工具次数和执行时间均受限，工具参数采用严格 schema，学习者范围由服务端执行上下文注入。未配置模型时保留明确标记的文本回退。
+
+导师提出问题后，本轮可以执行完成并进入“等待学生回答”状态；下一条同线程消息接续。回复、学习状态和证据提交成功后才返回成功，相同请求可重放，失败重试分别保留执行记录。前端提供教学历史和本轮互动记录。
+
+普通提问获取当前题目帮助也计为受助，随后答对不作为独立掌握度证据。`advance` 测验需先完成作答再进行本题答疑。
+
+配置见 `.env.example` 的 `TUTOR_*` 和 `ENABLE_TUTOR_TOOLS`。当前使用限定知识点的词项检索与时间排序；摘要、向量检索和中途工具恢复保留为后续阶段。当前演示 API 仍使用学习者 ID，多用户部署需接入登录主体认证。
+
 ## 学习体验
 
 1. **选择知识点**：围绕词汇、语法、阅读、写作等英语知识点开始练习。
 2. **完成练习**：获取服务端保存的选择题，提交选项，可选记录把握程度。
 3. **获得反馈**：先获得判断反馈并重试，主动请求提示或查看答案与解析。
-4. **继续追问**：导师结合当前知识点的对话历史及最近题目回答问题。
+4. **继续追问**：导师结合当前知识点的持久化历史与公开题目回答问题，支持跨会话接续。
 5. **接受渐进提示**：主动求助时，依次获得思路检查、学科判断框架和选项验证提示。
 6. **安排后续学习**：查看下一知识点推荐、复习快照、到期项目和学习分析。
 
@@ -35,7 +49,7 @@ EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持�
 | 支架提示 | 提供词汇、语法、阅读或写作的判断框架 |
 | 验证提示 | 引导代回选项、说明依据与排除干扰项 |
 
-提示级别随同一测验的求助进程升级。自由答疑结合知识点历史生成回复，并检查近期回复的相似度。
+提示级别随同一测验的求助进程升级。自由答疑通过预算约束的上下文和原生工具查询历史；评估后的传统反馈路径保留近期回复相似度检查。
 
 ### 知识依赖与间隔复习
 
@@ -77,13 +91,16 @@ flowchart TD
     A --> MODEL["共享学习者模型"]
     T --> MODEL
     C --> MODEL
-    T --> LLM["LLMService"]
+    T --> RUNTIME["TutorRuntime：ContextBuilder、工具循环与 hooks"]
+    RUNTIME --> LLM["LLMService：文本 / 原生工具协议"]
+    RUNTIME --> HISTORY["LearningHistory：教学消息与评估证据"]
     A --> LLM
     C --> LLM
     E --> LLM
     ORCH --> LLM
     BUS --> DB["PostgreSQL：事件日志"]
-    HARNESS --> STATE["SQLite：执行记录、测验与学习检查点"]
+    HARNESS --> STATE["SQLite：执行记录、教学证据、测验与学习检查点"]
+    HISTORY --> STATE
     ORCH --> RESULT["教学反馈、策略、推荐与复习快照"]
     RESULT --> API
 ```
@@ -106,22 +123,24 @@ student.submission
 ### 事件与上下文
 
 - 子事件进入当前交互队列，当前处理器释放锁后再分发，按优先级及入队顺序执行。
-- 每次交互使用 `correlation_id` 关联事件链，支持按学习者、类型和交互查询。
+- 每次交互使用 `correlation_id` 关联事件链；经过 Harness 时与 `run_id` 一致，`attempt_id` 区分重试，`parent_event_id` 记录事件因果关系。
 - 事件历史保存在内存中，并可写入 PostgreSQL。
-- Tutor 分别管理会话历史、知识点历史和最近题目上下文。
+- Tutor 保留近期对话缓存；REST 答疑从持久化主题线程读取公开消息与历史评估证据，按上下文预算选择来源。
 - 学习者模型、复习项目、导师对话和参与度状态从 Harness 检查点恢复。
 
 ### Harness 执行边界
 
 REST 与 WebSocket 交互统一经过 `LearningHarness`，按请求 ID 和内容指纹去重。已完成请求返回已保存结果；同一 ID 换内容返回 `409`。客户端在网络失败时复用同一 ID 重试。
 
-事件链有处理器超时、总执行超时和步数预算；处理器失败会中止执行并回滚本地学习状态。SQLite 事务一起提交学习检查点、测验状态和结果，避免请求重放重复判分。中断的执行在下次启动标记失败，可重新执行。`/api/runs/{learner_id}/{request_id}` 提供执行状态和结果，失败记录包含诊断事件。
+事件链有处理器超时、总执行超时和步数预算；处理器失败会中止执行并回滚本地学习状态。SQLite 事务一起提交学习检查点、测验状态、公开教学消息、学习证据和执行结果，避免请求重放重复判分。中断的执行在下次启动标记失败，可重新执行。`/api/runs/{learner_id}/{request_id}` 提供执行状态和结果，`/trace` 子路径提供各次执行尝试及步骤。
+
+REST `/question` 与 `/message` 通过 `converse` 接入长期证据和 TutorRuntime。执行状态为 `completed` 时，对话仍可处于 `awaiting_student`；下一条同线程消息接续待回答问题。原生工具循环默认最多请求模型 3 次、调用工具 4 次，拒绝调用同样消耗工具预算；重复工具调用 ID、输出截断及预算耗尽会中止本轮。未配置远程模型或关闭工具模式时使用文本路径，执行记录明确区分生成方式。
 
 当前采用单个后端进程串行执行交互，并以文件锁阻止多个 worker 共用存储。SQLite 为主链路学习状态与执行结果的权威存储；PostgreSQL 事件日志作为可选诊断记录，失败事件也可能出现在日志中。Docker 使用独立持久卷保存检查点。模型调用等外部副作用不承诺恰好一次。
 
 ### 队列与存储
 
-事件队列使用 Python 标准库 `heapq`，保存在当前交互的内存中，不依赖数据库或外部消息服务。Agent 发布后续事件时只入队，当前处理器退出并释放锁后再执行后续事件。默认每次事件链最多入队 64 个事件，每个处理器超时为 15 秒，整次业务执行超时为 45 秒；等待前一个请求释放执行锁的时间不计入业务执行超时。
+事件队列使用 Python 标准库 `heapq`，保存在当前交互的内存中，不依赖数据库或外部消息服务。Agent 发布后续事件时只入队，当前处理器退出并释放锁后再执行后续事件。默认每次事件链最多入队 64 个事件，普通处理器超时为 15 秒，REST 答疑的 Tutor 处理器超时为 40 秒，整次业务执行超时为 45 秒。Tutor 模型调用共用本轮剩余 deadline；上下文预算采用 UTF-8 字节估计，模型实际 usage 单独记录。等待前一个请求释放执行锁的时间不计入业务执行超时。
 
 SQLite 无需安装数据库服务或手动建表。`LearningHarness` 启动时在 `HARNESS_STORE_PATH` 指定的文件中自动创建以下表：
 
@@ -130,10 +149,19 @@ SQLite 无需安装数据库服务或手动建表。`LearningHarness` 启动时�
 | `runs` | 请求去重、状态查询和结果重放 | `learner`、`request`、`fingerprint`、`status`、`result`、`error`、`updated` |
 | `checkpoints` | 保存并恢复学习状态与 Agent 上下文 | `learner`、`state`（JSON） |
 | `quizzes` | 服务端保存题目、答案、提示与作答进度 | `id`、`learner`、`body`（JSON） |
+| `learning_sessions` | 学习会话及归属 | `id`、`learner`、`created` |
+| `learning_threads` | 跨会话主题线程 | `id`、`learner`、`knowledge` |
+| `conversation_messages` | 公开教学消息 | `id`、`learner`、`session`、`thread`、`run`、`role`、`content` |
+| `learning_evidence` | 评估与受助证据 | `id`、`learner`、`thread`、`run`、`quiz`、`kind`、`body` |
+| `run_attempts` | 各次执行与重试结果 | `id`、`learner`、`request`、`run`、`status`、`reason` |
+| `run_steps` | 执行步骤及来源关联 | `attempt`、`seq`、`body` |
+| `pending_questions` | 导师追问及后续接续 | `id`、`learner`、`thread`、`run`、`question`、`answered_by` |
 
 不设置路径时，默认文件位于仓库根目录的 `data/harness.sqlite3`；显式配置的相对路径从后端进程启动目录解析。Docker 使用 `/app/data/harness.sqlite3` 并挂载 `harnessdata` 持久卷。原有 PostgreSQL 表结构保持不变。
 
 进程重启后从最后一次已提交检查点恢复学习状态，未完成的内存事件队列不会续跑。上次中断的请求标记为失败，客户端以相同请求 ID 和内容重试时，重新执行整次交互；已经完成的请求直接返回保存结果。
+
+长期教学证据从升级后的交互开始积累，旧检查点中的有限历史不会自动回填新消息表。细粒度步骤在成功或正常异常时提交；进程硬退出前未提交的步骤可能丢失。来源列表表示提供给上下文或工具读取的证据，不代表已验证模型逐句引用。
 
 这是本地教学演示应用，学习者 ID 由客户端指定；独立作答、信心与耗时属于行为证据，不能直接视为真实能力或经过验证的情绪测量。
 
@@ -154,7 +182,9 @@ SQLite 无需安装数据库服务或手动建表。`LearningHarness` 启动时�
 | 3 | MiniMax | `MINIMAX_API_KEY` | `MINIMAX_MODEL` |
 | 4 | DeepSeek | `DEEPSEEK_API_KEY` | `DEEPSEEK_MODEL` |
 
-Provider 按已配置的 Key 选择。LLM 用于答疑、错题解释、分级提示、候选知识点推荐，以及可选的教学策略生成。
+Provider 按已配置的 Key 选择。LLM 用于答疑、错题解释、候选知识点推荐，以及可选的教学策略生成；当前测验的分级提示采用本地策略。
+
+`ENABLE_TUTOR_TOOLS=true` 时，REST 答疑使用原生工具协议，注册历史检索、来源读取、知识关系查询及 `ask_student`；绑定有效练习题时提供公开题目查询工具。模型工具参数不包含学习者 ID，服务端校验角色允许的工具、资源归属与严格参数结构。`advance` 模式禁止本题答疑和提示，主动查看答案会结束测验。
 
 出题优先使用对应知识点的本地题库；未命中题库时尝试 LLM 生成。服务端校验题目结构、选项唯一性与答案索引，再保存并只向客户端返回题干、选项和测验 ID。暂无有效题目时给出可重试提示。判分依据保存的答案，客户端不能传入标准答案。
 
@@ -190,6 +220,8 @@ MODEL_ID=your-model-id
 
 不填写 Key 时使用本地模式。使用其他 Provider 的容器部署时，将对应变量加入 `python-api.environment`。
 
+容器使用代码中的默认 Tutor 配置。若需通过根目录 `.env` 调整 `ENABLE_TUTOR_TOOLS` 或 `TUTOR_*` 参数，也需将对应变量加入 `python-api.environment`。
+
 | 服务 | 地址 |
 |---|---|
 | 学习界面 | http://localhost:3000 |
@@ -224,6 +256,12 @@ HARNESS_STORE_PATH=data/harness.sqlite3
 HARNESS_TIMEOUT_SECONDS=45
 HARNESS_MAX_STEPS=64
 QUIZ_TTL_SECONDS=86400
+ENABLE_TUTOR_TOOLS=true
+TUTOR_MAX_MODEL_CALLS=3
+TUTOR_MAX_TOOL_CALLS=4
+TUTOR_CONTEXT_BUDGET_TOKENS=6000
+TUTOR_MAX_OUTPUT_TOKENS=800
+TUTOR_HANDLER_TIMEOUT_SECONDS=40
 ```
 
 在后端终端执行：
@@ -257,13 +295,16 @@ Vite 在 `3000` 端口提供页面，并将 `/api` 与 `/ws` 代理到后端 `88
 | GET | `/api/health` | 服务与模型配置状态 |
 | POST | `/api/demo/init` | 初始化指定学习者的演示数据 |
 | POST | `/api/submit` | 记录自我报告，不更新测验掌握度 |
-| POST | `/api/question` | 围绕知识点提问 |
-| POST | `/api/message` | 发送学习消息 |
+| POST | `/api/question` | 围绕知识点提问，支持会话、主题线程与测验绑定 |
+| POST | `/api/message` | 发送学习消息或接续导师追问 |
 | POST | `/api/quiz/generate` | 以学习者 ID、请求 ID 获取测验；推进模式校验前置知识 |
 | POST | `/api/quiz/answer` | 以测验 ID、选项索引判分并触发教学流程 |
 | POST | `/api/quiz/hint` | 主动获取提示 |
 | POST | `/api/quiz/reveal` | 查看答案与解析并结束本题 |
 | GET | `/api/runs/{learner_id}/{request_id}` | 查询执行状态与保存结果 |
+| GET | `/api/runs/{learner_id}/{request_id}/trace` | 查询各次执行尝试、终止原因与步骤 |
+| GET | `/api/history/{learner_id}` | 分页读取公开教学对话，支持知识点和线程过滤 |
+| GET | `/api/history/{learner_id}/source` | 按 `source_ref` 读取公开消息或评估证据 |
 | GET | `/api/progress/{learner_id}` | 学习进度与薄弱点 |
 | GET | `/api/knowledge-graph` | 知识节点与学习顺序 |
 | GET | `/api/review-schedule/{learner_id}` | 复习计划与保持率估计 |
@@ -279,13 +320,17 @@ curl -X POST http://localhost:8888/api/question \
   -d '{
     "learner_id": "student_001",
     "knowledge_id": "grammar_tenses",
+    "request_id": "question-001",
+    "session_id": "session-001",
     "question": "一般过去时和现在完成时有什么区别？"
   }'
 ```
 
 交互响应包含 `correlation_id`、`teaching_response`、`teaching_decision`、`agent_insights`、`next_topic_recommendation`、`review_snapshot` 和 `interaction_events` 等字段；具体内容随交互类型变化。
 
-测验作答还包含 `learning_evidence`（独立性、尝试次数、提示使用、把握程度）和 `execution`（请求 ID、执行状态）。旧 `/api/review/complete` 返回 `410`，复习通过测验统一更新。分析中的题数与正确率对应独立作答，耗时与辅助行为展示最近 200 次作答。
+REST 答疑可传入 `thread_id` 延续指定线程；不传时默认接续该学习者在当前知识点的线程。前端开始新会话会更换 `session_id`，保留主题线程。请求绑定当前练习题时传入 `quiz_id`；旧客户端遗漏此字段时，服务端关联最近有效的同知识点测验并记录受助。
+
+响应中的 `execution` 包含请求 ID、run/attempt ID、会话及线程 ID、执行状态、对话状态、待回答问题及来源列表。测验作答还包含 `learning_evidence`（独立性、尝试次数、提示与对话受助、把握程度）。旧 `/api/review/complete` 返回 `410`，复习通过测验统一更新。分析中的题数与正确率对应独立作答，耗时与辅助行为展示最近 200 次作答。
 
 ### WebSocket
 
@@ -301,6 +346,8 @@ curl -X POST http://localhost:8888/api/question \
 
 支持 `submit`、`question` 和 `message`。服务端完成本次处理后，逐条发送事件，消息包含 `event_type`、`source`、`data`、`timestamp` 和 `correlation_id`。
 
+WebSocket 保留基础交互及 Harness 去重、回滚能力；跨会话证据、当前测验受助绑定与原生工具循环使用上述 REST 接口。
+
 ## 代码导航
 
 | 路径 | 职责 |
@@ -312,6 +359,10 @@ curl -X POST http://localhost:8888/api/question \
 | `python/agents/` | 四个角色及事件处理基类 |
 | `python/core/event_bus.py` | 事件分发、历史与日志 |
 | `python/core/harness.py` | 执行预算、请求去重、原子检查点与服务端测验 |
+| `python/core/run_context.py` | 请求级上下文、执行标识、截止时间与步骤 |
+| `python/core/learning_history.py` | 会话、教学证据、检索、来源读取与执行轨迹 |
+| `python/core/tutor_runtime.py` | ContextBuilder 和有界原生工具循环 |
+| `python/core/tutor_hooks.py` | 模型预算、工具门禁与结果记录 |
 | `python/core/learner_model.py` | 掌握度更新与学习状态 |
 | `python/core/knowledge_graph.py` | 知识依赖与路径算法 |
 | `python/core/spaced_repetition.py` | SM-2 复习算法 |
@@ -322,6 +373,8 @@ curl -X POST http://localhost:8888/api/question \
 | `python/tests/` | 算法、Agent 协作及 API 测试 |
 | `frontend/src/App.tsx` | 学习交互主界面 |
 | `frontend/src/components/` | 练习、反馈、复习与分析组件 |
+| `frontend/src/components/TeachingHistory.tsx` | 跨会话对话、待回答提醒与本轮互动记录 |
+| `docs/harness-openmaic-design.md` | 源码参考、设计与实施边界 |
 
 ## 测试
 
@@ -329,6 +382,9 @@ curl -X POST http://localhost:8888/api/question \
 
 ```bash
 cd python
+
+# 完整后端测试集
+python -m pytest tests -q
 
 # 算法、事件总线与 Agent 协作
 python -m pytest \
@@ -340,9 +396,21 @@ python -m pytest \
 
 # API 测试
 python -m pytest tests/test_api.py -v
+
+# 跨会话、工具协议、受助与事务边界
+python -m pytest tests/test_tutor_harness.py -q
 ```
 
-主链路 `LLMService.generate` 在 pytest 环境下跳过远程调用，使用业务降级逻辑验证流程。
+当前后端测试集 124 项通过，其中 23 项覆盖新增 Harness 边界。主链路 `LLMService.generate` 在 pytest 环境下跳过远程调用；原生工具测试使用 scripted 模型和 mock SDK，验证 OpenAI 兼容与 Anthropic 消息协议、权限、预算、追问接续及提交失败回滚，不调用真实模型。
+
+前端验证：
+
+```bash
+cd frontend
+npm run build
+```
+
+测试验证执行与状态边界，尚不代表真实模型答疑质量或教学效果已经评估。
 
 ## License
 

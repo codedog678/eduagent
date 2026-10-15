@@ -235,7 +235,7 @@ class TutorAgent(BaseAgent):
         llm_service = get_llm_service()
         learner_context = self._build_learner_context(learner_id)
         recent_submission = self._get_recent_submission(learner_id, knowledge_id)
-        reply = await self._generate_distinct_reply(
+        reply = await self._conversation_reply(question) or await self._generate_distinct_reply(
             learner_id=learner_id,
             knowledge_id=knowledge_id,
             builder=lambda avoid_responses, variant_offset: llm_service.generate_student_question_response(
@@ -274,7 +274,7 @@ class TutorAgent(BaseAgent):
 
         llm_service = get_llm_service()
         learner_context = self._build_learner_context(learner_id)
-        reply = await self._generate_distinct_reply(
+        reply = await self._conversation_reply(message) or await self._generate_distinct_reply(
             learner_id=learner_id,
             knowledge_id=knowledge_id,
             builder=lambda avoid_responses, variant_offset: llm_service.generate_message_response(
@@ -296,6 +296,14 @@ class TutorAgent(BaseAgent):
             teaching_style="conversation",
             correlation_id=event.correlation_id,
         )
+
+    async def _conversation_reply(self, text: str) -> TeachingReply | None:
+        from core.run_context import active_run
+        from core.tutor_runtime import TutorRuntime
+        run = active_run.get()
+        if not run or not run.conversation:
+            return None
+        return await TutorRuntime(run, get_llm_service(), run.knowledge_graph).run(text)
 
     async def _handle_engagement_alert(self, event: Event) -> None:
         logger.info(
@@ -401,6 +409,8 @@ class TutorAgent(BaseAgent):
             "generation_mode": reply.generation_mode,
             "response_variant": reply.response_variant,
             "history_scope": reply.history_scope,
+            "source_refs": reply.source_refs,
+            "dialogue_state": reply.dialogue_state,
         }
         if extra:
             payload.update(extra)

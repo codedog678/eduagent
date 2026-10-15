@@ -7,7 +7,7 @@ from datetime import datetime
 import uuid
 import json
 from typing import Literal
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from config.settings import settings
@@ -26,15 +26,21 @@ class SubmitAnswerRequest(BaseModel):
 class AskQuestionRequest(BaseModel):
     learner_id: str
     knowledge_id: str
-    question: str
+    question: str = Field(min_length=1, max_length=6000)
     request_id: str = Field(default_factory=lambda: str(uuid.uuid4()), min_length=1, max_length=128)
+    session_id: str | None = Field(default=None, min_length=1, max_length=128)
+    thread_id: str | None = Field(default=None, min_length=1, max_length=128)
+    quiz_id: str | None = Field(default=None, min_length=1, max_length=128)
 
 
 class SendMessageRequest(BaseModel):
     learner_id: str
-    message: str
+    message: str = Field(min_length=1, max_length=6000)
     knowledge_id: str = "general"
     request_id: str = Field(default_factory=lambda: str(uuid.uuid4()), min_length=1, max_length=128)
+    session_id: str | None = Field(default=None, min_length=1, max_length=128)
+    thread_id: str | None = Field(default=None, min_length=1, max_length=128)
+    quiz_id: str | None = Field(default=None, min_length=1, max_length=128)
 
 
 class GenerateQuizRequest(BaseModel):
@@ -44,6 +50,8 @@ class GenerateQuizRequest(BaseModel):
     knowledge_id: str
     difficulty: float = Field(default=0.5, ge=0, le=1)
     mode: Literal["practice", "advance"] = "practice"
+    session_id: str | None = Field(default=None, min_length=1, max_length=128)
+    thread_id: str | None = Field(default=None, min_length=1, max_length=128)
 
 
 class SubmitQuizAnswerRequest(BaseModel):
@@ -119,14 +127,18 @@ async def submit_answer(req: SubmitAnswerRequest, request: Request):
 @router.post("/question")
 async def ask_question(req: AskQuestionRequest, request: Request):
     orch = request.app.state.orchestrator
-    result = await _execute(orch, req, lambda: orch.ask_question(req.learner_id, req.knowledge_id, req.question))
+    result = await orch.harness.converse(
+        req.learner_id, req.request_id, req.knowledge_id, req.question,
+        req.session_id, req.thread_id, req.quiz_id)
     return _with_status(result)
 
 
 @router.post("/message")
 async def send_message(req: SendMessageRequest, request: Request):
     orch = request.app.state.orchestrator
-    result = await _execute(orch, req, lambda: orch.send_message(req.learner_id, req.message, req.knowledge_id))
+    result = await orch.harness.converse(
+        req.learner_id, req.request_id, req.knowledge_id, req.message,
+        req.session_id, req.thread_id, req.quiz_id, kind="message")
     return _with_status(result)
 
 
@@ -327,7 +339,8 @@ async def complete_review(learner_id: str, knowledge_id: str, quality: int, requ
 @router.post("/quiz/generate")
 async def generate_quiz(req: GenerateQuizRequest, request: Request):
     return await request.app.state.orchestrator.harness.generate(
-        req.learner_id, req.request_id, req.knowledge_id, req.difficulty, req.mode)
+        req.learner_id, req.request_id, req.knowledge_id, req.difficulty, req.mode,
+        req.session_id, req.thread_id)
 
 
 @router.post("/quiz/answer")
@@ -419,3 +432,24 @@ async def get_statistics(learner_id: str, request: Request):
 @router.get("/runs/{learner_id}/{request_id}")
 async def get_run(learner_id: str, request_id: str, request: Request):
     return request.app.state.orchestrator.harness.run_status(learner_id, request_id)
+
+
+@router.get("/runs/{learner_id}/{request_id}/trace")
+async def get_trace(learner_id: str, request_id: str, request: Request):
+    return request.app.state.orchestrator.harness.history.trace(learner_id, request_id)
+
+
+@router.get("/history/{learner_id}")
+async def get_history(learner_id: str, request: Request, thread_id: str | None = None,
+                      limit: int = Query(default=20, ge=1, le=20),
+                      before: int | None = Query(default=None, ge=1), knowledge_id: str | None = None):
+    history = request.app.state.orchestrator.harness.history
+    result = history.messages(learner_id, thread_id, limit, before, knowledge_id)
+    if thread_id:
+        result["pending_question"] = history.pending(learner_id, thread_id)
+    return result
+
+
+@router.get("/history/{learner_id}/source")
+async def read_history_source(learner_id: str, source_ref: str, request: Request):
+    return request.app.state.orchestrator.harness.history.read(learner_id, source_ref)

@@ -5,6 +5,7 @@ import AppHeader from './components/Header'
 import KnowledgeSelect from './components/KnowledgeSelect'
 import QuizPanel from './components/QuizPanel'
 import QuestionInput from './components/QuestionInput'
+import TeachingHistory from './components/TeachingHistory'
 import FeedbackPanel from './components/FeedbackPanel'
 import ReviewReminder from './components/ReviewReminder'
 import AnalyticsDashboard from './components/AnalyticsDashboard'
@@ -13,8 +14,23 @@ import type { Quiz, InteractionResult } from './types'
 
 const { Content } = Layout
 
+function readThreads(learnerId: string): Record<string, string> {
+  try {
+    const stored = JSON.parse(localStorage.getItem(`eduagent:threads:${learnerId}`) || '{}')
+    return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {}
+  } catch { return {} }
+}
+
 export default function App() {
   const [learnerId] = useState('student_001')
+  const [sessionId, setSessionId] = useState(() => {
+    try {
+      const id = sessionStorage.getItem(`eduagent:session:${learnerId}`) || crypto.randomUUID()
+      sessionStorage.setItem(`eduagent:session:${learnerId}`, id)
+      return id
+    } catch { return crypto.randomUUID() }
+  })
+  const [threads, setThreads] = useState<Record<string, string>>(() => readThreads(learnerId))
   const { connected, appendInteraction } = useWebSocket(learnerId)
   const [knowledgeId, setKnowledgeId] = useState('vocab_basic')
   const [message, setMessage] = useState('')
@@ -31,6 +47,24 @@ export default function App() {
   const [finished, setFinished] = useState(false)
   const [confidence, setConfidence] = useState<number | null>(null)
   const executing = useRef(false)
+
+  function rememberThread(data: InteractionResult, kid: string) {
+    if (!data.execution) return
+    setThreads(previous => {
+      const next = { ...previous, [kid]: data.execution!.thread_id }
+      try { localStorage.setItem(`eduagent:threads:${learnerId}`, JSON.stringify(next)) } catch { /* 存储不可用时仍可对话 */ }
+      return next
+    })
+  }
+
+  function startNewSession() {
+    if (busy || quizLoading) return
+    const id = crypto.randomUUID()
+    setSessionId(id)
+    setLatestInteraction(null)
+    setMessage('')
+    try { sessionStorage.setItem(`eduagent:session:${learnerId}`, id) } catch { /* 内存会话仍有效 */ }
+  }
 
   async function post(path: string, payload: Record<string, unknown>) {
     // 传输失败时复用同一 request_id 和内容，避免重复执行。
@@ -80,7 +114,11 @@ export default function App() {
     setConfidence(null)
     setError('')
     try {
-      const data = await post('/api/quiz/generate', { learner_id: learnerId, knowledge_id: kid, difficulty: 0.5, mode })
+      const data = await post('/api/quiz/generate', {
+        learner_id: learnerId, knowledge_id: kid, difficulty: 0.5, mode,
+        session_id: sessionId, thread_id: threads[kid],
+      })
+      rememberThread(data, kid)
       setQuiz(data.quiz || null)
       setQuizStartedAt(Date.now())
     } catch (exc) {
@@ -144,7 +182,11 @@ export default function App() {
         learner_id: learnerId,
         knowledge_id: quiz?.knowledge_id || knowledgeId,
         question: message.trim(),
+        session_id: sessionId,
+        thread_id: threads[quiz?.knowledge_id || knowledgeId],
+        quiz_id: quiz && !finished ? quiz.quiz_id : undefined,
       }) as InteractionResult & { interaction_events?: AgentEvent[] }
+      rememberThread(data, quiz?.knowledge_id || knowledgeId)
       setLatestInteraction(data)
       appendInteraction(data.interaction_events || [])
       setMessage('')
@@ -194,6 +236,15 @@ export default function App() {
                 message={message}
                 onMessageChange={setMessage}
                 onSubmit={() => void handleQuestion()}
+              />
+              <TeachingHistory
+                learnerId={learnerId}
+                knowledgeId={quiz?.knowledge_id || knowledgeId}
+                threadId={threads[quiz?.knowledge_id || knowledgeId]}
+                sessionId={sessionId}
+                interaction={latestInteraction}
+                busy={busy || quizLoading}
+                onNewSession={startNewSession}
               />
             </Col>
 

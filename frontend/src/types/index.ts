@@ -16,6 +16,8 @@ export interface TeachingResponse {
   knowledge_id: string
   hint_level?: number | null
   hint_count?: number | null
+  source_refs?: string[]
+  dialogue_state?: 'answered' | 'awaiting_student'
 }
 
 export interface ReviewSnapshot {
@@ -51,6 +53,17 @@ export interface TeachingDecision {
 }
 
 export interface InteractionResult {
+  execution?: {
+    request_id: string
+    run_id: string
+    session_id: string
+    thread_id: string
+    status: string
+    dialogue_state: 'answered' | 'awaiting_student'
+    pending_question_id?: string | null
+    source_refs: string[]
+  }
+  assistance?: { recorded: boolean; source_ref: string }
   learning_evidence?: {
     independent: boolean
     mastery_updated: boolean

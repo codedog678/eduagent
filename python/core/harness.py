@@ -15,6 +15,8 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 from core.learner_model import KnowledgeState, LearnerModel
+from core.learning_history import LearningHistory, public_data
+from core.run_context import RunContext, RunExhausted, active_run
 from core.spaced_repetition import ReviewItem
 
 
@@ -51,9 +53,12 @@ class LearningHarness:
             CREATE TABLE IF NOT EXISTS checkpoints (learner TEXT PRIMARY KEY, state TEXT);
             CREATE TABLE IF NOT EXISTS quizzes (id TEXT PRIMARY KEY, learner TEXT, body TEXT);
         """)
+        self.history = LearningHistory(self.db)
         with self.db:
             self.db.execute("UPDATE runs SET status='failed', error='interrupted before checkpoint' "
                             "WHERE status='running'")
+            self.db.execute("UPDATE run_attempts SET status='failed',reason='interrupted',finished=? "
+                            "WHERE status='running'", (time.time(),))
 
     def close(self):
         self.db.close()
@@ -125,15 +130,61 @@ class LearningHarness:
                     self.orch.get_learner_model_sync(learner)
             before = json.loads(json.dumps(self.capture(learner)))
             previous_events = {event.id for event in self.orch.event_bus.get_history(limit=1000)}
+            quiz_row = self.db.execute("SELECT body FROM quizzes WHERE id=? AND learner=?",
+                                      (payload.get("quiz", payload.get("quiz_id", "")), learner)).fetchone()
+            scoped_quiz = json.loads(quiz_row[0]) if quiz_row else {}
+            knowledge = payload.get("knowledge_id", payload.get("knowledge",
+                                    scoped_quiz.get("knowledge_id", "general")))
+            session, thread = self.history.bind(
+                learner, payload.get("session_id") or scoped_quiz.get("session_id"),
+                payload.get("thread_id") or scoped_quiz.get("thread_id"), knowledge)
+            ctx = RunContext(
+                learner=learner,
+                run_id=str(uuid.uuid5(uuid.NAMESPACE_URL, json.dumps(["edu:run", learner, request_id]))),
+                attempt_id=str(uuid.uuid4()), deadline=time.monotonic() + self.timeout,
+                session_id=session, thread_id=thread, knowledge_id=knowledge, history=self.history,
+                knowledge_graph=self.orch.curriculum.knowledge_graph,
+            )
             with self.db:
-                self.db.execute("INSERT OR REPLACE INTO runs VALUES (?,?,?,'running',NULL,NULL,?)",
+                self.db.execute("INSERT OR REPLACE INTO runs "
+                                "(learner,request,fingerprint,status,result,error,updated) "
+                                "VALUES (?,?,?,'running',NULL,NULL,?)",
                                 (learner, request_id, fingerprint, time.time()))
+                self.db.execute("INSERT INTO run_attempts VALUES (?,?,?,?,?,NULL,?,NULL)",
+                                (ctx.attempt_id, learner, request_id, ctx.run_id, "running", time.time()))
+            token = active_run.set(ctx)
+            ctx.record("run_started")
             try:
                 async with asyncio.timeout(self.timeout):
                     result, quiz_update = await operation()
-                result["execution"] = {"request_id": request_id, "status": "completed"}
+                result["execution"] = {
+                    "request_id": request_id, "run_id": ctx.run_id, "attempt_id": ctx.attempt_id,
+                    "session_id": ctx.session_id, "thread_id": ctx.thread_id, "status": "completed",
+                    "dialogue_state": ctx.dialogue_state, "pending_question_id": ctx.pending_question,
+                    "answered_question_id": ctx.answered_question_id,
+                    "source_refs": ctx.source_refs,
+                }
+                ctx.record("commit_started")
                 # 学习状态、测验状态和可重放结果一起提交。
                 with self.db:
+                    self.history.open_scope(ctx)
+                    if ctx.conversation:
+                        self.history.commit_conversation(
+                            ctx, payload["text"], result["teaching_response"]["response"])
+                        if ctx.quiz:
+                            evidence_ref = self.history.evidence(
+                                ctx, "assistance", {"assisted": True, "source_refs": ctx.source_refs},
+                                payload.get("quiz_id") or ctx.quiz["quiz_id"])
+                            result["assistance"] = {"recorded": True, "source_ref": evidence_ref}
+                    if result.get("learning_evidence"):
+                        assessment = {**result["learning_evidence"],
+                                      "knowledge_id": knowledge,
+                                      "is_correct": result.get("evaluation", {}).get("is_correct"),
+                                      "question": scoped_quiz.get("question", ""),
+                                      "source_refs": ctx.source_refs}
+                        if scoped_quiz and "selected" in payload:
+                            assessment["student_answer"] = scoped_quiz["options"][payload["selected"]]
+                        self.history.evidence(ctx, "assessment", assessment, payload.get("quiz"))
                     self.db.execute("INSERT OR REPLACE INTO checkpoints VALUES (?,?)",
                                     (learner, json.dumps(self.capture(learner))))
                     if quiz_update:
@@ -143,22 +194,85 @@ class LearningHarness:
                     self.db.execute("UPDATE runs SET status='completed',result=?,updated=? "
                                     "WHERE learner=? AND request=?",
                                     (json.dumps(result), time.time(), learner, request_id))
+                    ctx.record("run_completed", dialogue_state=ctx.dialogue_state)
+                    self.history.save_steps(ctx)
+                    self.db.execute("UPDATE run_attempts SET status='completed',finished=? WHERE id=?",
+                                    (time.time(), ctx.attempt_id))
                 return result
             except BaseException as exc:
                 self.restore(learner, before)
+                if ctx.steps and ctx.steps[-1]["kind"] == "run_completed":
+                    ctx.steps.pop()
                 trace = [event.model_dump(mode="json") for event in
                          self.orch.event_bus.get_history(learner_id=learner, limit=64)
                          if event.id not in previous_events]
+                status = ("cancelled" if isinstance(exc, asyncio.CancelledError) else
+                          "exhausted" if isinstance(exc, (RunExhausted, TimeoutError)) else "failed")
+                reason = str(exc) if isinstance(exc, RunExhausted) else type(exc).__name__
+                ctx.record("run_failed", status=status, reason=reason)
                 with self.db:
-                    self.db.execute("UPDATE runs SET status='failed',error=?,result=?,updated=? "
+                    self.db.execute("UPDATE runs SET status=?,error=?,result=?,updated=? "
                                     "WHERE learner=? AND request=?",
-                                    (type(exc).__name__, json.dumps({"events": trace}),
+                                    (status, reason, json.dumps(public_data({"events": trace})),
                                      time.time(), learner, request_id))
+                    self.history.save_steps(ctx)
+                    self.db.execute("UPDATE run_attempts SET status=?,reason=?,finished=? WHERE id=?",
+                                    (status, reason, time.time(), ctx.attempt_id))
                 if isinstance(exc, HTTPException):
                     raise
                 if isinstance(exc, asyncio.CancelledError):
                     raise
                 raise HTTPException(503, "本次执行未完成，学习状态已回滚，请重试") from exc
+            finally:
+                active_run.reset(token)
+
+    async def converse(self, learner, request_id, knowledge, text, session_id=None,
+                       thread_id=None, quiz_id=None, kind="question"):
+        payload = {"kind": kind, "knowledge_id": knowledge, "text": text,
+                   "session_id": session_id, "thread_id": thread_id, "quiz_id": quiz_id}
+        async def operation():
+            ctx = active_run.get()
+            if not text.strip():
+                raise HTTPException(422, "请输入问题或回应")
+            ctx.conversation = True
+            ctx.model_state = self.orch.learner_models[learner].get_state(knowledge).model_dump(mode="json")
+            quiz = None
+            bound_id = None
+            if quiz_id:
+                quiz = self.quiz(learner, quiz_id)
+                bound_id = quiz_id
+                if quiz["knowledge_id"] != knowledge:
+                    raise HTTPException(422, "题目与知识点不匹配")
+                if quiz["solved"] or quiz["revealed"]:
+                    quiz = None
+            else:
+                # 旧客户端未发送题目 ID 时，也不能绕过受助记录。
+                rows = self.db.execute("SELECT id,body FROM quizzes WHERE learner=? ORDER BY rowid DESC",
+                                       (learner,)).fetchall()
+                for identifier, body in rows:
+                    candidate = json.loads(body)
+                    if (candidate["knowledge_id"] == knowledge and not candidate["solved"]
+                            and not candidate["revealed"] and
+                            time.time() - candidate["created"] <= self.quiz_ttl):
+                        bound_id, quiz = identifier, candidate
+                        break
+            if quiz:
+                if not thread_id and quiz.get("thread_id"):
+                    _, ctx.thread_id = self.history.bind(
+                        learner, ctx.session_id, quiz["thread_id"], knowledge)
+                if quiz.get("mode") == "advance":
+                    raise HTTPException(403, "独立测验期间请先作答，再进行本题讲解")
+                # 仅在成功提交时更新受助状态；失败重试不污染测验。
+                ctx.quiz = {**quiz, "quiz_id": bound_id}
+                quiz["assisted"] = True
+            method = self.orch.ask_question if kind == "question" else self.orch.send_message
+            result = (await method(learner, knowledge, text) if kind == "question" else
+                      await method(learner, text, knowledge))
+            reply = result.get("teaching_response")
+            if not reply or not reply.get("response", "").strip():
+                raise RuntimeError("missing_teaching_response")
+            return result, (bound_id, quiz) if quiz else None
+        return await self.run(learner, request_id, payload, operation)
 
     def run_status(self, learner, request_id):
         row = self.db.execute("SELECT status,result,error,updated FROM runs "
@@ -178,7 +292,8 @@ class LearningHarness:
             raise HTTPException(410, "测验已过期，请生成新题")
         return quiz
 
-    async def generate(self, learner, request_id, knowledge, difficulty, mode="practice"):
+    async def generate(self, learner, request_id, knowledge, difficulty, mode="practice",
+                       session_id=None, thread_id=None):
         async def operation():
             from core.llm_service import get_llm_service
             if knowledge not in self.orch.curriculum.knowledge_graph.nodes:
@@ -200,11 +315,13 @@ class LearningHarness:
             quiz_id = str(uuid.uuid4())
             quiz = {**question.model_dump(), "knowledge_id": knowledge, "difficulty": difficulty,
                     "created": time.time(), "attempts": 0, "hints": 0, "revealed": False,
-                    "solved": False}
+                    "solved": False, "assisted": False, "mode": mode,
+                    "session_id": active_run.get().session_id, "thread_id": active_run.get().thread_id}
             public = {k: quiz[k] for k in ("question", "options", "knowledge_id", "difficulty")}
             return {"status": "ok", "quiz": {**public, "quiz_id": quiz_id}}, (quiz_id, quiz)
         return await self.run(learner, request_id, {"kind": "generate", "knowledge": knowledge,
-                              "difficulty": difficulty, "mode": mode}, operation)
+                              "difficulty": difficulty, "mode": mode,
+                              "session_id": session_id, "thread_id": thread_id}, operation)
 
     async def answer(self, learner, request_id, quiz_id, selected, elapsed, confidence):
         async def operation():
@@ -213,7 +330,7 @@ class LearningHarness:
                 raise HTTPException(409, "本题已结束，请开始新题")
             if selected < 0 or selected >= len(quiz["options"]):
                 raise HTTPException(422, "选项无效")
-            independent = quiz["attempts"] == 0 and quiz["hints"] == 0
+            independent = quiz["attempts"] == 0 and quiz["hints"] == 0 and not quiz.get("assisted", False)
             correct = selected == quiz["correct_index"]
             quiz["attempts"] += 1
             quiz["solved"] = correct
@@ -227,6 +344,7 @@ class LearningHarness:
             result["learning_evidence"] = {
                 "quiz_id": quiz_id, "attempt": quiz["attempts"], "independent": independent,
                 "mastery_updated": independent, "hints_used": quiz["hints"],
+                "assisted": quiz.get("assisted", False),
                 "confidence": confidence,
                 "outcome": "independent" if independent else "guided_practice",
             }
@@ -257,7 +375,10 @@ class LearningHarness:
                 quiz["revealed"] = True
                 text = f"参考答案：{quiz['options'][quiz['correct_index']]}。{quiz['explanation']}"
             else:
+                if quiz.get("mode") == "advance":
+                    raise HTTPException(403, "独立测验期间不能请求提示")
                 quiz["hints"] += 1
+                quiz["assisted"] = True
                 hints = [
                     "先说清楚这道题要判断什么，再圈出题干中支持你选择的线索。",
                     "逐项排除：检查每个选项能否同时满足题干的语义和结构要求。",

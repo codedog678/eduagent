@@ -1,15 +1,4 @@
-"""
-事件驱动总线 -- Mesh架构的核心通信层。
-
-所有Agent通过EventBus发布/订阅事件，实现双向异步通信。
-这是Mesh架构区别于Supervisor架构的关键：没有中心调度者，
-每个Agent自主决定响应哪些事件。
-
-面试要点：
-- 发布-订阅模式 vs 请求-响应模式
-- 异步解耦的优势：松耦合、可扩展、容错
-- 事件溯源（Event Sourcing）的基本思想
-"""
+"""同进程发布订阅：每轮独立优先级队列，handler 顺序执行，失败中止。"""
 
 import asyncio
 import logging
@@ -21,6 +10,7 @@ from enum import Enum
 from typing import Any, Callable, Coroutine, Optional
 
 from pydantic import BaseModel, Field
+from core.run_context import RunExhausted, active_run
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +72,7 @@ class Event(BaseModel):
     learner_id: str
     data: dict[str, Any] = Field(default_factory=dict)   # 事件数据
     correlation_id: str | None = None  # 用于追踪事件链ID
+    parent_event_id: str | None = None
     priority: EventPriority = EventPriority.NORMAL  # 事件优先级
 # 一次答题可能触发 6-8 个事件，这些事件的 correlation_id 都相同。事后可以用这个ID把整条链路捞出来
 
@@ -140,6 +131,10 @@ class EventBus:
 
     async def publish(self, event: Event) -> None:
         # 子事件只入队；当前 handler 退出并释放 Agent 锁后才执行。
+        run = active_run.get()
+        if run:
+            event.correlation_id = run.run_id
+            event.parent_event_id = run.parent_event_id
         active = _active_queue.get()
         if active is not None and active["bus"] is self:
             if active["count"] >= self.max_steps:
@@ -166,11 +161,15 @@ class EventBus:
         发布事件到总线，异步通知所有订阅者。
 
         关键设计：
-        1. 使用 asyncio.gather 并发通知所有订阅者
+        1. 按订阅顺序通知所有订阅者
         2. 支持优先级分发（高优先级事件优先处理）
         3. 支持 correlation_id 追踪事件链
         """
-        #加锁 多个 Agent 可能同时发布事件（并发）
+        run = active_run.get()
+        if run:
+            run.record("event_dispatched", event.source, event_id=event.id,
+                       event_type=event.type.value, parent_event_id=event.parent_event_id)
+        # 加锁保护事件历史；handler 按订阅顺序执行。
         async with self._lock:
             self._event_history.append(event)
             # 限制历史记录数量，防止内存泄漏
@@ -201,7 +200,7 @@ class EventBus:
         if self._enable_db_logging:
             await self._log_event_to_db(event)
 
-        # 并发通知所有订阅者
+        # 顺序通知所有订阅者
         handlers = self._subscribers.get(event.type, [])
         if not handlers:
             logger.debug("No handlers for event type %s", event.type.value)
@@ -242,18 +241,37 @@ class EventBus:
             # 不影响事件分发，继续执行
 
     async def _safe_handle(self, handler: EventHandler, event: Event) -> None:
-        """安全执行handler，捕获异常避免影响其他订阅者（Mesh 架构的容错机制，每个 handler 独立 try-catch）"""
+        """按顺序执行 handler，异常中止本轮，由 Harness 回滚。"""
+        run = active_run.get()
+        agent = getattr(getattr(handler, "__self__", None), "name",
+                        getattr(handler, "__qualname__", type(handler).__name__))
+        started = asyncio.get_running_loop().time()
+        if run:
+            run.record("handler_started", agent, event_id=event.id)
+            run.parent_event_id = event.id
         try:
-            await asyncio.wait_for(handler(event), timeout=self.handler_timeout)
+            timeout = self.handler_timeout
+            if run and run.conversation and agent == "TutorAgent":
+                from config.settings import settings
+                timeout = min(settings.tutor_handler_timeout_seconds, run.remaining())
+            await asyncio.wait_for(handler(event), timeout=timeout)
+            if run:
+                run.record("handler_completed", agent, event_id=event.id,
+                           duration_ms=round((asyncio.get_running_loop().time() - started) * 1000))
         except Exception as exc:
             logger.exception(
                 "Error in handler for event %s from %s",
                 event.type.value,
                 event.source,
             )
-            if isinstance(exc, ExecutionError):
+            if run:
+                run.record("handler_failed", agent, event_id=event.id, reason=type(exc).__name__)
+            if isinstance(exc, (ExecutionError, RunExhausted, TimeoutError)):
                 raise
             raise ExecutionError(f"{event.type.value}: {type(exc).__name__}") from exc
+        finally:
+            if run:
+                run.parent_event_id = None
 
     def get_history(
         self,

@@ -29,6 +29,21 @@ class TeachingReply(BaseModel):
     generation_mode: str
     response_variant: str
     history_scope: str
+    dialogue_state: str = "answered"
+    source_refs: list[str] = Field(default_factory=list)
+
+
+class NativeToolCall(BaseModel):
+    id: str
+    name: str
+    arguments: str
+
+
+class NativeTurn(BaseModel):
+    content: str = ""
+    tool_calls: list[NativeToolCall] = Field(default_factory=list)
+    stop_reason: str
+    usage: dict[str, int] = Field(default_factory=dict)
 
 
 QUESTION_BANK: dict[str, list[dict[str, Any]]] = {
@@ -361,6 +376,63 @@ class LLMService:
             raise ValueError(f"Unsupported LLM provider: {self.provider}")
 
         return self._client
+
+    async def tool_turn(self, messages: list[dict], tools: list[dict], max_tokens: int) -> NativeTurn:
+        """原生工具协议；失败直接上抛，由运行边界处理，不能伪装成正常回复。"""
+        if os.getenv("PYTEST_CURRENT_TEST") and self._client is None:
+            raise RuntimeError("Live model calls disabled in tests")
+        if not self._has_remote_llm():
+            raise RuntimeError("Native tools require a configured model")
+        client = self._get_client()
+        if self.provider == "anthropic":
+            converted = []
+            for message in messages:
+                if message["role"] == "system":
+                    continue
+                if message["role"] == "tool":
+                    converted.append({"role": "user", "content": [{
+                        "type": "tool_result", "tool_use_id": message["tool_call_id"],
+                        "content": message["content"],
+                    }]})
+                elif message["role"] == "assistant":
+                    blocks = []
+                    if message.get("content"):
+                        blocks.append({"type": "text", "text": message["content"]})
+                    for call in message.get("tool_calls", []):
+                        blocks.append({"type": "tool_use", "id": call["id"],
+                                       "name": call["function"]["name"],
+                                       "input": json.loads(call["function"]["arguments"])})
+                    converted.append({"role": "assistant", "content": blocks})
+                else:
+                    converted.append(message)
+            response = await client.messages.create(
+                model=self.model, max_tokens=max_tokens, temperature=0.3,
+                system="\n".join(m["content"] for m in messages if m["role"] == "system"),
+                messages=converted,
+                tools=[{"name": t["function"]["name"], "description": t["function"]["description"],
+                        "input_schema": t["function"]["parameters"]} for t in tools],
+            )
+            return NativeTurn(
+                content="\n".join(b.text for b in response.content if b.type == "text"),
+                tool_calls=[NativeToolCall(id=b.id, name=b.name, arguments=json.dumps(b.input))
+                            for b in response.content if b.type == "tool_use"],
+                stop_reason=response.stop_reason,
+                usage={"input_tokens": response.usage.input_tokens,
+                       "output_tokens": response.usage.output_tokens},
+            )
+        response = await client.chat.completions.create(
+            model=self.model, messages=messages, tools=tools, tool_choice="auto",
+            temperature=0.3, max_tokens=max_tokens,
+        )
+        choice = response.choices[0]
+        return NativeTurn(
+            content=choice.message.content or "",
+            tool_calls=[NativeToolCall(id=c.id, name=c.function.name, arguments=c.function.arguments)
+                        for c in choice.message.tool_calls or []],
+            stop_reason=choice.finish_reason or "unknown",
+            usage={"input_tokens": response.usage.prompt_tokens,
+                   "output_tokens": response.usage.completion_tokens} if response.usage else {},
+        )
 
     async def generate(
         self,

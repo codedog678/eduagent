@@ -10,6 +10,7 @@ from typing import Any
 from agents import AssessmentAgent, CurriculumAgent, EngagementAgent, TutorAgent
 from config.settings import settings
 from core.event_bus import Event, EventBus, EventType
+from core.run_context import active_run
 from core.learner_model import LearnerModel
 from core.llm_service import get_llm_service
 from core.memory_manager import MemoryManager
@@ -115,7 +116,7 @@ class AgentOrchestrator:
         #加载学习者模型
         model = await self.get_learner_model(learner_id)
         mastery_before = model.get_state(knowledge_id).mastery
-        correlation_id = str(uuid.uuid4())  #生成事件链ID
+        correlation_id = active_run.get().run_id if active_run.get() else str(uuid.uuid4())
 
         payload = {
             "knowledge_id": knowledge_id,
@@ -168,7 +169,7 @@ class AgentOrchestrator:
         question: str,
     ) -> dict[str, Any]:
         await self.get_learner_model(learner_id)
-        correlation_id = str(uuid.uuid4())
+        correlation_id = active_run.get().run_id if active_run.get() else str(uuid.uuid4())
 
         await self.event_bus.publish(
             Event(
@@ -198,7 +199,7 @@ class AgentOrchestrator:
         knowledge_id: str = "general",
     ) -> dict[str, Any]:
         await self.get_learner_model(learner_id)
-        correlation_id = str(uuid.uuid4())
+        correlation_id = active_run.get().run_id if active_run.get() else str(uuid.uuid4())
 
         await self.event_bus.publish(
             Event(
@@ -262,6 +263,8 @@ class AgentOrchestrator:
                 "generation_mode": event.data.get("generation_mode"),
                 "response_variant": event.data.get("response_variant"),
                 "history_scope": event.data.get("history_scope"),
+                "source_refs": event.data.get("source_refs", []),
+                "dialogue_state": event.data.get("dialogue_state", "answered"),
             }
         return None
 

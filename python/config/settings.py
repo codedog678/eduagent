@@ -64,6 +64,12 @@ class Settings(BaseSettings):
     harness_timeout_seconds: float = Field(default=45.0, gt=0)
     harness_max_steps: int = Field(default=64, gt=0, le=1000)
     quiz_ttl_seconds: float = Field(default=86400, gt=0)
+    enable_tutor_tools: bool = True
+    tutor_max_model_calls: int = Field(default=3, gt=0, le=10)
+    tutor_max_tool_calls: int = Field(default=4, gt=0, le=20)
+    tutor_context_budget_tokens: int = Field(default=6000, ge=2000, le=32000)
+    tutor_max_output_tokens: int = Field(default=800, ge=100, le=2000)
+    tutor_handler_timeout_seconds: float = Field(default=40, gt=0)
 
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE),
