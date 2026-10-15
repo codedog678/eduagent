@@ -6,8 +6,6 @@ EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持�
 
 项目结合教育技术中的个性化学习与教学支架设计，以及 Python 异步服务、LLM 集成和事件追踪等工程实践。
 
-Harness 的源码参考、设计和实施边界保存在 [设计文档](docs/harness-openmaic-design.md)。
-
 ## 跨会话教学 Harness
 
 学生可以开始新会话，并继续同一知识点的教学线程。系统将公开对话、错题评估和受助记录保存在 Harness SQLite 中，为 Tutor 构建带来源和预算的上下文。
@@ -374,7 +372,6 @@ WebSocket 保留基础交互及 Harness 去重、回滚能力；跨会话证据�
 | `frontend/src/App.tsx` | 学习交互主界面 |
 | `frontend/src/components/` | 练习、反馈、复习与分析组件 |
 | `frontend/src/components/TeachingHistory.tsx` | 跨会话对话、待回答提醒与本轮互动记录 |
-| `docs/harness-openmaic-design.md` | 源码参考、设计与实施边界 |
 
 ## 测试
 
