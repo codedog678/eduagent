@@ -14,10 +14,13 @@ from pathlib import Path
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
+from config.settings import settings
+from core.harness_migrations import migrate
 from core.learner_model import KnowledgeState, LearnerModel
 from core.learning_history import LearningHistory, public_data
 from core.run_context import RunContext, RunExhausted, active_run
 from core.spaced_repetition import ReviewItem
+from core.versions import runtime_metadata
 
 
 class IssuedQuestion(BaseModel):
@@ -43,17 +46,16 @@ class LearningHarness:
         except OSError:
             self._owner.close()
             raise RuntimeError("Harness store requires one server worker")
-        self.db = sqlite3.connect(path)
-        self.db.execute("PRAGMA journal_mode=WAL")
-        self.db.executescript("""
-            CREATE TABLE IF NOT EXISTS runs (
-                learner TEXT, request TEXT, fingerprint TEXT, status TEXT,
-                result TEXT, error TEXT, updated REAL,
-                PRIMARY KEY (learner, request));
-            CREATE TABLE IF NOT EXISTS checkpoints (learner TEXT PRIMARY KEY, state TEXT);
-            CREATE TABLE IF NOT EXISTS quizzes (id TEXT PRIMARY KEY, learner TEXT, body TEXT);
-        """)
-        self.history = LearningHistory(self.db)
+        try:
+            self.db = sqlite3.connect(path)
+            self.db.execute("PRAGMA journal_mode=WAL")
+            migrate(self.db)
+            self.history = LearningHistory(self.db)
+        except BaseException:
+            if hasattr(self, "db"):
+                self.db.close()
+            self._owner.close()
+            raise
         with self.db:
             self.db.execute("UPDATE runs SET status='failed', error='interrupted before checkpoint' "
                             "WHERE status='running'")
@@ -145,13 +147,21 @@ class LearningHarness:
                 session_id=session, thread_id=thread, knowledge_id=knowledge, history=self.history,
                 knowledge_graph=self.orch.curriculum.knowledge_graph,
             )
+            metadata = runtime_metadata(settings)
             with self.db:
                 self.db.execute("INSERT OR REPLACE INTO runs "
                                 "(learner,request,fingerprint,status,result,error,updated) "
                                 "VALUES (?,?,?,'running',NULL,NULL,?)",
                                 (learner, request_id, fingerprint, time.time()))
-                self.db.execute("INSERT INTO run_attempts VALUES (?,?,?,?,?,NULL,?,NULL)",
-                                (ctx.attempt_id, learner, request_id, ctx.run_id, "running", time.time()))
+                self.db.execute(
+                    "INSERT INTO run_attempts "
+                    "(id,learner,request,run,status,reason,started,finished,"
+                    "app_version,trace_schema_version,provider,model,config_fingerprint) "
+                    "VALUES (?,?,?,?,?,NULL,?,NULL,?,?,?,?,?)",
+                    (ctx.attempt_id, learner, request_id, ctx.run_id, "running",
+                     time.time(), metadata["app_version"], metadata["trace_schema_version"],
+                     metadata["provider"], metadata["model"],
+                     metadata["config_fingerprint"]))
             token = active_run.set(ctx)
             ctx.record("run_started")
             try:
@@ -162,7 +172,7 @@ class LearningHarness:
                     "session_id": ctx.session_id, "thread_id": ctx.thread_id, "status": "completed",
                     "dialogue_state": ctx.dialogue_state, "pending_question_id": ctx.pending_question,
                     "answered_question_id": ctx.answered_question_id,
-                    "source_refs": ctx.source_refs,
+                    "source_refs": ctx.source_refs, **metadata,
                 }
                 ctx.record("commit_started")
                 # 学习状态、测验状态和可重放结果一起提交。
@@ -185,11 +195,13 @@ class LearningHarness:
                         if scoped_quiz and "selected" in payload:
                             assessment["student_answer"] = scoped_quiz["options"][payload["selected"]]
                         self.history.evidence(ctx, "assessment", assessment, payload.get("quiz"))
-                    self.db.execute("INSERT OR REPLACE INTO checkpoints VALUES (?,?)",
+                    self.db.execute(
+                        "INSERT OR REPLACE INTO checkpoints (learner,state) VALUES (?,?)",
                                     (learner, json.dumps(self.capture(learner))))
                     if quiz_update:
                         quiz_id, quiz = quiz_update
-                        self.db.execute("INSERT OR REPLACE INTO quizzes VALUES (?,?,?)",
+                        self.db.execute(
+                            "INSERT OR REPLACE INTO quizzes (id,learner,body) VALUES (?,?,?)",
                                         (quiz_id, learner, json.dumps(quiz)))
                     self.db.execute("UPDATE runs SET status='completed',result=?,updated=? "
                                     "WHERE learner=? AND request=?",

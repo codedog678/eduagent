@@ -22,34 +22,6 @@ def public_data(value):
 class LearningHistory:
     def __init__(self, db):
         self.db = db
-        db.executescript("""
-            CREATE TABLE IF NOT EXISTS learning_sessions (
-                id TEXT PRIMARY KEY, learner TEXT NOT NULL, created REAL NOT NULL);
-            CREATE TABLE IF NOT EXISTS learning_threads (
-                id TEXT PRIMARY KEY, learner TEXT NOT NULL, knowledge TEXT NOT NULL);
-            CREATE TABLE IF NOT EXISTS conversation_messages (
-                id TEXT PRIMARY KEY, learner TEXT NOT NULL, session TEXT NOT NULL,
-                thread TEXT NOT NULL, run TEXT NOT NULL, role TEXT NOT NULL,
-                content TEXT NOT NULL, created REAL NOT NULL);
-            CREATE INDEX IF NOT EXISTS messages_scope
-                ON conversation_messages(learner,thread,created);
-            CREATE TABLE IF NOT EXISTS learning_evidence (
-                id TEXT PRIMARY KEY, learner TEXT NOT NULL, thread TEXT NOT NULL,
-                run TEXT NOT NULL, quiz TEXT, kind TEXT NOT NULL, body TEXT NOT NULL,
-                created REAL NOT NULL);
-            CREATE INDEX IF NOT EXISTS evidence_scope
-                ON learning_evidence(learner,thread,created);
-            CREATE TABLE IF NOT EXISTS run_attempts (
-                id TEXT PRIMARY KEY, learner TEXT NOT NULL, request TEXT NOT NULL,
-                run TEXT NOT NULL, status TEXT NOT NULL, reason TEXT,
-                started REAL NOT NULL, finished REAL);
-            CREATE TABLE IF NOT EXISTS run_steps (
-                attempt TEXT NOT NULL, seq INTEGER NOT NULL, body TEXT NOT NULL,
-                PRIMARY KEY(attempt,seq));
-            CREATE TABLE IF NOT EXISTS pending_questions (
-                id TEXT PRIMARY KEY, learner TEXT NOT NULL, thread TEXT NOT NULL,
-                run TEXT NOT NULL, question TEXT NOT NULL, answered_by TEXT);
-        """)
 
     def bind(self, learner, session, thread, knowledge):
         # 默认主题跨会话稳定；显式 ID 也必须验证归属。
@@ -62,9 +34,11 @@ class LearningHistory:
         return session, thread
 
     def open_scope(self, ctx):
-        self.db.execute("INSERT OR IGNORE INTO learning_sessions VALUES (?,?,?)",
+        self.db.execute(
+            "INSERT OR IGNORE INTO learning_sessions (id,learner,created) VALUES (?,?,?)",
                         (ctx.session_id, ctx.learner, time.time()))
-        self.db.execute("INSERT OR IGNORE INTO learning_threads VALUES (?,?,?)",
+        self.db.execute(
+            "INSERT OR IGNORE INTO learning_threads (id,learner,knowledge) VALUES (?,?,?)",
                         (ctx.thread_id, ctx.learner, ctx.knowledge_id))
 
     def messages(self, learner, thread=None, limit=20, before=None, knowledge=None):
@@ -138,7 +112,8 @@ class LearningHistory:
 
     def save_steps(self, ctx):
         for step in ctx.steps:
-            self.db.execute("INSERT OR REPLACE INTO run_steps VALUES (?,?,?)",
+            self.db.execute(
+                "INSERT OR REPLACE INTO run_steps (attempt,seq,body) VALUES (?,?,?)",
                             (ctx.attempt_id, step["seq"], json.dumps(public_data(step), ensure_ascii=False)))
 
     def commit_conversation(self, ctx, text, reply):
@@ -146,7 +121,10 @@ class LearningHistory:
         user_id = str(uuid.uuid4())
         for identifier, role, content in ((user_id, "user", text),
                                           (str(uuid.uuid4()), "assistant", reply)):
-            self.db.execute("INSERT INTO conversation_messages VALUES (?,?,?,?,?,?,?,?)",
+            self.db.execute(
+                "INSERT INTO conversation_messages "
+                "(id,learner,session,thread,run,role,content,created) "
+                "VALUES (?,?,?,?,?,?,?,?)",
                             (identifier, ctx.learner, ctx.session_id, ctx.thread_id,
                              ctx.run_id, role, content, time.time()))
         if ctx.answered_question_id:
@@ -154,26 +132,33 @@ class LearningHistory:
                             "WHERE id=? AND learner=? AND thread=? AND answered_by IS NULL",
                             (user_id, ctx.answered_question_id, ctx.learner, ctx.thread_id))
         if ctx.pending_question:
-            self.db.execute("INSERT INTO pending_questions VALUES (?,?,?,?,?,NULL)",
+            self.db.execute(
+                "INSERT INTO pending_questions "
+                "(id,learner,thread,run,question,answered_by) VALUES (?,?,?,?,?,NULL)",
                             (ctx.pending_question, ctx.learner, ctx.thread_id, ctx.run_id, reply))
 
     def evidence(self, ctx, kind, body, quiz=None):
         identifier = str(uuid.uuid4())
         self.open_scope(ctx)
-        self.db.execute("INSERT INTO learning_evidence VALUES (?,?,?,?,?,?,?,?)",
+        self.db.execute(
+            "INSERT INTO learning_evidence "
+            "(id,learner,thread,run,quiz,kind,body,created) VALUES (?,?,?,?,?,?,?,?)",
                         (identifier, ctx.learner, ctx.thread_id, ctx.run_id, quiz, kind,
                          json.dumps(public_data(body), ensure_ascii=False), time.time()))
         return "evidence:" + identifier
 
     def trace(self, learner, request):
         attempts = self.db.execute(
-            "SELECT id,run,status,reason,started,finished FROM run_attempts "
+            "SELECT id,run,status,reason,started,finished,app_version,"
+            "trace_schema_version,provider,model,config_fingerprint FROM run_attempts "
             "WHERE learner=? AND request=? ORDER BY rowid", (learner, request)).fetchall()
         if not attempts:
             raise HTTPException(404, "执行记录不存在")
         return {"request_id": request, "attempts": [
             {"attempt_id": row[0], "run_id": row[1], "status": row[2], "stop_reason": row[3],
-             "started": row[4], "finished": row[5], "steps": [
+             "started": row[4], "finished": row[5], "app_version": row[6],
+             "trace_schema_version": row[7], "provider": row[8], "model": row[9],
+             "config_fingerprint": row[10], "steps": [
                  json.loads(step[0]) for step in self.db.execute(
                      "SELECT body FROM run_steps WHERE attempt=? ORDER BY seq", (row[0],)).fetchall()]}
             for row in attempts]}

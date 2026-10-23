@@ -1,9 +1,10 @@
 [project]
-name = "python"
-version = "0.1.0"
-description = "Add your description here"
+name = "eduagent-harness"
+version = "0.2.0"
+description = "Reliable execution harness and evaluation tools for the EduAgent tutor"
 readme = "README.md"
-requires-python = ">=3.13"
+license = "MIT"
+requires-python = ">=3.11"
 dependencies = [
     "anthropic>=0.104.1",
     "asyncpg>=0.31.0",
@@ -12,10 +13,46 @@ dependencies = [
     "openai>=2.38.0",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.1",
-    "pytest>=9.0.3",
-    "pytest-asyncio>=1.3.0",
     "redis>=7.4.0",
-    "sqlalchemy>=2.0.50",
+    "sqlalchemy[asyncio]>=2.0.50",
     "uvicorn>=0.48.0",
     "websockets>=16.0",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.3.0",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.3.0",
+]
+
+[project.scripts]
+eduagent-eval = "evals.cli:main"
+
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "agents*",
+    "api*",
+    "config*",
+    "core*",
+    "evals*",
+    "interaction*",
+    "llm*",
+    "models*",
+    "repositories*",
+    "schemas*",
+    "services*",
+]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"evals.datasets" = ["*.jsonl", "README.md"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

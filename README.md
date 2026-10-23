@@ -234,7 +234,7 @@ curl -X POST 'http://localhost:8888/api/demo/init?learner_id=student_001'
 
 ## 本地开发
 
-后端可使用 Python 3.13+，与 `pyproject.toml` 的版本声明一致；依赖安装使用 `requirements.txt`。
+后端使用 Python 3.11+，与 Docker 和 `pyproject.toml` 保持一致。
 
 先在仓库根目录启动数据库：
 
@@ -268,11 +268,11 @@ TUTOR_HANDLER_TIMEOUT_SECONDS=40
 cd python
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e ".[dev]"
 uvicorn api.main:app --reload --host 0.0.0.0 --port 8888
 ```
 
-当前 Harness 使用 Unix 文件锁，后端在 macOS 或 Linux 环境运行；Windows 可通过 WSL 或 Docker 启动。应用启动时自动创建 SQLite 执行表，并尝试初始化 PostgreSQL 数据表。
+当前 Harness 使用 Unix 文件锁，后端在 macOS 或 Linux 环境运行；Windows 可通过 WSL 或 Docker 启动。应用启动时按版本迁移 SQLite 执行表，并尝试初始化 PostgreSQL 数据表。
 
 在另一个终端启动前端：
 
@@ -357,6 +357,8 @@ WebSocket 保留基础交互及 Harness 去重、回滚能力；跨会话证据�
 | `python/agents/` | 四个角色及事件处理基类 |
 | `python/core/event_bus.py` | 事件分发、历史与日志 |
 | `python/core/harness.py` | 执行预算、请求去重、原子检查点与服务端测验 |
+| `python/core/harness_migrations.py` | Harness SQLite 顺序迁移与版本校验 |
+| `python/core/versions.py` | 应用、trace、eval schema 版本与配置指纹 |
 | `python/core/run_context.py` | 请求级上下文、执行标识、截止时间与步骤 |
 | `python/core/learning_history.py` | 会话、教学证据、检索、来源读取与执行轨迹 |
 | `python/core/tutor_runtime.py` | ContextBuilder 和有界原生工具循环 |
@@ -368,6 +370,7 @@ WebSocket 保留基础交互及 Harness 去重、回滚能力；跨会话证据�
 | `python/core/memory_manager.py` | 学习者模型缓存与持久化 |
 | `python/models/` | 数据表与异步数据库会话 |
 | `python/config/settings.py` | 环境变量和模型配置 |
+| `python/evals/` | 内置回归集、确定性评分、MRBench 适配与报告 CLI |
 | `python/tests/` | 算法、Agent 协作及 API 测试 |
 | `frontend/src/App.tsx` | 学习交互主界面 |
 | `frontend/src/components/` | 练习、反馈、复习与分析组件 |
@@ -398,7 +401,7 @@ python -m pytest tests/test_api.py -v
 python -m pytest tests/test_tutor_harness.py -q
 ```
 
-当前后端测试集 124 项通过，其中 23 项覆盖新增 Harness 边界。主链路 `LLMService.generate` 在 pytest 环境下跳过远程调用；原生工具测试使用 scripted 模型和 mock SDK，验证 OpenAI 兼容与 Anthropic 消息协议、权限、预算、追问接续及提交失败回滚，不调用真实模型。
+当前后端测试集 135 项通过。主链路 `LLMService.generate` 在 pytest 环境下跳过远程调用；原生工具测试使用 scripted 模型和 mock SDK，验证 OpenAI 兼容与 Anthropic 消息协议、权限、预算、追问接续及提交失败回滚，不调用真实模型。
 
 前端验证：
 
@@ -408,6 +411,24 @@ npm run build
 ```
 
 测试验证执行与状态边界，尚不代表真实模型答疑质量或教学效果已经评估。
+
+## 离线评测
+
+内置 20 条项目自有回归样例，覆盖教学回复规则、跨会话、权限、幂等、回滚和 trace。运行过程强制使用本地路径，不消耗模型额度：
+
+```bash
+cd python
+eduagent-eval validate
+eduagent-eval run --suite builtin
+```
+
+MRBench V1 使用固定 commit 和归档摘要按需下载到用户缓存，不进入仓库：
+
+```bash
+eduagent-eval fetch mrbench
+```
+
+转换结果保留 CC BY-SA 4.0、来源 ID、split 和 revision。确定性规则只用于回归与标签校准，不等同于真实教学效果评价。
 
 ## License
 
