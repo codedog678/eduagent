@@ -460,6 +460,8 @@ eduagent-eval fetch mrbench
 
 已执行的基线、提示 v2/v3 复测、逐条公开 Trace 和常见 Agent 指标见[评测文档与数据索引](docs/evals/README.md)。这些记录保留失败与待审阅项；各版本成绩分别报告。
 
+已有任务的[成功评分与工具语义评分](docs/evals/20261025/tutor-final-scoring-20261025.md)已完成单次 AI 审阅，包含逐项原文证据、工具选择/参数及漏调标签、分组成功率和边界裁定。原始报告不改写，没有新增模型请求；AI 标签不代表独立人工确认。
+
 根目录 `.env` 配置 `LLM_PROVIDER=deepseek`、`DEEPSEEK_MODEL=deepseek-flash`、`DEEPSEEK_THINKING=disabled` 后运行：
 
 ```bash

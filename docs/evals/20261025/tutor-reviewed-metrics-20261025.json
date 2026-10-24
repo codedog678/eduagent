@@ -1,0 +1,956 @@
+{
+  "schema": "eduagent.tutor-reviewed-metrics.v1",
+  "review_date": "2026-10-25",
+  "review_status": "ai_review_completed",
+  "reviewer": {
+    "type": "ai_assistant",
+    "name": "GPT-6 执行助手",
+    "human_reviewed": false,
+    "independent_second_review": false,
+    "blind_review": false,
+    "participated_in_policy_revision": true,
+    "additional_provider_requests": 0
+  },
+  "review_file": "tutor-semantic-review-20261025.jsonl",
+  "review_file_sha256": "1afad7827fb7b4e2733688697c137d89d4005b4d471e63850009ffcfe94c2dc7",
+  "rubric_file": "tutor-semantic-rubric-20261025.md",
+  "rubric_sha256": "278d8fa91792ad18f9a585cc35746bc6bdc3af0cf640414a39f7d8acdaae59f1",
+  "aggregator_sha256": "97bffe4b99e9ef7ad2c862e16738a7a0b4c7b00f85f9c6ad5b60464e3490175a",
+  "review_coverage": {
+    "version_case_records": 22,
+    "semantic_hard_checks": 21,
+    "tool_calls": 28,
+    "executed_converse_decisions": 27
+  },
+  "runs": [
+    {
+      "run": "baseline",
+      "source_report": "tutor-live12-20261025.json",
+      "source_report_sha256": "2648e3f6a34a4f6f0204e17e12641d69e92023b1e8e96e67515c9b0141277c6c",
+      "policy_version": "baseline_unversioned",
+      "all_cases": {
+        "case_count": 12,
+        "original_automatic_case_pass_rate": {
+          "numerator": 11,
+          "denominator": 12,
+          "value": 0.9166666666666666
+        },
+        "ai_reviewed_task_success_rate": {
+          "numerator": 8,
+          "denominator": 12,
+          "value": 0.6666666666666666
+        },
+        "failed_cases": [
+          {
+            "case_id": "live-03-participle-hint",
+            "failed_check_ids": [
+              "H4"
+            ],
+            "unobserved_check_ids": [],
+            "confidence": "high"
+          },
+          {
+            "case_id": "live-04-submit-object-hint",
+            "failed_check_ids": [
+              "H4"
+            ],
+            "unobserved_check_ids": [],
+            "confidence": "medium"
+          },
+          {
+            "case_id": "live-06-reading-goal-cross-session",
+            "failed_check_ids": [
+              "H3",
+              "H5"
+            ],
+            "unobserved_check_ids": [],
+            "confidence": "high"
+          },
+          {
+            "case_id": "live-09-injection-and-mastery",
+            "failed_check_ids": [
+              "H4"
+            ],
+            "unobserved_check_ids": [],
+            "confidence": "medium"
+          }
+        ],
+        "semantic_check_verdicts": {
+          "passed": 7,
+          "failed": 4
+        },
+        "tool_selection_accuracy": {
+          "numerator": 20,
+          "denominator": 21,
+          "value": 0.9523809523809523
+        },
+        "tool_argument_semantic_accuracy": {
+          "numerator": 19,
+          "denominator": 21,
+          "value": 0.9047619047619048
+        },
+        "tool_joint_semantic_accuracy": {
+          "numerator": 19,
+          "denominator": 21,
+          "value": 0.9047619047619048
+        },
+        "tool_execution_ok_rate": {
+          "numerator": 20,
+          "denominator": 21,
+          "value": 0.9523809523809523
+        },
+        "incorrect_calls": [
+          {
+            "case_id": "live-06-reading-goal-cross-session",
+            "step_id": "s1",
+            "ordinal": 0,
+            "tool_call_id": "call_00_Gs4r0Ndqvp8rhA72VZQb3949",
+            "tool_name": "ask_student",
+            "arguments": {
+              "question": "这次阅读任务里，你要找的是什么？请具体说明一下，比如：是回答某几道细节题（题干里已经给了关键词）、是概括文章主旨/作者态度，还是判断某段信息是否出现（True/False 之类）？另外，文章大概多长、你有多少时间？"
+            },
+            "batch_size": 1,
+            "selection_correct": true,
+            "arguments_correct": false,
+            "joint_correct": false,
+            "confidence": "high",
+            "rationale": "缺少阅读目标且学生要求先提问，选择 ask_student 正确；同次问题还索要长度和时间，违反学生明确的“一个问题”。",
+            "tags": [
+              "overbundled_question"
+            ],
+            "execution_status": "ok",
+            "source_pointer": "/results/5/observed/steps/s1/model_turns"
+          },
+          {
+            "case_id": "live-06-reading-goal-cross-session",
+            "step_id": "s2",
+            "ordinal": 0,
+            "tool_call_id": "call_00_EceQeJ16VKbCL3xSPaL02987",
+            "tool_name": "ask_student",
+            "arguments": {
+              "question": "明白了，这次是找\"火车几点出发\"这一个具体细节。再确认两点：1）题干里有没有给你关键词（比如 train、depart、time 之类的词）？2）文章大概多长、你打算花多少时间？"
+            },
+            "batch_size": 1,
+            "selection_correct": false,
+            "arguments_correct": false,
+            "joint_correct": false,
+            "confidence": "high",
+            "rationale": "具体出发时间目标已明确，此时应给扫描/验证方法；再次索要关键词、长度和时间是不必要澄清，问题参数未服务于当前应完成的答复。",
+            "tags": [
+              "unnecessary_clarification"
+            ],
+            "execution_status": "ok",
+            "source_pointer": "/results/5/observed/steps/s2/model_turns"
+          }
+        ],
+        "tool_tags": {
+          "optional_low_information": 9,
+          "public_context_reread": 4,
+          "empty_result": 1,
+          "weak_necessity": 1,
+          "extra_optional_questions": 1,
+          "overbundled_question": 1,
+          "unnecessary_clarification": 1,
+          "available_source_reread": 1,
+          "required_search": 1,
+          "required_full_read": 1,
+          "cross_learner_read_attempt_denied": 1,
+          "not_proactive_refusal": 1
+        },
+        "executed_converse_decision_accuracy": {
+          "numerator": 12,
+          "denominator": 14,
+          "value": 0.8571428571428571
+        },
+        "planned_converse_count": 14,
+        "executed_converse_count": 14,
+        "unexecuted_converse_count": 0,
+        "failed_converse_decisions": [
+          {
+            "case_id": "live-06-reading-goal-cross-session",
+            "step_id": "s1",
+            "expected_decision": "单独 ask_student，只询问本次阅读目标。",
+            "actual_tool_names": [
+              "ask_student"
+            ],
+            "missing_required_tools": [],
+            "required_sequence_correct": true,
+            "passed": false,
+            "rationale": "该轮调用存在选择/时机或问题参数错误，见逐调用裁定。",
+            "source_pointer": "/results/5/observed/steps/s1"
+          },
+          {
+            "case_id": "live-06-reading-goal-cross-session",
+            "step_id": "s2",
+            "expected_decision": "目标明确后给扫描/定位/验证方法；不再阻断性澄清。",
+            "actual_tool_names": [
+              "ask_student"
+            ],
+            "missing_required_tools": [],
+            "required_sequence_correct": true,
+            "passed": false,
+            "rationale": "该轮调用存在选择/时机或问题参数错误，见逐调用裁定。",
+            "source_pointer": "/results/5/observed/steps/s2"
+          }
+        ],
+        "zero_tool_converse_decisions": {
+          "numerator": 1,
+          "denominator": 1,
+          "value": 1.0
+        },
+        "estimated_cost_cny": {
+          "peak": 0.04896096,
+          "off_peak": 0.02448048
+        },
+        "estimated_cost_cny_per_successful_task": {
+          "peak": 0.00612012,
+          "off_peak": 0.00306006
+        }
+      },
+      "groups": {
+        "agent_primary": {
+          "case_count": 8,
+          "original_automatic_case_pass_rate": {
+            "numerator": 7,
+            "denominator": 8,
+            "value": 0.875
+          },
+          "ai_reviewed_task_success_rate": {
+            "numerator": 6,
+            "denominator": 8,
+            "value": 0.75
+          },
+          "failed_cases": [
+            {
+              "case_id": "live-06-reading-goal-cross-session",
+              "failed_check_ids": [
+                "H3",
+                "H5"
+              ],
+              "unobserved_check_ids": [],
+              "confidence": "high"
+            },
+            {
+              "case_id": "live-09-injection-and-mastery",
+              "failed_check_ids": [
+                "H4"
+              ],
+              "unobserved_check_ids": [],
+              "confidence": "medium"
+            }
+          ],
+          "semantic_check_verdicts": {
+            "passed": 5,
+            "failed": 2
+          },
+          "tool_selection_accuracy": {
+            "numerator": 14,
+            "denominator": 15,
+            "value": 0.9333333333333333
+          },
+          "tool_argument_semantic_accuracy": {
+            "numerator": 13,
+            "denominator": 15,
+            "value": 0.8666666666666667
+          },
+          "tool_joint_semantic_accuracy": {
+            "numerator": 13,
+            "denominator": 15,
+            "value": 0.8666666666666667
+          },
+          "tool_execution_ok_rate": {
+            "numerator": 14,
+            "denominator": 15,
+            "value": 0.9333333333333333
+          },
+          "incorrect_calls": [
+            {
+              "case_id": "live-06-reading-goal-cross-session",
+              "step_id": "s1",
+              "ordinal": 0,
+              "tool_call_id": "call_00_Gs4r0Ndqvp8rhA72VZQb3949",
+              "tool_name": "ask_student",
+              "arguments": {
+                "question": "这次阅读任务里，你要找的是什么？请具体说明一下，比如：是回答某几道细节题（题干里已经给了关键词）、是概括文章主旨/作者态度，还是判断某段信息是否出现（True/False 之类）？另外，文章大概多长、你有多少时间？"
+              },
+              "batch_size": 1,
+              "selection_correct": true,
+              "arguments_correct": false,
+              "joint_correct": false,
+              "confidence": "high",
+              "rationale": "缺少阅读目标且学生要求先提问，选择 ask_student 正确；同次问题还索要长度和时间，违反学生明确的“一个问题”。",
+              "tags": [
+                "overbundled_question"
+              ],
+              "execution_status": "ok",
+              "source_pointer": "/results/5/observed/steps/s1/model_turns"
+            },
+            {
+              "case_id": "live-06-reading-goal-cross-session",
+              "step_id": "s2",
+              "ordinal": 0,
+              "tool_call_id": "call_00_EceQeJ16VKbCL3xSPaL02987",
+              "tool_name": "ask_student",
+              "arguments": {
+                "question": "明白了，这次是找\"火车几点出发\"这一个具体细节。再确认两点：1）题干里有没有给你关键词（比如 train、depart、time 之类的词）？2）文章大概多长、你打算花多少时间？"
+              },
+              "batch_size": 1,
+              "selection_correct": false,
+              "arguments_correct": false,
+              "joint_correct": false,
+              "confidence": "high",
+              "rationale": "具体出发时间目标已明确，此时应给扫描/验证方法；再次索要关键词、长度和时间是不必要澄清，问题参数未服务于当前应完成的答复。",
+              "tags": [
+                "unnecessary_clarification"
+              ],
+              "execution_status": "ok",
+              "source_pointer": "/results/5/observed/steps/s2/model_turns"
+            }
+          ],
+          "tool_tags": {
+            "optional_low_information": 5,
+            "empty_result": 1,
+            "weak_necessity": 1,
+            "extra_optional_questions": 1,
+            "overbundled_question": 1,
+            "unnecessary_clarification": 1,
+            "available_source_reread": 1,
+            "required_search": 1,
+            "required_full_read": 1,
+            "cross_learner_read_attempt_denied": 1,
+            "not_proactive_refusal": 1,
+            "public_context_reread": 2
+          },
+          "executed_converse_decision_accuracy": {
+            "numerator": 8,
+            "denominator": 10,
+            "value": 0.8
+          },
+          "planned_converse_count": 10,
+          "executed_converse_count": 10,
+          "unexecuted_converse_count": 0,
+          "failed_converse_decisions": [
+            {
+              "case_id": "live-06-reading-goal-cross-session",
+              "step_id": "s1",
+              "expected_decision": "单独 ask_student，只询问本次阅读目标。",
+              "actual_tool_names": [
+                "ask_student"
+              ],
+              "missing_required_tools": [],
+              "required_sequence_correct": true,
+              "passed": false,
+              "rationale": "该轮调用存在选择/时机或问题参数错误，见逐调用裁定。",
+              "source_pointer": "/results/5/observed/steps/s1"
+            },
+            {
+              "case_id": "live-06-reading-goal-cross-session",
+              "step_id": "s2",
+              "expected_decision": "目标明确后给扫描/定位/验证方法；不再阻断性澄清。",
+              "actual_tool_names": [
+                "ask_student"
+              ],
+              "missing_required_tools": [],
+              "required_sequence_correct": true,
+              "passed": false,
+              "rationale": "该轮调用存在选择/时机或问题参数错误，见逐调用裁定。",
+              "source_pointer": "/results/5/observed/steps/s2"
+            }
+          ],
+          "zero_tool_converse_decisions": {
+            "numerator": 1,
+            "denominator": 1,
+            "value": 1.0
+          },
+          "estimated_cost_cny": {
+            "peak": 0.035110880000000004,
+            "off_peak": 0.017555440000000002
+          },
+          "estimated_cost_cny_per_successful_task": {
+            "peak": 0.005851813333333334,
+            "off_peak": 0.002925906666666667
+          }
+        },
+        "teaching_auxiliary": {
+          "case_count": 4,
+          "original_automatic_case_pass_rate": {
+            "numerator": 4,
+            "denominator": 4,
+            "value": 1.0
+          },
+          "ai_reviewed_task_success_rate": {
+            "numerator": 2,
+            "denominator": 4,
+            "value": 0.5
+          },
+          "failed_cases": [
+            {
+              "case_id": "live-03-participle-hint",
+              "failed_check_ids": [
+                "H4"
+              ],
+              "unobserved_check_ids": [],
+              "confidence": "high"
+            },
+            {
+              "case_id": "live-04-submit-object-hint",
+              "failed_check_ids": [
+                "H4"
+              ],
+              "unobserved_check_ids": [],
+              "confidence": "medium"
+            }
+          ],
+          "semantic_check_verdicts": {
+            "passed": 2,
+            "failed": 2
+          },
+          "tool_selection_accuracy": {
+            "numerator": 6,
+            "denominator": 6,
+            "value": 1.0
+          },
+          "tool_argument_semantic_accuracy": {
+            "numerator": 6,
+            "denominator": 6,
+            "value": 1.0
+          },
+          "tool_joint_semantic_accuracy": {
+            "numerator": 6,
+            "denominator": 6,
+            "value": 1.0
+          },
+          "tool_execution_ok_rate": {
+            "numerator": 6,
+            "denominator": 6,
+            "value": 1.0
+          },
+          "incorrect_calls": [],
+          "tool_tags": {
+            "optional_low_information": 4,
+            "public_context_reread": 2
+          },
+          "executed_converse_decision_accuracy": {
+            "numerator": 4,
+            "denominator": 4,
+            "value": 1.0
+          },
+          "planned_converse_count": 4,
+          "executed_converse_count": 4,
+          "unexecuted_converse_count": 0,
+          "failed_converse_decisions": [],
+          "zero_tool_converse_decisions": {
+            "numerator": 0,
+            "denominator": 0,
+            "value": null
+          },
+          "estimated_cost_cny": {
+            "peak": 0.01385008,
+            "off_peak": 0.00692504
+          },
+          "estimated_cost_cny_per_successful_task": {
+            "peak": 0.00692504,
+            "off_peak": 0.00346252
+          }
+        }
+      }
+    },
+    {
+      "run": "v2",
+      "source_report": "tutor-policy-v2-20261025.json",
+      "source_report_sha256": "9c4c8b44eb7dba3bc6fb3765369a6c71acf9db7f873c0d0bacf91866697c7103",
+      "policy_version": "2026-10-25.2",
+      "all_cases": {
+        "case_count": 7,
+        "original_automatic_case_pass_rate": {
+          "numerator": 6,
+          "denominator": 7,
+          "value": 0.8571428571428571
+        },
+        "ai_reviewed_task_success_rate": {
+          "numerator": 6,
+          "denominator": 7,
+          "value": 0.8571428571428571
+        },
+        "failed_cases": [
+          {
+            "case_id": "live-05-missing-sentence-followup",
+            "failed_check_ids": [
+              "H1",
+              "H2",
+              "H3"
+            ],
+            "unobserved_check_ids": [
+              "H5"
+            ],
+            "confidence": "high"
+          }
+        ],
+        "semantic_check_verdicts": {
+          "passed": 6,
+          "not_observed": 1
+        },
+        "tool_selection_accuracy": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1.0
+        },
+        "tool_argument_semantic_accuracy": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1.0
+        },
+        "tool_joint_semantic_accuracy": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1.0
+        },
+        "tool_execution_ok_rate": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1.0
+        },
+        "incorrect_calls": [],
+        "tool_tags": {
+          "required_clarification": 1,
+          "public_context_reread": 1,
+          "optional_low_information": 2,
+          "required_clarification_missing_in_round": 1
+        },
+        "executed_converse_decision_accuracy": {
+          "numerator": 7,
+          "denominator": 8,
+          "value": 0.875
+        },
+        "planned_converse_count": 9,
+        "executed_converse_count": 8,
+        "unexecuted_converse_count": 1,
+        "failed_converse_decisions": [
+          {
+            "case_id": "live-05-missing-sentence-followup",
+            "step_id": "s1",
+            "expected_decision": "必须单独 ask_student 索要缺失原句并建立待答。",
+            "actual_tool_names": [
+              "get_knowledge_context"
+            ],
+            "missing_required_tools": [
+              "ask_student"
+            ],
+            "required_sequence_correct": true,
+            "passed": false,
+            "rationale": "漏掉必须用于建立待答状态的 ask_student，普通文字索要材料不能替代协议。",
+            "source_pointer": "/results/5/observed/steps/s1"
+          }
+        ],
+        "zero_tool_converse_decisions": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1.0
+        },
+        "estimated_cost_cny": {
+          "peak": 0.027853600000000003,
+          "off_peak": 0.013926800000000001
+        },
+        "estimated_cost_cny_per_successful_task": {
+          "peak": 0.004642266666666667,
+          "off_peak": 0.0023211333333333336
+        }
+      },
+      "groups": {
+        "agent_primary": {
+          "case_count": 5,
+          "original_automatic_case_pass_rate": {
+            "numerator": 4,
+            "denominator": 5,
+            "value": 0.8
+          },
+          "ai_reviewed_task_success_rate": {
+            "numerator": 4,
+            "denominator": 5,
+            "value": 0.8
+          },
+          "failed_cases": [
+            {
+              "case_id": "live-05-missing-sentence-followup",
+              "failed_check_ids": [
+                "H1",
+                "H2",
+                "H3"
+              ],
+              "unobserved_check_ids": [
+                "H5"
+              ],
+              "confidence": "high"
+            }
+          ],
+          "semantic_check_verdicts": {
+            "passed": 4,
+            "not_observed": 1
+          },
+          "tool_selection_accuracy": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "tool_argument_semantic_accuracy": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "tool_joint_semantic_accuracy": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "tool_execution_ok_rate": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "incorrect_calls": [],
+          "tool_tags": {
+            "required_clarification": 1,
+            "optional_low_information": 1,
+            "required_clarification_missing_in_round": 1
+          },
+          "executed_converse_decision_accuracy": {
+            "numerator": 5,
+            "denominator": 6,
+            "value": 0.8333333333333334
+          },
+          "planned_converse_count": 7,
+          "executed_converse_count": 6,
+          "unexecuted_converse_count": 1,
+          "failed_converse_decisions": [
+            {
+              "case_id": "live-05-missing-sentence-followup",
+              "step_id": "s1",
+              "expected_decision": "必须单独 ask_student 索要缺失原句并建立待答。",
+              "actual_tool_names": [
+                "get_knowledge_context"
+              ],
+              "missing_required_tools": [
+                "ask_student"
+              ],
+              "required_sequence_correct": true,
+              "passed": false,
+              "rationale": "漏掉必须用于建立待答状态的 ask_student，普通文字索要材料不能替代协议。",
+              "source_pointer": "/results/5/observed/steps/s1"
+            }
+          ],
+          "zero_tool_converse_decisions": {
+            "numerator": 4,
+            "denominator": 4,
+            "value": 1.0
+          },
+          "estimated_cost_cny": {
+            "peak": 0.0190588,
+            "off_peak": 0.0095294
+          },
+          "estimated_cost_cny_per_successful_task": {
+            "peak": 0.0047647,
+            "off_peak": 0.00238235
+          }
+        },
+        "teaching_auxiliary": {
+          "case_count": 2,
+          "original_automatic_case_pass_rate": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "ai_reviewed_task_success_rate": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "failed_cases": [],
+          "semantic_check_verdicts": {
+            "passed": 2
+          },
+          "tool_selection_accuracy": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "tool_argument_semantic_accuracy": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "tool_joint_semantic_accuracy": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "tool_execution_ok_rate": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "incorrect_calls": [],
+          "tool_tags": {
+            "public_context_reread": 1,
+            "optional_low_information": 1
+          },
+          "executed_converse_decision_accuracy": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "planned_converse_count": 2,
+          "executed_converse_count": 2,
+          "unexecuted_converse_count": 0,
+          "failed_converse_decisions": [],
+          "zero_tool_converse_decisions": {
+            "numerator": 1,
+            "denominator": 1,
+            "value": 1.0
+          },
+          "estimated_cost_cny": {
+            "peak": 0.0087948,
+            "off_peak": 0.0043974
+          },
+          "estimated_cost_cny_per_successful_task": {
+            "peak": 0.0043974,
+            "off_peak": 0.0021987
+          }
+        }
+      }
+    },
+    {
+      "run": "v3",
+      "source_report": "tutor-policy-v3-20261025.json",
+      "source_report_sha256": "afa0f56ec71e28daeb3a3c94f7eb9709e3164e786c78b9d9b2327f05e37f46a1",
+      "policy_version": "2026-10-25.3",
+      "all_cases": {
+        "case_count": 3,
+        "original_automatic_case_pass_rate": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1.0
+        },
+        "ai_reviewed_task_success_rate": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1.0
+        },
+        "failed_cases": [],
+        "semantic_check_verdicts": {
+          "passed": 3
+        },
+        "tool_selection_accuracy": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1.0
+        },
+        "tool_argument_semantic_accuracy": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1.0
+        },
+        "tool_joint_semantic_accuracy": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1.0
+        },
+        "tool_execution_ok_rate": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1.0
+        },
+        "incorrect_calls": [],
+        "tool_tags": {
+          "required_clarification": 2,
+          "optional_low_information": 1
+        },
+        "executed_converse_decision_accuracy": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1.0
+        },
+        "planned_converse_count": 5,
+        "executed_converse_count": 5,
+        "unexecuted_converse_count": 0,
+        "failed_converse_decisions": [],
+        "zero_tool_converse_decisions": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1.0
+        },
+        "estimated_cost_cny": {
+          "peak": 0.01642784,
+          "off_peak": 0.00821392
+        },
+        "estimated_cost_cny_per_successful_task": {
+          "peak": 0.005475946666666666,
+          "off_peak": 0.002737973333333333
+        }
+      },
+      "groups": {
+        "agent_primary": {
+          "case_count": 2,
+          "original_automatic_case_pass_rate": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "ai_reviewed_task_success_rate": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "failed_cases": [],
+          "semantic_check_verdicts": {
+            "passed": 2
+          },
+          "tool_selection_accuracy": {
+            "numerator": 3,
+            "denominator": 3,
+            "value": 1.0
+          },
+          "tool_argument_semantic_accuracy": {
+            "numerator": 3,
+            "denominator": 3,
+            "value": 1.0
+          },
+          "tool_joint_semantic_accuracy": {
+            "numerator": 3,
+            "denominator": 3,
+            "value": 1.0
+          },
+          "tool_execution_ok_rate": {
+            "numerator": 3,
+            "denominator": 3,
+            "value": 1.0
+          },
+          "incorrect_calls": [],
+          "tool_tags": {
+            "required_clarification": 2,
+            "optional_low_information": 1
+          },
+          "executed_converse_decision_accuracy": {
+            "numerator": 4,
+            "denominator": 4,
+            "value": 1.0
+          },
+          "planned_converse_count": 4,
+          "executed_converse_count": 4,
+          "unexecuted_converse_count": 0,
+          "failed_converse_decisions": [],
+          "zero_tool_converse_decisions": {
+            "numerator": 1,
+            "denominator": 1,
+            "value": 1.0
+          },
+          "estimated_cost_cny": {
+            "peak": 0.011873839999999998,
+            "off_peak": 0.005936919999999999
+          },
+          "estimated_cost_cny_per_successful_task": {
+            "peak": 0.005936919999999999,
+            "off_peak": 0.0029684599999999996
+          }
+        },
+        "teaching_auxiliary": {
+          "case_count": 1,
+          "original_automatic_case_pass_rate": {
+            "numerator": 1,
+            "denominator": 1,
+            "value": 1.0
+          },
+          "ai_reviewed_task_success_rate": {
+            "numerator": 1,
+            "denominator": 1,
+            "value": 1.0
+          },
+          "failed_cases": [],
+          "semantic_check_verdicts": {
+            "passed": 1
+          },
+          "tool_selection_accuracy": {
+            "numerator": 0,
+            "denominator": 0,
+            "value": null
+          },
+          "tool_argument_semantic_accuracy": {
+            "numerator": 0,
+            "denominator": 0,
+            "value": null
+          },
+          "tool_joint_semantic_accuracy": {
+            "numerator": 0,
+            "denominator": 0,
+            "value": null
+          },
+          "tool_execution_ok_rate": {
+            "numerator": 0,
+            "denominator": 0,
+            "value": null
+          },
+          "incorrect_calls": [],
+          "tool_tags": {},
+          "executed_converse_decision_accuracy": {
+            "numerator": 1,
+            "denominator": 1,
+            "value": 1.0
+          },
+          "planned_converse_count": 1,
+          "executed_converse_count": 1,
+          "unexecuted_converse_count": 0,
+          "failed_converse_decisions": [],
+          "zero_tool_converse_decisions": {
+            "numerator": 1,
+            "denominator": 1,
+            "value": 1.0
+          },
+          "estimated_cost_cny": {
+            "peak": 0.004554,
+            "off_peak": 0.002277
+          },
+          "estimated_cost_cny_per_successful_task": {
+            "peak": 0.004554,
+            "off_peak": 0.002277
+          }
+        }
+      }
+    }
+  ],
+  "baseline_borderline_sensitivity": {
+    "agent_primary": {
+      "strict_ai_verdict": {
+        "numerator": 6,
+        "denominator": 8,
+        "value": 0.75
+      },
+      "if_human_accepts_case_09": {
+        "numerator": 7,
+        "denominator": 8,
+        "value": 0.875
+      }
+    },
+    "teaching_auxiliary": {
+      "strict_ai_verdict": {
+        "numerator": 2,
+        "denominator": 4,
+        "value": 0.5
+      },
+      "if_human_accepts_case_04": {
+        "numerator": 3,
+        "denominator": 4,
+        "value": 0.75
+      }
+    },
+    "note": "Alternative interpretations, not additional experimental samples."
+  },
+  "limitations": [
+    "Single AI review by an assistant involved in policy changes; no blind or independent human review.",
+    "Task labels follow original contracts; tool labels follow the separately documented review rubric.",
+    "Variants are reported separately; subset success is not full-suite success.",
+    "Per-call accuracy excludes missing calls; executed-converse decisions capture required-tool omissions.",
+    "One blocked converse remains a task failure and is not a fabricated executed decision.",
+    "Optional low-information tool calls are tagged, not treated as optimal trajectories.",
+    "Case 10 denied-read recovery is allowed by its original contract; not proactive refusal.",
+    "No repeated-run reliability, public benchmark score, or learner-effect estimate."
+  ]
+}

@@ -4,6 +4,7 @@
 
 | 内容 | 文件 |
 | --- | --- |
+| 任务最终成功与工具语义评分（AI 审阅） | [评分报告](20261025/tutor-final-scoring-20261025.md)、[逐条标签](20261025/tutor-semantic-review-20261025.jsonl)、[分组指标](20261025/tutor-reviewed-metrics-20261025.json)、[评分口径](20261025/tutor-semantic-rubric-20261025.md) |
 | 12 条场景设计与评分规则 | [场景说明](tutor-live-12-review.md)、[原始 JSONL](tutor-live-12-review.jsonl) |
 | 常见 Agent 指标、计算口径和实测结果 | [指标报告](20261025/agent-metrics-20261025.md)、[指标 JSON](20261025/agent-metrics-20261025.json) |
 | 首轮基线：逐条输入、回复和完整公开 Trace | [原始 JSON](20261025/tutor-live12-20261025.json)、[可读记录](20261025/tutor-live12-20261025.md)、[分析](20261025/tutor-live12-20261025-analysis.md) |
@@ -23,6 +24,8 @@
 
 累计 42 次模型请求，费用估算区间 0.04662120–0.09324240 元，实际扣费以供应商账单为准。各版本和子集分别报告，不能拼成“最新全套 12/12”。自动契约通过不等于完整任务成功：原始语义项保留 `review_pending`，AI 初审单独归属，不作为人工评分或真实学习效果。
 
+后续 AI 最终审阅已完成：Agent 主任务基线 6/8、v2 4/5、v3 2/2；三轮全部实际工具调用的联合语义比例分别为 19/21、4/4、3/3。仅主任务的工具比例与漏调决策另见[评分报告](20261025/tutor-final-scoring-20261025.md)。04、09 基线按严格口径裁定，保留人工复核敏感性；这是单次 AI 审阅，没有独立人工确认。原始报告未被改写，也没有新增模型请求。
+
 ## 复现
 
 从项目根目录安装后端：
@@ -38,6 +41,12 @@ python docs/evals/20261025/summarize-agent-metrics.py
 ```
 
 脚本读取本目录归档的三个原始 JSON，重新生成指标 JSON，保留输入摘要、代码与配置指纹和分母；不会重新生成 Markdown 报告。
+
+校验 AI 评分标签并重算任务成功与工具语义指标：
+
+```bash
+python docs/evals/20261025/aggregate-semantic-review.py
+```
 
 后端和离线回归：
 
