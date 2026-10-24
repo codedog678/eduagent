@@ -5,7 +5,6 @@ OpenAI LLM 适配器。
 """
 
 import logging
-from typing import Optional
 
 from llm.base import BaseLLM, LLMResponse, Message
 
@@ -28,7 +27,7 @@ class OpenAILLM(BaseLLM):
     async def chat(
         self,
         messages: list[Message],
-        temperature: float = 0.7,
+        temperature: float | None = 0.7,
         max_tokens: int = 1024,
         **kwargs,
     ) -> LLMResponse:
@@ -43,9 +42,10 @@ class OpenAILLM(BaseLLM):
         payload = {
             "model": self.model,
             "messages": [{"role": m.role, "content": m.content} for m in messages],
-            "temperature": temperature,
             "max_tokens": max_tokens,
         }
+        if temperature is not None:
+            payload["temperature"] = temperature
         payload.update(kwargs)
 
         try:
@@ -75,7 +75,7 @@ class OpenAILLM(BaseLLM):
             )
 
         except Exception as e:
-            logger.error("[OpenAI] Request failed: %s", e)
+            logger.error("[OpenAI] Request failed: %s", type(e).__name__)
             raise
 
     def runtime_info(self) -> dict:

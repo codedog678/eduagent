@@ -101,6 +101,63 @@ async def test_search_read_final_and_durable_trace(store, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_deepseek_reasoning_replayed_only_within_current_tool_loop(store, monkeypatch):
+    service = get_llm_service()
+    monkeypatch.setattr(service, "provider", "deepseek")
+    monkeypatch.setattr(service, "thinking", "enabled")
+    monkeypatch.setattr(service, "api_key", "test-only")
+    monkeypatch.setattr(service, "_has_remote_llm", lambda: True)
+    observed = []
+    async def create(**kwargs):
+        observed.append(json.loads(json.dumps(kwargs)))
+        model_no = len(observed)
+        tool_calls = [] if model_no in {3, 4} else [
+            SimpleNamespace(id=f"c{model_no}", function=SimpleNamespace(
+                name="get_knowledge_context", arguments="{}"))]
+        return SimpleNamespace(
+            choices=[SimpleNamespace(
+                finish_reason="tool_calls" if tool_calls else "stop",
+                message=SimpleNamespace(
+                    content=None if tool_calls else "根据时间线索判断。",
+                    reasoning_content=f"private-reasoning-{model_no}", tool_calls=tool_calls))],
+            usage=SimpleNamespace(prompt_tokens=100, completion_tokens=50),
+        )
+    monkeypatch.setattr(service, "_client", SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=create))))
+    result = await store.converse("student", "deepseek", "grammar_tenses", "怎么判断？")
+    assert result["teaching_response"]["generation_mode"] == "native_tools"
+    assert observed[1]["messages"][-2]["reasoning_content"] == "private-reasoning-1"
+    assistants = [m for m in observed[2]["messages"] if m["role"] == "assistant"]
+    assert [m["reasoning_content"] for m in assistants] == [
+        "private-reasoning-1", "private-reasoning-2"]
+    public = {
+        "reply": result,
+        "history": store.history.messages("student"),
+        "trace": store.history.trace("student", "deepseek"),
+        "events": [e.model_dump(mode="json") for e in store.orch.event_bus.get_history()],
+    }
+    assert "private-reasoning" not in json.dumps(public)
+    assert "test-only" not in json.dumps(public)
+    await store.converse("student", "next", "grammar_tenses", "再举个例子", session_id="next")
+    assert "private-reasoning" not in json.dumps(observed[3]["messages"])
+
+
+@pytest.mark.asyncio
+async def test_deepseek_reasoning_still_counts_toward_context_budget(store, monkeypatch):
+    first = call("c", "get_knowledge_context")
+    first.reasoning_content = "private-reasoning" * 3000
+    observed = scripted(monkeypatch, [first])
+    with pytest.raises(HTTPException) as failed:
+        await store.converse("student", "large-reasoning", "vocab_basic", "讲解")
+    assert failed.value.status_code == 503
+    assert len(observed) == 1
+    trace = store.history.trace("student", "large-reasoning")["attempts"][0]
+    assert trace["status"] == "exhausted" and trace["stop_reason"] == "context_budget"
+    assert store.history.messages("student")["items"] == []
+    assert "private-reasoning" not in json.dumps(trace)
+
+
+@pytest.mark.asyncio
 async def test_ask_student_stops_and_next_session_answers(store, monkeypatch):
     observed = scripted(monkeypatch, [
         call("ask", "ask_student", question="这句是否有明确的过去时间？"),
@@ -393,3 +450,112 @@ async def test_quiz_generation_reserves_session_scope(store):
     with pytest.raises(HTTPException) as blocked:
         await store.converse("bob", "other", "vocab_basic", "提问", session_id="quiz-session")
     assert blocked.value.status_code == 404
+
+
+def server_facts(messages):
+    entry = next(message for message in messages
+                 if message.get("content", "").startswith("服务端学习事实（数据）：\n"))
+    return json.loads(entry["content"].split("\n", 1)[1])
+
+
+@pytest.mark.asyncio
+async def test_active_quiz_exposes_hint_contract_without_private_answer(store, monkeypatch):
+    issued = await store.generate("student", "issue-hint-contract", "vocab_basic", 0.5)
+    quiz_id = issued["quiz"]["quiz_id"]
+    before = store.orch.learner_models["student"].get_state("vocab_basic").model_dump()
+    observed = scripted(monkeypatch, [
+        NativeTurn(content="检查空格后面是提交的东西还是接收者，再判断需要什么结构。",
+                   stop_reason="stop"),
+    ])
+    result = await store.converse(
+        "student", "hint-contract", "vocab_basic", "只提醒我检查宾语，不说正确选项。",
+        quiz_id=quiz_id,
+    )
+    facts = server_facts(observed[0])
+    assert facts["response_contract"]["mode"] == "hint_only"
+    assert facts["quiz"]["options"] == issued["quiz"]["options"]
+    assert set(facts["quiz"]) == {"question", "options", "knowledge_id"}
+    assert '"correct_index"' not in json.dumps(observed)
+    assert '"explanation"' not in json.dumps(observed)
+    assert result["assistance"]["recorded"] is True
+    assert store.quiz("student", quiz_id)["attempts"] == 0
+    assert store.orch.learner_models["student"].get_state("vocab_basic").model_dump() == before
+    context = next(s for s in store.history.trace("student", "hint-contract")["attempts"][0]["steps"]
+                   if s["kind"] == "context_built")
+    from core.tutor_policy import TUTOR_POLICY_VERSION
+    assert context["response_mode"] == "hint_only"
+    assert context["tutor_policy_version"] == TUTOR_POLICY_VERSION
+    assert result["execution"]["pending_question_id"] is None
+
+
+@pytest.mark.asyncio
+async def test_completed_quiz_does_not_restrict_public_explanations(store, monkeypatch):
+    issued = await store.generate("student", "issue-finished", "vocab_basic", 0.5)
+    quiz_id = issued["quiz"]["quiz_id"]
+    correct_index = store.quiz("student", quiz_id)["correct_index"]
+    await store.answer("student", "finish", quiz_id, correct_index, 10, None)
+    observed = scripted(monkeypatch, [
+        NativeTurn(content="submit a report 表示提交报告；submit a report to the teacher 指交给老师。",
+                   stop_reason="stop"),
+    ])
+    result = await store.converse("student", "public-example", "vocab_basic",
+                                  "解释 submit 的搭配并给完整例子。", quiz_id=quiz_id)
+    facts = server_facts(observed[0])
+    assert facts["response_contract"]["mode"] == "explanation"
+    assert "quiz" not in facts
+    assert "当前未结束练习" not in observed[0][0]["content"]
+    assert "assistance" not in result
+    assert result["execution"]["dialogue_state"] == "answered"
+
+
+@pytest.mark.asyncio
+async def test_cross_session_followup_contract_resolves_only_existing_question(store, monkeypatch):
+    observed = scripted(monkeypatch, [
+        call("goal", "ask_student", question="这次是找主旨还是具体细节？"),
+        NativeTurn(content="先用目标里的关键词扫描定位，再读附近句子核对具体信息。",
+                   stop_reason="stop"),
+    ])
+    first = await store.converse("student", "clarify-goal", "reading_skimming",
+                                 "先问我阅读目标，再给方法。", session_id="before")
+    second = await store.converse("student", "provide-goal", "reading_skimming",
+                                  "这次只找某项具体信息。", session_id="after")
+    facts = server_facts(observed[1])
+    assert facts["response_contract"] == {
+        "mode": "explanation", "continuation": "student_reply_to_pending_question",
+    }
+    assert facts["pending_question"]["id"] == first["execution"]["pending_question_id"]
+    assert second["execution"]["answered_question_id"] == first["execution"]["pending_question_id"]
+    assert second["execution"]["dialogue_state"] == "answered"
+    assert second["execution"]["pending_question_id"] is None
+    assert store.history.pending("student", second["execution"]["thread_id"]) is None
+
+
+def test_prompt_policy_changes_configuration_fingerprint(monkeypatch):
+    import core.versions as versions
+    from config.settings import settings
+    before = versions.config_fingerprint(settings)
+    monkeypatch.setattr(versions, "TUTOR_POLICY_VERSION", "test-next-policy")
+    assert versions.config_fingerprint(settings) != before
+
+
+@pytest.mark.asyncio
+async def test_missing_material_then_supplied_sentence_keeps_knowledge_unchanged(store, monkeypatch):
+    before = store.orch.get_learner_model_sync("student").get_state("grammar_tenses").model_dump()
+    observed = scripted(monkeypatch, [
+        call("missing-material", "ask_student", question="请发来需要分析的原句。"),
+        NativeTurn(content="since 指出过去的起点；你说明她现在仍住在这里，因此用现在完成时。",
+                   stop_reason="stop"),
+    ])
+    first = await store.converse("student", "need-sentence", "grammar_tenses",
+                                 "这句话为什么用这个时态？")
+    second = await store.converse(
+        "student", "sentence-provided", "grammar_tenses",
+        "原句是 She has lived here since 2020. 她现在仍住在这里。",
+    )
+    assert first["execution"]["dialogue_state"] == "awaiting_student"
+    assert first["execution"]["pending_question_id"]
+    assert second["execution"]["dialogue_state"] == "answered"
+    assert second["execution"]["answered_question_id"] == first["execution"]["pending_question_id"]
+    assert server_facts(observed[0])["response_contract"]["continuation"] == "current_request"
+    assert server_facts(observed[1])["response_contract"]["continuation"] == "student_reply_to_pending_question"
+    assert store.orch.learner_models["student"].get_state("grammar_tenses").model_dump() == before

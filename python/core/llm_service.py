@@ -41,6 +41,8 @@ class NativeToolCall(BaseModel):
 
 class NativeTurn(BaseModel):
     content: str = ""
+    # 只用于当前工具循环回传；公开序列化和 repr 均不包含内部思考。
+    reasoning_content: str | None = Field(default=None, exclude=True, repr=False)
     tool_calls: list[NativeToolCall] = Field(default_factory=list)
     stop_reason: str
     usage: dict[str, int] = Field(default_factory=dict)
@@ -294,6 +296,8 @@ class LLMService:
         model: str | None = None,
         config_source: str = "none",
         fallback_reason: str | None = None,
+        thinking: str = "disabled",
+        reasoning_effort: str = "high",
     ) -> None:
         self.provider = provider
         self.api_key = api_key
@@ -301,6 +305,8 @@ class LLMService:
         self.model = model or self._get_default_model()
         self.config_source = config_source
         self.fallback_reason = fallback_reason
+        self.thinking = thinking
+        self.reasoning_effort = reasoning_effort
         self._client: Any = None
 
     def _get_default_model(self) -> str:
@@ -311,7 +317,7 @@ class LLMService:
         if self.provider == "minimax":
             return "MiniMax-M2.7"
         if self.provider == "deepseek":
-            return "deepseek-chat"
+            return "deepseek-flash"
         return "template"
 
     def _has_remote_llm(self) -> bool:
@@ -336,14 +342,18 @@ class LLMService:
         if self._client is not None:
             return self._client
 
-        if self.provider == "openai":
+        if self.provider in {"openai", "deepseek"}:
             from openai import AsyncOpenAI
             from config.settings import settings
 
             self._client = AsyncOpenAI(
                 api_key=self.api_key,
-                base_url=self.base_url,
+                base_url=self.base_url or (
+                    "https://api.deepseek.com" if self.provider == "deepseek" else None
+                ),
                 timeout=settings.llm_timeout_seconds,
+                # 每轮模型调用只发一次请求，重试交给 Harness 管理。
+                **({"max_retries": 0} if self.provider == "deepseek" else {}),
             )
         elif self.provider == "anthropic":
             from anthropic import AsyncAnthropic
@@ -363,19 +373,21 @@ class LLMService:
                 base_url=self.base_url or "https://api.minimax.chat/v1",
                 timeout=settings.llm_timeout_seconds,
             )
-        elif self.provider == "deepseek":
-            from openai import AsyncOpenAI
-            from config.settings import settings
-
-            self._client = AsyncOpenAI(
-                api_key=self.api_key,
-                base_url=self.base_url or "https://api.deepseek.com/v1",
-                timeout=settings.llm_timeout_seconds,
-            )
         else:
             raise ValueError(f"Unsupported LLM provider: {self.provider}")
 
         return self._client
+
+    def _compatible_request_options(self, temperature: float) -> dict[str, Any]:
+        if self.provider != "deepseek":
+            return {"temperature": temperature}
+        options: dict[str, Any] = {"extra_body": {"thinking": {"type": self.thinking}}}
+        if self.thinking == "enabled":
+            # 思考模式下 temperature 不生效，只传官方支持的思考强度。
+            options["reasoning_effort"] = self.reasoning_effort
+        else:
+            options["temperature"] = temperature
+        return options
 
     async def tool_turn(self, messages: list[dict], tools: list[dict], max_tokens: int) -> NativeTurn:
         """原生工具协议；失败直接上抛，由运行边界处理，不能伪装成正常回复。"""
@@ -422,16 +434,28 @@ class LLMService:
             )
         response = await client.chat.completions.create(
             model=self.model, messages=messages, tools=tools, tool_choice="auto",
-            temperature=0.3, max_tokens=max_tokens,
+            max_tokens=max_tokens,
+            **self._compatible_request_options(temperature=0.3),
         )
         choice = response.choices[0]
+        usage = (
+            {"input_tokens": response.usage.prompt_tokens,
+             "output_tokens": response.usage.completion_tokens}
+            if response.usage else {}
+        )
+        if response.usage and self.provider == "deepseek":
+            for name in ("prompt_cache_hit_tokens", "prompt_cache_miss_tokens"):
+                value = getattr(response.usage, name, None)
+                if isinstance(value, int):
+                    usage[name] = value
         return NativeTurn(
             content=choice.message.content or "",
+            reasoning_content=getattr(choice.message, "reasoning_content", None)
+            if self.provider == "deepseek" and self.thinking == "enabled" else None,
             tool_calls=[NativeToolCall(id=c.id, name=c.function.name, arguments=c.function.arguments)
                         for c in choice.message.tool_calls or []],
             stop_reason=choice.finish_reason or "unknown",
-            usage={"input_tokens": response.usage.prompt_tokens,
-                   "output_tokens": response.usage.completion_tokens} if response.usage else {},
+            usage=usage,
         )
 
     async def generate(
@@ -505,8 +529,8 @@ class LLMService:
                 response = await client.chat.completions.create(
                     model=self.model,
                     messages=messages,
-                    temperature=temperature,
                     max_tokens=max_tokens,
+                    **self._compatible_request_options(temperature=temperature),
                 )
                 content = response.choices[0].message.content or ""
                 usage = {
@@ -516,7 +540,7 @@ class LLMService:
 
             return LLMResponse(content=content.strip(), model=self.model, usage=usage)
         except Exception as exc:
-            logger.error("LLM generation failed: %s", exc)
+            logger.error("LLM generation failed: %s", type(exc).__name__)
             return LLMResponse(content="", model=self.model, usage={})
 
     def build_quiz_evaluation_feedback(
@@ -1251,8 +1275,11 @@ def get_llm_service() -> LLMService:
             candidate = LLMService(
                 provider="deepseek",
                 api_key=settings.deepseek_api_key,
+                base_url=settings.deepseek_base_url,
                 model=settings.deepseek_model,
                 config_source=config_source,
+                thinking=settings.deepseek_thinking,
+                reasoning_effort=settings.deepseek_reasoning_effort,
             )
         else:
             logger.warning("No remote LLM configured, using local template responses")
@@ -1274,7 +1301,8 @@ def get_llm_service() -> LLMService:
             )
             _llm_service = candidate
         except Exception as exc:
-            logger.error("Remote LLM initialization failed, falling back to template mode: %s", exc)
+            logger.error("Remote LLM initialization failed, falling back to template mode: %s",
+                         type(exc).__name__)
             _llm_service = LLMService(
                 provider="template",
                 model="template",

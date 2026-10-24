@@ -28,6 +28,12 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--suite", default="builtin")
     run.add_argument("--output", type=Path)
 
+    live = subparsers.add_parser("run-live", help="run reviewed scripts with a real tutor model")
+    live.add_argument("--dataset", type=Path, required=True)
+    live.add_argument("--output", type=Path, default=Path("eval-results/tutor-live12.json"))
+    live.add_argument("--max-requests", type=int, default=42)
+    live.add_argument("--max-cny", type=float, default=3.0)
+
     fetch = subparsers.add_parser("fetch", help="fetch an external dataset")
     fetch.add_argument("dataset", choices=["mrbench"])
     fetch.add_argument("--cache-dir", type=Path)
@@ -55,6 +61,24 @@ def main(argv: list[str] | None = None) -> int:
             converted = fetch_and_convert(args.cache_dir, force=args.force)
             print(converted)
             return 0
+        if args.command == "run-live":
+            from evals.live_runner import run_live_suite
+
+            def progress(result, budget):
+                print(f"{result['case_id']}: {result['status']} "
+                      f"(requests={budget['requests']}, "
+                      f"peak_estimate={budget['estimated_peak_cny']:.6f} CNY)", flush=True)
+
+            report = asyncio.run(run_live_suite(
+                path=args.dataset, output=args.output,
+                max_requests=args.max_requests, max_cny=args.max_cny, progress=progress,
+            ))
+            for role, metrics in report["groups"].items():
+                print(f"{role}: {metrics['automatic_passed']}/{metrics['valid_fixtures']} "
+                      f"automatic contracts passed; {metrics['review_pending']} review pending")
+            print(f"report: {args.output}")
+            return 1 if any(r["status"] in {"failed", "fixture_invalid"}
+                            for r in report["results"]) else 0
         if args.command == "run":
             from evals.runner import run_suite
 

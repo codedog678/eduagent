@@ -6,6 +6,8 @@ import hashlib
 import json
 from typing import Any
 
+from core.tutor_policy import TUTOR_POLICY_VERSION
+
 APP_VERSION = "0.2.0"
 TRACE_SCHEMA_VERSION = 1
 EVAL_SCHEMA_VERSION = 1
@@ -25,6 +27,14 @@ def public_runtime_config(settings: Any) -> dict[str, Any]:
         "tutor_max_model_calls": settings.tutor_max_model_calls,
         "tutor_max_output_tokens": settings.tutor_max_output_tokens,
         "tutor_max_tool_calls": settings.tutor_max_tool_calls,
+        "tutor_policy_version": TUTOR_POLICY_VERSION,
+        "model_options": (
+            {"thinking": settings.deepseek_thinking, **(
+                {"reasoning_effort": settings.deepseek_reasoning_effort}
+                if settings.deepseek_thinking == "enabled" else {}
+            )}
+            if settings.configured_llm_provider == "deepseek" else {}
+        ),
     }
 
 

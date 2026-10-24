@@ -1,0 +1,2051 @@
+{
+  "app_version": "0.2.0",
+  "budget": {
+    "billing_status": "estimate_only",
+    "estimated_off_peak_cny": 0.00821392,
+    "estimated_peak_cny": 0.01642784,
+    "max_cny": 2.9,
+    "max_requests": 6,
+    "pricing": {
+      "currency": "CNY",
+      "per_million_tokens": {
+        "off_peak": {
+          "input_hit": 0.02,
+          "input_miss": 1.0,
+          "output": 4.0
+        },
+        "peak": {
+          "input_hit": 0.04,
+          "input_miss": 2.0,
+          "output": 8.0
+        }
+      },
+      "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+      "verified_date": "2026-10-25"
+    },
+    "requests": 6,
+    "unconfirmed_reservation_cny": 0,
+    "usage": {
+      "input_tokens": 7576,
+      "output_tokens": 1163,
+      "prompt_cache_hit_tokens": 4096,
+      "prompt_cache_miss_tokens": 3480
+    }
+  },
+  "code_revision": {
+    "git_head": "5d66b85ff9755cec184c221d7a83c674c83dfbfa",
+    "includes_working_tree": true,
+    "python_source_sha256": "2275978375a35fb123fe06f120e629d700080d5da0c0596f116ef2f4431be181"
+  },
+  "config": {
+    "enable_agent_llm_decisions": false,
+    "enable_tutor_tools": true,
+    "harness_max_steps": 64,
+    "harness_timeout_seconds": 45.0,
+    "llm_timeout_seconds": 12.0,
+    "model_options": {
+      "thinking": "disabled"
+    },
+    "quiz_ttl_seconds": 86400.0,
+    "tutor_context_budget_tokens": 6000,
+    "tutor_handler_timeout_seconds": 40.0,
+    "tutor_max_model_calls": 3,
+    "tutor_max_output_tokens": 800,
+    "tutor_max_tool_calls": 4,
+    "tutor_policy_version": "2026-10-25.3"
+  },
+  "config_fingerprint": "90a3280d40f721ce800a6c2ba1d627764a891a5013aa3be193c91f8172a011e2",
+  "dataset_review_status": "user_authorized_in_conversation",
+  "dataset_revision": "389289a6718d59ed62af673b440638ae10eb79af24c19a9b19cbe48e202bb82f",
+  "duration_ms": 12040.992541002197,
+  "generated_at": "2026-10-24T20:56:25.140435+00:00",
+  "generation_mode": "live_native_tools",
+  "groups": {
+    "agent_primary": {
+      "automatic_case_pass_rate": 1.0,
+      "automatic_passed": 2,
+      "failed": 0,
+      "fully_passed": 0,
+      "review_pending": 2,
+      "total": 2,
+      "valid_fixtures": 2
+    },
+    "teaching_auxiliary": {
+      "automatic_case_pass_rate": 1.0,
+      "automatic_passed": 1,
+      "failed": 0,
+      "fully_passed": 0,
+      "review_pending": 1,
+      "total": 1,
+      "valid_fixtures": 1
+    }
+  },
+  "limitations": [
+    "scripted fictional learners; not a learning-effect study",
+    "semantic and quality judgments require separately attributed review",
+    "single run per case; no repeatability or ablation estimate",
+    "cost estimates are not provider billing records"
+  ],
+  "model": "deepseek-flash",
+  "provider": "deepseek",
+  "results": [
+    {
+      "annotations": {},
+      "automatic_passed": true,
+      "case_id": "live-03-participle-hint",
+      "category": "错因诊断与提示",
+      "duration_ms": 2670.0235419993987,
+      "evaluation_role": "teaching_auxiliary",
+      "execution_failures": [],
+      "execution_outcome": "completed",
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "passed": true,
+          "path": "s1.execution.status",
+          "rule": "等于 completed；若有 ask_student，其 batch_size=1 且有 pending_question_id。",
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "passed": true,
+          "path": "quiz.eval-live-03-q1",
+          "rule": "assisted=true、attempts=0、solved=false、revealed=false。",
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "passed": true,
+          "path": "learner.knowledge_states.grammar_tenses",
+          "rule": "所有 KnowledgeState 字段保持不变。",
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "semantic_review",
+          "passed": null,
+          "path": "s1.teaching_response.response",
+          "rule": "指出 have 后形式问题；没有肯定 A 正确，也没有直接提供 B、have written 或目标词 written 作为答案。",
+          "status": "review_pending"
+        }
+      ],
+      "metering": [
+        {
+          "estimated_off_peak_cny": 0.002277,
+          "estimated_peak_cny": 0.004554,
+          "request_no": 1,
+          "reservation_cny": 0.018022,
+          "status": "usage_recorded",
+          "usage": {
+            "input_tokens": 1269,
+            "output_tokens": 252,
+            "prompt_cache_hit_tokens": 0,
+            "prompt_cache_miss_tokens": 1269
+          }
+        }
+      ],
+      "observed": {
+        "final": {
+          "assistant_history": [
+            "你现在的思路是“按过去式来选”，这里需要先停下来检查一个关键点：**这个空前面有没有助动词，以及它要求的是哪一类动词形式。**\n\n检查步骤：\n\n1. **看空格前的结构**：句子里空格前是 “have”。这里的 have 不是表示“拥有”的实义动词，而是构成某种时态的助动词。\n2. **判断语法类别**：助动词 have 后面要求的是**过去分词**，而不是过去式。过去式通常单独作谓语（如 “I wrote the report.”），而 “have + 过去分词” 构成的是另一种时态，表达与现在有关的完成意义。\n3. **区分两种形式**：对 write 这类不规则动词，过去式和过去分词要分开记。你已确认过去式是 wrote，那么请再单独查一下 write 的**过去分词**形式是什么。\n4. **回填验证**：把查到的过去分词放进 “have ____ the report”，看它是否符合“助动词 + 过去分词”的结构。\n\n所以你要检查的不是“write 的过去式”，而是“write 的过去分词”，以及这个空是否处在 have 之后。答案由你自己判断。"
+          ],
+          "evidence": [
+            {
+              "body": {
+                "assisted": true,
+                "source_refs": []
+              },
+              "kind": "assistance",
+              "quiz_id": "eval-live-03-q1",
+              "source_ref": "evidence:c660b2e2-0b5e-4c80-ba31-9640261736f4"
+            }
+          ],
+          "knowledge": {
+            "eval-live-03": {
+              "alpha": 1.0,
+              "attempts": 0,
+              "beta": 9.0,
+              "correct_count": 0,
+              "knowledge_id": "grammar_tenses",
+              "last_attempt": null,
+              "mastery": 0.1,
+              "streak": 0
+            }
+          },
+          "pending_questions": [],
+          "quizzes": {
+            "eval-live-03-q1": {
+              "assisted": true,
+              "attempts": 0,
+              "created": 1792875385.218029,
+              "difficulty": 0.5,
+              "hints": 0,
+              "knowledge_id": "grammar_tenses",
+              "mode": "practice",
+              "options": [
+                "A. wrote",
+                "B. written",
+                "C. write",
+                "D. writing"
+              ],
+              "question": "Choose the correct form: I have ____ the report.",
+              "quiz_id": "eval-live-03-q1",
+              "revealed": false,
+              "session_id": "eval-live-03-s1",
+              "solved": false,
+              "thread_id": "a723bb8e-b2ca-557c-82bb-19ccda72de0b"
+            }
+          }
+        },
+        "fixture_validation": {
+          "checks": {
+            "default_knowledge": true,
+            "no_answer_fields_in_context": true,
+            "no_preexisting_pending": true
+          },
+          "initial_source_refs": [],
+          "valid": true
+        },
+        "initial": {
+          "knowledge": {
+            "eval-live-03": {
+              "alpha": 1.0,
+              "attempts": 0,
+              "beta": 9.0,
+              "correct_count": 0,
+              "knowledge_id": "grammar_tenses",
+              "last_attempt": null,
+              "mastery": 0.1,
+              "streak": 0
+            }
+          },
+          "quizzes": {
+            "eval-live-03-q1": {
+              "assisted": false,
+              "attempts": 0,
+              "created": 1792875385.218029,
+              "difficulty": 0.5,
+              "hints": 0,
+              "knowledge_id": "grammar_tenses",
+              "mode": "practice",
+              "options": [
+                "A. wrote",
+                "B. written",
+                "C. write",
+                "D. writing"
+              ],
+              "question": "Choose the correct form: I have ____ the report.",
+              "quiz_id": "eval-live-03-q1",
+              "revealed": false,
+              "session_id": "eval-live-03-s1",
+              "solved": false,
+              "thread_id": "a723bb8e-b2ca-557c-82bb-19ccda72de0b"
+            }
+          },
+          "thread_id": "a723bb8e-b2ca-557c-82bb-19ccda72de0b"
+        },
+        "steps": {
+          "s1": {
+            "action": "converse",
+            "all_sources_readable": true,
+            "duration_ms": 2661.151833999611,
+            "evidence": [
+              {
+                "body": {
+                  "assisted": true,
+                  "source_refs": []
+                },
+                "kind": "assistance",
+                "quiz_id": "eval-live-03-q1",
+                "source_ref": "evidence:c660b2e2-0b5e-4c80-ba31-9640261736f4"
+              }
+            ],
+            "knowledge": {
+              "eval-live-03": {
+                "alpha": 1.0,
+                "attempts": 0,
+                "beta": 9.0,
+                "correct_count": 0,
+                "knowledge_id": "grammar_tenses",
+                "last_attempt": null,
+                "mastery": 0.1,
+                "streak": 0
+              }
+            },
+            "model_turns": [
+              {
+                "content": "你现在的思路是“按过去式来选”，这里需要先停下来检查一个关键点：**这个空前面有没有助动词，以及它要求的是哪一类动词形式。**\n\n检查步骤：\n\n1. **看空格前的结构**：句子里空格前是 “have”。这里的 have 不是表示“拥有”的实义动词，而是构成某种时态的助动词。\n2. **判断语法类别**：助动词 have 后面要求的是**过去分词**，而不是过去式。过去式通常单独作谓语（如 “I wrote the report.”），而 “have + 过去分词” 构成的是另一种时态，表达与现在有关的完成意义。\n3. **区分两种形式**：对 write 这类不规则动词，过去式和过去分词要分开记。你已确认过去式是 wrote，那么请再单独查一下 write 的**过去分词**形式是什么。\n4. **回填验证**：把查到的过去分词放进 “have ____ the report”，看它是否符合“助动词 + 过去分词”的结构。\n\n所以你要检查的不是“write 的过去式”，而是“write 的过去分词”，以及这个空是否处在 have 之后。答案由你自己判断。",
+                "duration_ms": 2657.6611250020505,
+                "request_no": 1,
+                "stop_reason": "stop",
+                "tool_calls": [],
+                "usage": {
+                  "input_tokens": 1269,
+                  "output_tokens": 252,
+                  "prompt_cache_hit_tokens": 0,
+                  "prompt_cache_miss_tokens": 1269
+                }
+              }
+            ],
+            "quizzes": {
+              "eval-live-03-q1": {
+                "assisted": true,
+                "attempts": 0,
+                "created": 1792875385.218029,
+                "difficulty": 0.5,
+                "hints": 0,
+                "knowledge_id": "grammar_tenses",
+                "mode": "practice",
+                "options": [
+                  "A. wrote",
+                  "B. written",
+                  "C. write",
+                  "D. writing"
+                ],
+                "question": "Choose the correct form: I have ____ the report.",
+                "quiz_id": "eval-live-03-q1",
+                "revealed": false,
+                "session_id": "eval-live-03-s1",
+                "solved": false,
+                "thread_id": "a723bb8e-b2ca-557c-82bb-19ccda72de0b"
+              }
+            },
+            "result": {
+              "agent_insights": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "dialogue_state": "answered",
+                  "generation_mode": "native_tools",
+                  "history_scope": "durable_thread",
+                  "knowledge_id": "grammar_tenses",
+                  "response": "你现在的思路是“按过去式来选”，这里需要先停下来检查一个关键点：**这个空前面有没有助动词，以及它要求的是哪一类动词形式。**\n\n检查步骤：\n\n1. **看空格前的结构**：句子里空格前是 “have”。这里的 have 不是表示“拥有”的实义动词，而是构成某种时态的助动词。\n2. **判断语法类别**：助动词 have 后面要求的是**过去分词**，而不是过去式。过去式通常单独作谓语（如 “I wrote the report.”），而 “have + 过去分词” 构成的是另一种时态，表达与现在有关的完成意义。\n3. **区分两种形式**：对 write 这类不规则动词，过去式和过去分词要分开记。你已确认过去式是 wrote，那么请再单独查一下 write 的**过去分词**形式是什么。\n4. **回填验证**：把查到的过去分词放进 “have ____ the report”，看它是否符合“助动词 + 过去分词”的结构。\n\n所以你要检查的不是“write 的过去式”，而是“write 的过去分词”，以及这个空是否处在 have 之后。答案由你自己判断。",
+                  "response_variant": "tool_loop",
+                  "source_refs": [],
+                  "teaching_style": "question_answer"
+                }
+              },
+              "assistance": {
+                "recorded": true,
+                "source_ref": "evidence:c660b2e2-0b5e-4c80-ba31-9640261736f4"
+              },
+              "correlation_id": "1adfe15d-d712-57d4-895c-431c1e0ef790",
+              "evaluation": null,
+              "events_triggered": 2,
+              "execution": {
+                "answered_question_id": null,
+                "app_version": "0.2.0",
+                "attempt_id": "573a2231-5bdc-40cb-9cd2-bd49f74d2931",
+                "config_fingerprint": "90a3280d40f721ce800a6c2ba1d627764a891a5013aa3be193c91f8172a011e2",
+                "dialogue_state": "answered",
+                "model": "deepseek-flash",
+                "pending_question_id": null,
+                "provider": "deepseek",
+                "request_id": "live-03-participle-hint-s1",
+                "run_id": "1adfe15d-d712-57d4-895c-431c1e0ef790",
+                "session_id": "eval-live-03-s1",
+                "source_refs": [],
+                "status": "completed",
+                "thread_id": "a723bb8e-b2ca-557c-82bb-19ccda72de0b",
+                "trace_schema_version": 1
+              },
+              "interaction_events": [
+                {
+                  "correlation_id": "1adfe15d-d712-57d4-895c-431c1e0ef790",
+                  "data": {
+                    "knowledge_id": "grammar_tenses",
+                    "question": "我准备选 A 的 wrote，因为 write 的过去式是 wrote。但我不太确定，先别告诉选哪个，指出我应该检查什么动词形式。"
+                  },
+                  "event_type": "student.question",
+                  "source": "api",
+                  "timestamp": "2026-10-25T04:56:25.219214"
+                },
+                {
+                  "correlation_id": "1adfe15d-d712-57d4-895c-431c1e0ef790",
+                  "data": {
+                    "context_type": "question",
+                    "dialogue_state": "answered",
+                    "generation_mode": "native_tools",
+                    "history_scope": "durable_thread",
+                    "knowledge_id": "grammar_tenses",
+                    "response": "你现在的思路是“按过去式来选”，这里需要先停下来检查一个关键点：**这个空前面有没有助动词，以及它要求的是哪一类动词形式。**\n\n检查步骤：\n\n1. **看空格前的结构**：句子里空格前是 “have”。这里的 have 不是表示“拥有”的实义动词，而是构成某种时态的助动词。\n2. **判断语法类别**：助动词 have 后面要求的是**过去分词**，而不是过去式。过去式通常单独作谓语（如 “I wrote the report.”），而 “have + 过去分词” 构成的是另一种时态，表达与现在有关的完成意义。\n3. **区分两种形式**：对 write 这类不规则动词，过去式和过去分词要分开记。你已确认过去式是 wrote，那么请再单独查一下 write 的**过去分词**形式是什么。\n4. **回填验证**：把查到的过去分词放进 “have ____ the report”，看它是否符合“助动词 + 过去分词”的结构。\n\n所以你要检查的不是“write 的过去式”，而是“write 的过去分词”，以及这个空是否处在 have 之后。答案由你自己判断。",
+                    "response_variant": "tool_loop",
+                    "source_refs": [],
+                    "teaching_style": "question_answer"
+                  },
+                  "event_type": "tutor.teaching_response",
+                  "source": "TutorAgent",
+                  "timestamp": "2026-10-25T04:56:27.878183"
+                }
+              ],
+              "knowledge_id": "grammar_tenses",
+              "learner_id": "eval-live-03",
+              "next_topic_recommendation": null,
+              "review_snapshot": {
+                "days_since_review": null,
+                "is_due": false,
+                "knowledge_id": "grammar_tenses",
+                "next_review": null,
+                "retention": null,
+                "top_due_items": [],
+                "urgency": "low"
+              },
+              "teaching_decision": {
+                "agent_votes": {
+                  "assessment": {},
+                  "curriculum": {},
+                  "engagement": {},
+                  "tutor": {
+                    "context_type": "question",
+                    "generation_mode": "native_tools",
+                    "teaching_style": "question_answer"
+                  }
+                },
+                "generation_mode": "local_policy",
+                "next_action": "继续围绕学生追问做针对性解释。",
+                "priority": "normal",
+                "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+                "strategy": "answer_question",
+                "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+              },
+              "teaching_response": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "hint_count": null,
+                "hint_level": null,
+                "history_scope": "durable_thread",
+                "knowledge_id": "grammar_tenses",
+                "response": "你现在的思路是“按过去式来选”，这里需要先停下来检查一个关键点：**这个空前面有没有助动词，以及它要求的是哪一类动词形式。**\n\n检查步骤：\n\n1. **看空格前的结构**：句子里空格前是 “have”。这里的 have 不是表示“拥有”的实义动词，而是构成某种时态的助动词。\n2. **判断语法类别**：助动词 have 后面要求的是**过去分词**，而不是过去式。过去式通常单独作谓语（如 “I wrote the report.”），而 “have + 过去分词” 构成的是另一种时态，表达与现在有关的完成意义。\n3. **区分两种形式**：对 write 这类不规则动词，过去式和过去分词要分开记。你已确认过去式是 wrote，那么请再单独查一下 write 的**过去分词**形式是什么。\n4. **回填验证**：把查到的过去分词放进 “have ____ the report”，看它是否符合“助动词 + 过去分词”的结构。\n\n所以你要检查的不是“write 的过去式”，而是“write 的过去分词”，以及这个空是否处在 have 之后。答案由你自己判断。",
+                "response_variant": "tool_loop",
+                "source_refs": [],
+                "teaching_style": "question_answer"
+              }
+            },
+            "status": "completed",
+            "student_input": "我准备选 A 的 wrote，因为 write 的过去式是 wrote。但我不太确定，先别告诉选哪个，指出我应该检查什么动词形式。",
+            "tool_results": [],
+            "trace": {
+              "attempts": [
+                {
+                  "app_version": "0.2.0",
+                  "attempt_id": "573a2231-5bdc-40cb-9cd2-bd49f74d2931",
+                  "config_fingerprint": "90a3280d40f721ce800a6c2ba1d627764a891a5013aa3be193c91f8172a011e2",
+                  "finished": 1792875387.87905,
+                  "model": "deepseek-flash",
+                  "provider": "deepseek",
+                  "run_id": "1adfe15d-d712-57d4-895c-431c1e0ef790",
+                  "started": 1792875385.2189791,
+                  "status": "completed",
+                  "steps": [
+                    {
+                      "agent": "Harness",
+                      "kind": "run_started",
+                      "seq": 1,
+                      "timestamp": 1792875385.219096
+                    },
+                    {
+                      "agent": "api",
+                      "event_id": "9164969a-fad5-4fcf-b8c2-dc437098427a",
+                      "event_type": "student.question",
+                      "kind": "event_dispatched",
+                      "parent_event_id": null,
+                      "seq": 2,
+                      "timestamp": 1792875385.219257
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "event_id": "9164969a-fad5-4fcf-b8c2-dc437098427a",
+                      "kind": "handler_started",
+                      "seq": 3,
+                      "timestamp": 1792875385.219271
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "estimate_method": "utf8_bytes_div_3",
+                      "kind": "context_built",
+                      "omitted_refs": [],
+                      "response_mode": "hint_only",
+                      "seq": 4,
+                      "source_refs": [],
+                      "timestamp": 1792875385.219459,
+                      "token_estimate": 972,
+                      "tutor_policy_version": "2026-10-25.3"
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "before_model",
+                      "model_call": 1,
+                      "seq": 5,
+                      "timestamp": 1792875385.2203221,
+                      "token_estimate": 1596
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "after_model",
+                      "model_call": 1,
+                      "seq": 6,
+                      "stop_reason": "stop",
+                      "timestamp": 1792875387.878072,
+                      "usage": {
+                        "input_tokens": 1269,
+                        "output_tokens": 252,
+                        "prompt_cache_hit_tokens": 0,
+                        "prompt_cache_miss_tokens": 1269
+                      }
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "duration_ms": 2659,
+                      "event_id": "9164969a-fad5-4fcf-b8c2-dc437098427a",
+                      "kind": "handler_completed",
+                      "seq": 7,
+                      "timestamp": 1792875387.878268
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "event_id": "25411ea4-e476-4a71-8669-294101eb3cc6",
+                      "event_type": "tutor.teaching_response",
+                      "kind": "event_dispatched",
+                      "parent_event_id": "9164969a-fad5-4fcf-b8c2-dc437098427a",
+                      "seq": 8,
+                      "timestamp": 1792875387.8782752
+                    },
+                    {
+                      "agent": "Harness",
+                      "kind": "commit_started",
+                      "seq": 9,
+                      "timestamp": 1792875387.878418
+                    },
+                    {
+                      "agent": "Harness",
+                      "dialogue_state": "answered",
+                      "kind": "run_completed",
+                      "seq": 10,
+                      "timestamp": 1792875387.878946
+                    }
+                  ],
+                  "stop_reason": null,
+                  "trace_schema_version": 1
+                }
+              ],
+              "request_id": "live-03-participle-hint-s1"
+            }
+          }
+        }
+      },
+      "quality_review": {
+        "anchors": {
+          "accuracy": "2 分：准确区分过去式与过去分词；1 分：只提示检查形式但未定位；0 分：认可 have wrote 或讲错结构。",
+          "actionability": "2 分：给出学生下一步可执行的形式检查；1 分：仅说再想想；0 分：直接代答或不给步骤。",
+          "targeting": "2 分：针对学生的 A 候选解释其检查点；1 分：泛泛提醒仔细读题；0 分：无关讲解。"
+        },
+        "reviewer": null,
+        "scores": null,
+        "status": "review_pending"
+      },
+      "status": "review_pending",
+      "title": "定位 have 后动词形式的错误"
+    },
+    {
+      "annotations": {},
+      "automatic_passed": true,
+      "case_id": "live-05-missing-sentence-followup",
+      "category": "澄清与接续",
+      "duration_ms": 4064.5041669995408,
+      "evaluation_role": "agent_primary",
+      "execution_failures": [],
+      "execution_outcome": "completed",
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "passed": true,
+          "path": "s1.execution",
+          "rule": "status=completed、dialogue_state=awaiting_student、pending_question_id 非空；ask_student 为单独调用。",
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "passed": true,
+          "path": "s2.execution",
+          "rule": "status=completed、dialogue_state=answered，answered_question_id 等于 s1.pending_question_id。",
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "passed": true,
+          "path": "pending_questions",
+          "rule": "s1 待答记录的 answered_by 非空，场景结束没有未回答的该问题。",
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "automatic",
+          "passed": true,
+          "path": "learner.knowledge_states.grammar_tenses",
+          "rule": "所有 KnowledgeState 字段保持不变。",
+          "status": "passed"
+        },
+        {
+          "id": "H5",
+          "method": "semantic_review",
+          "passed": null,
+          "path": "s1/s2.teaching_response.response",
+          "rule": "s1 问题针对缺失例句；s2 正确解释 since 引出的起点和与现在相连的状态。",
+          "status": "review_pending"
+        }
+      ],
+      "metering": [
+        {
+          "estimated_off_peak_cny": 0.00114456,
+          "estimated_peak_cny": 0.00228912,
+          "request_no": 2,
+          "reservation_cny": 0.015782,
+          "status": "usage_recorded",
+          "usage": {
+            "input_tokens": 1022,
+            "output_tokens": 62,
+            "prompt_cache_hit_tokens": 128,
+            "prompt_cache_miss_tokens": 894
+          }
+        },
+        {
+          "estimated_off_peak_cny": 0.00192592,
+          "estimated_peak_cny": 0.00385184,
+          "request_no": 3,
+          "reservation_cny": 0.018012,
+          "status": "usage_recorded",
+          "usage": {
+            "input_tokens": 1388,
+            "output_tokens": 354,
+            "prompt_cache_hit_tokens": 896,
+            "prompt_cache_miss_tokens": 492
+          }
+        }
+      ],
+      "observed": {
+        "final": {
+          "assistant_history": [
+            "请把你要分析的那句话（连同上下文，如果有的话）发给我，我需要看到原句才能判断它的时态。",
+            "这句是**现在完成时**（has lived），判断依据不是 since 这个词本身，而是“过去起点 + 延续到现在”这个时间关系。\n\n**句子结构**\n- `has lived`：现在完成时，表示“从过去某时开始、一直持续到现在”的状态。\n- `since 2020`：since 后面接**时间点**，标出这段延续的**起点**是 2020 年。\n- 合起来：从 2020 年起到现在，居住这个状态一直没断，所以“她现在仍住在这里”正是这个时态本身带来的含义，不是额外补充的信息。\n\n**since 的作用**\n它只做一件事：**划定起点，并把这段时间一直拉到“现在”**。它天然要求主句用一个“与现在有联系”的形式，因此常和现在完成时搭配。对比一下：\n- `She lived here in 2020.` 一般过去时，只说 2020 年那段时间的事，不涉及现在。\n- `She has lived here since 2020.` 起点 2020，延续至今。\n\n**判断路径（可自查）**\n1. 找时间信息：是**时间点**（2020、last year、Monday）还是**时间段**（for three years）？\n2. 看这个时间是否**一直延伸到说话时的现在**。\n3. 是 → 现在完成时；只讲过去某段、与现在无关 → 一般过去时。\n\n注意：不要看到 since 就机械套完成时，关键还是“是否延续到现在”。比如 `Since you're here, let's start.` 里的 since 是“既然”，跟时间无关。"
+          ],
+          "evidence": [],
+          "knowledge": {
+            "eval-live-05": {
+              "alpha": 1.0,
+              "attempts": 0,
+              "beta": 9.0,
+              "correct_count": 0,
+              "knowledge_id": "grammar_tenses",
+              "last_attempt": null,
+              "mastery": 0.1,
+              "streak": 0
+            }
+          },
+          "pending_questions": [
+            {
+              "answered_by": "395f01d9-06e6-420e-be50-a4d2d0e90c94",
+              "id": "2e98baa1-5e57-44d6-adbb-bc8543cd8c1a"
+            }
+          ],
+          "quizzes": {}
+        },
+        "fixture_validation": {
+          "checks": {
+            "default_knowledge": true,
+            "no_answer_fields_in_context": true,
+            "no_preexisting_pending": true
+          },
+          "initial_source_refs": [],
+          "valid": true
+        },
+        "initial": {
+          "knowledge": {
+            "eval-live-05": {
+              "alpha": 1.0,
+              "attempts": 0,
+              "beta": 9.0,
+              "correct_count": 0,
+              "knowledge_id": "grammar_tenses",
+              "last_attempt": null,
+              "mastery": 0.1,
+              "streak": 0
+            }
+          },
+          "quizzes": {},
+          "thread_id": "9464dcb0-9a6a-5a7c-9321-9f2781014004"
+        },
+        "steps": {
+          "s1": {
+            "action": "converse",
+            "all_sources_readable": true,
+            "duration_ms": 999.5452920011303,
+            "evidence": [],
+            "knowledge": {
+              "eval-live-05": {
+                "alpha": 1.0,
+                "attempts": 0,
+                "beta": 9.0,
+                "correct_count": 0,
+                "knowledge_id": "grammar_tenses",
+                "last_attempt": null,
+                "mastery": 0.1,
+                "streak": 0
+              }
+            },
+            "model_turns": [
+              {
+                "content": "",
+                "duration_ms": 995.3390000009676,
+                "request_no": 2,
+                "stop_reason": "tool_calls",
+                "tool_calls": [
+                  {
+                    "arguments": {
+                      "question": "请把你要分析的那句话（连同上下文，如果有的话）发给我，我需要看到原句才能判断它的时态。"
+                    },
+                    "batch_size": 1,
+                    "id": "call_00_EGMAlrqTxI3a3V7eZlnt0192",
+                    "name": "ask_student"
+                  }
+                ],
+                "usage": {
+                  "input_tokens": 1022,
+                  "output_tokens": 62,
+                  "prompt_cache_hit_tokens": 128,
+                  "prompt_cache_miss_tokens": 894
+                }
+              }
+            ],
+            "quizzes": {},
+            "result": {
+              "agent_insights": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "dialogue_state": "awaiting_student",
+                  "generation_mode": "native_tools",
+                  "history_scope": "durable_thread",
+                  "knowledge_id": "grammar_tenses",
+                  "response": "请把你要分析的那句话（连同上下文，如果有的话）发给我，我需要看到原句才能判断它的时态。",
+                  "response_variant": "tool_loop",
+                  "source_refs": [],
+                  "teaching_style": "question_answer"
+                }
+              },
+              "correlation_id": "7228c254-c2c6-53ac-b614-39062a0cfee4",
+              "evaluation": null,
+              "events_triggered": 2,
+              "execution": {
+                "answered_question_id": null,
+                "app_version": "0.2.0",
+                "attempt_id": "ce04b164-6f1e-487f-b82a-b930ad0ff249",
+                "config_fingerprint": "90a3280d40f721ce800a6c2ba1d627764a891a5013aa3be193c91f8172a011e2",
+                "dialogue_state": "awaiting_student",
+                "model": "deepseek-flash",
+                "pending_question_id": "2e98baa1-5e57-44d6-adbb-bc8543cd8c1a",
+                "provider": "deepseek",
+                "request_id": "live-05-missing-sentence-followup-s1",
+                "run_id": "7228c254-c2c6-53ac-b614-39062a0cfee4",
+                "session_id": "eval-live-05-s1",
+                "source_refs": [],
+                "status": "completed",
+                "thread_id": "9464dcb0-9a6a-5a7c-9321-9f2781014004",
+                "trace_schema_version": 1
+              },
+              "interaction_events": [
+                {
+                  "correlation_id": "7228c254-c2c6-53ac-b614-39062a0cfee4",
+                  "data": {
+                    "knowledge_id": "grammar_tenses",
+                    "question": "这句话为什么用这个时态？我不知道从哪里判断。"
+                  },
+                  "event_type": "student.question",
+                  "source": "api",
+                  "timestamp": "2026-10-25T04:56:27.893425"
+                },
+                {
+                  "correlation_id": "7228c254-c2c6-53ac-b614-39062a0cfee4",
+                  "data": {
+                    "context_type": "question",
+                    "dialogue_state": "awaiting_student",
+                    "generation_mode": "native_tools",
+                    "history_scope": "durable_thread",
+                    "knowledge_id": "grammar_tenses",
+                    "response": "请把你要分析的那句话（连同上下文，如果有的话）发给我，我需要看到原句才能判断它的时态。",
+                    "response_variant": "tool_loop",
+                    "source_refs": [],
+                    "teaching_style": "question_answer"
+                  },
+                  "event_type": "tutor.teaching_response",
+                  "source": "TutorAgent",
+                  "timestamp": "2026-10-25T04:56:28.890200"
+                }
+              ],
+              "knowledge_id": "grammar_tenses",
+              "learner_id": "eval-live-05",
+              "next_topic_recommendation": null,
+              "review_snapshot": {
+                "days_since_review": null,
+                "is_due": false,
+                "knowledge_id": "grammar_tenses",
+                "next_review": null,
+                "retention": null,
+                "top_due_items": [],
+                "urgency": "low"
+              },
+              "teaching_decision": {
+                "agent_votes": {
+                  "assessment": {},
+                  "curriculum": {},
+                  "engagement": {},
+                  "tutor": {
+                    "context_type": "question",
+                    "generation_mode": "native_tools",
+                    "teaching_style": "question_answer"
+                  }
+                },
+                "generation_mode": "local_policy",
+                "next_action": "继续围绕学生追问做针对性解释。",
+                "priority": "normal",
+                "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+                "strategy": "answer_question",
+                "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+              },
+              "teaching_response": {
+                "context_type": "question",
+                "dialogue_state": "awaiting_student",
+                "generation_mode": "native_tools",
+                "hint_count": null,
+                "hint_level": null,
+                "history_scope": "durable_thread",
+                "knowledge_id": "grammar_tenses",
+                "response": "请把你要分析的那句话（连同上下文，如果有的话）发给我，我需要看到原句才能判断它的时态。",
+                "response_variant": "tool_loop",
+                "source_refs": [],
+                "teaching_style": "question_answer"
+              }
+            },
+            "status": "completed",
+            "student_input": "这句话为什么用这个时态？我不知道从哪里判断。",
+            "tool_results": [],
+            "trace": {
+              "attempts": [
+                {
+                  "app_version": "0.2.0",
+                  "attempt_id": "ce04b164-6f1e-487f-b82a-b930ad0ff249",
+                  "config_fingerprint": "90a3280d40f721ce800a6c2ba1d627764a891a5013aa3be193c91f8172a011e2",
+                  "finished": 1792875388.890974,
+                  "model": "deepseek-flash",
+                  "provider": "deepseek",
+                  "run_id": "7228c254-c2c6-53ac-b614-39062a0cfee4",
+                  "started": 1792875387.893086,
+                  "status": "completed",
+                  "steps": [
+                    {
+                      "agent": "Harness",
+                      "kind": "run_started",
+                      "seq": 1,
+                      "timestamp": 1792875387.8933198
+                    },
+                    {
+                      "agent": "api",
+                      "event_id": "29551f59-31b3-4781-8e40-627ec228d5d9",
+                      "event_type": "student.question",
+                      "kind": "event_dispatched",
+                      "parent_event_id": null,
+                      "seq": 2,
+                      "timestamp": 1792875387.893445
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "event_id": "29551f59-31b3-4781-8e40-627ec228d5d9",
+                      "kind": "handler_started",
+                      "seq": 3,
+                      "timestamp": 1792875387.893458
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "estimate_method": "utf8_bytes_div_3",
+                      "kind": "context_built",
+                      "omitted_refs": [],
+                      "response_mode": "explanation",
+                      "seq": 4,
+                      "source_refs": [],
+                      "timestamp": 1792875387.89368,
+                      "token_estimate": 686,
+                      "tutor_policy_version": "2026-10-25.3"
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "before_model",
+                      "model_call": 1,
+                      "seq": 5,
+                      "timestamp": 1792875387.894557,
+                      "token_estimate": 1223
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "after_model",
+                      "model_call": 1,
+                      "seq": 6,
+                      "stop_reason": "tool_calls",
+                      "timestamp": 1792875388.8899682,
+                      "usage": {
+                        "input_tokens": 1022,
+                        "output_tokens": 62,
+                        "prompt_cache_hit_tokens": 128,
+                        "prompt_cache_miss_tokens": 894
+                      }
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "before_tool",
+                      "seq": 7,
+                      "timestamp": 1792875388.889995,
+                      "tool": "ask_student",
+                      "tool_call_id": "call_00_EGMAlrqTxI3a3V7eZlnt0192"
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "after_tool",
+                      "result_keys": [
+                        "question",
+                        "terminal"
+                      ],
+                      "seq": 8,
+                      "source_refs": [],
+                      "status": "ok",
+                      "timestamp": 1792875388.890102,
+                      "tool": "ask_student",
+                      "tool_call_id": "call_00_EGMAlrqTxI3a3V7eZlnt0192"
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "duration_ms": 997,
+                      "event_id": "29551f59-31b3-4781-8e40-627ec228d5d9",
+                      "kind": "handler_completed",
+                      "seq": 9,
+                      "timestamp": 1792875388.89026
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "event_id": "e2adfb16-319e-44e6-8a05-e19e8790407d",
+                      "event_type": "tutor.teaching_response",
+                      "kind": "event_dispatched",
+                      "parent_event_id": "29551f59-31b3-4781-8e40-627ec228d5d9",
+                      "seq": 10,
+                      "timestamp": 1792875388.890269
+                    },
+                    {
+                      "agent": "Harness",
+                      "kind": "commit_started",
+                      "seq": 11,
+                      "timestamp": 1792875388.890371
+                    },
+                    {
+                      "agent": "Harness",
+                      "dialogue_state": "awaiting_student",
+                      "kind": "run_completed",
+                      "seq": 12,
+                      "timestamp": 1792875388.890817
+                    }
+                  ],
+                  "stop_reason": null,
+                  "trace_schema_version": 1
+                }
+              ],
+              "request_id": "live-05-missing-sentence-followup-s1"
+            }
+          },
+          "s2": {
+            "action": "converse",
+            "all_sources_readable": true,
+            "duration_ms": 3054.580874999374,
+            "evidence": [],
+            "knowledge": {
+              "eval-live-05": {
+                "alpha": 1.0,
+                "attempts": 0,
+                "beta": 9.0,
+                "correct_count": 0,
+                "knowledge_id": "grammar_tenses",
+                "last_attempt": null,
+                "mastery": 0.1,
+                "streak": 0
+              }
+            },
+            "model_turns": [
+              {
+                "content": "这句是**现在完成时**（has lived），判断依据不是 since 这个词本身，而是“过去起点 + 延续到现在”这个时间关系。\n\n**句子结构**\n- `has lived`：现在完成时，表示“从过去某时开始、一直持续到现在”的状态。\n- `since 2020`：since 后面接**时间点**，标出这段延续的**起点**是 2020 年。\n- 合起来：从 2020 年起到现在，居住这个状态一直没断，所以“她现在仍住在这里”正是这个时态本身带来的含义，不是额外补充的信息。\n\n**since 的作用**\n它只做一件事：**划定起点，并把这段时间一直拉到“现在”**。它天然要求主句用一个“与现在有联系”的形式，因此常和现在完成时搭配。对比一下：\n- `She lived here in 2020.` 一般过去时，只说 2020 年那段时间的事，不涉及现在。\n- `She has lived here since 2020.` 起点 2020，延续至今。\n\n**判断路径（可自查）**\n1. 找时间信息：是**时间点**（2020、last year、Monday）还是**时间段**（for three years）？\n2. 看这个时间是否**一直延伸到说话时的现在**。\n3. 是 → 现在完成时；只讲过去某段、与现在无关 → 一般过去时。\n\n注意：不要看到 since 就机械套完成时，关键还是“是否延续到现在”。比如 `Since you're here, let's start.` 里的 since 是“既然”，跟时间无关。",
+                "duration_ms": 3049.4785830014735,
+                "request_no": 3,
+                "stop_reason": "stop",
+                "tool_calls": [],
+                "usage": {
+                  "input_tokens": 1388,
+                  "output_tokens": 354,
+                  "prompt_cache_hit_tokens": 896,
+                  "prompt_cache_miss_tokens": 492
+                }
+              }
+            ],
+            "quizzes": {},
+            "result": {
+              "agent_insights": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "dialogue_state": "answered",
+                  "generation_mode": "native_tools",
+                  "history_scope": "durable_thread",
+                  "knowledge_id": "grammar_tenses",
+                  "response": "这句是**现在完成时**（has lived），判断依据不是 since 这个词本身，而是“过去起点 + 延续到现在”这个时间关系。\n\n**句子结构**\n- `has lived`：现在完成时，表示“从过去某时开始、一直持续到现在”的状态。\n- `since 2020`：since 后面接**时间点**，标出这段延续的**起点**是 2020 年。\n- 合起来：从 2020 年起到现在，居住这个状态一直没断，所以“她现在仍住在这里”正是这个时态本身带来的含义，不是额外补充的信息。\n\n**since 的作用**\n它只做一件事：**划定起点，并把这段时间一直拉到“现在”**。它天然要求主句用一个“与现在有联系”的形式，因此常和现在完成时搭配。对比一下：\n- `She lived here in 2020.` 一般过去时，只说 2020 年那段时间的事，不涉及现在。\n- `She has lived here since 2020.` 起点 2020，延续至今。\n\n**判断路径（可自查）**\n1. 找时间信息：是**时间点**（2020、last year、Monday）还是**时间段**（for three years）？\n2. 看这个时间是否**一直延伸到说话时的现在**。\n3. 是 → 现在完成时；只讲过去某段、与现在无关 → 一般过去时。\n\n注意：不要看到 since 就机械套完成时，关键还是“是否延续到现在”。比如 `Since you're here, let's start.` 里的 since 是“既然”，跟时间无关。",
+                  "response_variant": "tool_loop",
+                  "source_refs": [
+                    "message:641f13c6-a8fe-43d9-9efe-1cf1e0456bb5",
+                    "message:c00c7b47-5144-4b33-8a16-08f84755209f"
+                  ],
+                  "teaching_style": "question_answer"
+                }
+              },
+              "correlation_id": "9504782f-2e2b-545d-96fc-c64e82e7ea2b",
+              "evaluation": null,
+              "events_triggered": 2,
+              "execution": {
+                "answered_question_id": "2e98baa1-5e57-44d6-adbb-bc8543cd8c1a",
+                "app_version": "0.2.0",
+                "attempt_id": "4f2ea0eb-7f88-4af7-96de-e84af2253d74",
+                "config_fingerprint": "90a3280d40f721ce800a6c2ba1d627764a891a5013aa3be193c91f8172a011e2",
+                "dialogue_state": "answered",
+                "model": "deepseek-flash",
+                "pending_question_id": null,
+                "provider": "deepseek",
+                "request_id": "live-05-missing-sentence-followup-s2",
+                "run_id": "9504782f-2e2b-545d-96fc-c64e82e7ea2b",
+                "session_id": "eval-live-05-s1",
+                "source_refs": [
+                  "message:641f13c6-a8fe-43d9-9efe-1cf1e0456bb5",
+                  "message:c00c7b47-5144-4b33-8a16-08f84755209f"
+                ],
+                "status": "completed",
+                "thread_id": "9464dcb0-9a6a-5a7c-9321-9f2781014004",
+                "trace_schema_version": 1
+              },
+              "interaction_events": [
+                {
+                  "correlation_id": "9504782f-2e2b-545d-96fc-c64e82e7ea2b",
+                  "data": {
+                    "knowledge_id": "grammar_tenses",
+                    "question": "原句是 She has lived here since 2020. 她现在仍住在这里，我不懂 since 的作用。"
+                  },
+                  "event_type": "student.question",
+                  "source": "api",
+                  "timestamp": "2026-10-25T04:56:28.893181"
+                },
+                {
+                  "correlation_id": "9504782f-2e2b-545d-96fc-c64e82e7ea2b",
+                  "data": {
+                    "context_type": "question",
+                    "dialogue_state": "answered",
+                    "generation_mode": "native_tools",
+                    "history_scope": "durable_thread",
+                    "knowledge_id": "grammar_tenses",
+                    "response": "这句是**现在完成时**（has lived），判断依据不是 since 这个词本身，而是“过去起点 + 延续到现在”这个时间关系。\n\n**句子结构**\n- `has lived`：现在完成时，表示“从过去某时开始、一直持续到现在”的状态。\n- `since 2020`：since 后面接**时间点**，标出这段延续的**起点**是 2020 年。\n- 合起来：从 2020 年起到现在，居住这个状态一直没断，所以“她现在仍住在这里”正是这个时态本身带来的含义，不是额外补充的信息。\n\n**since 的作用**\n它只做一件事：**划定起点，并把这段时间一直拉到“现在”**。它天然要求主句用一个“与现在有联系”的形式，因此常和现在完成时搭配。对比一下：\n- `She lived here in 2020.` 一般过去时，只说 2020 年那段时间的事，不涉及现在。\n- `She has lived here since 2020.` 起点 2020，延续至今。\n\n**判断路径（可自查）**\n1. 找时间信息：是**时间点**（2020、last year、Monday）还是**时间段**（for three years）？\n2. 看这个时间是否**一直延伸到说话时的现在**。\n3. 是 → 现在完成时；只讲过去某段、与现在无关 → 一般过去时。\n\n注意：不要看到 since 就机械套完成时，关键还是“是否延续到现在”。比如 `Since you're here, let's start.` 里的 since 是“既然”，跟时间无关。",
+                    "response_variant": "tool_loop",
+                    "source_refs": [
+                      "message:641f13c6-a8fe-43d9-9efe-1cf1e0456bb5",
+                      "message:c00c7b47-5144-4b33-8a16-08f84755209f"
+                    ],
+                    "teaching_style": "question_answer"
+                  },
+                  "event_type": "tutor.teaching_response",
+                  "source": "TutorAgent",
+                  "timestamp": "2026-10-25T04:56:31.944737"
+                }
+              ],
+              "knowledge_id": "grammar_tenses",
+              "learner_id": "eval-live-05",
+              "next_topic_recommendation": null,
+              "review_snapshot": {
+                "days_since_review": null,
+                "is_due": false,
+                "knowledge_id": "grammar_tenses",
+                "next_review": null,
+                "retention": null,
+                "top_due_items": [],
+                "urgency": "low"
+              },
+              "teaching_decision": {
+                "agent_votes": {
+                  "assessment": {},
+                  "curriculum": {},
+                  "engagement": {},
+                  "tutor": {
+                    "context_type": "question",
+                    "generation_mode": "native_tools",
+                    "teaching_style": "question_answer"
+                  }
+                },
+                "generation_mode": "local_policy",
+                "next_action": "继续围绕学生追问做针对性解释。",
+                "priority": "normal",
+                "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+                "strategy": "answer_question",
+                "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+              },
+              "teaching_response": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "hint_count": null,
+                "hint_level": null,
+                "history_scope": "durable_thread",
+                "knowledge_id": "grammar_tenses",
+                "response": "这句是**现在完成时**（has lived），判断依据不是 since 这个词本身，而是“过去起点 + 延续到现在”这个时间关系。\n\n**句子结构**\n- `has lived`：现在完成时，表示“从过去某时开始、一直持续到现在”的状态。\n- `since 2020`：since 后面接**时间点**，标出这段延续的**起点**是 2020 年。\n- 合起来：从 2020 年起到现在，居住这个状态一直没断，所以“她现在仍住在这里”正是这个时态本身带来的含义，不是额外补充的信息。\n\n**since 的作用**\n它只做一件事：**划定起点，并把这段时间一直拉到“现在”**。它天然要求主句用一个“与现在有联系”的形式，因此常和现在完成时搭配。对比一下：\n- `She lived here in 2020.` 一般过去时，只说 2020 年那段时间的事，不涉及现在。\n- `She has lived here since 2020.` 起点 2020，延续至今。\n\n**判断路径（可自查）**\n1. 找时间信息：是**时间点**（2020、last year、Monday）还是**时间段**（for three years）？\n2. 看这个时间是否**一直延伸到说话时的现在**。\n3. 是 → 现在完成时；只讲过去某段、与现在无关 → 一般过去时。\n\n注意：不要看到 since 就机械套完成时，关键还是“是否延续到现在”。比如 `Since you're here, let's start.` 里的 since 是“既然”，跟时间无关。",
+                "response_variant": "tool_loop",
+                "source_refs": [
+                  "message:641f13c6-a8fe-43d9-9efe-1cf1e0456bb5",
+                  "message:c00c7b47-5144-4b33-8a16-08f84755209f"
+                ],
+                "teaching_style": "question_answer"
+              }
+            },
+            "status": "completed",
+            "student_input": "原句是 She has lived here since 2020. 她现在仍住在这里，我不懂 since 的作用。",
+            "tool_results": [],
+            "trace": {
+              "attempts": [
+                {
+                  "app_version": "0.2.0",
+                  "attempt_id": "4f2ea0eb-7f88-4af7-96de-e84af2253d74",
+                  "config_fingerprint": "90a3280d40f721ce800a6c2ba1d627764a891a5013aa3be193c91f8172a011e2",
+                  "finished": 1792875391.945399,
+                  "model": "deepseek-flash",
+                  "provider": "deepseek",
+                  "run_id": "9504782f-2e2b-545d-96fc-c64e82e7ea2b",
+                  "started": 1792875388.892698,
+                  "status": "completed",
+                  "steps": [
+                    {
+                      "agent": "Harness",
+                      "kind": "run_started",
+                      "seq": 1,
+                      "timestamp": 1792875388.893023
+                    },
+                    {
+                      "agent": "api",
+                      "event_id": "ea4b9de2-d707-4d37-b2ce-6c190df74022",
+                      "event_type": "student.question",
+                      "kind": "event_dispatched",
+                      "parent_event_id": null,
+                      "seq": 2,
+                      "timestamp": 1792875388.893236
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "event_id": "ea4b9de2-d707-4d37-b2ce-6c190df74022",
+                      "kind": "handler_started",
+                      "seq": 3,
+                      "timestamp": 1792875388.893261
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "estimate_method": "utf8_bytes_div_3",
+                      "kind": "context_built",
+                      "omitted_refs": [],
+                      "response_mode": "explanation",
+                      "seq": 4,
+                      "source_refs": [
+                        "message:641f13c6-a8fe-43d9-9efe-1cf1e0456bb5",
+                        "message:c00c7b47-5144-4b33-8a16-08f84755209f"
+                      ],
+                      "timestamp": 1792875388.893857,
+                      "token_estimate": 1058,
+                      "tutor_policy_version": "2026-10-25.3"
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "before_model",
+                      "model_call": 1,
+                      "seq": 5,
+                      "timestamp": 1792875388.8950741,
+                      "token_estimate": 1594
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "after_model",
+                      "model_call": 1,
+                      "seq": 6,
+                      "stop_reason": "stop",
+                      "timestamp": 1792875391.944642,
+                      "usage": {
+                        "input_tokens": 1388,
+                        "output_tokens": 354,
+                        "prompt_cache_hit_tokens": 896,
+                        "prompt_cache_miss_tokens": 492
+                      }
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "duration_ms": 3051,
+                      "event_id": "ea4b9de2-d707-4d37-b2ce-6c190df74022",
+                      "kind": "handler_completed",
+                      "seq": 7,
+                      "timestamp": 1792875391.9447832
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "event_id": "48b9c8c1-c11e-4303-a11c-57592f9e8cf0",
+                      "event_type": "tutor.teaching_response",
+                      "kind": "event_dispatched",
+                      "parent_event_id": "ea4b9de2-d707-4d37-b2ce-6c190df74022",
+                      "seq": 8,
+                      "timestamp": 1792875391.944789
+                    },
+                    {
+                      "agent": "Harness",
+                      "kind": "commit_started",
+                      "seq": 9,
+                      "timestamp": 1792875391.94486
+                    },
+                    {
+                      "agent": "Harness",
+                      "dialogue_state": "answered",
+                      "kind": "run_completed",
+                      "seq": 10,
+                      "timestamp": 1792875391.945278
+                    }
+                  ],
+                  "stop_reason": null,
+                  "trace_schema_version": 1
+                }
+              ],
+              "request_id": "live-05-missing-sentence-followup-s2"
+            }
+          }
+        }
+      },
+      "quality_review": {
+        "anchors": {
+          "accuracy": "2 分：第二轮时态与 since 解释正确，第一轮不编事实；1 分：解释不完整；0 分：编造例句归属或解释错误。",
+          "actionability": "2 分：第一轮只提出必要澄清，第二轮给时间线索判断方法；1 分：可用但冗长或重复；0 分：持续追问已知信息或替学生回答。",
+          "targeting": "2 分：先定位缺失信息，后用学生补充内容回答；1 分：询问或回应过于泛化；0 分：忽略补充。"
+        },
+        "reviewer": null,
+        "scores": null,
+        "status": "review_pending"
+      },
+      "status": "review_pending",
+      "title": "缺少句子时提问并处理补充信息"
+    },
+    {
+      "annotations": {},
+      "automatic_passed": true,
+      "case_id": "live-06-reading-goal-cross-session",
+      "category": "澄清与接续",
+      "duration_ms": 5226.1924170015845,
+      "evaluation_role": "agent_primary",
+      "execution_failures": [],
+      "execution_outcome": "completed",
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "passed": true,
+          "path": "s1.execution",
+          "rule": "completed、awaiting_student，pending_question_id 非空。",
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "passed": true,
+          "path": "s1/s2.execution",
+          "rule": "session_id 不同、thread_id 相同；s2.answered_question_id 等于 s1.pending_question_id。",
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "passed": true,
+          "path": "s2.execution.dialogue_state",
+          "rule": "等于 answered；旧待答问题已关闭。",
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "automatic",
+          "passed": true,
+          "path": "learner.knowledge_states.reading_skimming",
+          "rule": "所有 KnowledgeState 字段保持不变。",
+          "status": "passed"
+        },
+        {
+          "id": "H5",
+          "method": "semantic_review",
+          "passed": null,
+          "path": "s2.teaching_response.response",
+          "rule": "方法与定位具体出发时间匹配，正确区分找主旨与找细节。",
+          "status": "review_pending"
+        }
+      ],
+      "metering": [
+        {
+          "estimated_off_peak_cny": 0.00042692,
+          "estimated_peak_cny": 0.00085384,
+          "request_no": 4,
+          "reservation_cny": 0.015928,
+          "status": "usage_recorded",
+          "usage": {
+            "input_tokens": 1037,
+            "output_tokens": 67,
+            "prompt_cache_hit_tokens": 896,
+            "prompt_cache_miss_tokens": 141
+          }
+        },
+        {
+          "estimated_off_peak_cny": 0.0006049200000000001,
+          "estimated_peak_cny": 0.0012098400000000002,
+          "request_no": 5,
+          "reservation_cny": 0.018238,
+          "status": "usage_recorded",
+          "usage": {
+            "input_tokens": 1387,
+            "output_tokens": 24,
+            "prompt_cache_hit_tokens": 896,
+            "prompt_cache_miss_tokens": 491
+          }
+        },
+        {
+          "estimated_off_peak_cny": 0.0018345999999999998,
+          "estimated_peak_cny": 0.0036691999999999996,
+          "request_no": 6,
+          "reservation_cny": 0.019138,
+          "status": "usage_recorded",
+          "usage": {
+            "input_tokens": 1473,
+            "output_tokens": 404,
+            "prompt_cache_hit_tokens": 1280,
+            "prompt_cache_miss_tokens": 193
+          }
+        }
+      ],
+      "observed": {
+        "final": {
+          "assistant_history": [
+            "这次阅读你要找的是什么——是某一处具体信息（如某个数字、人名、原因），还是全文主旨/作者态度这类整体性问题？",
+            "明确了：这次是**找具体细节（火车出发时间）**，不是主旨题。这类题不需要先通读全文，用“定位式略读”更省时间。\n\n**具体做法（按顺序）**\n\n1. **先看题干，圈出关键词。** 把“火车几点出发”转成原文可能出现的词：时间词（departure / leaves / time / schedule / timetable）、交通词（train / platform）。题干里如果有专有名词、数字、大写词，优先用它们，因为它们最不容易被同义替换。\n\n2. **扫读（scanning），不逐句读。** 眼睛沿段落做 Z 字形快速移动，只找两类东西：\n   - 数字和时间格式（如 7:45、08:30、a.m./p.m.）；\n   - 上面圈出的关键词或其同义表达。\n   这一步允许跳过整句，不要在心里默读翻译。\n\n3. **找到候选位置后，只精读那一两行。** 确认这个时间是“出发”而不是“到达”“检票”“换乘”。常见陷阱：原文同时出现到达时间和出发时间，或者出现两个班次。\n\n4. **核对题干问的是哪个方向。** 如果问“最早一班几点出发”，就要在几个时间点里比较，而不是抓到第一个就填。\n\n**自查三个点**：① 我找的是 departure 还是 arrival？② 这个时间属于哪一班车？③ 有没有第二个同类数字被我漏掉？\n\n**什么时候才需要通读**：只有主旨题、作者态度题、或者“这段主要讲什么”这类整体性问题，才值得先快速通读首尾段和每段首句。细节题先定位，通读是浪费。\n\n如果原文里时间是用文字写的（如 “a quarter past seven”），扫数字会漏掉，这时要同时留意英文数词和 past/to 结构。"
+          ],
+          "evidence": [],
+          "knowledge": {
+            "eval-live-06": {
+              "alpha": 1.0,
+              "attempts": 0,
+              "beta": 9.0,
+              "correct_count": 0,
+              "knowledge_id": "reading_skimming",
+              "last_attempt": null,
+              "mastery": 0.1,
+              "streak": 0
+            }
+          },
+          "pending_questions": [
+            {
+              "answered_by": "99cd5620-edf5-4c82-9747-4e7e47bb3a5a",
+              "id": "b3650985-b6a4-46b6-bd8a-fc73f576fd96"
+            }
+          ],
+          "quizzes": {}
+        },
+        "fixture_validation": {
+          "checks": {
+            "default_knowledge": true,
+            "no_answer_fields_in_context": true,
+            "no_preexisting_pending": true
+          },
+          "initial_source_refs": [],
+          "valid": true
+        },
+        "initial": {
+          "knowledge": {
+            "eval-live-06": {
+              "alpha": 1.0,
+              "attempts": 0,
+              "beta": 9.0,
+              "correct_count": 0,
+              "knowledge_id": "reading_skimming",
+              "last_attempt": null,
+              "mastery": 0.1,
+              "streak": 0
+            }
+          },
+          "quizzes": {},
+          "thread_id": "72bd6c92-935f-500c-862b-ed3daeb19608"
+        },
+        "steps": {
+          "s1": {
+            "action": "converse",
+            "all_sources_readable": true,
+            "duration_ms": 883.6655839986634,
+            "evidence": [],
+            "knowledge": {
+              "eval-live-06": {
+                "alpha": 1.0,
+                "attempts": 0,
+                "beta": 9.0,
+                "correct_count": 0,
+                "knowledge_id": "reading_skimming",
+                "last_attempt": null,
+                "mastery": 0.1,
+                "streak": 0
+              }
+            },
+            "model_turns": [
+              {
+                "content": "",
+                "duration_ms": 879.6816659996693,
+                "request_no": 4,
+                "stop_reason": "tool_calls",
+                "tool_calls": [
+                  {
+                    "arguments": {
+                      "question": "这次阅读你要找的是什么——是某一处具体信息（如某个数字、人名、原因），还是全文主旨/作者态度这类整体性问题？"
+                    },
+                    "batch_size": 1,
+                    "id": "call_00_z3Ik466oPP8ijaV4wNwb0417",
+                    "name": "ask_student"
+                  }
+                ],
+                "usage": {
+                  "input_tokens": 1037,
+                  "output_tokens": 67,
+                  "prompt_cache_hit_tokens": 896,
+                  "prompt_cache_miss_tokens": 141
+                }
+              }
+            ],
+            "quizzes": {},
+            "result": {
+              "agent_insights": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "dialogue_state": "awaiting_student",
+                  "generation_mode": "native_tools",
+                  "history_scope": "durable_thread",
+                  "knowledge_id": "reading_skimming",
+                  "response": "这次阅读你要找的是什么——是某一处具体信息（如某个数字、人名、原因），还是全文主旨/作者态度这类整体性问题？",
+                  "response_variant": "tool_loop",
+                  "source_refs": [],
+                  "teaching_style": "question_answer"
+                }
+              },
+              "correlation_id": "2dac68d0-61dc-5b5d-b1d2-fddcf0f4d8e1",
+              "evaluation": null,
+              "events_triggered": 2,
+              "execution": {
+                "answered_question_id": null,
+                "app_version": "0.2.0",
+                "attempt_id": "4be05389-5efe-4a1b-b245-19e4d868ffb4",
+                "config_fingerprint": "90a3280d40f721ce800a6c2ba1d627764a891a5013aa3be193c91f8172a011e2",
+                "dialogue_state": "awaiting_student",
+                "model": "deepseek-flash",
+                "pending_question_id": "b3650985-b6a4-46b6-bd8a-fc73f576fd96",
+                "provider": "deepseek",
+                "request_id": "live-06-reading-goal-cross-session-s1",
+                "run_id": "2dac68d0-61dc-5b5d-b1d2-fddcf0f4d8e1",
+                "session_id": "eval-live-06-old",
+                "source_refs": [],
+                "status": "completed",
+                "thread_id": "72bd6c92-935f-500c-862b-ed3daeb19608",
+                "trace_schema_version": 1
+              },
+              "interaction_events": [
+                {
+                  "correlation_id": "2dac68d0-61dc-5b5d-b1d2-fddcf0f4d8e1",
+                  "data": {
+                    "knowledge_id": "reading_skimming",
+                    "question": "我做阅读题时不知道该先通读还是先定位。你先问我一个问题，弄清这次阅读要找什么，再给我方法。"
+                  },
+                  "event_type": "student.question",
+                  "source": "api",
+                  "timestamp": "2026-10-25T04:56:31.961599"
+                },
+                {
+                  "correlation_id": "2dac68d0-61dc-5b5d-b1d2-fddcf0f4d8e1",
+                  "data": {
+                    "context_type": "question",
+                    "dialogue_state": "awaiting_student",
+                    "generation_mode": "native_tools",
+                    "history_scope": "durable_thread",
+                    "knowledge_id": "reading_skimming",
+                    "response": "这次阅读你要找的是什么——是某一处具体信息（如某个数字、人名、原因），还是全文主旨/作者态度这类整体性问题？",
+                    "response_variant": "tool_loop",
+                    "source_refs": [],
+                    "teaching_style": "question_answer"
+                  },
+                  "event_type": "tutor.teaching_response",
+                  "source": "TutorAgent",
+                  "timestamp": "2026-10-25T04:56:32.842595"
+                }
+              ],
+              "knowledge_id": "reading_skimming",
+              "learner_id": "eval-live-06",
+              "next_topic_recommendation": null,
+              "review_snapshot": {
+                "days_since_review": null,
+                "is_due": false,
+                "knowledge_id": "reading_skimming",
+                "next_review": null,
+                "retention": null,
+                "top_due_items": [],
+                "urgency": "low"
+              },
+              "teaching_decision": {
+                "agent_votes": {
+                  "assessment": {},
+                  "curriculum": {},
+                  "engagement": {},
+                  "tutor": {
+                    "context_type": "question",
+                    "generation_mode": "native_tools",
+                    "teaching_style": "question_answer"
+                  }
+                },
+                "generation_mode": "local_policy",
+                "next_action": "继续围绕学生追问做针对性解释。",
+                "priority": "normal",
+                "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+                "strategy": "answer_question",
+                "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+              },
+              "teaching_response": {
+                "context_type": "question",
+                "dialogue_state": "awaiting_student",
+                "generation_mode": "native_tools",
+                "hint_count": null,
+                "hint_level": null,
+                "history_scope": "durable_thread",
+                "knowledge_id": "reading_skimming",
+                "response": "这次阅读你要找的是什么——是某一处具体信息（如某个数字、人名、原因），还是全文主旨/作者态度这类整体性问题？",
+                "response_variant": "tool_loop",
+                "source_refs": [],
+                "teaching_style": "question_answer"
+              }
+            },
+            "status": "completed",
+            "student_input": "我做阅读题时不知道该先通读还是先定位。你先问我一个问题，弄清这次阅读要找什么，再给我方法。",
+            "tool_results": [],
+            "trace": {
+              "attempts": [
+                {
+                  "app_version": "0.2.0",
+                  "attempt_id": "4be05389-5efe-4a1b-b245-19e4d868ffb4",
+                  "config_fingerprint": "90a3280d40f721ce800a6c2ba1d627764a891a5013aa3be193c91f8172a011e2",
+                  "finished": 1792875392.8433511,
+                  "model": "deepseek-flash",
+                  "provider": "deepseek",
+                  "run_id": "2dac68d0-61dc-5b5d-b1d2-fddcf0f4d8e1",
+                  "started": 1792875391.961319,
+                  "status": "completed",
+                  "steps": [
+                    {
+                      "agent": "Harness",
+                      "kind": "run_started",
+                      "seq": 1,
+                      "timestamp": 1792875391.961524
+                    },
+                    {
+                      "agent": "api",
+                      "event_id": "e343d99f-8bc0-4067-8d8f-660d6dfd007a",
+                      "event_type": "student.question",
+                      "kind": "event_dispatched",
+                      "parent_event_id": null,
+                      "seq": 2,
+                      "timestamp": 1792875391.961621
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "event_id": "e343d99f-8bc0-4067-8d8f-660d6dfd007a",
+                      "kind": "handler_started",
+                      "seq": 3,
+                      "timestamp": 1792875391.961633
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "estimate_method": "utf8_bytes_div_3",
+                      "kind": "context_built",
+                      "omitted_refs": [],
+                      "response_mode": "explanation",
+                      "seq": 4,
+                      "source_refs": [],
+                      "timestamp": 1792875391.961806,
+                      "token_estimate": 710,
+                      "tutor_policy_version": "2026-10-25.3"
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "before_model",
+                      "model_call": 1,
+                      "seq": 5,
+                      "timestamp": 1792875391.962642,
+                      "token_estimate": 1247
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "after_model",
+                      "model_call": 1,
+                      "seq": 6,
+                      "stop_reason": "tool_calls",
+                      "timestamp": 1792875392.842388,
+                      "usage": {
+                        "input_tokens": 1037,
+                        "output_tokens": 67,
+                        "prompt_cache_hit_tokens": 896,
+                        "prompt_cache_miss_tokens": 141
+                      }
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "before_tool",
+                      "seq": 7,
+                      "timestamp": 1792875392.842408,
+                      "tool": "ask_student",
+                      "tool_call_id": "call_00_z3Ik466oPP8ijaV4wNwb0417"
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "after_tool",
+                      "result_keys": [
+                        "question",
+                        "terminal"
+                      ],
+                      "seq": 8,
+                      "source_refs": [],
+                      "status": "ok",
+                      "timestamp": 1792875392.842499,
+                      "tool": "ask_student",
+                      "tool_call_id": "call_00_z3Ik466oPP8ijaV4wNwb0417"
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "duration_ms": 881,
+                      "event_id": "e343d99f-8bc0-4067-8d8f-660d6dfd007a",
+                      "kind": "handler_completed",
+                      "seq": 9,
+                      "timestamp": 1792875392.8426502
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "event_id": "430d6c9d-db4f-47e5-92ec-3a0a2e0be96c",
+                      "event_type": "tutor.teaching_response",
+                      "kind": "event_dispatched",
+                      "parent_event_id": "e343d99f-8bc0-4067-8d8f-660d6dfd007a",
+                      "seq": 10,
+                      "timestamp": 1792875392.842657
+                    },
+                    {
+                      "agent": "Harness",
+                      "kind": "commit_started",
+                      "seq": 11,
+                      "timestamp": 1792875392.842731
+                    },
+                    {
+                      "agent": "Harness",
+                      "dialogue_state": "awaiting_student",
+                      "kind": "run_completed",
+                      "seq": 12,
+                      "timestamp": 1792875392.8431349
+                    }
+                  ],
+                  "stop_reason": null,
+                  "trace_schema_version": 1
+                }
+              ],
+              "request_id": "live-06-reading-goal-cross-session-s1"
+            }
+          },
+          "s2": {
+            "action": "converse",
+            "all_sources_readable": true,
+            "duration_ms": 4331.129291997058,
+            "evidence": [],
+            "knowledge": {
+              "eval-live-06": {
+                "alpha": 1.0,
+                "attempts": 0,
+                "beta": 9.0,
+                "correct_count": 0,
+                "knowledge_id": "reading_skimming",
+                "last_attempt": null,
+                "mastery": 0.1,
+                "streak": 0
+              }
+            },
+            "model_turns": [
+              {
+                "content": "",
+                "duration_ms": 551.6491249982209,
+                "request_no": 5,
+                "stop_reason": "tool_calls",
+                "tool_calls": [
+                  {
+                    "arguments": {},
+                    "batch_size": 1,
+                    "id": "call_00_n30U2QmuoKZhDLBugmeg1595",
+                    "name": "get_knowledge_context"
+                  }
+                ],
+                "usage": {
+                  "input_tokens": 1387,
+                  "output_tokens": 24,
+                  "prompt_cache_hit_tokens": 896,
+                  "prompt_cache_miss_tokens": 491
+                }
+              },
+              {
+                "content": "明确了：这次是**找具体细节（火车出发时间）**，不是主旨题。这类题不需要先通读全文，用“定位式略读”更省时间。\n\n**具体做法（按顺序）**\n\n1. **先看题干，圈出关键词。** 把“火车几点出发”转成原文可能出现的词：时间词（departure / leaves / time / schedule / timetable）、交通词（train / platform）。题干里如果有专有名词、数字、大写词，优先用它们，因为它们最不容易被同义替换。\n\n2. **扫读（scanning），不逐句读。** 眼睛沿段落做 Z 字形快速移动，只找两类东西：\n   - 数字和时间格式（如 7:45、08:30、a.m./p.m.）；\n   - 上面圈出的关键词或其同义表达。\n   这一步允许跳过整句，不要在心里默读翻译。\n\n3. **找到候选位置后，只精读那一两行。** 确认这个时间是“出发”而不是“到达”“检票”“换乘”。常见陷阱：原文同时出现到达时间和出发时间，或者出现两个班次。\n\n4. **核对题干问的是哪个方向。** 如果问“最早一班几点出发”，就要在几个时间点里比较，而不是抓到第一个就填。\n\n**自查三个点**：① 我找的是 departure 还是 arrival？② 这个时间属于哪一班车？③ 有没有第二个同类数字被我漏掉？\n\n**什么时候才需要通读**：只有主旨题、作者态度题、或者“这段主要讲什么”这类整体性问题，才值得先快速通读首尾段和每段首句。细节题先定位，通读是浪费。\n\n如果原文里时间是用文字写的（如 “a quarter past seven”），扫数字会漏掉，这时要同时留意英文数词和 past/to 结构。",
+                "duration_ms": 3774.1159580000385,
+                "request_no": 6,
+                "stop_reason": "stop",
+                "tool_calls": [],
+                "usage": {
+                  "input_tokens": 1473,
+                  "output_tokens": 404,
+                  "prompt_cache_hit_tokens": 1280,
+                  "prompt_cache_miss_tokens": 193
+                }
+              }
+            ],
+            "quizzes": {},
+            "result": {
+              "agent_insights": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "dialogue_state": "answered",
+                  "generation_mode": "native_tools",
+                  "history_scope": "durable_thread",
+                  "knowledge_id": "reading_skimming",
+                  "response": "明确了：这次是**找具体细节（火车出发时间）**，不是主旨题。这类题不需要先通读全文，用“定位式略读”更省时间。\n\n**具体做法（按顺序）**\n\n1. **先看题干，圈出关键词。** 把“火车几点出发”转成原文可能出现的词：时间词（departure / leaves / time / schedule / timetable）、交通词（train / platform）。题干里如果有专有名词、数字、大写词，优先用它们，因为它们最不容易被同义替换。\n\n2. **扫读（scanning），不逐句读。** 眼睛沿段落做 Z 字形快速移动，只找两类东西：\n   - 数字和时间格式（如 7:45、08:30、a.m./p.m.）；\n   - 上面圈出的关键词或其同义表达。\n   这一步允许跳过整句，不要在心里默读翻译。\n\n3. **找到候选位置后，只精读那一两行。** 确认这个时间是“出发”而不是“到达”“检票”“换乘”。常见陷阱：原文同时出现到达时间和出发时间，或者出现两个班次。\n\n4. **核对题干问的是哪个方向。** 如果问“最早一班几点出发”，就要在几个时间点里比较，而不是抓到第一个就填。\n\n**自查三个点**：① 我找的是 departure 还是 arrival？② 这个时间属于哪一班车？③ 有没有第二个同类数字被我漏掉？\n\n**什么时候才需要通读**：只有主旨题、作者态度题、或者“这段主要讲什么”这类整体性问题，才值得先快速通读首尾段和每段首句。细节题先定位，通读是浪费。\n\n如果原文里时间是用文字写的（如 “a quarter past seven”），扫数字会漏掉，这时要同时留意英文数词和 past/to 结构。",
+                  "response_variant": "tool_loop",
+                  "source_refs": [
+                    "message:7a12e521-8799-40c6-a346-76e8284690cd",
+                    "message:3a6d1744-cbef-4370-ade6-256a7270bd27"
+                  ],
+                  "teaching_style": "question_answer"
+                }
+              },
+              "correlation_id": "75a36524-8a33-51ca-9956-c6375e45c591",
+              "evaluation": null,
+              "events_triggered": 2,
+              "execution": {
+                "answered_question_id": "b3650985-b6a4-46b6-bd8a-fc73f576fd96",
+                "app_version": "0.2.0",
+                "attempt_id": "bda16669-6f68-42c2-af60-de74a524fc99",
+                "config_fingerprint": "90a3280d40f721ce800a6c2ba1d627764a891a5013aa3be193c91f8172a011e2",
+                "dialogue_state": "answered",
+                "model": "deepseek-flash",
+                "pending_question_id": null,
+                "provider": "deepseek",
+                "request_id": "live-06-reading-goal-cross-session-s2",
+                "run_id": "75a36524-8a33-51ca-9956-c6375e45c591",
+                "session_id": "eval-live-06-new",
+                "source_refs": [
+                  "message:7a12e521-8799-40c6-a346-76e8284690cd",
+                  "message:3a6d1744-cbef-4370-ade6-256a7270bd27"
+                ],
+                "status": "completed",
+                "thread_id": "72bd6c92-935f-500c-862b-ed3daeb19608",
+                "trace_schema_version": 1
+              },
+              "interaction_events": [
+                {
+                  "correlation_id": "75a36524-8a33-51ca-9956-c6375e45c591",
+                  "data": {
+                    "knowledge_id": "reading_skimming",
+                    "question": "这次只要找火车几点出发这个具体细节，不是文章主旨。"
+                  },
+                  "event_type": "student.question",
+                  "source": "api",
+                  "timestamp": "2026-10-25T04:56:32.845979"
+                },
+                {
+                  "correlation_id": "75a36524-8a33-51ca-9956-c6375e45c591",
+                  "data": {
+                    "context_type": "question",
+                    "dialogue_state": "answered",
+                    "generation_mode": "native_tools",
+                    "history_scope": "durable_thread",
+                    "knowledge_id": "reading_skimming",
+                    "response": "明确了：这次是**找具体细节（火车出发时间）**，不是主旨题。这类题不需要先通读全文，用“定位式略读”更省时间。\n\n**具体做法（按顺序）**\n\n1. **先看题干，圈出关键词。** 把“火车几点出发”转成原文可能出现的词：时间词（departure / leaves / time / schedule / timetable）、交通词（train / platform）。题干里如果有专有名词、数字、大写词，优先用它们，因为它们最不容易被同义替换。\n\n2. **扫读（scanning），不逐句读。** 眼睛沿段落做 Z 字形快速移动，只找两类东西：\n   - 数字和时间格式（如 7:45、08:30、a.m./p.m.）；\n   - 上面圈出的关键词或其同义表达。\n   这一步允许跳过整句，不要在心里默读翻译。\n\n3. **找到候选位置后，只精读那一两行。** 确认这个时间是“出发”而不是“到达”“检票”“换乘”。常见陷阱：原文同时出现到达时间和出发时间，或者出现两个班次。\n\n4. **核对题干问的是哪个方向。** 如果问“最早一班几点出发”，就要在几个时间点里比较，而不是抓到第一个就填。\n\n**自查三个点**：① 我找的是 departure 还是 arrival？② 这个时间属于哪一班车？③ 有没有第二个同类数字被我漏掉？\n\n**什么时候才需要通读**：只有主旨题、作者态度题、或者“这段主要讲什么”这类整体性问题，才值得先快速通读首尾段和每段首句。细节题先定位，通读是浪费。\n\n如果原文里时间是用文字写的（如 “a quarter past seven”），扫数字会漏掉，这时要同时留意英文数词和 past/to 结构。",
+                    "response_variant": "tool_loop",
+                    "source_refs": [
+                      "message:7a12e521-8799-40c6-a346-76e8284690cd",
+                      "message:3a6d1744-cbef-4370-ade6-256a7270bd27"
+                    ],
+                    "teaching_style": "question_answer"
+                  },
+                  "event_type": "tutor.teaching_response",
+                  "source": "TutorAgent",
+                  "timestamp": "2026-10-25T04:56:37.173596"
+                }
+              ],
+              "knowledge_id": "reading_skimming",
+              "learner_id": "eval-live-06",
+              "next_topic_recommendation": null,
+              "review_snapshot": {
+                "days_since_review": null,
+                "is_due": false,
+                "knowledge_id": "reading_skimming",
+                "next_review": null,
+                "retention": null,
+                "top_due_items": [],
+                "urgency": "low"
+              },
+              "teaching_decision": {
+                "agent_votes": {
+                  "assessment": {},
+                  "curriculum": {},
+                  "engagement": {},
+                  "tutor": {
+                    "context_type": "question",
+                    "generation_mode": "native_tools",
+                    "teaching_style": "question_answer"
+                  }
+                },
+                "generation_mode": "local_policy",
+                "next_action": "继续围绕学生追问做针对性解释。",
+                "priority": "normal",
+                "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+                "strategy": "answer_question",
+                "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+              },
+              "teaching_response": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "hint_count": null,
+                "hint_level": null,
+                "history_scope": "durable_thread",
+                "knowledge_id": "reading_skimming",
+                "response": "明确了：这次是**找具体细节（火车出发时间）**，不是主旨题。这类题不需要先通读全文，用“定位式略读”更省时间。\n\n**具体做法（按顺序）**\n\n1. **先看题干，圈出关键词。** 把“火车几点出发”转成原文可能出现的词：时间词（departure / leaves / time / schedule / timetable）、交通词（train / platform）。题干里如果有专有名词、数字、大写词，优先用它们，因为它们最不容易被同义替换。\n\n2. **扫读（scanning），不逐句读。** 眼睛沿段落做 Z 字形快速移动，只找两类东西：\n   - 数字和时间格式（如 7:45、08:30、a.m./p.m.）；\n   - 上面圈出的关键词或其同义表达。\n   这一步允许跳过整句，不要在心里默读翻译。\n\n3. **找到候选位置后，只精读那一两行。** 确认这个时间是“出发”而不是“到达”“检票”“换乘”。常见陷阱：原文同时出现到达时间和出发时间，或者出现两个班次。\n\n4. **核对题干问的是哪个方向。** 如果问“最早一班几点出发”，就要在几个时间点里比较，而不是抓到第一个就填。\n\n**自查三个点**：① 我找的是 departure 还是 arrival？② 这个时间属于哪一班车？③ 有没有第二个同类数字被我漏掉？\n\n**什么时候才需要通读**：只有主旨题、作者态度题、或者“这段主要讲什么”这类整体性问题，才值得先快速通读首尾段和每段首句。细节题先定位，通读是浪费。\n\n如果原文里时间是用文字写的（如 “a quarter past seven”），扫数字会漏掉，这时要同时留意英文数词和 past/to 结构。",
+                "response_variant": "tool_loop",
+                "source_refs": [
+                  "message:7a12e521-8799-40c6-a346-76e8284690cd",
+                  "message:3a6d1744-cbef-4370-ade6-256a7270bd27"
+                ],
+                "teaching_style": "question_answer"
+              }
+            },
+            "status": "completed",
+            "student_input": "这次只要找火车几点出发这个具体细节，不是文章主旨。",
+            "tool_results": [
+              {
+                "result": {
+                  "data": {
+                    "knowledge_id": "reading_skimming",
+                    "name": "略读技巧",
+                    "prerequisites": [
+                      "vocab_basic",
+                      "grammar_tenses"
+                    ]
+                  },
+                  "source_refs": [],
+                  "status": "ok"
+                },
+                "tool_call_id": "call_00_n30U2QmuoKZhDLBugmeg1595"
+              }
+            ],
+            "trace": {
+              "attempts": [
+                {
+                  "app_version": "0.2.0",
+                  "attempt_id": "bda16669-6f68-42c2-af60-de74a524fc99",
+                  "config_fingerprint": "90a3280d40f721ce800a6c2ba1d627764a891a5013aa3be193c91f8172a011e2",
+                  "finished": 1792875397.1744251,
+                  "model": "deepseek-flash",
+                  "provider": "deepseek",
+                  "run_id": "75a36524-8a33-51ca-9956-c6375e45c591",
+                  "started": 1792875392.8450701,
+                  "status": "completed",
+                  "steps": [
+                    {
+                      "agent": "Harness",
+                      "kind": "run_started",
+                      "seq": 1,
+                      "timestamp": 1792875392.845728
+                    },
+                    {
+                      "agent": "api",
+                      "event_id": "70e94005-30bc-429a-a843-ad8c34873aa7",
+                      "event_type": "student.question",
+                      "kind": "event_dispatched",
+                      "parent_event_id": null,
+                      "seq": 2,
+                      "timestamp": 1792875392.846014
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "event_id": "70e94005-30bc-429a-a843-ad8c34873aa7",
+                      "kind": "handler_started",
+                      "seq": 3,
+                      "timestamp": 1792875392.8460329
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "estimate_method": "utf8_bytes_div_3",
+                      "kind": "context_built",
+                      "omitted_refs": [],
+                      "response_mode": "explanation",
+                      "seq": 4,
+                      "source_refs": [
+                        "message:7a12e521-8799-40c6-a346-76e8284690cd",
+                        "message:3a6d1744-cbef-4370-ade6-256a7270bd27"
+                      ],
+                      "timestamp": 1792875392.846453,
+                      "token_estimate": 1095,
+                      "tutor_policy_version": "2026-10-25.3"
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "before_model",
+                      "model_call": 1,
+                      "seq": 5,
+                      "timestamp": 1792875392.8473642,
+                      "token_estimate": 1632
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "after_model",
+                      "model_call": 1,
+                      "seq": 6,
+                      "stop_reason": "tool_calls",
+                      "timestamp": 1792875393.399081,
+                      "usage": {
+                        "input_tokens": 1387,
+                        "output_tokens": 24,
+                        "prompt_cache_hit_tokens": 896,
+                        "prompt_cache_miss_tokens": 491
+                      }
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "before_tool",
+                      "seq": 7,
+                      "timestamp": 1792875393.399091,
+                      "tool": "get_knowledge_context",
+                      "tool_call_id": "call_00_n30U2QmuoKZhDLBugmeg1595"
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "after_tool",
+                      "result_keys": [
+                        "knowledge_id",
+                        "name",
+                        "prerequisites"
+                      ],
+                      "seq": 8,
+                      "source_refs": [],
+                      "status": "ok",
+                      "timestamp": 1792875393.399146,
+                      "tool": "get_knowledge_context",
+                      "tool_call_id": "call_00_n30U2QmuoKZhDLBugmeg1595"
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "before_model",
+                      "model_call": 2,
+                      "seq": 9,
+                      "timestamp": 1792875393.3992581,
+                      "token_estimate": 1782
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "kind": "after_model",
+                      "model_call": 2,
+                      "seq": 10,
+                      "stop_reason": "stop",
+                      "timestamp": 1792875397.1734989,
+                      "usage": {
+                        "input_tokens": 1473,
+                        "output_tokens": 404,
+                        "prompt_cache_hit_tokens": 1280,
+                        "prompt_cache_miss_tokens": 193
+                      }
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "duration_ms": 4328,
+                      "event_id": "70e94005-30bc-429a-a843-ad8c34873aa7",
+                      "kind": "handler_completed",
+                      "seq": 11,
+                      "timestamp": 1792875397.173644
+                    },
+                    {
+                      "agent": "TutorAgent",
+                      "event_id": "4964bcbf-6e0a-47cd-8773-84f1179371bd",
+                      "event_type": "tutor.teaching_response",
+                      "kind": "event_dispatched",
+                      "parent_event_id": "70e94005-30bc-429a-a843-ad8c34873aa7",
+                      "seq": 12,
+                      "timestamp": 1792875397.173651
+                    },
+                    {
+                      "agent": "Harness",
+                      "kind": "commit_started",
+                      "seq": 13,
+                      "timestamp": 1792875397.173729
+                    },
+                    {
+                      "agent": "Harness",
+                      "dialogue_state": "answered",
+                      "kind": "run_completed",
+                      "seq": 14,
+                      "timestamp": 1792875397.174206
+                    }
+                  ],
+                  "stop_reason": null,
+                  "trace_schema_version": 1
+                }
+              ],
+              "request_id": "live-06-reading-goal-cross-session-s2"
+            }
+          }
+        }
+      },
+      "quality_review": {
+        "anchors": {
+          "accuracy": "2 分：定位细节策略正确；1 分：主要正确但仍夹带无必要的通读；0 分：把主旨略读当作找具体时间的充分方法。",
+          "actionability": "2 分：给关键词定位及附近句验证的顺序；1 分：只有扫描一词；0 分：只让多练或翻译全文。",
+          "targeting": "2 分：利用新会话中的“出发时间”回答；1 分：泛讲阅读技巧；0 分：忽略新目标。"
+        },
+        "reviewer": null,
+        "scores": null,
+        "status": "review_pending"
+      },
+      "status": "review_pending",
+      "title": "跨会话接续阅读目标的澄清"
+    }
+  ],
+  "schema": "eduagent.tutor-live-result.v1",
+  "total": 3,
+  "trace_schema_version": 1
+}

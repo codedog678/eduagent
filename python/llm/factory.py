@@ -12,7 +12,7 @@ def get_llm() -> BaseLLM:
     """
     根据配置返回对应的 LLM 实例。
 
-    优先级: Anthropic > OpenAI > MiniMax > DeepSeek > Template
+    显式 LLM_PROVIDER 优先；auto 时按已配置的 Key 选择。
 
     Returns:
         BaseLLM 实例
@@ -50,7 +50,10 @@ def get_llm() -> BaseLLM:
 
         return DeepSeekLLM(
             api_key=settings.deepseek_api_key,
+            base_url=settings.deepseek_base_url,
             model=settings.deepseek_model,
+            thinking=settings.deepseek_thinking,
+            reasoning_effort=settings.deepseek_reasoning_effort,
         )
 
     from llm.template_adapter import TemplateLLM

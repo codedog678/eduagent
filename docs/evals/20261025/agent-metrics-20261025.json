@@ -1,0 +1,1204 @@
+{
+  "report_date": "2026-10-25",
+  "method": "offline_summary_of_existing_live_traces",
+  "summarizer_sha256": "0d43d7a5be9714b84f0319970e334cbc7b3fbe6a8683676dc42442fe1f840ca9",
+  "latency_percentile_method": "p50=median; p95=nearest_rank(ceil(0.95*n)); unit=ms",
+  "schema_check_scope": "frozen type/required/length/range/extra-field checks; no task semantics",
+  "frozen_tool_parameter_schemas": {
+    "search_learning_history": {
+      "query": {
+        "type": "string",
+        "maxLength": 500
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 10
+      }
+    },
+    "read_learning_history": {
+      "source_ref": {
+        "type": "string",
+        "required": true,
+        "minLength": 1,
+        "maxLength": 128
+      }
+    },
+    "get_knowledge_context": {},
+    "get_quiz_context": {},
+    "ask_student": {
+      "question": {
+        "type": "string",
+        "required": true,
+        "minLength": 1,
+        "maxLength": 1500
+      }
+    }
+  },
+  "limitations": [
+    "Fictional learners and scripted tasks; no student learning-effect estimate.",
+    "Each case is a single sample; versions/subsets must not be pooled for performance.",
+    "Schema validity and tool return status do not establish tool semantic accuracy.",
+    "Completed Harness executions do not establish end-to-end task success.",
+    "No external benchmark score, reference optimal trajectories, or fault-injection suite.",
+    "Costs use previously captured prices and usage; they are not billing records.",
+    "Blocked scripted steps have no execution latency and are counted separately."
+  ],
+  "runs": [
+    {
+      "input_file": "tutor-live12-20261025.json",
+      "input_sha256": "2648e3f6a34a4f6f0204e17e12641d69e92023b1e8e96e67515c9b0141277c6c",
+      "generated_at": "2026-10-24T20:44:11.437141+00:00",
+      "model": "deepseek-flash",
+      "provider": "deepseek",
+      "generation_mode": "live_native_tools",
+      "policy_version": "baseline_unversioned",
+      "code_revision": {
+        "git_head": "5d66b85ff9755cec184c221d7a83c674c83dfbfa",
+        "includes_working_tree": true,
+        "python_source_sha256": "3969c3276bae6a31c1408372a887b64efae072800ef1b539a87908a1e289ab66"
+      },
+      "config_fingerprint": "5e8dfc385611155f351498d236566f6b48cffb41117026678cc47dd432642ca7",
+      "dataset_revision": "97e07f31568f83ee50d8305ac2e2a02c22052a1838e59786a6445d5ea67fd696",
+      "pricing": {
+        "currency": "CNY",
+        "per_million_tokens": {
+          "off_peak": {
+            "input_hit": 0.02,
+            "input_miss": 1.0,
+            "output": 4.0
+          },
+          "peak": {
+            "input_hit": 0.04,
+            "input_miss": 2.0,
+            "output": 8.0
+          }
+        },
+        "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+        "verified_date": "2026-10-25"
+      },
+      "all_cases": {
+        "case_count": 12,
+        "case_ids": [
+          "live-01-tense-contrast",
+          "live-02-passive-explanation",
+          "live-03-participle-hint",
+          "live-04-submit-object-hint",
+          "live-05-missing-sentence-followup",
+          "live-06-reading-goal-cross-session",
+          "live-07-grounded-history-continuation",
+          "live-08-retrieve-full-old-note",
+          "live-09-injection-and-mastery",
+          "live-10-foreign-source-isolation",
+          "live-11-assisted-correct-not-independent",
+          "live-12-fresh-quiz-independent-control"
+        ],
+        "automatic_case_pass_rate": {
+          "numerator": 11,
+          "denominator": 12,
+          "value": 0.9166666666666666
+        },
+        "automatic_check_pass_rate": {
+          "numerator": 41,
+          "denominator": 42,
+          "value": 0.9761904761904762
+        },
+        "case_verdicts": {
+          "review_pending": 10,
+          "failed": 1,
+          "passed": 1
+        },
+        "semantic_check_statuses": {
+          "review_pending": 11
+        },
+        "task_success_rate": {
+          "status": "not_finalized",
+          "value": null,
+          "reason": "Task contracts with pending semantic judgments are not complete TSR labels."
+        },
+        "script_step_statuses": {
+          "completed": 18
+        },
+        "harness_execution_completion_rate": {
+          "numerator": 17,
+          "denominator": 17,
+          "value": 1.0
+        },
+        "tool_call_count": 21,
+        "tool_names": {
+          "get_knowledge_context": 9,
+          "get_quiz_context": 4,
+          "search_learning_history": 2,
+          "ask_student": 3,
+          "read_learning_history": 3
+        },
+        "tool_return_statuses": {
+          "ok": 20,
+          "denied": 1
+        },
+        "tool_execution_ok_rate": {
+          "numerator": 20,
+          "denominator": 21,
+          "value": 0.9523809523809523
+        },
+        "tool_argument_schema_validity_rate": {
+          "numerator": 21,
+          "denominator": 21,
+          "value": 1.0
+        },
+        "tool_semantic_accuracy": {
+          "status": "unscored",
+          "value": null
+        },
+        "model_request_count": 26,
+        "converse_step_count": 14,
+        "model_requests_per_case": 2.1666666666666665,
+        "model_requests_per_converse_step": 1.8571428571428572,
+        "tool_calls_per_case": 1.75,
+        "tool_calls_per_converse_step": 1.5,
+        "optimal_trajectory_efficiency": {
+          "status": "unmeasured",
+          "value": null
+        },
+        "latency_ms": {
+          "case_wall_time": {
+            "n": 12,
+            "mean": 3076.6432985838037,
+            "p50": 2895.0633960012055,
+            "p95": 6429.99329200029
+          },
+          "executed_converse_wall_time": {
+            "n": 14,
+            "mean": 2628.252449428276,
+            "p50": 2885.581041498881,
+            "p95": 3640.209834000416
+          },
+          "model_request_wall_time": {
+            "n": 26,
+            "mean": 1413.17245519265,
+            "p50": 1263.62377049918,
+            "p95": 2425.1927500008605
+          }
+        },
+        "usage": {
+          "input_tokens": 31316,
+          "output_tokens": 3246,
+          "prompt_cache_hit_tokens": 20224,
+          "prompt_cache_miss_tokens": 11092
+        },
+        "estimated_cost_cny": {
+          "peak": 0.04896096,
+          "off_peak": 0.02448048
+        },
+        "estimated_cost_cny_per_case": {
+          "peak": 0.00408008,
+          "off_peak": 0.00204004
+        },
+        "cost_per_successful_task": {
+          "status": "not_finalized",
+          "value": null
+        },
+        "repeated_run_reliability": {
+          "status": "unmeasured",
+          "value": null
+        },
+        "tool_schema_failures": []
+      },
+      "groups": {
+        "agent_primary": {
+          "case_count": 8,
+          "case_ids": [
+            "live-05-missing-sentence-followup",
+            "live-06-reading-goal-cross-session",
+            "live-07-grounded-history-continuation",
+            "live-08-retrieve-full-old-note",
+            "live-09-injection-and-mastery",
+            "live-10-foreign-source-isolation",
+            "live-11-assisted-correct-not-independent",
+            "live-12-fresh-quiz-independent-control"
+          ],
+          "automatic_case_pass_rate": {
+            "numerator": 7,
+            "denominator": 8,
+            "value": 0.875
+          },
+          "automatic_check_pass_rate": {
+            "numerator": 30,
+            "denominator": 31,
+            "value": 0.967741935483871
+          },
+          "case_verdicts": {
+            "review_pending": 6,
+            "failed": 1,
+            "passed": 1
+          },
+          "semantic_check_statuses": {
+            "review_pending": 7
+          },
+          "task_success_rate": {
+            "status": "not_finalized",
+            "value": null,
+            "reason": "Task contracts with pending semantic judgments are not complete TSR labels."
+          },
+          "script_step_statuses": {
+            "completed": 14
+          },
+          "harness_execution_completion_rate": {
+            "numerator": 13,
+            "denominator": 13,
+            "value": 1.0
+          },
+          "tool_call_count": 15,
+          "tool_names": {
+            "get_knowledge_context": 5,
+            "search_learning_history": 2,
+            "ask_student": 3,
+            "read_learning_history": 3,
+            "get_quiz_context": 2
+          },
+          "tool_return_statuses": {
+            "ok": 14,
+            "denied": 1
+          },
+          "tool_execution_ok_rate": {
+            "numerator": 14,
+            "denominator": 15,
+            "value": 0.9333333333333333
+          },
+          "tool_argument_schema_validity_rate": {
+            "numerator": 15,
+            "denominator": 15,
+            "value": 1.0
+          },
+          "tool_semantic_accuracy": {
+            "status": "unscored",
+            "value": null
+          },
+          "model_request_count": 18,
+          "converse_step_count": 10,
+          "model_requests_per_case": 2.25,
+          "model_requests_per_converse_step": 1.8,
+          "tool_calls_per_case": 1.875,
+          "tool_calls_per_converse_step": 1.5,
+          "optimal_trajectory_efficiency": {
+            "status": "unmeasured",
+            "value": null
+          },
+          "latency_ms": {
+            "case_wall_time": {
+              "n": 8,
+              "mean": 3101.651796875558,
+              "p50": 2406.8574994998926,
+              "p95": 6429.99329200029
+            },
+            "executed_converse_wall_time": {
+              "n": 10,
+              "mean": 2472.872687599738,
+              "p50": 2349.723041499601,
+              "p95": 3640.209834000416
+            },
+            "model_request_wall_time": {
+              "n": 18,
+              "mean": 1371.7955417780306,
+              "p50": 1189.4587705010053,
+              "p95": 2633.126959000947
+            }
+          },
+          "usage": {
+            "input_tokens": 24066,
+            "output_tokens": 2261,
+            "prompt_cache_hit_tokens": 15872,
+            "prompt_cache_miss_tokens": 8194
+          },
+          "estimated_cost_cny": {
+            "peak": 0.035110880000000004,
+            "off_peak": 0.017555440000000002
+          },
+          "estimated_cost_cny_per_case": {
+            "peak": 0.0043888600000000005,
+            "off_peak": 0.0021944300000000003
+          },
+          "cost_per_successful_task": {
+            "status": "not_finalized",
+            "value": null
+          },
+          "repeated_run_reliability": {
+            "status": "unmeasured",
+            "value": null
+          },
+          "tool_schema_failures": []
+        },
+        "teaching_auxiliary": {
+          "case_count": 4,
+          "case_ids": [
+            "live-01-tense-contrast",
+            "live-02-passive-explanation",
+            "live-03-participle-hint",
+            "live-04-submit-object-hint"
+          ],
+          "automatic_case_pass_rate": {
+            "numerator": 4,
+            "denominator": 4,
+            "value": 1.0
+          },
+          "automatic_check_pass_rate": {
+            "numerator": 11,
+            "denominator": 11,
+            "value": 1.0
+          },
+          "case_verdicts": {
+            "review_pending": 4
+          },
+          "semantic_check_statuses": {
+            "review_pending": 4
+          },
+          "task_success_rate": {
+            "status": "not_finalized",
+            "value": null,
+            "reason": "Task contracts with pending semantic judgments are not complete TSR labels."
+          },
+          "script_step_statuses": {
+            "completed": 4
+          },
+          "harness_execution_completion_rate": {
+            "numerator": 4,
+            "denominator": 4,
+            "value": 1.0
+          },
+          "tool_call_count": 6,
+          "tool_names": {
+            "get_knowledge_context": 4,
+            "get_quiz_context": 2
+          },
+          "tool_return_statuses": {
+            "ok": 6
+          },
+          "tool_execution_ok_rate": {
+            "numerator": 6,
+            "denominator": 6,
+            "value": 1.0
+          },
+          "tool_argument_schema_validity_rate": {
+            "numerator": 6,
+            "denominator": 6,
+            "value": 1.0
+          },
+          "tool_semantic_accuracy": {
+            "status": "unscored",
+            "value": null
+          },
+          "model_request_count": 8,
+          "converse_step_count": 4,
+          "model_requests_per_case": 2.0,
+          "model_requests_per_converse_step": 2.0,
+          "tool_calls_per_case": 1.5,
+          "tool_calls_per_converse_step": 1.5,
+          "optimal_trajectory_efficiency": {
+            "status": "unmeasured",
+            "value": null
+          },
+          "latency_ms": {
+            "case_wall_time": {
+              "n": 4,
+              "mean": 3026.6263020002953,
+              "p50": 3027.7352914999938,
+              "p95": 3272.7047500011395
+            },
+            "executed_converse_wall_time": {
+              "n": 4,
+              "mean": 3016.7018539996207,
+              "p50": 3017.7877914993587,
+              "p95": 3262.3612499992305
+            },
+            "model_request_wall_time": {
+              "n": 8,
+              "mean": 1506.2705103755434,
+              "p50": 1514.5543540002109,
+              "p95": 2425.1927500008605
+            }
+          },
+          "usage": {
+            "input_tokens": 7250,
+            "output_tokens": 985,
+            "prompt_cache_hit_tokens": 4352,
+            "prompt_cache_miss_tokens": 2898
+          },
+          "estimated_cost_cny": {
+            "peak": 0.01385008,
+            "off_peak": 0.00692504
+          },
+          "estimated_cost_cny_per_case": {
+            "peak": 0.00346252,
+            "off_peak": 0.00173126
+          },
+          "cost_per_successful_task": {
+            "status": "not_finalized",
+            "value": null
+          },
+          "repeated_run_reliability": {
+            "status": "unmeasured",
+            "value": null
+          },
+          "tool_schema_failures": []
+        }
+      }
+    },
+    {
+      "input_file": "tutor-policy-v2-20261025.json",
+      "input_sha256": "9c4c8b44eb7dba3bc6fb3765369a6c71acf9db7f873c0d0bacf91866697c7103",
+      "generated_at": "2026-10-24T20:53:59.656399+00:00",
+      "model": "deepseek-flash",
+      "provider": "deepseek",
+      "generation_mode": "live_native_tools",
+      "policy_version": "2026-10-25.2",
+      "code_revision": {
+        "git_head": "5d66b85ff9755cec184c221d7a83c674c83dfbfa",
+        "includes_working_tree": true,
+        "python_source_sha256": "c492d3fd84b3dc4cda7ee485b6ab4909ede411926a9b46928ae1e6a0e3cac55c"
+      },
+      "config_fingerprint": "ec8f45050a936edbf62ad032d7f2daf12584b66824ed23457150502aa4e5296d",
+      "dataset_revision": "3ba077b2418698f180e8da43afa3f69f2b3d8699b0ea2018b0d8a1bd3a547507",
+      "pricing": {
+        "currency": "CNY",
+        "per_million_tokens": {
+          "off_peak": {
+            "input_hit": 0.02,
+            "input_miss": 1.0,
+            "output": 4.0
+          },
+          "peak": {
+            "input_hit": 0.04,
+            "input_miss": 2.0,
+            "output": 8.0
+          }
+        },
+        "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+        "verified_date": "2026-10-25"
+      },
+      "all_cases": {
+        "case_count": 7,
+        "case_ids": [
+          "live-03-participle-hint",
+          "live-06-reading-goal-cross-session",
+          "live-04-submit-object-hint",
+          "live-11-assisted-correct-not-independent",
+          "live-12-fresh-quiz-independent-control",
+          "live-05-missing-sentence-followup",
+          "live-09-injection-and-mastery"
+        ],
+        "automatic_case_pass_rate": {
+          "numerator": 6,
+          "denominator": 7,
+          "value": 0.8571428571428571
+        },
+        "automatic_check_pass_rate": {
+          "numerator": 24,
+          "denominator": 27,
+          "value": 0.8888888888888888
+        },
+        "case_verdicts": {
+          "review_pending": 6,
+          "failed": 1
+        },
+        "semantic_check_statuses": {
+          "review_pending": 7
+        },
+        "task_success_rate": {
+          "status": "not_finalized",
+          "value": null,
+          "reason": "Task contracts with pending semantic judgments are not complete TSR labels."
+        },
+        "script_step_statuses": {
+          "completed": 12,
+          "blocked_by_prior_step": 1
+        },
+        "harness_execution_completion_rate": {
+          "numerator": 11,
+          "denominator": 11,
+          "value": 1.0
+        },
+        "tool_call_count": 4,
+        "tool_names": {
+          "ask_student": 1,
+          "get_quiz_context": 1,
+          "get_knowledge_context": 2
+        },
+        "tool_return_statuses": {
+          "ok": 4
+        },
+        "tool_execution_ok_rate": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1.0
+        },
+        "tool_argument_schema_validity_rate": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1.0
+        },
+        "tool_semantic_accuracy": {
+          "status": "unscored",
+          "value": null
+        },
+        "model_request_count": 10,
+        "converse_step_count": 8,
+        "model_requests_per_case": 1.4285714285714286,
+        "model_requests_per_converse_step": 1.25,
+        "tool_calls_per_case": 0.5714285714285714,
+        "tool_calls_per_converse_step": 0.5,
+        "optimal_trajectory_efficiency": {
+          "status": "unmeasured",
+          "value": null
+        },
+        "latency_ms": {
+          "case_wall_time": {
+            "n": 7,
+            "mean": 3266.7655714280304,
+            "p50": 3288.029249997635,
+            "p95": 4472.473624999111
+          },
+          "executed_converse_wall_time": {
+            "n": 8,
+            "mean": 2848.722114749762,
+            "p50": 3275.386792000063,
+            "p95": 3746.958749998157
+          },
+          "model_request_wall_time": {
+            "n": 10,
+            "mean": 2275.5537585006095,
+            "p50": 2338.9658960022643,
+            "p95": 3660.991083997942
+          }
+        },
+        "usage": {
+          "input_tokens": 11510,
+          "output_tokens": 2329,
+          "prompt_cache_hit_tokens": 7040,
+          "prompt_cache_miss_tokens": 4470
+        },
+        "estimated_cost_cny": {
+          "peak": 0.027853600000000003,
+          "off_peak": 0.013926800000000001
+        },
+        "estimated_cost_cny_per_case": {
+          "peak": 0.003979085714285715,
+          "off_peak": 0.0019895428571428575
+        },
+        "cost_per_successful_task": {
+          "status": "not_finalized",
+          "value": null
+        },
+        "repeated_run_reliability": {
+          "status": "unmeasured",
+          "value": null
+        },
+        "tool_schema_failures": []
+      },
+      "groups": {
+        "agent_primary": {
+          "case_count": 5,
+          "case_ids": [
+            "live-06-reading-goal-cross-session",
+            "live-11-assisted-correct-not-independent",
+            "live-12-fresh-quiz-independent-control",
+            "live-05-missing-sentence-followup",
+            "live-09-injection-and-mastery"
+          ],
+          "automatic_case_pass_rate": {
+            "numerator": 4,
+            "denominator": 5,
+            "value": 0.8
+          },
+          "automatic_check_pass_rate": {
+            "numerator": 18,
+            "denominator": 21,
+            "value": 0.8571428571428571
+          },
+          "case_verdicts": {
+            "review_pending": 4,
+            "failed": 1
+          },
+          "semantic_check_statuses": {
+            "review_pending": 5
+          },
+          "task_success_rate": {
+            "status": "not_finalized",
+            "value": null,
+            "reason": "Task contracts with pending semantic judgments are not complete TSR labels."
+          },
+          "script_step_statuses": {
+            "completed": 10,
+            "blocked_by_prior_step": 1
+          },
+          "harness_execution_completion_rate": {
+            "numerator": 9,
+            "denominator": 9,
+            "value": 1.0
+          },
+          "tool_call_count": 2,
+          "tool_names": {
+            "ask_student": 1,
+            "get_knowledge_context": 1
+          },
+          "tool_return_statuses": {
+            "ok": 2
+          },
+          "tool_execution_ok_rate": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "tool_argument_schema_validity_rate": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "tool_semantic_accuracy": {
+            "status": "unscored",
+            "value": null
+          },
+          "model_request_count": 7,
+          "converse_step_count": 6,
+          "model_requests_per_case": 1.4,
+          "model_requests_per_converse_step": 1.1666666666666667,
+          "tool_calls_per_case": 0.4,
+          "tool_calls_per_converse_step": 0.3333333333333333,
+          "optimal_trajectory_efficiency": {
+            "status": "unmeasured",
+            "value": null
+          },
+          "latency_ms": {
+            "case_wall_time": {
+              "n": 5,
+              "mean": 3259.450649999053,
+              "p50": 3677.0193749980535,
+              "p95": 4472.473624999111
+            },
+            "executed_converse_wall_time": {
+              "n": 6,
+              "mean": 2706.5005556663286,
+              "p50": 2930.8931460000167,
+              "p95": 3746.958749998157
+            },
+            "model_request_wall_time": {
+              "n": 7,
+              "mean": 2316.024172857786,
+              "p50": 2369.54366700229,
+              "p95": 3660.991083997942
+            }
+          },
+          "usage": {
+            "input_tokens": 7727,
+            "output_tokens": 1705,
+            "prompt_cache_hit_tokens": 5120,
+            "prompt_cache_miss_tokens": 2607
+          },
+          "estimated_cost_cny": {
+            "peak": 0.0190588,
+            "off_peak": 0.0095294
+          },
+          "estimated_cost_cny_per_case": {
+            "peak": 0.00381176,
+            "off_peak": 0.00190588
+          },
+          "cost_per_successful_task": {
+            "status": "not_finalized",
+            "value": null
+          },
+          "repeated_run_reliability": {
+            "status": "unmeasured",
+            "value": null
+          },
+          "tool_schema_failures": []
+        },
+        "teaching_auxiliary": {
+          "case_count": 2,
+          "case_ids": [
+            "live-03-participle-hint",
+            "live-04-submit-object-hint"
+          ],
+          "automatic_case_pass_rate": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "automatic_check_pass_rate": {
+            "numerator": 6,
+            "denominator": 6,
+            "value": 1.0
+          },
+          "case_verdicts": {
+            "review_pending": 2
+          },
+          "semantic_check_statuses": {
+            "review_pending": 2
+          },
+          "task_success_rate": {
+            "status": "not_finalized",
+            "value": null,
+            "reason": "Task contracts with pending semantic judgments are not complete TSR labels."
+          },
+          "script_step_statuses": {
+            "completed": 2
+          },
+          "harness_execution_completion_rate": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "tool_call_count": 2,
+          "tool_names": {
+            "get_quiz_context": 1,
+            "get_knowledge_context": 1
+          },
+          "tool_return_statuses": {
+            "ok": 2
+          },
+          "tool_execution_ok_rate": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "tool_argument_schema_validity_rate": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "tool_semantic_accuracy": {
+            "status": "unscored",
+            "value": null
+          },
+          "model_request_count": 3,
+          "converse_step_count": 2,
+          "model_requests_per_case": 1.5,
+          "model_requests_per_converse_step": 1.5,
+          "tool_calls_per_case": 1.0,
+          "tool_calls_per_converse_step": 1.0,
+          "optimal_trajectory_efficiency": {
+            "status": "unmeasured",
+            "value": null
+          },
+          "latency_ms": {
+            "case_wall_time": {
+              "n": 2,
+              "mean": 3285.052875000474,
+              "p50": 3285.052875000474,
+              "p95": 3288.029249997635
+            },
+            "executed_converse_wall_time": {
+              "n": 2,
+              "mean": 3275.386792000063,
+              "p50": 3275.386792000063,
+              "p95": 3279.5372090004093
+            },
+            "model_request_wall_time": {
+              "n": 3,
+              "mean": 2181.1227916671974,
+              "p50": 2308.3881250022387,
+              "p95": 3276.6950000004726
+            }
+          },
+          "usage": {
+            "input_tokens": 3783,
+            "output_tokens": 624,
+            "prompt_cache_hit_tokens": 1920,
+            "prompt_cache_miss_tokens": 1863
+          },
+          "estimated_cost_cny": {
+            "peak": 0.0087948,
+            "off_peak": 0.0043974
+          },
+          "estimated_cost_cny_per_case": {
+            "peak": 0.0043974,
+            "off_peak": 0.0021987
+          },
+          "cost_per_successful_task": {
+            "status": "not_finalized",
+            "value": null
+          },
+          "repeated_run_reliability": {
+            "status": "unmeasured",
+            "value": null
+          },
+          "tool_schema_failures": []
+        }
+      }
+    },
+    {
+      "input_file": "tutor-policy-v3-20261025.json",
+      "input_sha256": "afa0f56ec71e28daeb3a3c94f7eb9709e3164e786c78b9d9b2327f05e37f46a1",
+      "generated_at": "2026-10-24T20:56:25.140435+00:00",
+      "model": "deepseek-flash",
+      "provider": "deepseek",
+      "generation_mode": "live_native_tools",
+      "policy_version": "2026-10-25.3",
+      "code_revision": {
+        "git_head": "5d66b85ff9755cec184c221d7a83c674c83dfbfa",
+        "includes_working_tree": true,
+        "python_source_sha256": "2275978375a35fb123fe06f120e629d700080d5da0c0596f116ef2f4431be181"
+      },
+      "config_fingerprint": "90a3280d40f721ce800a6c2ba1d627764a891a5013aa3be193c91f8172a011e2",
+      "dataset_revision": "389289a6718d59ed62af673b440638ae10eb79af24c19a9b19cbe48e202bb82f",
+      "pricing": {
+        "currency": "CNY",
+        "per_million_tokens": {
+          "off_peak": {
+            "input_hit": 0.02,
+            "input_miss": 1.0,
+            "output": 4.0
+          },
+          "peak": {
+            "input_hit": 0.04,
+            "input_miss": 2.0,
+            "output": 8.0
+          }
+        },
+        "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+        "verified_date": "2026-10-25"
+      },
+      "all_cases": {
+        "case_count": 3,
+        "case_ids": [
+          "live-03-participle-hint",
+          "live-05-missing-sentence-followup",
+          "live-06-reading-goal-cross-session"
+        ],
+        "automatic_case_pass_rate": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1.0
+        },
+        "automatic_check_pass_rate": {
+          "numerator": 11,
+          "denominator": 11,
+          "value": 1.0
+        },
+        "case_verdicts": {
+          "review_pending": 3
+        },
+        "semantic_check_statuses": {
+          "review_pending": 3
+        },
+        "task_success_rate": {
+          "status": "not_finalized",
+          "value": null,
+          "reason": "Task contracts with pending semantic judgments are not complete TSR labels."
+        },
+        "script_step_statuses": {
+          "completed": 5
+        },
+        "harness_execution_completion_rate": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1.0
+        },
+        "tool_call_count": 3,
+        "tool_names": {
+          "ask_student": 2,
+          "get_knowledge_context": 1
+        },
+        "tool_return_statuses": {
+          "ok": 3
+        },
+        "tool_execution_ok_rate": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1.0
+        },
+        "tool_argument_schema_validity_rate": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1.0
+        },
+        "tool_semantic_accuracy": {
+          "status": "unscored",
+          "value": null
+        },
+        "model_request_count": 6,
+        "converse_step_count": 5,
+        "model_requests_per_case": 2.0,
+        "model_requests_per_converse_step": 1.2,
+        "tool_calls_per_case": 1.0,
+        "tool_calls_per_converse_step": 0.6,
+        "optimal_trajectory_efficiency": {
+          "status": "unmeasured",
+          "value": null
+        },
+        "latency_ms": {
+          "case_wall_time": {
+            "n": 3,
+            "mean": 3986.9067086668415,
+            "p50": 4064.5041669995408,
+            "p95": 5226.1924170015845
+          },
+          "executed_converse_wall_time": {
+            "n": 5,
+            "mean": 2386.0145753991674,
+            "p50": 2661.151833999611,
+            "p95": 4331.129291997058
+          },
+          "model_request_wall_time": {
+            "n": 6,
+            "mean": 1984.6542428337368,
+            "p50": 1826.500062501509,
+            "p95": 3774.1159580000385
+          }
+        },
+        "usage": {
+          "input_tokens": 7576,
+          "output_tokens": 1163,
+          "prompt_cache_hit_tokens": 4096,
+          "prompt_cache_miss_tokens": 3480
+        },
+        "estimated_cost_cny": {
+          "peak": 0.01642784,
+          "off_peak": 0.00821392
+        },
+        "estimated_cost_cny_per_case": {
+          "peak": 0.005475946666666666,
+          "off_peak": 0.002737973333333333
+        },
+        "cost_per_successful_task": {
+          "status": "not_finalized",
+          "value": null
+        },
+        "repeated_run_reliability": {
+          "status": "unmeasured",
+          "value": null
+        },
+        "tool_schema_failures": []
+      },
+      "groups": {
+        "agent_primary": {
+          "case_count": 2,
+          "case_ids": [
+            "live-05-missing-sentence-followup",
+            "live-06-reading-goal-cross-session"
+          ],
+          "automatic_case_pass_rate": {
+            "numerator": 2,
+            "denominator": 2,
+            "value": 1.0
+          },
+          "automatic_check_pass_rate": {
+            "numerator": 8,
+            "denominator": 8,
+            "value": 1.0
+          },
+          "case_verdicts": {
+            "review_pending": 2
+          },
+          "semantic_check_statuses": {
+            "review_pending": 2
+          },
+          "task_success_rate": {
+            "status": "not_finalized",
+            "value": null,
+            "reason": "Task contracts with pending semantic judgments are not complete TSR labels."
+          },
+          "script_step_statuses": {
+            "completed": 4
+          },
+          "harness_execution_completion_rate": {
+            "numerator": 4,
+            "denominator": 4,
+            "value": 1.0
+          },
+          "tool_call_count": 3,
+          "tool_names": {
+            "ask_student": 2,
+            "get_knowledge_context": 1
+          },
+          "tool_return_statuses": {
+            "ok": 3
+          },
+          "tool_execution_ok_rate": {
+            "numerator": 3,
+            "denominator": 3,
+            "value": 1.0
+          },
+          "tool_argument_schema_validity_rate": {
+            "numerator": 3,
+            "denominator": 3,
+            "value": 1.0
+          },
+          "tool_semantic_accuracy": {
+            "status": "unscored",
+            "value": null
+          },
+          "model_request_count": 5,
+          "converse_step_count": 4,
+          "model_requests_per_case": 2.5,
+          "model_requests_per_converse_step": 1.25,
+          "tool_calls_per_case": 1.5,
+          "tool_calls_per_converse_step": 0.75,
+          "optimal_trajectory_efficiency": {
+            "status": "unmeasured",
+            "value": null
+          },
+          "latency_ms": {
+            "case_wall_time": {
+              "n": 2,
+              "mean": 4645.348292000563,
+              "p50": 4645.348292000563,
+              "p95": 5226.1924170015845
+            },
+            "executed_converse_wall_time": {
+              "n": 4,
+              "mean": 2317.2302607490565,
+              "p50": 2027.063083500252,
+              "p95": 4331.129291997058
+            },
+            "model_request_wall_time": {
+              "n": 5,
+              "mean": 1850.052866400074,
+              "p50": 995.3390000009676,
+              "p95": 3774.1159580000385
+            }
+          },
+          "usage": {
+            "input_tokens": 6307,
+            "output_tokens": 911,
+            "prompt_cache_hit_tokens": 4096,
+            "prompt_cache_miss_tokens": 2211
+          },
+          "estimated_cost_cny": {
+            "peak": 0.011873839999999998,
+            "off_peak": 0.005936919999999999
+          },
+          "estimated_cost_cny_per_case": {
+            "peak": 0.005936919999999999,
+            "off_peak": 0.0029684599999999996
+          },
+          "cost_per_successful_task": {
+            "status": "not_finalized",
+            "value": null
+          },
+          "repeated_run_reliability": {
+            "status": "unmeasured",
+            "value": null
+          },
+          "tool_schema_failures": []
+        },
+        "teaching_auxiliary": {
+          "case_count": 1,
+          "case_ids": [
+            "live-03-participle-hint"
+          ],
+          "automatic_case_pass_rate": {
+            "numerator": 1,
+            "denominator": 1,
+            "value": 1.0
+          },
+          "automatic_check_pass_rate": {
+            "numerator": 3,
+            "denominator": 3,
+            "value": 1.0
+          },
+          "case_verdicts": {
+            "review_pending": 1
+          },
+          "semantic_check_statuses": {
+            "review_pending": 1
+          },
+          "task_success_rate": {
+            "status": "not_finalized",
+            "value": null,
+            "reason": "Task contracts with pending semantic judgments are not complete TSR labels."
+          },
+          "script_step_statuses": {
+            "completed": 1
+          },
+          "harness_execution_completion_rate": {
+            "numerator": 1,
+            "denominator": 1,
+            "value": 1.0
+          },
+          "tool_call_count": 0,
+          "tool_names": {},
+          "tool_return_statuses": {},
+          "tool_execution_ok_rate": {
+            "numerator": 0,
+            "denominator": 0,
+            "value": null
+          },
+          "tool_argument_schema_validity_rate": {
+            "numerator": 0,
+            "denominator": 0,
+            "value": null
+          },
+          "tool_semantic_accuracy": {
+            "status": "unscored",
+            "value": null
+          },
+          "model_request_count": 1,
+          "converse_step_count": 1,
+          "model_requests_per_case": 1.0,
+          "model_requests_per_converse_step": 1.0,
+          "tool_calls_per_case": 0.0,
+          "tool_calls_per_converse_step": 0.0,
+          "optimal_trajectory_efficiency": {
+            "status": "unmeasured",
+            "value": null
+          },
+          "latency_ms": {
+            "case_wall_time": {
+              "n": 1,
+              "mean": 2670.0235419993987,
+              "p50": 2670.0235419993987,
+              "p95": 2670.0235419993987
+            },
+            "executed_converse_wall_time": {
+              "n": 1,
+              "mean": 2661.151833999611,
+              "p50": 2661.151833999611,
+              "p95": 2661.151833999611
+            },
+            "model_request_wall_time": {
+              "n": 1,
+              "mean": 2657.6611250020505,
+              "p50": 2657.6611250020505,
+              "p95": 2657.6611250020505
+            }
+          },
+          "usage": {
+            "input_tokens": 1269,
+            "output_tokens": 252,
+            "prompt_cache_hit_tokens": 0,
+            "prompt_cache_miss_tokens": 1269
+          },
+          "estimated_cost_cny": {
+            "peak": 0.004554,
+            "off_peak": 0.002277
+          },
+          "estimated_cost_cny_per_case": {
+            "peak": 0.004554,
+            "off_peak": 0.002277
+          },
+          "cost_per_successful_task": {
+            "status": "not_finalized",
+            "value": null
+          },
+          "repeated_run_reliability": {
+            "status": "unmeasured",
+            "value": null
+          },
+          "tool_schema_failures": []
+        }
+      }
+    }
+  ],
+  "total_resource_usage": {
+    "model_requests": 42,
+    "usage": {
+      "input_tokens": 50402,
+      "output_tokens": 6738,
+      "prompt_cache_hit_tokens": 31360,
+      "prompt_cache_miss_tokens": 19042
+    },
+    "estimated_cost_cny": {
+      "peak": 0.0932424,
+      "off_peak": 0.0466212
+    }
+  }
+}

@@ -180,7 +180,24 @@ SQLite 无需安装数据库服务或手动建表。`LearningHarness` 启动时�
 | 3 | MiniMax | `MINIMAX_API_KEY` | `MINIMAX_MODEL` |
 | 4 | DeepSeek | `DEEPSEEK_API_KEY` | `DEEPSEEK_MODEL` |
 
-Provider 按已配置的 Key 选择。LLM 用于答疑、错题解释、候选知识点推荐，以及可选的教学策略生成；当前测验的分级提示采用本地策略。
+`LLM_PROVIDER=auto`（默认）按上述优先级选择已配置的 Key。也可显式指定 `deepseek` 等 Provider；缺少对应 Key 会报配置错误，不会改用其他 Key。`LLM_PROVIDER=template` 强制使用本地模式。LLM 用于答疑、错题解释、候选知识点推荐，以及可选的教学策略生成；当前测验的分级提示采用本地策略。
+
+DeepSeek 本地和 Docker 接入均可在根目录 `.env` 中填写：
+
+```dotenv
+LLM_PROVIDER=deepseek
+DEEPSEEK_API_KEY=your-deepseek-api-key
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-flash
+DEEPSEEK_THINKING=disabled
+DEEPSEEK_REASONING_EFFORT=high
+```
+
+当前推荐模型名为 `deepseek-flash`，使用 OpenAI 兼容 SDK。项目显式设置 `DEEPSEEK_THINKING=disabled` 建立非思考评测基线；改为 `enabled` 开启思考，此时 `DEEPSEEK_REASONING_EFFORT` 可选 `high`、`max`，不传不生效的 temperature。
+
+思考模式的工具循环会完整回传当前请求中的 `reasoning_content`，只保留在内存消息中，不写入学生回复、历史或公开 Trace。下一次学生请求从公开教学证据重新构建模型上下文，不重放旧工具协议。思考内容计入上下文预算；输出截断仍按执行耗尽处理。DeepSeek 的 SDK 自动重试已关闭，便于控制单轮请求次数。配置指纹记录思考开关与生效的 effort，便于比较实验。官方说明：[模型与价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)、[思考模式](https://api-docs.deepseek.com/zh-cn/guides/thinking_mode)。
+
+通过 `python python/test_llm_config.py` 检查本地配置，不发送请求；显式添加 `--live` 才会发送标准 API 连通性请求（可能计费）。该检查使用主链路原生协议，完整正文或合法工具调用均视为连通成功；截断、无正文且无有效工具调用的响应以及 API 错误均返回失败。工具调用只验证响应协议，不执行完整教学循环。
 
 `ENABLE_TUTOR_TOOLS=true` 时，REST 答疑使用原生工具协议，注册历史检索、来源读取、知识关系查询及 `ask_student`；绑定有效练习题时提供公开题目查询工具。模型工具参数不包含学习者 ID，服务端校验角色允许的工具、资源归属与严格参数结构。`advance` 模式禁止本题答疑和提示，主动查看答案会结束测验。
 
@@ -208,15 +225,16 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-默认 Compose 配置通过 `ANTHROPIC_API_KEY`、`ANTHROPIC_BASE_URL` 和 `MODEL_ID` 向后端传入模型配置。可在根目录 `.env` 中填写：
+Compose 已转发 `LLM_PROVIDER` 以及 Anthropic、DeepSeek 的配置。使用 Anthropic 时，可在根目录 `.env` 中填写：
 
 ```dotenv
 ANTHROPIC_API_KEY=your-api-key
+LLM_PROVIDER=anthropic
 ANTHROPIC_BASE_URL=https://api.anthropic.com
 MODEL_ID=your-model-id
 ```
 
-不填写 Key 时使用本地模式。使用其他 Provider 的容器部署时，将对应变量加入 `python-api.environment`。
+默认 `LLM_PROVIDER=auto` 且不填写 Key 时使用本地模式。使用 OpenAI 或 MiniMax 的容器部署时，将对应变量加入 `python-api.environment`。
 
 容器使用代码中的默认 Tutor 配置。若需通过根目录 `.env` 调整 `ENABLE_TUTOR_TOOLS` 或 `TUTOR_*` 参数，也需将对应变量加入 `python-api.environment`。
 
@@ -401,7 +419,13 @@ python -m pytest tests/test_api.py -v
 python -m pytest tests/test_tutor_harness.py -q
 ```
 
-当前后端测试集 135 项通过。主链路 `LLMService.generate` 在 pytest 环境下跳过远程调用；原生工具测试使用 scripted 模型和 mock SDK，验证 OpenAI 兼容与 Anthropic 消息协议、权限、预算、追问接续及提交失败回滚，不调用真实模型。
+后端测试覆盖主链路、原生工具协议和评测执行器。主链路 `LLMService.generate` 在 pytest 环境下跳过远程调用；协议测试在确定注入 MockTransport 后显式允许 SDK 序列化。原生工具测试使用 scripted 模型和 mock SDK，验证 OpenAI 兼容与 Anthropic 消息协议、DeepSeek 思考开关及私有思考回传、权限、预算、追问接续和提交失败回滚，不调用真实模型。
+
+配置了远程模型的 `.env` 时，离线运行测试可显式选择模板模式：
+
+```bash
+LLM_PROVIDER=template python -m pytest -q
+```
 
 前端验证：
 
@@ -410,7 +434,7 @@ cd frontend
 npm run build
 ```
 
-测试验证执行与状态边界，尚不代表真实模型答疑质量或教学效果已经评估。
+自动测试验证执行与状态边界；真实模型表现通过下述独立评测入口记录，学生学习效果需要另外开展实验。
 
 ## 离线评测
 
@@ -429,6 +453,32 @@ eduagent-eval fetch mrbench
 ```
 
 转换结果保留 CC BY-SA 4.0、来源 ID、split 和 revision。确定性规则只用于回归与标签校准，不等同于真实教学效果评价。
+
+## 真实模型评测
+
+首批 12 条项目自建场景采用固定学生脚本：8 条检验 Agent 接续、历史检索、权限与学习证据，4 条辅助检查教学回复。每条使用全新学习者、独立临时 SQLite 和真实 `LearningHarness.converse/answer`，不连接业务 PostgreSQL。
+
+已执行的基线、提示 v2/v3 复测、逐条公开 Trace 和常见 Agent 指标见[评测文档与数据索引](docs/evals/README.md)。这些记录保留失败与待审阅项；各版本成绩分别报告。
+
+根目录 `.env` 配置 `LLM_PROVIDER=deepseek`、`DEEPSEEK_MODEL=deepseek-flash`、`DEEPSEEK_THINKING=disabled` 后运行：
+
+```bash
+cd python
+eduagent-eval run-live \
+  --dataset evals/datasets/tutor_live12_review.jsonl \
+  --output eval-results/tutor-live12.json \
+  --max-requests 42 --max-cny 3
+```
+
+该命令调用真实模型并消耗额度。每次答疑最多 3 次模型请求、4 次工具调用、800 输出 Token；整批最多 42 次请求和 3 元保守预算，不自动重跑。费用按官方 Flash 高峰价格预留，收到 usage 后记录缓存命中/未命中与闲时至高峰费用区间；请求用量未知时保留预留金额，金额不是供应商账单。
+
+报告逐条保存学生输入、公开回复、实际工具批次、来源、前后知识状态、测验及学习证据、Trace、代码与数据摘要、延迟和用量。结果在每条执行后写入 JSON 和 Markdown；临时数据库自动清理。第 08 条先验证目标旧笔记不在初始上下文或搜索摘要中，第 10 条先验证外部学习者正文不可见。
+
+Tutor 原生工具路径的通用答疑约束集中在 `python/core/tutor_policy.py`。未结束的练习使用 `hint_only`，可以讲所需语法类别和公开候选，但不直接给具体答案词形、词义或正确选项；结束练习后的公开讲解采用 `explanation`。缺失具体材料时必须用 `ask_student` 建立待答状态；补充信息已足够时先完成原请求，可选背景不阻断回答。学生明确要求问题引导时仍可提问。提示版本写入上下文 Trace 与配置指纹，便于比较修改前后的行为。
+
+这组任务评测观察 Tutor Agent 如何根据输入和历史选择工具、接续问题，并与 Harness 一起提交学习证据。其他领域 Agent 在该配置下使用本地策略协同；本批不是完整的多 Agent 自主协作或通用 Agent 基准评测。
+
+自动评分只判定可核对的契约和指定原文。教学事实、针对性及是否直接代答进入 `semantic_review`，质量分按准确性、针对性、可操作性各 0–2 分单独审阅。语义未审阅时标记 `review_pending`，不会将自动检查成功写成整体通过；如添加 AI 审阅，应独立标明审阅者，不能冒充人工评分。固定学生脚本的正确选择不代表真实学习收益或迁移效果。
 
 ## License
 
