@@ -23,6 +23,12 @@ def _parser() -> argparse.ArgumentParser:
     listing.add_argument("--dataset", type=Path)
     listing.add_argument("--suite")
 
+    validate_live = subparsers.add_parser(
+        "validate-live", help="validate live fixtures with offline scripts (no model API)"
+    )
+    validate_live.add_argument("--dataset", type=Path, required=True)
+    validate_live.add_argument("--output", type=Path)
+
     run = subparsers.add_parser("run", help="run an offline evaluation suite")
     run.add_argument("--dataset", type=Path)
     run.add_argument("--suite", default="builtin")
@@ -33,6 +39,7 @@ def _parser() -> argparse.ArgumentParser:
     live.add_argument("--output", type=Path, default=Path("eval-results/tutor-live12.json"))
     live.add_argument("--max-requests", type=int, default=42)
     live.add_argument("--max-cny", type=float, default=3.0)
+    live.add_argument("--case-id", action="append", help="select a case; repeat for a bounded batch")
 
     fetch = subparsers.add_parser("fetch", help="fetch an external dataset")
     fetch.add_argument("dataset", choices=["mrbench"])
@@ -57,6 +64,15 @@ def main(argv: list[str] | None = None) -> int:
             for case in cases:
                 print(f"{case.case_id}\t{case.kind}\t{','.join(case.tags)}")
             return 0
+        if args.command == "validate-live":
+            from evals.live_validation import validate_live_dataset
+
+            report = asyncio.run(validate_live_dataset(args.dataset))
+            if args.output:
+                write_json(args.output, report)
+            print(f"offline fixtures/contracts: {report['valid']}/{report['total']}; "
+                  "provider requests: 0; model success and semantics: not evaluated")
+            return 0 if report["valid"] == report["total"] else 1
         if args.command == "fetch":
             converted = fetch_and_convert(args.cache_dir, force=args.force)
             print(converted)
@@ -72,6 +88,7 @@ def main(argv: list[str] | None = None) -> int:
             report = asyncio.run(run_live_suite(
                 path=args.dataset, output=args.output,
                 max_requests=args.max_requests, max_cny=args.max_cny, progress=progress,
+                case_ids=args.case_id,
             ))
             for role, metrics in report["groups"].items():
                 print(f"{role}: {metrics['automatic_passed']}/{metrics['valid_fixtures']} "

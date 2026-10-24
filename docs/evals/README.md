@@ -4,6 +4,7 @@
 
 | 内容 | 文件 |
 | --- | --- |
+| 50 条 Agent 主任务扩展（8 原任务 + 42 新任务，尚未真实运行） | [完整场景说明](tutor-agent-50-review.md)、[JSONL](tutor-agent-50-review.jsonl)、[清单与分批计划](tutor-agent-50-manifest.json)、[设计](tutor-agent-50-design.md)、[离线验证说明](20261025/tutor-agent50-validation.md)、[逐条记录](20261025/tutor-agent50-validation.json) |
 | 任务最终成功与工具语义评分（AI 审阅） | [评分报告](20261025/tutor-final-scoring-20261025.md)、[逐条标签](20261025/tutor-semantic-review-20261025.jsonl)、[分组指标](20261025/tutor-reviewed-metrics-20261025.json)、[评分口径](20261025/tutor-semantic-rubric-20261025.md) |
 | 12 条场景设计与评分规则 | [场景说明](tutor-live-12-review.md)、[原始 JSONL](tutor-live-12-review.jsonl) |
 | 常见 Agent 指标、计算口径和实测结果 | [指标报告](20261025/agent-metrics-20261025.md)、[指标 JSON](20261025/agent-metrics-20261025.json) |
@@ -25,6 +26,8 @@
 累计 42 次模型请求，费用估算区间 0.04662120–0.09324240 元，实际扣费以供应商账单为准。各版本和子集分别报告，不能拼成“最新全套 12/12”。自动契约通过不等于完整任务成功：原始语义项保留 `review_pending`，AI 初审单独归属，不作为人工评分或真实学习效果。
 
 后续 AI 最终审阅已完成：Agent 主任务基线 6/8、v2 4/5、v3 2/2；三轮全部实际工具调用的联合语义比例分别为 19/21、4/4、3/3。仅主任务的工具比例与漏调决策另见[评分报告](20261025/tutor-final-scoring-20261025.md)。04、09 基线按严格口径裁定，保留人工复核敏感性；这是单次 AI 审阅，没有独立人工确认。原始报告未被改写，也没有新增模型请求。
+
+主评测数据现已扩至 50 条，新增 42 条在运行前写明最终成功及工具决策要求。整套经过离线预置和状态链路校验，尚未执行真实模型或新增语义评分；不能把脚本校验结果当作 Agent 成功率。原有 4 条教学辅助独立保留。新套共 64 个答疑轮次，最坏 192 次请求；单批 42 次请求上限保留，后续用 `--case-id` 分批执行。
 
 ## 复现
 
@@ -54,6 +57,16 @@ python docs/evals/20261025/aggregate-semantic-review.py
 cd python
 LLM_PROVIDER=template python -m pytest tests -q
 LLM_PROVIDER=template eduagent-eval run --suite builtin
+```
+
+生成并离线验证 50 条主任务，不调用模型：
+
+```bash
+python docs/evals/build-agent50-dataset.py
+cd python
+eduagent-eval validate-live \
+  --dataset evals/datasets/tutor_agent50_review.jsonl \
+  --output eval-results/tutor-agent50-validation.json
 ```
 
 重新执行真实模型任务需要自行配置 `.env`，以下命令会消耗模型额度：

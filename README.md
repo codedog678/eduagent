@@ -462,6 +462,8 @@ eduagent-eval fetch mrbench
 
 已有任务的[成功评分与工具语义评分](docs/evals/20261025/tutor-final-scoring-20261025.md)已完成单次 AI 审阅，包含逐项原文证据、工具选择/参数及漏调标签、分组成功率和边界裁定。原始报告不改写，没有新增模型请求；AI 标签不代表独立人工确认。
 
+Agent 主评测数据已[扩至 50 条](docs/evals/tutor-agent-50-review.md)：保留原 8 条、补充 42 条，覆盖接续、历史依据、完整检索、工具决策、权限和学习证据。新增数据在执行前定义语义与工具决策要求；目前仅完成离线脚本验证，尚无整套真实模型成绩。`eduagent-eval validate-live --dataset evals/datasets/tutor_agent50_review.jsonl` 不调用供应商，真实运行可用重复的 `--case-id` 按[清单](docs/evals/tutor-agent-50-manifest.json)分批，保留原预算上限。
+
 根目录 `.env` 配置 `LLM_PROVIDER=deepseek`、`DEEPSEEK_MODEL=deepseek-flash`、`DEEPSEEK_THINKING=disabled` 后运行：
 
 ```bash

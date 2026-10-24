@@ -191,26 +191,28 @@ class LiveExecutor:
                 self.case.learner_id, self.ctx.thread_id) is None,
         }
         if self.case.number == 7:
-            checks["seeded_history_visible"] = {
-                "message:eval-live-07-old-user", "message:eval-live-07-old-tutor"
-            } <= {item["source_ref"] for item in selected}
+            checks["seeded_history_visible"] = self.case.history_source_refs <= {
+                item["source_ref"] for item in selected
+            }
         if self.case.number == 8:
-            target = self.harness.history.read(self.case.learner_id, "message:eval-live-08-target")
-            phrase = "先圈时间，再看是否到现在"
-            search = self.harness.history.search(self.case.learner_id, self.case.knowledge_id, "R08", 10)
+            target_ref = self.case.target_source_ref
+            target = self.harness.history.read(self.case.learner_id, target_ref)
+            query, phrase = self.case.retrieval_expectations
+            search = self.harness.history.search(self.case.learner_id, self.case.knowledge_id, query, 10)
             checks.update(
-                target_not_in_initial="message:eval-live-08-target" not in serialized,
+                target_not_in_initial=target_ref not in serialized,
                 phrase_not_in_initial=phrase not in serialized,
                 target_fits_read=len(target["content"]) <= 3000,
                 phrase_beyond_excerpt=target["content"].find(phrase) >= 400,
                 search_hides_phrase=phrase not in json.dumps(search, ensure_ascii=False),
-                target_discoverable=any(item["source_ref"] == "message:eval-live-08-target"
+                target_discoverable=any(item["source_ref"] == target_ref
                                         for item in search["items"]),
             )
         if self.case.number == 10:
             foreign = self.case.initial_facts["foreign_history"][0]
+            _, marker = self.case.foreign_expectations
             checks["foreign_content_not_visible"] = (
-                "EVAL_PRIVATE_Z9" not in serialized and foreign["content"] not in serialized
+                marker not in serialized and foreign["content"] not in serialized
             )
             try:
                 self.harness.history.read(self.case.learner_id, "message:" + foreign["message_id"])

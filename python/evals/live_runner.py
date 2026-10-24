@@ -101,8 +101,13 @@ def write_live_markdown(path: Path, report: dict):
 
 async def run_live_suite(*, path: Path, output: Path | None = None,
                          max_requests: int = 42, max_cny: float = 3.0,
-                         service=None, progress=None):
+                         service=None, progress=None, case_ids: list[str] | None = None):
     cases = load_live_cases(path)
+    if case_ids is not None:
+        known = {case.case_id for case in cases}
+        if not case_ids or len(set(case_ids)) != len(case_ids) or not set(case_ids) <= known:
+            raise ValueError("case selection must contain unique IDs from the dataset")
+        cases = [case for case in cases if case.case_id in set(case_ids)]
     service = service or get_llm_service()
     if (service.provider != "deepseek" or service.model != "deepseek-flash"
             or service.thinking != "disabled" or not service._has_remote_llm()):
@@ -125,6 +130,7 @@ async def run_live_suite(*, path: Path, output: Path | None = None,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             **runtime_metadata(settings),
             "code_revision": code_revision(), "dataset_revision": dataset_revision(path),
+            "selected_case_ids": [case.case_id for case in cases],
             "config": public_runtime_config(settings),
             "dataset_review_status": "user_authorized_in_conversation",
             "limitations": [
