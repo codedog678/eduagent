@@ -41,6 +41,22 @@ def _parser() -> argparse.ArgumentParser:
     live.add_argument("--max-cny", type=float, default=3.0)
     live.add_argument("--case-id", action="append", help="select a case; repeat for a bounded batch")
 
+    validate_long = subparsers.add_parser(
+        "validate-long", help="validate frozen Harness long-task fixtures without model calls"
+    )
+    validate_long.add_argument("--dataset", type=Path, required=True)
+    validate_long.add_argument("--output", type=Path)
+
+    long_run = subparsers.add_parser(
+        "run-long", help="run deterministic contracts then real-model long tasks"
+    )
+    long_run.add_argument("--dataset", type=Path, required=True)
+    long_run.add_argument(
+        "--output", type=Path, default=Path("eval-results/harness-long-task.json")
+    )
+    long_run.add_argument("--max-requests", type=int, default=120)
+    long_run.add_argument("--max-cny", type=float, default=1.5)
+
     fetch = subparsers.add_parser("fetch", help="fetch an external dataset")
     fetch.add_argument("dataset", choices=["mrbench"])
     fetch.add_argument("--cache-dir", type=Path)
@@ -73,6 +89,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"offline fixtures/contracts: {report['valid']}/{report['total']}; "
                   "provider requests: 0; model success and semantics: not evaluated")
             return 0 if report["valid"] == report["total"] else 1
+        if args.command == "validate-long":
+            from evals.long_task_runner import validate_long_dataset
+
+            report = validate_long_dataset(args.dataset)
+            if args.output:
+                write_json(args.output, report)
+            print(f"long-task fixtures: {report['valid']}/{report['total']}; provider requests: 0")
+            return 0
         if args.command == "fetch":
             converted = fetch_and_convert(args.cache_dir, force=args.force)
             print(converted)
@@ -96,6 +120,30 @@ def main(argv: list[str] | None = None) -> int:
             print(f"report: {args.output}")
             return 1 if any(r["status"] in {"failed", "fixture_invalid"}
                             for r in report["results"]) else 0
+        if args.command == "run-long":
+            from evals.long_task_runner import run_long_suite
+
+            def long_progress(result, budget):
+                print(
+                    f"{result['case_id']}: {result['status']} "
+                    f"(requests={budget['requests']}, "
+                    f"peak_estimate={budget['estimated_peak_cny']:.6f} CNY)",
+                    flush=True,
+                )
+
+            report = asyncio.run(run_long_suite(
+                path=args.dataset, output=args.output,
+                max_requests=args.max_requests, max_cny=args.max_cny,
+                progress=long_progress,
+            ))
+            live = report.get("live")
+            if not live:
+                print("deterministic contract gate failed; live model was not called")
+                return 1
+            metrics = live["metrics"]
+            print(f"long tasks: {metrics['task_successes']}/{metrics['total']} succeeded")
+            print(f"report: {args.output}")
+            return 0 if metrics["meets_project_gate"] else 1
         if args.command == "run":
             from evals.runner import run_suite
 
