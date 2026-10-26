@@ -115,7 +115,7 @@ def aggregate_live(results):
 
 def write_markdown(path: Path, report: dict):
     contract = report["deterministic"]
-    live = report.get("live", {})
+    live = report.get("live") or {}
     metrics = live.get("metrics", {})
     lines = [
         "# Harness 长任务双层评测结果", "",

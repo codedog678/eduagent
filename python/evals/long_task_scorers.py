@@ -35,6 +35,22 @@ def _completed(stage):
     return stage.get("status") == "completed"
 
 
+def _failure_status(stages):
+    values = list(stages.values())
+    if any(stage.get("status") == "provider_error" for stage in values):
+        return "provider_error"
+    if any(
+        stage.get("error") == "RunExhausted"
+        or any(
+            attempt.get("status") == "exhausted"
+            for attempt in (stage.get("trace") or {}).get("attempts", [])
+        )
+        for stage in values
+    ):
+        return "exhausted"
+    return "model_failed"
+
+
 def score_long_task(case: LongTaskCase, observed: dict) -> dict:
     stages = observed.get("stages", {})
     final = observed.get("final", {})
@@ -152,7 +168,7 @@ def score_long_task(case: LongTaskCase, observed: dict) -> dict:
             redundant += 1
         seen.add(key)
     hard_passed = script_complete and all(item["passed"] for item in assertions)
-    status = "passed" if hard_passed else "model_failed" if script_complete else "contract_failed"
+    status = "passed" if hard_passed else _failure_status(stages)
     return {
         "case_id": case.case_id, "title": case.title, "status": status,
         "task_success": hard_passed, "plan_completed": plan_completed,

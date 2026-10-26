@@ -10,7 +10,7 @@ from core.llm_service import LLMResponse, LLMService, NativeTurn
 from core.run_context import active_run
 from evals.long_task_executor import LongTaskExecutor
 from evals.long_task_models import load_long_task_cases
-from evals.long_task_runner import validate_long_dataset
+from evals.long_task_runner import validate_long_dataset, write_markdown
 from evals.long_task_scorers import score_long_task
 from evals.optimization.budget import OptimizationBudget
 
@@ -31,6 +31,35 @@ def test_long_task_validation_is_offline_and_versioned():
     assert report["provider_requests"] == 0
     assert report["valid"] == report["total"] == 6
     assert len(report["dataset_revision"]) == 64
+
+
+def test_markdown_accepts_pre_live_gate_snapshot(tmp_path):
+    path = tmp_path / "report.md"
+    write_markdown(path, {
+        "generated_at": "2026-10-26T00:00:00Z",
+        "deterministic": {"passed": 8, "total": 8},
+        "live": None,
+    })
+    assert "确定性合同：8/8" in path.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("stage", "expected"),
+    [
+        ({"status": "provider_error", "error": "ReadTimeout"}, "provider_error"),
+        ({"status": "execution_failed", "error": "RunExhausted"}, "exhausted"),
+        ({
+            "status": "execution_failed",
+            "error": "ValueError",
+            "trace": {"attempts": [{"status": "exhausted"}]},
+        }, "exhausted"),
+        ({"status": "execution_failed", "error": "ValueError"}, "model_failed"),
+    ],
+)
+def test_incomplete_live_script_uses_runtime_failure_class(stage, expected):
+    case = load_long_task_cases(DATASET)[0]
+    observed = {"stages": {"s1": stage}, "final": {}}
+    assert score_long_task(case, observed)["status"] == expected
 
 
 @pytest.mark.asyncio
