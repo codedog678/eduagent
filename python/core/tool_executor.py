@@ -12,6 +12,7 @@ import httpx
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from core.agent_errors import AgentExecutionError
 from core.run_context import RunExhausted
 from core.memory_store import MemoryProposalError
 
@@ -55,7 +56,7 @@ class DelegateParams(Params):
 
 class ToolResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    status: Literal["ok", "empty", "denied", "invalid_arguments", "transient_error", "exhausted"]
+    status: Literal["ok", "empty", "denied", "invalid_arguments", "transient_error", "exhausted", "failed"]
     data: dict = Field(default_factory=dict)
     source_refs: list[str] = Field(default_factory=list)
     error_code: str | None = None
@@ -172,6 +173,12 @@ class ToolExecutor:
                 if len(json.dumps(data, ensure_ascii=False)) > spec.output_limit:
                     data = {"message": "结果过长，请缩小范围或分页读取。"}
                 result.update(data=data, truncated=True)
+        except AgentExecutionError as exc:
+            result.update(
+                status="exhausted" if exc.code == "budget_exhausted" else "failed",
+                error_code=exc.code, errors=exc.details,
+                data={"cause_type": exc.cause_type} if exc.cause_type else {},
+            )
         except ValidationError as exc:
             result.update(status="invalid_arguments", error_code="schema_validation",
                           errors=[{"field": ".".join(map(str, e["loc"])), "type": e["type"]}
@@ -185,6 +192,8 @@ class ToolExecutor:
         except ValueError:
             result.update(status="invalid_arguments", error_code="invalid_value")
         except (TimeoutError, httpx.TransportError):
+            if call.name in self.delegates:
+                raise
             result.update(status="transient_error", error_code="tool_timeout_or_transport", retryable=not spec.write)
         except RunExhausted:
             raise

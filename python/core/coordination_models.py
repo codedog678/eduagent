@@ -28,6 +28,18 @@ class AgentResult(BaseModel):
     proposed_actions: list[PracticeParams] = Field(default_factory=list, max_length=1)
     needs_input: str | None = Field(default=None, max_length=1000)
     uncertainty: str = Field(default="", max_length=1000)
+    error_code: Literal[
+        "budget_exhausted", "expert_schema_invalid", "expert_result_invalid",
+        "tool_argument_invalid", "source_unavailable", "expert_failed",
+        "expert_action_invalid", "delegate_unavailable", "question_not_created",
+    ] | None = None
+
+
+class PlanEvidence(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["preference", "goal"]
+    status: Literal["available", "missing"]
+    source_refs: list[str] = Field(default_factory=list, max_length=16)
 
 
 class LearningPlan(BaseModel):
@@ -36,6 +48,8 @@ class LearningPlan(BaseModel):
     version: int = Field(default=1, ge=1)
     goal: str = Field(min_length=1, max_length=2000)
     constraints: list[str] = Field(default_factory=list, max_length=8)
+    evidence: list[PlanEvidence] = Field(default_factory=list, max_length=2)
+    needs_input: str | None = Field(default=None, max_length=1000)
     steps: list[PlanStep] = Field(min_length=1, max_length=12)
     status: Literal["running", "awaiting_student", "completed"] = "running"
     outcome: Literal["running", "completed", "partial", "awaiting_student"] = "running"

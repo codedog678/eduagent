@@ -40,7 +40,7 @@ def plan_context(ctx):
         return None
     # 专家结果单独传递，避免持久化收据与结果在提示中重复占用预算。
     return {key: ctx.plan.get(key) for key in (
-        "goal", "constraints", "steps", "student_inputs", "checks", "practice_quiz_id")}
+        "goal", "constraints", "evidence", "steps", "student_inputs", "checks", "practice_quiz_id")}
 
 
 class ContextBuilder:

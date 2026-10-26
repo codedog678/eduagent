@@ -260,6 +260,7 @@ class LearningHarness:
                    "session_id": session_id, "thread_id": thread_id, "quiz_id": quiz_id}
         async def operation():
             ctx = active_run.get()
+            from core.coordinator import Coordinator
             if not text.strip():
                 raise HTTPException(422, "请输入问题或回应")
             ctx.conversation = True
@@ -309,7 +310,9 @@ class LearningHarness:
                         bound_id, quiz = identifier, candidate
                         break
             if quiz:
-                if not thread_id and quiz.get("thread_id"):
+                if (not thread_id and quiz.get("thread_id")
+                        and not Coordinator.pending(ctx)
+                        and not self.history.pending(learner, ctx.thread_id)):
                     _, ctx.thread_id = self.history.bind(
                         learner, ctx.session_id, quiz["thread_id"], knowledge)
                 if quiz.get("mode") == "advance":
@@ -317,13 +320,19 @@ class LearningHarness:
                 # 仅在成功提交时更新受助状态；失败重试不污染测验。
                 ctx.quiz = {**quiz, "quiz_id": bound_id}
                 quiz["assisted"] = True
-            from core.coordinator import Coordinator
             from core.llm_service import get_llm_service
-            if kind == "task" or Coordinator.should_route(ctx, text):
+            pending_plan = Coordinator.pending(ctx) if settings.enable_coordinator else None
+            pending_question = self.history.pending(learner, ctx.thread_id)
+            if pending_plan or (not pending_question and
+                                (kind == "task" or Coordinator.should_route(ctx, text))):
+                ctx.record("task_routed", "Harness", route="Coordinator",
+                           reason="awaiting_plan" if pending_plan else "task_intent")
                 result = await Coordinator(ctx, get_llm_service()).run(text)
             else:
-                method = self.orch.ask_question if kind == "question" else self.orch.send_message
-                result = (await method(learner, knowledge, text) if kind == "question" else
+                ctx.record("task_routed", "Harness", route="Tutor",
+                           reason="pending_question" if pending_question else "question_intent")
+                method = self.orch.ask_question if kind in {"question", "task"} else self.orch.send_message
+                result = (await method(learner, knowledge, text) if kind in {"question", "task"} else
                           await method(learner, text, knowledge))
             reply = result.get("teaching_response")
             if not reply or not reply.get("response", "").strip():

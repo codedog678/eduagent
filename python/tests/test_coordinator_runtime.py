@@ -219,9 +219,11 @@ async def test_expert_budget_keeps_tutor_reserve_and_restores_scope_on_failure(h
     plan = LearningPlan(goal="review", steps=plan_steps())
     model = Model(lambda messages, tools: NativeTurn(stop_reason="tool_calls", tool_calls=[
         call("get_knowledge_context")]), ctx)
-    with pytest.raises(ValueError, match="specialist_budget"):
+    with pytest.raises(ValueError, match="budget_exhausted"):
         await SpecialistRuntime(ctx, model).run(plan.steps[0], plan)
-    assert ctx.model_calls == 6 and ctx.max_model_calls == 8
+    # 除 Tutor 的两次调用，还须给后续 Curriculum 留一次结论，当前专家不可再请求。
+    assert ctx.model_calls == 5 and ctx.max_model_calls == 8
+    assert model.turns == []
     assert (ctx.role, ctx.task_id) == ("Coordinator", "outer")
 
 
