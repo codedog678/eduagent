@@ -391,6 +391,9 @@ class LLMService:
 
     async def tool_turn(self, messages: list[dict], tools: list[dict], max_tokens: int) -> NativeTurn:
         """原生工具协议；失败直接上抛，由运行边界处理，不能伪装成正常回复。"""
+        from core.run_context import active_run
+        if ctx := active_run.get():
+            ctx.consume("model")
         if os.getenv("PYTEST_CURRENT_TEST") and self._client is None:
             raise RuntimeError("Live model calls disabled in tests")
         if not self._has_remote_llm():
@@ -471,6 +474,10 @@ class LLMService:
         if not self._has_remote_llm():
             return LLMResponse(content="", model=self.model, usage={})
 
+        from core.run_context import active_run
+        ctx = active_run.get()
+        if ctx:
+            ctx.consume("model")
         try:
             client = self._get_client()
 
@@ -538,6 +545,9 @@ class LLMService:
                     "completion_tokens": response.usage.completion_tokens,
                 }
 
+            if ctx:
+                ctx.record("model_usage", ctx.role, task_id=ctx.task_id, usage=usage,
+                           provider=self.provider, model=self.model)
             return LLMResponse(content=content.strip(), model=self.model, usage=usage)
         except Exception as exc:
             logger.error("LLM generation failed: %s", type(exc).__name__)

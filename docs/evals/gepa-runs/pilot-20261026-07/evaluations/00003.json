@@ -1,0 +1,443 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": false,
+    "case_id": "live-18-ambiguous-tense-resolved",
+    "category": "澄清与接续",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [
+      {
+        "reason": null,
+        "status": "blocked_by_prior_step",
+        "step_id": "s2"
+      }
+    ],
+    "execution_outcome": "incomplete",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": false,
+        "path": "s1.execution",
+        "rule": "status=completed、dialogue_state=awaiting_student、pending_question_id 非空；ask_student 为单独调用。",
+        "status": "failed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": false,
+        "path": "s2.execution",
+        "rule": "status=completed、dialogue_state=answered，answered_question_id 等于 s1.pending_question_id。",
+        "status": "failed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": false,
+        "path": "pending_questions",
+        "rule": "s1 待答记录的 answered_by 非空，场景结束没有未回答的该问题。",
+        "status": "failed"
+      },
+      {
+        "id": "H4",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.grammar_tenses",
+        "rule": "所有 KnowledgeState 字段保持不变。",
+        "status": "passed"
+      },
+      {
+        "id": "H5",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s1/s2.teaching_response.response",
+        "rule": "s1 索取句子或时间语境；s2 依据 yesterday 解释一般过去时，不能因工作完成就强推完成时。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+        "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+        "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "failed",
+    "title": "时态：补充语境后消除歧义"
+  },
+  "capability": "multi_turn_continuation",
+  "case_id": "live-18-ambiguous-tense-resolved",
+  "evaluation_index": 3,
+  "metering": [
+    {
+      "estimated_off_peak_cny": 0.0017266,
+      "estimated_peak_cny": 0.0034532,
+      "request_no": 5,
+      "reservation_cny": 0.01876,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 1445,
+        "output_tokens": 384,
+        "prompt_cache_hit_tokens": 1280,
+        "prompt_cache_miss_tokens": 165
+      }
+    }
+  ],
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "你这句话本身已经点出了关键：**没有时间背景，就不存在“该选哪个”的唯一答案**。finished 和 have finished 不是对错关系，而是两种不同的时间视角。\n\n**两者的核心区别**\n\n- **finished（一般过去时）**：把动作放在一个**已结束的过去时间点/时段**里看，说话人和那个时间已经拉开距离。常与明确的过去时间连用（yesterday, last week, in 2020, two hours ago）。\n- **have finished（现在完成时）**：把动作当作**与现在有关的结果或状态**来看，重点不在“何时发生”，而在“现在完成了”。常与 already, just, yet, ever, never, so far, recently 这类不指向具体过去时刻的词连用。\n\n**判断顺序（不是先看时间词，而是先看参照点）**\n\n1. 问自己：我关心的是“事情发生在过去某个时候”，还是“现在这件事处于完成状态”？\n2. 再看有没有明确的、已结束的过去时间。有，就倾向 finished；没有，且强调对现在的影响，就倾向 have finished。\n3. 注意时间词只是线索，不是判决。比如 just 通常配现在完成，但在美式英语里 just finished 也很常见；而 now 也不必然排斥完成时。\n\n**举例对照**\n\n- I **finished** the report at 5 p.m.（有明确过去时刻）\n- I **have finished** the report, so we can send it now.（强调现在的结果）\n- I **finished** it.（单纯叙述过去事件）\n- I **have finished** it.（回应“做完了吗”，关注当前状态）\n\n所以你现在缺的不是“选哪个”，而是**你想表达哪种视角**。等你把时间背景或想强调的意思补上，选择自然就定了。"
+      ],
+      "evidence": [],
+      "knowledge": {
+        "eval-live-18": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "grammar_tenses",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [],
+      "quizzes": {}
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true
+      },
+      "initial_source_refs": [],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-18": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "grammar_tenses",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {},
+      "thread_id": "38eb3ff6-0e4c-51f7-b517-e06bec54ba21"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 3858.627500001603,
+        "evidence": [],
+        "knowledge": {
+          "eval-live-18": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "grammar_tenses",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "你这句话本身已经点出了关键：**没有时间背景，就不存在“该选哪个”的唯一答案**。finished 和 have finished 不是对错关系，而是两种不同的时间视角。\n\n**两者的核心区别**\n\n- **finished（一般过去时）**：把动作放在一个**已结束的过去时间点/时段**里看，说话人和那个时间已经拉开距离。常与明确的过去时间连用（yesterday, last week, in 2020, two hours ago）。\n- **have finished（现在完成时）**：把动作当作**与现在有关的结果或状态**来看，重点不在“何时发生”，而在“现在完成了”。常与 already, just, yet, ever, never, so far, recently 这类不指向具体过去时刻的词连用。\n\n**判断顺序（不是先看时间词，而是先看参照点）**\n\n1. 问自己：我关心的是“事情发生在过去某个时候”，还是“现在这件事处于完成状态”？\n2. 再看有没有明确的、已结束的过去时间。有，就倾向 finished；没有，且强调对现在的影响，就倾向 have finished。\n3. 注意时间词只是线索，不是判决。比如 just 通常配现在完成，但在美式英语里 just finished 也很常见；而 now 也不必然排斥完成时。\n\n**举例对照**\n\n- I **finished** the report at 5 p.m.（有明确过去时刻）\n- I **have finished** the report, so we can send it now.（强调现在的结果）\n- I **finished** it.（单纯叙述过去事件）\n- I **have finished** it.（回应“做完了吗”，关注当前状态）\n\n所以你现在缺的不是“选哪个”，而是**你想表达哪种视角**。等你把时间背景或想强调的意思补上，选择自然就定了。",
+            "duration_ms": 3856.0154589995363,
+            "request_no": 1,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1445,
+              "output_tokens": 384,
+              "prompt_cache_hit_tokens": 1280,
+              "prompt_cache_miss_tokens": 165
+            }
+          }
+        ],
+        "quizzes": {},
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "grammar_tenses",
+              "response": "你这句话本身已经点出了关键：**没有时间背景，就不存在“该选哪个”的唯一答案**。finished 和 have finished 不是对错关系，而是两种不同的时间视角。\n\n**两者的核心区别**\n\n- **finished（一般过去时）**：把动作放在一个**已结束的过去时间点/时段**里看，说话人和那个时间已经拉开距离。常与明确的过去时间连用（yesterday, last week, in 2020, two hours ago）。\n- **have finished（现在完成时）**：把动作当作**与现在有关的结果或状态**来看，重点不在“何时发生”，而在“现在完成了”。常与 already, just, yet, ever, never, so far, recently 这类不指向具体过去时刻的词连用。\n\n**判断顺序（不是先看时间词，而是先看参照点）**\n\n1. 问自己：我关心的是“事情发生在过去某个时候”，还是“现在这件事处于完成状态”？\n2. 再看有没有明确的、已结束的过去时间。有，就倾向 finished；没有，且强调对现在的影响，就倾向 have finished。\n3. 注意时间词只是线索，不是判决。比如 just 通常配现在完成，但在美式英语里 just finished 也很常见；而 now 也不必然排斥完成时。\n\n**举例对照**\n\n- I **finished** the report at 5 p.m.（有明确过去时刻）\n- I **have finished** the report, so we can send it now.（强调现在的结果）\n- I **finished** it.（单纯叙述过去事件）\n- I **have finished** it.（回应“做完了吗”，关注当前状态）\n\n所以你现在缺的不是“选哪个”，而是**你想表达哪种视角**。等你把时间背景或想强调的意思补上，选择自然就定了。",
+              "response_variant": "tool_loop",
+              "source_refs": [],
+              "teaching_style": "question_answer"
+            }
+          },
+          "correlation_id": "4bb7c548-a89e-59ab-8d4d-d6d30f4351c1",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "d5de3018-b5c8-4faf-a083-0e77ed757025",
+            "cited_refs": [],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "answered",
+            "model": "deepseek-flash",
+            "pending_question_id": null,
+            "provider": "deepseek",
+            "read_refs": [],
+            "request_id": "live-18-ambiguous-tense-resolved-s1",
+            "retrieved_refs": [],
+            "run_id": "4bb7c548-a89e-59ab-8d4d-d6d30f4351c1",
+            "session_id": "eval-live-18-s1",
+            "source_refs": [],
+            "status": "completed",
+            "thread_id": "38eb3ff6-0e4c-51f7-b517-e06bec54ba21",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "4bb7c548-a89e-59ab-8d4d-d6d30f4351c1",
+              "data": {
+                "knowledge_id": "grammar_tenses",
+                "question": "单看 finished 和 have finished 我不知道该选哪个，我还没给时间背景。"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-26T14:23:08.772528"
+            },
+            {
+              "correlation_id": "4bb7c548-a89e-59ab-8d4d-d6d30f4351c1",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "grammar_tenses",
+                "response": "你这句话本身已经点出了关键：**没有时间背景，就不存在“该选哪个”的唯一答案**。finished 和 have finished 不是对错关系，而是两种不同的时间视角。\n\n**两者的核心区别**\n\n- **finished（一般过去时）**：把动作放在一个**已结束的过去时间点/时段**里看，说话人和那个时间已经拉开距离。常与明确的过去时间连用（yesterday, last week, in 2020, two hours ago）。\n- **have finished（现在完成时）**：把动作当作**与现在有关的结果或状态**来看，重点不在“何时发生”，而在“现在完成了”。常与 already, just, yet, ever, never, so far, recently 这类不指向具体过去时刻的词连用。\n\n**判断顺序（不是先看时间词，而是先看参照点）**\n\n1. 问自己：我关心的是“事情发生在过去某个时候”，还是“现在这件事处于完成状态”？\n2. 再看有没有明确的、已结束的过去时间。有，就倾向 finished；没有，且强调对现在的影响，就倾向 have finished。\n3. 注意时间词只是线索，不是判决。比如 just 通常配现在完成，但在美式英语里 just finished 也很常见；而 now 也不必然排斥完成时。\n\n**举例对照**\n\n- I **finished** the report at 5 p.m.（有明确过去时刻）\n- I **have finished** the report, so we can send it now.（强调现在的结果）\n- I **finished** it.（单纯叙述过去事件）\n- I **have finished** it.（回应“做完了吗”，关注当前状态）\n\n所以你现在缺的不是“选哪个”，而是**你想表达哪种视角**。等你把时间背景或想强调的意思补上，选择自然就定了。",
+                "response_variant": "tool_loop",
+                "source_refs": [],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-26T14:23:12.629986"
+            }
+          ],
+          "knowledge_id": "grammar_tenses",
+          "learner_id": "eval-live-18",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "grammar_tenses",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "grammar_tenses",
+            "response": "你这句话本身已经点出了关键：**没有时间背景，就不存在“该选哪个”的唯一答案**。finished 和 have finished 不是对错关系，而是两种不同的时间视角。\n\n**两者的核心区别**\n\n- **finished（一般过去时）**：把动作放在一个**已结束的过去时间点/时段**里看，说话人和那个时间已经拉开距离。常与明确的过去时间连用（yesterday, last week, in 2020, two hours ago）。\n- **have finished（现在完成时）**：把动作当作**与现在有关的结果或状态**来看，重点不在“何时发生”，而在“现在完成了”。常与 already, just, yet, ever, never, so far, recently 这类不指向具体过去时刻的词连用。\n\n**判断顺序（不是先看时间词，而是先看参照点）**\n\n1. 问自己：我关心的是“事情发生在过去某个时候”，还是“现在这件事处于完成状态”？\n2. 再看有没有明确的、已结束的过去时间。有，就倾向 finished；没有，且强调对现在的影响，就倾向 have finished。\n3. 注意时间词只是线索，不是判决。比如 just 通常配现在完成，但在美式英语里 just finished 也很常见；而 now 也不必然排斥完成时。\n\n**举例对照**\n\n- I **finished** the report at 5 p.m.（有明确过去时刻）\n- I **have finished** the report, so we can send it now.（强调现在的结果）\n- I **finished** it.（单纯叙述过去事件）\n- I **have finished** it.（回应“做完了吗”，关注当前状态）\n\n所以你现在缺的不是“选哪个”，而是**你想表达哪种视角**。等你把时间背景或想强调的意思补上，选择自然就定了。",
+            "response_variant": "tool_loop",
+            "source_refs": [],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "单看 finished 和 have finished 我不知道该选哪个，我还没给时间背景。",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "d5de3018-b5c8-4faf-a083-0e77ed757025",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1792995792.6304991,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "4bb7c548-a89e-59ab-8d4d-d6d30f4351c1",
+              "started": 1792995788.772335,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1792995788.772456
+                },
+                {
+                  "agent": "api",
+                  "event_id": "e97e3b59-5ba2-4379-9635-6a54c49d79a2",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 2,
+                  "timestamp": 1792995788.772542
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "e97e3b59-5ba2-4379-9635-6a54c49d79a2",
+                  "kind": "handler_started",
+                  "seq": 3,
+                  "timestamp": 1792995788.7725508
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 0,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 4,
+                  "timestamp": 1792995788.7726789,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 5,
+                  "source_refs": [],
+                  "timestamp": 1792995788.772774,
+                  "token_estimate": 757,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 6,
+                  "timestamp": 1792995788.7738,
+                  "token_estimate": 1719
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "4bb7c548-a89e-59ab-8d4d-d6d30f4351c1",
+                  "resource": "model",
+                  "seq": 7,
+                  "task_id": null,
+                  "timestamp": 1792995788.77387,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 8,
+                  "stop_reason": "stop",
+                  "timestamp": 1792995792.629946,
+                  "usage": {
+                    "input_tokens": 1445,
+                    "output_tokens": 384,
+                    "prompt_cache_hit_tokens": 1280,
+                    "prompt_cache_miss_tokens": 165
+                  }
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "kind": "response_sources",
+                  "read_refs": [],
+                  "retrieved_refs": [],
+                  "seq": 9,
+                  "timestamp": 1792995792.629954
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 3857,
+                  "event_id": "e97e3b59-5ba2-4379-9635-6a54c49d79a2",
+                  "kind": "handler_completed",
+                  "seq": 10,
+                  "timestamp": 1792995792.630005
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "58a809ab-95b8-47ab-ba2a-da5ff3f07e54",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "e97e3b59-5ba2-4379-9635-6a54c49d79a2",
+                  "seq": 11,
+                  "timestamp": 1792995792.630008
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 12,
+                  "timestamp": 1792995792.630031
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "answered",
+                  "kind": "run_completed",
+                  "seq": 13,
+                  "timestamp": 1792995792.630443
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-18-ambiguous-tense-resolved-s1"
+        }
+      },
+      "s2": {
+        "status": "blocked_by_prior_step"
+      }
+    }
+  },
+  "policy_sha256": "c94bc2da8cf065d64bb78d04637c959efa5b0cc08410d217dbaf2ee60b78eaef",
+  "score": {
+    "automatic_passed": false,
+    "decision_rate": 0.0,
+    "decisions": [],
+    "review_status": "not_observed",
+    "score": 0.0,
+    "semantic": [],
+    "task_success": false
+  },
+  "scoring_status": "completed"
+}

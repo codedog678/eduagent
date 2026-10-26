@@ -1,0 +1,666 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": true,
+    "case_id": "live-31-no-score-inference",
+    "category": "跨会话记忆",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [],
+    "execution_outcome": "completed",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution",
+        "rule": "status=completed、dialogue_state=answered；thread 与预置 vocab_basic 主题相同。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution.source_refs",
+        "rule": "与两条预置真实来源至少有一个交集；所有引用均可按当前 learner 读取。",
+        "status": "passed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.vocab_basic",
+        "rule": "所有 KnowledgeState 字段保持不变。",
+        "status": "passed"
+      },
+      {
+        "id": "H4",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s1.teaching_response.response",
+        "rule": "从历史准确回答五个词，明确没有测验通过证据，不编成绩或提高 mastery。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+        "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+        "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "review_pending",
+    "title": "历史：计划记录不能推出考试成绩"
+  },
+  "capability": "grounded_history",
+  "case_id": "live-31-no-score-inference",
+  "evaluation_index": 6,
+  "judge_diagnostic": {
+    "raw_response": "{\"semantic\":[{\"id\":\"H4\",\"passed\":true,\"reason\":\"回答准确引用历史中的五个词，明确说明没有测验通过证据，未编造成绩或提高掌握度。\",\"evidence\":\"你上次的原话是：“我打算每天复习五个词，这是一份学习计划，还没进行测验。”所以是**每天五个词**。……没有。可查到的记录显示：……所以目前既没有测验记录，也没有“通过”的证据。\"}],\"decisions\":[{\"step_id\":\"s1\",\"required_tools_present\":true,\"calls\":[{\"index\":0,\"selection_correct\":true,\"arguments_correct\":true},{\"index\":1,\"selection_correct\":true,\"arguments_correct\":true}],\"reason\":\"历史已在上下文中，直接回答即可；模型额外检索学习历史并读取学习者画像，参数合理，结果与历史一致，未虚构作答或成绩。\",\"evidence\":\"search_learning_history 返回“我打算每天复习五个词……还没进行测验。”；get_learner_profile 返回 attempts 0、correct_count 0、last_attempt null。\"}]}",
+    "validation_error": "decision evidence is not in observed output"
+  },
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "可以按计划复习；目前没有独立作答记录，不能据此判断掌握率或考试成绩。",
+        "两个问题分别回答：\n\n**1. 计划每天复习多少词？**\n你上次的原话是：“我打算每天复习五个词，这是一份学习计划，还没进行测验。”所以是**每天五个词**。需要说明的是，这只是你当时说的打算，系统里没有看到执行记录，因此无法确认实际复习了多少天、每天是否真的完成了五个。\n\n**2. 有没有证据说明你已经测验通过？**\n没有。可查到的记录显示：\n- 该知识点（vocab_basic）的作答次数为 0，正确次数为 0，最近一次作答时间为空；\n- 你当时也明确说“还没进行测验”；\n- 我上次的回复同样写的是“目前没有独立作答记录，不能据此判断掌握率或考试成绩”。\n\n所以目前既没有测验记录，也没有“通过”的证据。掌握度由服务端根据实际作答独立评估，现在显示的是很低的初始值，这反映的是“尚无作答数据”，不能当作你已通过或未通过的依据。\n\n如果你之后做了测验，新的作答记录才会让评估发生变化。"
+      ],
+      "evidence": [],
+      "knowledge": {
+        "eval-live-31": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [],
+      "quizzes": {}
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true,
+        "seeded_history_visible": true
+      },
+      "initial_source_refs": [
+        "message:eval-live-31-old-tutor",
+        "message:eval-live-31-old-user"
+      ],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-31": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {},
+      "thread_id": "8b2098c7-06a0-517c-8d81-f0f2e0107b09"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 3507.1662920017843,
+        "evidence": [],
+        "knowledge": {
+          "eval-live-31": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "vocab_basic",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "",
+            "duration_ms": 1220.0754590012366,
+            "request_no": 1,
+            "stop_reason": "tool_calls",
+            "tool_calls": [
+              {
+                "arguments": {
+                  "query": "每天复习五个词 学习计划 测验"
+                },
+                "batch_size": 2,
+                "id": "call_00_xG1hqU46UPN7UtmLl1xx5640",
+                "name": "search_learning_history"
+              },
+              {
+                "arguments": {},
+                "batch_size": 2,
+                "id": "call_01_zHDJ5EeTH7HXBxRWUXT72626",
+                "name": "get_learner_profile"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1668,
+              "output_tokens": 62,
+              "prompt_cache_hit_tokens": 1280,
+              "prompt_cache_miss_tokens": 388
+            }
+          },
+          {
+            "content": "两个问题分别回答：\n\n**1. 计划每天复习多少词？**\n你上次的原话是：“我打算每天复习五个词，这是一份学习计划，还没进行测验。”所以是**每天五个词**。需要说明的是，这只是你当时说的打算，系统里没有看到执行记录，因此无法确认实际复习了多少天、每天是否真的完成了五个。\n\n**2. 有没有证据说明你已经测验通过？**\n没有。可查到的记录显示：\n- 该知识点（vocab_basic）的作答次数为 0，正确次数为 0，最近一次作答时间为空；\n- 你当时也明确说“还没进行测验”；\n- 我上次的回复同样写的是“目前没有独立作答记录，不能据此判断掌握率或考试成绩”。\n\n所以目前既没有测验记录，也没有“通过”的证据。掌握度由服务端根据实际作答独立评估，现在显示的是很低的初始值，这反映的是“尚无作答数据”，不能当作你已通过或未通过的依据。\n\n如果你之后做了测验，新的作答记录才会让评估发生变化。",
+            "duration_ms": 2282.479792000231,
+            "request_no": 2,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 2233,
+              "output_tokens": 226,
+              "prompt_cache_hit_tokens": 1664,
+              "prompt_cache_miss_tokens": 569
+            }
+          }
+        ],
+        "quizzes": {},
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "vocab_basic",
+              "response": "两个问题分别回答：\n\n**1. 计划每天复习多少词？**\n你上次的原话是：“我打算每天复习五个词，这是一份学习计划，还没进行测验。”所以是**每天五个词**。需要说明的是，这只是你当时说的打算，系统里没有看到执行记录，因此无法确认实际复习了多少天、每天是否真的完成了五个。\n\n**2. 有没有证据说明你已经测验通过？**\n没有。可查到的记录显示：\n- 该知识点（vocab_basic）的作答次数为 0，正确次数为 0，最近一次作答时间为空；\n- 你当时也明确说“还没进行测验”；\n- 我上次的回复同样写的是“目前没有独立作答记录，不能据此判断掌握率或考试成绩”。\n\n所以目前既没有测验记录，也没有“通过”的证据。掌握度由服务端根据实际作答独立评估，现在显示的是很低的初始值，这反映的是“尚无作答数据”，不能当作你已通过或未通过的依据。\n\n如果你之后做了测验，新的作答记录才会让评估发生变化。",
+              "response_variant": "tool_loop",
+              "source_refs": [
+                "message:eval-live-31-old-tutor",
+                "message:eval-live-31-old-user"
+              ],
+              "teaching_style": "question_answer"
+            }
+          },
+          "correlation_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "c764093a-6059-4e25-a7c8-571bc3f389e1",
+            "cited_refs": [],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "answered",
+            "model": "deepseek-flash",
+            "pending_question_id": null,
+            "provider": "deepseek",
+            "read_refs": [],
+            "request_id": "live-31-no-score-inference-s1",
+            "retrieved_refs": [
+              "message:eval-live-31-old-user",
+              "message:eval-live-31-old-tutor"
+            ],
+            "run_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+            "session_id": "eval-live-31-new",
+            "source_refs": [
+              "message:eval-live-31-old-tutor",
+              "message:eval-live-31-old-user"
+            ],
+            "status": "completed",
+            "thread_id": "8b2098c7-06a0-517c-8d81-f0f2e0107b09",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+              "data": {
+                "knowledge_id": "vocab_basic",
+                "question": "上次我计划每天复习多少词？你有证据说我已经测验通过了吗？"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-26T14:15:43.432720"
+            },
+            {
+              "correlation_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "vocab_basic",
+                "response": "两个问题分别回答：\n\n**1. 计划每天复习多少词？**\n你上次的原话是：“我打算每天复习五个词，这是一份学习计划，还没进行测验。”所以是**每天五个词**。需要说明的是，这只是你当时说的打算，系统里没有看到执行记录，因此无法确认实际复习了多少天、每天是否真的完成了五个。\n\n**2. 有没有证据说明你已经测验通过？**\n没有。可查到的记录显示：\n- 该知识点（vocab_basic）的作答次数为 0，正确次数为 0，最近一次作答时间为空；\n- 你当时也明确说“还没进行测验”；\n- 我上次的回复同样写的是“目前没有独立作答记录，不能据此判断掌握率或考试成绩”。\n\n所以目前既没有测验记录，也没有“通过”的证据。掌握度由服务端根据实际作答独立评估，现在显示的是很低的初始值，这反映的是“尚无作答数据”，不能当作你已通过或未通过的依据。\n\n如果你之后做了测验，新的作答记录才会让评估发生变化。",
+                "response_variant": "tool_loop",
+                "source_refs": [
+                  "message:eval-live-31-old-tutor",
+                  "message:eval-live-31-old-user"
+                ],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-26T14:15:46.937078"
+            }
+          ],
+          "knowledge_id": "vocab_basic",
+          "learner_id": "eval-live-31",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "vocab_basic",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "vocab_basic",
+            "response": "两个问题分别回答：\n\n**1. 计划每天复习多少词？**\n你上次的原话是：“我打算每天复习五个词，这是一份学习计划，还没进行测验。”所以是**每天五个词**。需要说明的是，这只是你当时说的打算，系统里没有看到执行记录，因此无法确认实际复习了多少天、每天是否真的完成了五个。\n\n**2. 有没有证据说明你已经测验通过？**\n没有。可查到的记录显示：\n- 该知识点（vocab_basic）的作答次数为 0，正确次数为 0，最近一次作答时间为空；\n- 你当时也明确说“还没进行测验”；\n- 我上次的回复同样写的是“目前没有独立作答记录，不能据此判断掌握率或考试成绩”。\n\n所以目前既没有测验记录，也没有“通过”的证据。掌握度由服务端根据实际作答独立评估，现在显示的是很低的初始值，这反映的是“尚无作答数据”，不能当作你已通过或未通过的依据。\n\n如果你之后做了测验，新的作答记录才会让评估发生变化。",
+            "response_variant": "tool_loop",
+            "source_refs": [
+              "message:eval-live-31-old-tutor",
+              "message:eval-live-31-old-user"
+            ],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "上次我计划每天复习多少词？你有证据说我已经测验通过了吗？",
+        "tool_results": [
+          {
+            "result": {
+              "cached": false,
+              "data": {
+                "items": [
+                  {
+                    "created": 1792995343.4318411,
+                    "excerpt": "我打算每天复习五个词，这是一份学习计划，还没进行测验。",
+                    "knowledge_id": "vocab_basic",
+                    "match_score": 10,
+                    "role": "user",
+                    "source_ref": "message:eval-live-31-old-user",
+                    "thread_id": "8b2098c7-06a0-517c-8d81-f0f2e0107b09",
+                    "version": 1
+                  },
+                  {
+                    "created": 1792995343.431861,
+                    "excerpt": "可以按计划复习；目前没有独立作答记录，不能据此判断掌握率或考试成绩。",
+                    "knowledge_id": "vocab_basic",
+                    "match_score": 2,
+                    "role": "assistant",
+                    "source_ref": "message:eval-live-31-old-tutor",
+                    "thread_id": "8b2098c7-06a0-517c-8d81-f0f2e0107b09",
+                    "version": 1
+                  }
+                ],
+                "retrieval_mode": "lexical"
+              },
+              "error_code": null,
+              "errors": [],
+              "next_cursor": null,
+              "retryable": false,
+              "source_refs": [
+                "message:eval-live-31-old-user",
+                "message:eval-live-31-old-tutor"
+              ],
+              "status": "ok",
+              "truncated": false
+            },
+            "tool_call_id": "call_00_xG1hqU46UPN7UtmLl1xx5640"
+          },
+          {
+            "result": {
+              "cached": false,
+              "data": {
+                "knowledge_states": [
+                  {
+                    "alpha": 1.0,
+                    "attempts": 0,
+                    "beta": 9.0,
+                    "correct_count": 0,
+                    "knowledge_id": "vocab_basic",
+                    "last_attempt": null,
+                    "mastery": 0.1,
+                    "streak": 0
+                  }
+                ],
+                "memories": [],
+                "memory_write_state": {
+                  "accepted_count": 0,
+                  "items": [],
+                  "state": "not_staged"
+                },
+                "source_refs": [],
+                "staged_memories": []
+              },
+              "error_code": null,
+              "errors": [],
+              "next_cursor": null,
+              "retryable": false,
+              "source_refs": [],
+              "status": "ok",
+              "truncated": false
+            },
+            "tool_call_id": "call_01_zHDJ5EeTH7HXBxRWUXT72626"
+          }
+        ],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "c764093a-6059-4e25-a7c8-571bc3f389e1",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1792995346.938109,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+              "started": 1792995343.432523,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1792995343.432672
+                },
+                {
+                  "agent": "api",
+                  "event_id": "8912ad35-9d06-4425-82c3-f108fa0e964b",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 2,
+                  "timestamp": 1792995343.432731
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "8912ad35-9d06-4425-82c3-f108fa0e964b",
+                  "kind": "handler_started",
+                  "seq": 3,
+                  "timestamp": 1792995343.432738
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 2,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 4,
+                  "timestamp": 1792995343.432899,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 5,
+                  "source_refs": [
+                    "message:eval-live-31-old-tutor",
+                    "message:eval-live-31-old-user"
+                  ],
+                  "timestamp": 1792995343.433012,
+                  "token_estimate": 1013,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 6,
+                  "timestamp": 1792995343.4337258,
+                  "token_estimate": 1975
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+                  "resource": "model",
+                  "seq": 7,
+                  "task_id": null,
+                  "timestamp": 1792995343.4337862,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 8,
+                  "stop_reason": "tool_calls",
+                  "timestamp": 1792995344.6538649,
+                  "usage": {
+                    "input_tokens": 1668,
+                    "output_tokens": 62,
+                    "prompt_cache_hit_tokens": 1280,
+                    "prompt_cache_miss_tokens": 388
+                  }
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+                  "resource": "tool",
+                  "seq": 9,
+                  "task_id": null,
+                  "timestamp": 1792995344.653874,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+                  "seq": 10,
+                  "task_id": null,
+                  "timestamp": 1792995344.6538749,
+                  "tool": "search_learning_history",
+                  "tool_call_id": "call_00_xG1hqU46UPN7UtmLl1xx5640"
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 2,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 11,
+                  "timestamp": 1792995344.6541681,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 0,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "items",
+                    "retrieval_mode"
+                  ],
+                  "seq": 12,
+                  "source_refs": [
+                    "message:eval-live-31-old-user",
+                    "message:eval-live-31-old-tutor"
+                  ],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1792995344.6542091,
+                  "tool": "search_learning_history",
+                  "tool_call_id": "call_00_xG1hqU46UPN7UtmLl1xx5640"
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+                  "resource": "tool",
+                  "seq": 13,
+                  "task_id": null,
+                  "timestamp": 1792995344.6542442,
+                  "used": 2
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+                  "seq": 14,
+                  "task_id": null,
+                  "timestamp": 1792995344.6542451,
+                  "tool": "get_learner_profile",
+                  "tool_call_id": "call_01_zHDJ5EeTH7HXBxRWUXT72626"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 0,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "knowledge_states",
+                    "memories",
+                    "memory_write_state",
+                    "source_refs",
+                    "staged_memories"
+                  ],
+                  "seq": 15,
+                  "source_refs": [],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1792995344.654298,
+                  "tool": "get_learner_profile",
+                  "tool_call_id": "call_01_zHDJ5EeTH7HXBxRWUXT72626"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 2,
+                  "seq": 16,
+                  "timestamp": 1792995344.6543639,
+                  "token_estimate": 2658
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+                  "resource": "model",
+                  "seq": 17,
+                  "task_id": null,
+                  "timestamp": 1792995344.65448,
+                  "used": 2
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 2,
+                  "seq": 18,
+                  "stop_reason": "stop",
+                  "timestamp": 1792995346.9369862,
+                  "usage": {
+                    "input_tokens": 2233,
+                    "output_tokens": 226,
+                    "prompt_cache_hit_tokens": 1664,
+                    "prompt_cache_miss_tokens": 569
+                  }
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "kind": "response_sources",
+                  "read_refs": [],
+                  "retrieved_refs": [
+                    "message:eval-live-31-old-user",
+                    "message:eval-live-31-old-tutor"
+                  ],
+                  "seq": 19,
+                  "timestamp": 1792995346.937003
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 3504,
+                  "event_id": "8912ad35-9d06-4425-82c3-f108fa0e964b",
+                  "kind": "handler_completed",
+                  "seq": 20,
+                  "timestamp": 1792995346.937122
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "0d57ef64-42c2-4cbb-91be-21d936857f54",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "8912ad35-9d06-4425-82c3-f108fa0e964b",
+                  "seq": 21,
+                  "timestamp": 1792995346.937126
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 22,
+                  "timestamp": 1792995346.937171
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "answered",
+                  "kind": "run_completed",
+                  "seq": 23,
+                  "timestamp": 1792995346.9379032
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-31-no-score-inference-s1"
+        }
+      }
+    }
+  },
+  "policy_sha256": "c94bc2da8cf065d64bb78d04637c959efa5b0cc08410d217dbaf2ee60b78eaef",
+  "scoring_error_type": "OptimizationStopped",
+  "scoring_status": "interrupted"
+}

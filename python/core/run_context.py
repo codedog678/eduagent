@@ -26,10 +26,40 @@ class RunContext:
     model_state: dict = field(default_factory=dict)
     steps: list[dict] = field(default_factory=list)
     source_refs: list[str] = field(default_factory=list)
+    retrieved_refs: list[str] = field(default_factory=list)
+    read_refs: list[str] = field(default_factory=list)
+    cited_refs: list[str] = field(default_factory=list)
     dialogue_state: str = "answered"
     pending_question: str | None = None
     answered_question_id: str | None = None
     parent_event_id: str | None = None
+    input_text: str = ""
+    memory_proposals: list[dict] = field(default_factory=list)
+    profile_state: dict = field(default_factory=dict)
+    review_queue: list[dict] = field(default_factory=list)
+    prepare_practice: Any = None
+    prepared_quiz: Any = None
+    plan: dict | None = None
+    plan_thread_id: str | None = None
+    expert_results: list[dict] = field(default_factory=list)
+    model_calls: int = 0
+    tool_calls: int = 0
+    max_model_calls: int = 8
+    max_tool_calls: int = 16
+    tool_cache: dict = field(default_factory=dict)
+    retrieved_items: list | None = None
+    role: str = "Tutor"
+    task_id: str | None = None
+
+    def consume(self, resource):
+        self.remaining()
+        attr = resource + "_calls"
+        value = getattr(self, attr) + 1
+        if value > getattr(self, "max_" + attr):
+            raise RunExhausted(resource + "_call_budget")
+        setattr(self, attr, value)
+        self.record("budget_used", self.role, resource=resource, used=value,
+                    task_id=self.task_id, parent_run_id=self.run_id)
 
     def remaining(self) -> float:
         remaining = self.deadline - time.monotonic()

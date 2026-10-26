@@ -82,7 +82,7 @@ def _with_status(result: dict, status: str = "processed") -> dict:
 
 
 @router.get("/health")
-async def health_check():
+async def health_check(request: Request):
     from core.llm_service import get_llm_service
 
     llm_info = get_llm_service().runtime_info()
@@ -95,6 +95,9 @@ async def health_check():
         "model": llm_info["model"],
         "config_source": llm_info["config_source"],
         "api_port": settings.api_port,
+        "coordinator_enabled": settings.enable_coordinator,
+        "memory": (request.app.state.orchestrator.harness.history.retrieval.health()
+                   if getattr(request.app.state.orchestrator, "harness", None) else None),
     }
 
 
@@ -140,6 +143,23 @@ async def send_message(req: SendMessageRequest, request: Request):
         req.learner_id, req.request_id, req.knowledge_id, req.message,
         req.session_id, req.thread_id, req.quiz_id, kind="message")
     return _with_status(result)
+
+
+@router.post("/learning/task")
+async def learning_task(req: AskQuestionRequest, request: Request):
+    result = await request.app.state.orchestrator.harness.converse(
+        req.learner_id, req.request_id, req.knowledge_id, req.question,
+        req.session_id, req.thread_id, req.quiz_id, kind="task")
+    return _with_status(result)
+
+
+@router.get("/learning/plan/{learner_id}")
+async def learning_plan(learner_id: str, thread_id: str, request: Request):
+    db = request.app.state.orchestrator.harness.db
+    row = db.execute("SELECT body FROM learning_plans WHERE learner_id=? AND thread_id=? "
+                     "ORDER BY updated DESC LIMIT 1", (learner_id, thread_id)).fetchone()
+    import json
+    return {"plan": json.loads(row[0]) if row else None}
 
 
 @router.get("/progress/{learner_id}")
@@ -451,5 +471,7 @@ async def get_history(learner_id: str, request: Request, thread_id: str | None =
 
 
 @router.get("/history/{learner_id}/source")
-async def read_history_source(learner_id: str, source_ref: str, request: Request):
-    return request.app.state.orchestrator.harness.history.read(learner_id, source_ref)
+async def read_history_source(learner_id: str, source_ref: str, request: Request,
+                              offset: int = Query(default=0, ge=0),
+                              limit: int = Query(default=3000, ge=100, le=6000)):
+    return request.app.state.orchestrator.harness.history.read(learner_id, source_ref, offset, limit)

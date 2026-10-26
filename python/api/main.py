@@ -42,6 +42,7 @@ async def lifespan(app: FastAPI):
     orchestrator.harness = LearningHarness(
         orchestrator, settings.harness_store_path, settings.harness_timeout_seconds,
         settings.quiz_ttl_seconds)
+    orchestrator.harness.memory_worker.start()
 
     # 初始化数据库
     try:
@@ -62,6 +63,7 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
+        await orchestrator.harness.memory_worker.stop()
         orchestrator.harness.close()
         await orchestrator.close_database()
     logging.getLogger(__name__).info("Shutting down")

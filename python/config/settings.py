@@ -76,6 +76,32 @@ class Settings(BaseSettings):
     tutor_context_budget_tokens: int = Field(default=6000, ge=2000, le=32000)
     tutor_max_output_tokens: int = Field(default=800, ge=100, le=2000)
     tutor_handler_timeout_seconds: float = Field(default=40, gt=0)
+    memory_retrieval_mode: Literal["lexical", "hybrid"] = "hybrid"
+    memory_embedding_provider: Literal["siliconflow"] = "siliconflow"
+    memory_embedding_model: str = "BAAI/bge-m3"
+    memory_embedding_base_url: str = "https://api.siliconflow.cn/v1"
+    memory_embedding_api_key: str = Field(default="", repr=False)
+    siliconflow_api_key: str = Field(default="", repr=False)
+    memory_embedding_timeout_seconds: float = Field(default=8, gt=0)
+    memory_semantic_threshold: float = Field(default=0.55, ge=-1, le=1)
+    memory_vector_limit: int = Field(default=2000, ge=20, le=20000)
+    memory_worker_enabled: bool = True
+    memory_worker_interval_seconds: float = Field(default=5, gt=0)
+    memory_episode_message_threshold: int = Field(default=6, ge=2, le=100)
+    memory_extraction_enabled: bool = True
+    memory_rerank_enabled: bool = False
+    memory_rerank_model: str = "BAAI/bge-reranker-v2-m3"
+    memory_rerank_base_url: str = "https://api.siliconflow.cn/v1"
+    memory_rerank_api_key: str = Field(default="", repr=False)
+    enable_coordinator: bool = True
+    coordinator_max_model_calls: int = Field(default=8, ge=3, le=16)
+    coordinator_max_tool_calls: int = Field(default=16, ge=4, le=40)
+    coordinator_max_delegations: int = Field(default=3, ge=1, le=6)
+    coordinator_max_replans: int = Field(default=1, ge=0, le=1)
+    specialist_max_model_calls: int = Field(default=3, ge=1, le=6)
+    specialist_max_tool_calls: int = Field(default=4, ge=1, le=10)
+    coordinator_tutor_model_reserve: int = Field(default=2, ge=1, le=4)
+    coordinator_tutor_tool_reserve: int = Field(default=3, ge=1, le=8)
 
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE),

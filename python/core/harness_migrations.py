@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Callable
 
-LATEST_SCHEMA_VERSION = 2
+LATEST_SCHEMA_VERSION = 3
 
 
 class SchemaVersionError(RuntimeError):
@@ -91,9 +91,15 @@ def _migration_2(db: sqlite3.Connection) -> None:
             )
 
 
+def _migration_3(db: sqlite3.Connection) -> None:
+    from core.memory_store import create_schema
+    create_schema(db)
+
+
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     1: _migration_1,
     2: _migration_2,
+    3: _migration_3,
 }
 
 

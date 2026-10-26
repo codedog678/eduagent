@@ -6,6 +6,8 @@ import time
 import uuid
 
 from fastapi import HTTPException
+from core.memory_store import MemoryStore
+from core.memory_retrieval import MemoryRetrieval
 
 
 def public_data(value):
@@ -22,6 +24,8 @@ def public_data(value):
 class LearningHistory:
     def __init__(self, db):
         self.db = db
+        self.memory = MemoryStore(db)
+        self.retrieval = MemoryRetrieval(db)
 
     def bind(self, learner, session, thread, knowledge):
         # 默认主题跨会话稳定；显式 ID 也必须验证归属。
@@ -63,43 +67,27 @@ class LearningHistory:
                 "next_cursor": selected[-1][0] if len(rows) > limit else None}
 
     def search(self, learner, knowledge, query="", limit=5):
-        # 知识点前置过滤；词项匹配和时间排序可解释，避免先引入向量库。
-        tokens = re.findall(r"[a-z0-9_]+|[\u4e00-\u9fff]{2,}", query.lower())[:16]
-        rows = self.db.execute(
-            "SELECT m.id,m.thread,m.role,m.content,m.created FROM conversation_messages m "
-            "JOIN learning_threads t ON t.id=m.thread "
-            "WHERE m.learner=? AND t.learner=? AND t.knowledge=? ORDER BY m.rowid DESC LIMIT 200",
-            (learner, learner, knowledge)).fetchall()
-        records = [("message:" + row[0], *row[1:]) for row in rows]
-        evidence_rows = self.db.execute(
-            "SELECT e.id,e.thread,e.body,e.created FROM learning_evidence e "
-            "JOIN learning_threads t ON t.id=e.thread "
-            "WHERE e.learner=? AND t.learner=? AND t.knowledge=? AND e.kind='assessment' "
-            "ORDER BY e.rowid DESC LIMIT 200", (learner, learner, knowledge)).fetchall()
-        records.extend(("evidence:" + row[0], row[1], "evidence", row[2], row[3])
-                       for row in evidence_rows)
-        records.sort(key=lambda row: row[4], reverse=True)
-        scored = [(sum(token in row[3].lower() for token in tokens), i, row)
-                  for i, row in enumerate(records)]
-        scored.sort(key=lambda item: (-item[0], item[1]))
-        return {"items": [{"source_ref": row[0], "thread_id": row[1],
-                           "role": row[2], "excerpt": row[3][:400], "created": row[4],
-                           "match_score": score}
-                          for score, _, row in scored[:max(1, min(limit, 10))]]}
+        return {"items": [{k: v for k, v in item.items() if k != "content"} for item in
+                          self.memory.lexical(learner, knowledge, query, max(1, min(limit, 10)))]}
 
-    def read(self, learner, source_ref):
+    def read(self, learner, source_ref, offset=0, limit=3000):
+        if offset or limit != 3000 or source_ref.startswith("memory:"):
+            return self.memory.read(learner, source_ref, offset, limit)
         kind, _, identifier = source_ref.partition(":")
         if kind == "message":
             row = self.db.execute(
                 "SELECT role,content,thread FROM conversation_messages WHERE id=? AND learner=?",
                 (identifier, learner)).fetchone()
             if row:
-                return {"source_ref": source_ref, "role": row[0], "content": row[1][:3000],
-                        "thread_id": row[2]}
+                return {"source_ref": source_ref, "role": row[0], "content": row[1][:limit],
+                        "thread_id": row[2], "truncated": len(row[1]) > limit,
+                        "next_cursor": limit if len(row[1]) > limit else None}
         elif kind == "evidence":
             row = self.db.execute("SELECT kind,body FROM learning_evidence WHERE id=? AND learner=?",
                                   (identifier, learner)).fetchone()
             if row:
+                if len(row[1]) > limit:
+                    return self.memory.read(learner, source_ref, offset, limit)
                 return {"source_ref": source_ref, "kind": row[0], "data": json.loads(row[1])}
         raise HTTPException(404, "历史证据不存在")
 
@@ -127,6 +115,14 @@ class LearningHistory:
                 "VALUES (?,?,?,?,?,?,?,?)",
                             (identifier, ctx.learner, ctx.session_id, ctx.thread_id,
                              ctx.run_id, role, content, time.time()))
+            self.memory.index(ctx.learner, "message:" + identifier)
+        self.memory.commit(ctx, "message:" + user_id)
+        from config.settings import settings
+        count = self.db.execute("SELECT count(*) FROM conversation_messages WHERE learner=? AND thread=?",
+                                (ctx.learner, ctx.thread_id)).fetchone()[0]
+        if settings.memory_extraction_enabled and (
+                count % settings.memory_episode_message_threshold < 2 or ctx.memory_proposals):
+            self.memory.enqueue("message:" + identifier, kind="extract")
         if ctx.answered_question_id:
             self.db.execute("UPDATE pending_questions SET answered_by=? "
                             "WHERE id=? AND learner=? AND thread=? AND answered_by IS NULL",
@@ -145,6 +141,7 @@ class LearningHistory:
             "(id,learner,thread,run,quiz,kind,body,created) VALUES (?,?,?,?,?,?,?,?)",
                         (identifier, ctx.learner, ctx.thread_id, ctx.run_id, quiz, kind,
                          json.dumps(public_data(body), ensure_ascii=False), time.time()))
+        self.memory.index(ctx.learner, "evidence:" + identifier)
         return "evidence:" + identifier
 
     def trace(self, learner, request):

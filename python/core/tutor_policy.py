@@ -1,6 +1,11 @@
 """Tutor 的通用答疑约束；不包含题目答案或评测场景。"""
 
+from contextlib import contextmanager
+from contextvars import ContextVar
+
 TUTOR_POLICY_VERSION = "2026-10-25.3"
+
+_turn_rules_override: ContextVar[str | None] = ContextVar("tutor_turn_rules", default=None)
 
 BASE_RULES = (
     "你是英语学习导师。掌握度只由服务端独立评估更新。"
@@ -44,4 +49,18 @@ def response_contract(quiz_bound: bool, has_pending: bool) -> dict[str, str]:
 
 
 def system_prompt(quiz_bound: bool) -> str:
-    return BASE_RULES + TURN_RULES + (QUIZ_RULES if quiz_bound else "")
+    rules = _turn_rules_override.get()
+    # 两组使用同一拼接方式；仅替换决策文本，默认提示逐字不变。
+    return BASE_RULES + (TURN_RULES if rules is None else rules) + (QUIZ_RULES if quiz_bound else "")
+
+
+@contextmanager
+def use_turn_rules(rules: str):
+    """仅作用于当前异步上下文；退出或失败时恢复，不修改全局策略文件。"""
+    if not isinstance(rules, str) or not rules.strip() or len(rules) > 6000:
+        raise ValueError("turn_rules must contain 1..6000 characters")
+    token = _turn_rules_override.set(rules)
+    try:
+        yield
+    finally:
+        _turn_rules_override.reset(token)

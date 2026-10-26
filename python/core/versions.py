@@ -8,7 +8,8 @@ from typing import Any
 
 from core.tutor_policy import TUTOR_POLICY_VERSION
 
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.3.0"
+# 本轮仅增加可选字段，保留 v1 读取兼容性。
 TRACE_SCHEMA_VERSION = 1
 EVAL_SCHEMA_VERSION = 1
 
@@ -28,6 +29,23 @@ def public_runtime_config(settings: Any) -> dict[str, Any]:
         "tutor_max_output_tokens": settings.tutor_max_output_tokens,
         "tutor_max_tool_calls": settings.tutor_max_tool_calls,
         "tutor_policy_version": TUTOR_POLICY_VERSION,
+        "enable_coordinator": settings.enable_coordinator,
+        "coordinator_max_model_calls": settings.coordinator_max_model_calls,
+        "coordinator_max_tool_calls": settings.coordinator_max_tool_calls,
+        "coordinator_max_delegations": settings.coordinator_max_delegations,
+        "coordinator_max_replans": settings.coordinator_max_replans,
+        "specialist_max_model_calls": settings.specialist_max_model_calls,
+        "specialist_max_tool_calls": settings.specialist_max_tool_calls,
+        "coordinator_tutor_model_reserve": settings.coordinator_tutor_model_reserve,
+        "coordinator_tutor_tool_reserve": settings.coordinator_tutor_tool_reserve,
+        "memory_retrieval_mode": settings.memory_retrieval_mode,
+        "memory_embedding_provider": settings.memory_embedding_provider,
+        "memory_embedding_model": settings.memory_embedding_model,
+        "memory_semantic_threshold": settings.memory_semantic_threshold,
+        "memory_vector_limit": settings.memory_vector_limit,
+        "memory_rerank_enabled": settings.memory_rerank_enabled,
+        "memory_rerank_model": settings.memory_rerank_model,
+        "memory_extraction_enabled": settings.memory_extraction_enabled,
         "model_options": (
             {"thinking": settings.deepseek_thinking, **(
                 {"reasoning_effort": settings.deepseek_reasoning_effort}

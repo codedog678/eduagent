@@ -6,6 +6,7 @@ import asyncio
 import fcntl
 import hashlib
 import json
+import re
 import sqlite3
 import time
 import uuid
@@ -18,6 +19,7 @@ from config.settings import settings
 from core.harness_migrations import migrate
 from core.learner_model import KnowledgeState, LearnerModel
 from core.learning_history import LearningHistory, public_data
+from core.memory_retrieval import MemoryWorker
 from core.run_context import RunContext, RunExhausted, active_run
 from core.spaced_repetition import ReviewItem
 from core.versions import runtime_metadata
@@ -51,6 +53,7 @@ class LearningHarness:
             self.db.execute("PRAGMA journal_mode=WAL")
             migrate(self.db)
             self.history = LearningHistory(self.db)
+            self.memory_worker = MemoryWorker(path)
         except BaseException:
             if hasattr(self, "db"):
                 self.db.close()
@@ -146,6 +149,9 @@ class LearningHarness:
                 attempt_id=str(uuid.uuid4()), deadline=time.monotonic() + self.timeout,
                 session_id=session, thread_id=thread, knowledge_id=knowledge, history=self.history,
                 knowledge_graph=self.orch.curriculum.knowledge_graph,
+                input_text=payload.get("text", ""),
+                max_model_calls=settings.coordinator_max_model_calls,
+                max_tool_calls=settings.coordinator_max_tool_calls,
             )
             metadata = runtime_metadata(settings)
             with self.db:
@@ -172,7 +178,8 @@ class LearningHarness:
                     "session_id": ctx.session_id, "thread_id": ctx.thread_id, "status": "completed",
                     "dialogue_state": ctx.dialogue_state, "pending_question_id": ctx.pending_question,
                     "answered_question_id": ctx.answered_question_id,
-                    "source_refs": ctx.source_refs, **metadata,
+                    "source_refs": ctx.source_refs, "retrieved_refs": ctx.retrieved_refs,
+                    "read_refs": ctx.read_refs, "cited_refs": ctx.cited_refs, **metadata,
                 }
                 ctx.record("commit_started")
                 # 学习状态、测验状态和可重放结果一起提交。
@@ -184,7 +191,7 @@ class LearningHarness:
                         if ctx.quiz:
                             evidence_ref = self.history.evidence(
                                 ctx, "assistance", {"assisted": True, "source_refs": ctx.source_refs},
-                                payload.get("quiz_id") or ctx.quiz["quiz_id"])
+                                ctx.quiz["quiz_id"])
                             result["assistance"] = {"recorded": True, "source_ref": evidence_ref}
                     if result.get("learning_evidence"):
                         assessment = {**result["learning_evidence"],
@@ -194,7 +201,11 @@ class LearningHarness:
                                       "source_refs": ctx.source_refs}
                         if scoped_quiz and "selected" in payload:
                             assessment["student_answer"] = scoped_quiz["options"][payload["selected"]]
-                        self.history.evidence(ctx, "assessment", assessment, payload.get("quiz"))
+                        assessment_ref = self.history.evidence(ctx, "assessment", assessment, payload.get("quiz"))
+                        if ctx.answered_question_id and result.get("evaluation", {}).get("is_correct"):
+                            self.db.execute(
+                                "UPDATE pending_questions SET answered_by=? WHERE id=? AND learner=?",
+                                (assessment_ref, ctx.answered_question_id, learner))
                     self.db.execute(
                         "INSERT OR REPLACE INTO checkpoints (learner,state) VALUES (?,?)",
                                     (learner, json.dumps(self.capture(learner))))
@@ -203,6 +214,11 @@ class LearningHarness:
                         self.db.execute(
                             "INSERT OR REPLACE INTO quizzes (id,learner,body) VALUES (?,?,?)",
                                         (quiz_id, learner, json.dumps(quiz)))
+                    if ctx.plan:
+                        self.db.execute(
+                            "INSERT OR REPLACE INTO learning_plans VALUES (?,?,?,?,?,?,?)",
+                            (ctx.plan["plan_id"], learner, ctx.plan_thread_id or ctx.thread_id, ctx.plan["version"],
+                             ctx.plan["status"], json.dumps(ctx.plan, ensure_ascii=False), time.time()))
                     self.db.execute("UPDATE runs SET status='completed',result=?,updated=? "
                                     "WHERE learner=? AND request=?",
                                     (json.dumps(result), time.time(), learner, request_id))
@@ -247,7 +263,31 @@ class LearningHarness:
             if not text.strip():
                 raise HTTPException(422, "请输入问题或回应")
             ctx.conversation = True
+            if re.search(r"(请)?记住[：:，, ]?|remember (that|my)", text, re.I):
+                memory_kind = "goal" if re.search(r"目标|计划学|goal", text, re.I) else "preference"
+                self.history.memory.propose(ctx, memory_kind, text[:1000], "current")
             ctx.model_state = self.orch.learner_models[learner].get_state(knowledge).model_dump(mode="json")
+            model = self.orch.learner_models[learner]
+            ctx.profile_state = {"knowledge_states": [
+                state.model_dump(mode="json") for state in model.knowledge_states.values()]}
+            ctx.review_queue = sorted(
+                [{"knowledge_id": item.knowledge_id, "next_review": item.next_review.isoformat(),
+                  "overdue_days": item.overdue_days, "reason": "scheduled_review_due"}
+                 for item in self.orch.curriculum._review_items.get(learner, {}).values() if item.is_due],
+                key=lambda item: -item["overdue_days"])
+            async def prepare_practice(knowledge_id, difficulty=0.5):
+                if ctx.quiz:
+                    raise PermissionError("active_quiz")
+                if ctx.prepared_quiz:
+                    old_id, old = ctx.prepared_quiz
+                    if old["knowledge_id"] != knowledge_id or old["difficulty"] != difficulty:
+                        raise PermissionError("one_practice_per_run")
+                    return self.public_question(old_id, old)
+                public, update = await self.prepare_question(learner, knowledge_id, difficulty, "practice",
+                                                              require_prerequisites=True)
+                ctx.prepared_quiz = update
+                return public
+            ctx.prepare_practice = prepare_practice
             quiz = None
             bound_id = None
             if quiz_id:
@@ -277,13 +317,20 @@ class LearningHarness:
                 # 仅在成功提交时更新受助状态；失败重试不污染测验。
                 ctx.quiz = {**quiz, "quiz_id": bound_id}
                 quiz["assisted"] = True
-            method = self.orch.ask_question if kind == "question" else self.orch.send_message
-            result = (await method(learner, knowledge, text) if kind == "question" else
-                      await method(learner, text, knowledge))
+            from core.coordinator import Coordinator
+            from core.llm_service import get_llm_service
+            if kind == "task" or Coordinator.should_route(ctx, text):
+                result = await Coordinator(ctx, get_llm_service()).run(text)
+            else:
+                method = self.orch.ask_question if kind == "question" else self.orch.send_message
+                result = (await method(learner, knowledge, text) if kind == "question" else
+                          await method(learner, text, knowledge))
             reply = result.get("teaching_response")
             if not reply or not reply.get("response", "").strip():
                 raise RuntimeError("missing_teaching_response")
-            return result, (bound_id, quiz) if quiz else None
+            if ctx.prepared_quiz:
+                result["prepared_practice"] = self.public_question(*ctx.prepared_quiz)
+            return result, (bound_id, quiz) if quiz else ctx.prepared_quiz
         return await self.run(learner, request_id, payload, operation)
 
     def run_status(self, learner, request_id):
@@ -307,33 +354,47 @@ class LearningHarness:
     async def generate(self, learner, request_id, knowledge, difficulty, mode="practice",
                        session_id=None, thread_id=None):
         async def operation():
-            from core.llm_service import get_llm_service
-            if knowledge not in self.orch.curriculum.knowledge_graph.nodes:
-                raise HTTPException(422, "未知知识点")
-            if mode == "advance":
-                model = self.orch.learner_models[learner]
-                mastered = {k for k, state in model.knowledge_states.items() if state.mastery >= 0.6}
-                ready = self.orch.curriculum.knowledge_graph.get_ready_nodes(mastered)
-                if knowledge not in ready:
-                    raise HTTPException(409, "前置知识尚未满足，请先练习基础知识点")
-            raw = await get_llm_service().generate_question(knowledge, difficulty)
-            if raw.get("source") == "fallback":
-                raise HTTPException(422, "该知识点暂无可用题目，请选择其他知识点或配置模型")
-            question = IssuedQuestion.model_validate(raw)
-            if (not 0 <= question.correct_index < len(question.options)
-                    or any(not option.strip() for option in question.options)
-                    or len(set(question.options)) != len(question.options)):
-                raise ValueError("invalid quiz options")
-            quiz_id = str(uuid.uuid4())
-            quiz = {**question.model_dump(), "knowledge_id": knowledge, "difficulty": difficulty,
-                    "created": time.time(), "attempts": 0, "hints": 0, "revealed": False,
-                    "solved": False, "assisted": False, "mode": mode,
-                    "session_id": active_run.get().session_id, "thread_id": active_run.get().thread_id}
-            public = {k: quiz[k] for k in ("question", "options", "knowledge_id", "difficulty")}
-            return {"status": "ok", "quiz": {**public, "quiz_id": quiz_id}}, (quiz_id, quiz)
+            public, update = await self.prepare_question(learner, knowledge, difficulty, mode)
+            return {"status": "ok", "quiz": public}, update
         return await self.run(learner, request_id, {"kind": "generate", "knowledge": knowledge,
                               "difficulty": difficulty, "mode": mode,
                               "session_id": session_id, "thread_id": thread_id}, operation)
+
+    @staticmethod
+    def public_question(quiz_id, quiz):
+        return {"quiz_id": quiz_id, **{k: quiz[k] for k in
+                                      ("question", "options", "knowledge_id", "difficulty")}}
+
+    async def prepare_question(self, learner, knowledge, difficulty, mode, require_prerequisites=False):
+        """领域内操作；仅父运行提交，专家不重新获取 Harness 锁。"""
+        from core.llm_service import get_llm_service
+        graph = self.orch.curriculum.knowledge_graph
+        if knowledge not in graph.nodes:
+            raise HTTPException(422, "未知知识点")
+        if mode == "advance" or require_prerequisites:
+            model = self.orch.learner_models[learner]
+            mastered = {k for k, state in model.knowledge_states.items() if state.mastery >= 0.6}
+            allowed = (knowledge in graph.get_ready_nodes(mastered) if mode == "advance" else
+                       set(graph.nodes[knowledge].prerequisites) <= mastered)
+            if not allowed:
+                raise HTTPException(409, "前置知识尚未满足，请先练习基础知识点")
+        raw = await get_llm_service().generate_question(knowledge, difficulty)
+        if raw.get("source") == "fallback":
+            raise HTTPException(422, "该知识点暂无可用题目，请选择其他知识点或配置模型")
+        question = IssuedQuestion.model_validate(raw)
+        if (not 0 <= question.correct_index < len(question.options)
+                or any(not option.strip() for option in question.options)
+                or len(set(question.options)) != len(question.options)):
+            raise ValueError("invalid quiz options")
+        ctx, quiz_id = active_run.get(), str(uuid.uuid4())
+        quiz = {**question.model_dump(), "knowledge_id": knowledge, "difficulty": difficulty,
+                "created": time.time(), "attempts": 0, "hints": 0, "revealed": False,
+                "solved": False, "assisted": False, "mode": mode,
+                "session_id": ctx.session_id,
+                "thread_id": self.history.bind(learner, ctx.session_id, None, knowledge)[1]}
+        if knowledge == ctx.knowledge_id:
+            quiz["thread_id"] = ctx.thread_id
+        return self.public_question(quiz_id, quiz), (quiz_id, quiz)
 
     async def answer(self, learner, request_id, quiz_id, selected, elapsed, confidence):
         async def operation():
@@ -346,6 +407,25 @@ class LearningHarness:
             correct = selected == quiz["correct_index"]
             quiz["attempts"] += 1
             quiz["solved"] = correct
+            if correct:
+                ctx = active_run.get()
+                row = self.db.execute(
+                    "SELECT body,thread_id FROM learning_plans WHERE learner_id=? "
+                    "AND status='awaiting_student' AND json_extract(body,'$.practice_quiz_id')=?",
+                    (learner, quiz_id)).fetchone()
+                if row:
+                    plan = json.loads(row[0])
+                    ctx.plan_thread_id = row[1]
+                    plan["version"] += 1
+                    plan["status"] = "completed"
+                    for step in plan["steps"]:
+                        if step["status"] == "waiting":
+                            step["status"] = "completed"
+                    plan["outcome"] = ("completed" if not plan.get("checks") and all(
+                        step["status"] == "completed" for step in plan["steps"]) else "partial")
+                    ctx.plan = plan
+                    pending = self.history.pending(learner, ctx.plan_thread_id)
+                    ctx.answered_question_id = pending["id"] if pending else None
             feedback = ("判断正确。请用相同方法完成一道新题检验迁移。" if correct else
                         "这次还不正确。先检查题干中的关键线索，可以重试或主动请求提示。")
             result = await self.orch.submit_answer(

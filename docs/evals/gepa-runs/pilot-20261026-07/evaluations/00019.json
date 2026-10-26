@@ -1,0 +1,1079 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": true,
+    "case_id": "live-20-main-idea",
+    "category": "澄清与接续",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [],
+    "execution_outcome": "completed",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution",
+        "rule": "completed、awaiting_student，pending_question_id 非空。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1/s2.execution",
+        "rule": "session_id 不同、thread_id 相同；s2.answered_question_id 等于 s1.pending_question_id。",
+        "status": "passed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": true,
+        "path": "s2.execution.dialogue_state",
+        "rule": "等于 answered；旧待答问题已关闭。",
+        "status": "passed"
+      },
+      {
+        "id": "H4",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.reading_skimming",
+        "rule": "所有 KnowledgeState 字段保持不变。",
+        "status": "passed"
+      },
+      {
+        "id": "H5",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s2.teaching_response.response",
+        "rule": "s1 只问一个关于目标的问题；s2 先看标题、首尾段及各段主题句，再概括中心；不能只扫描一个数字。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+        "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+        "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "review_pending",
+    "title": "阅读：从细节目标切换到主旨"
+  },
+  "capability": "multi_turn_continuation",
+  "case_id": "live-20-main-idea",
+  "evaluation_index": 19,
+  "metering": [
+    {
+      "estimated_off_peak_cny": 0.0006486,
+      "estimated_peak_cny": 0.0012972,
+      "request_no": 43,
+      "reservation_cny": 0.020466,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 1619,
+        "output_tokens": 71,
+        "prompt_cache_hit_tokens": 1280,
+        "prompt_cache_miss_tokens": 339
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.0008866,
+      "estimated_peak_cny": 0.0017732,
+      "request_no": 44,
+      "reservation_cny": 0.02281,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 1985,
+        "output_tokens": 39,
+        "prompt_cache_hit_tokens": 1280,
+        "prompt_cache_miss_tokens": 705
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.0019124,
+      "estimated_peak_cny": 0.0038248,
+      "request_no": 45,
+      "reservation_cny": 0.025552,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 2314,
+        "output_tokens": 370,
+        "prompt_cache_hit_tokens": 1920,
+        "prompt_cache_miss_tokens": 394
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.0029013599999999995,
+      "estimated_peak_cny": 0.005802719999999999,
+      "request_no": 46,
+      "reservation_cny": 0.037942,
+      "role": "judge",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 2578,
+        "output_tokens": 269,
+        "prompt_cache_hit_tokens": 768
+      }
+    }
+  ],
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "你这次阅读的任务目标是什么——是要在规定时间内快速判断文章主旨/找特定信息（如略读、扫读），还是要逐句精读理解细节？",
+        "目标明确了：你要判断的是**全文主旨**，不是定位具体信息。这属于略读（skimming）任务，方法如下。\n\n**略读找主旨的四步**\n\n1. **先看标题、副标题、首段**。多数文章的主旨会在这里点明或暗示，首段常给出话题和作者态度。\n2. **读每段的第一句（有时加最后一句）**。英语说明文、议论文的段落主题句多在段首；如果首句是过渡或举例，就看段末的总结句。\n3. **抓重复出现的词和同义替换**。全文反复出现的名词或动词短语，往往就是核心话题；注意作者用不同说法重复同一概念，不要因为换了词就以为是新话题。\n4. **跳过细节**：例子、数据、人名、日期、引语、括号补充，这些是支撑主旨的证据，略读阶段不必逐字读，扫一眼知道它在支撑哪一句即可。\n\n**判断主旨时的自查点**\n\n- 你概括出的主旨，能否覆盖**每一段**？如果某段完全放不进去，说明你的概括太窄，可能只抓了局部。\n- 主旨应是**话题 + 作者关于该话题的核心说法**，而不是“文章讲了A、B、C”这样的清单。\n- 区分主旨与细节：如果一句话只在某一段成立，它是细节；如果它在多段都被支撑，才可能是主旨。\n\n**时间分配建议**：先花约三分之一时间做第1、2步建立框架，再用剩余时间回看各段首句验证你的概括，不要一开始就逐句读。\n\n你可以先按第1、2步把各段首句串起来，写一句自己的概括，再对照上面的自查点检验。"
+      ],
+      "evidence": [],
+      "knowledge": {
+        "eval-live-20": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "reading_skimming",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [
+        {
+          "answered_by": "b1e0172d-af6f-42b8-86c5-f85bbe59c4b3",
+          "id": "b8ad4d00-5ea7-49a2-bb50-951d5c7c3b08"
+        }
+      ],
+      "quizzes": {}
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true
+      },
+      "initial_source_refs": [],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-20": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "reading_skimming",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {},
+      "thread_id": "3783416b-a9f1-5ce8-948b-108ea2d6e3e5"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 1359.3486250010756,
+        "evidence": [],
+        "knowledge": {
+          "eval-live-20": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "reading_skimming",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "",
+            "duration_ms": 1356.4974170003552,
+            "request_no": 1,
+            "stop_reason": "tool_calls",
+            "tool_calls": [
+              {
+                "arguments": {
+                  "question": "你这次阅读的任务目标是什么——是要在规定时间内快速判断文章主旨/找特定信息（如略读、扫读），还是要逐句精读理解细节？"
+                },
+                "batch_size": 1,
+                "id": "call_00_5pcm1ALnmjU9MTGUKW652287",
+                "name": "ask_student"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1619,
+              "output_tokens": 71,
+              "prompt_cache_hit_tokens": 1280,
+              "prompt_cache_miss_tokens": 339
+            }
+          }
+        ],
+        "quizzes": {},
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "awaiting_student",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "reading_skimming",
+              "response": "你这次阅读的任务目标是什么——是要在规定时间内快速判断文章主旨/找特定信息（如略读、扫读），还是要逐句精读理解细节？",
+              "response_variant": "tool_loop",
+              "source_refs": [],
+              "teaching_style": "question_answer"
+            }
+          },
+          "correlation_id": "68349939-35ff-5db9-8150-a7c729aec535",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "551c9a56-c0e0-45df-92bc-121fe787f991",
+            "cited_refs": [],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "awaiting_student",
+            "model": "deepseek-flash",
+            "pending_question_id": "b8ad4d00-5ea7-49a2-bb50-951d5c7c3b08",
+            "provider": "deepseek",
+            "read_refs": [],
+            "request_id": "live-20-main-idea-s1",
+            "retrieved_refs": [],
+            "run_id": "68349939-35ff-5db9-8150-a7c729aec535",
+            "session_id": "eval-live-20-old",
+            "source_refs": [],
+            "status": "completed",
+            "thread_id": "3783416b-a9f1-5ce8-948b-108ea2d6e3e5",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "68349939-35ff-5db9-8150-a7c729aec535",
+              "data": {
+                "knowledge_id": "reading_skimming",
+                "question": "这次阅读我不知道先怎么读。先问我一个问题确认题目目标，再给方法。"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-26T14:24:21.554304"
+            },
+            {
+              "correlation_id": "68349939-35ff-5db9-8150-a7c729aec535",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "awaiting_student",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "reading_skimming",
+                "response": "你这次阅读的任务目标是什么——是要在规定时间内快速判断文章主旨/找特定信息（如略读、扫读），还是要逐句精读理解细节？",
+                "response_variant": "tool_loop",
+                "source_refs": [],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-26T14:24:22.912025"
+            }
+          ],
+          "knowledge_id": "reading_skimming",
+          "learner_id": "eval-live-20",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "reading_skimming",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "awaiting_student",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "reading_skimming",
+            "response": "你这次阅读的任务目标是什么——是要在规定时间内快速判断文章主旨/找特定信息（如略读、扫读），还是要逐句精读理解细节？",
+            "response_variant": "tool_loop",
+            "source_refs": [],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "这次阅读我不知道先怎么读。先问我一个问题确认题目目标，再给方法。",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "551c9a56-c0e0-45df-92bc-121fe787f991",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1792995862.9126241,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "68349939-35ff-5db9-8150-a7c729aec535",
+              "started": 1792995861.554124,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1792995861.554255
+                },
+                {
+                  "agent": "api",
+                  "event_id": "3bf8231b-1563-443f-9d5d-28809920ccff",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 2,
+                  "timestamp": 1792995861.554314
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "3bf8231b-1563-443f-9d5d-28809920ccff",
+                  "kind": "handler_started",
+                  "seq": 3,
+                  "timestamp": 1792995861.5543208
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 0,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 4,
+                  "timestamp": 1792995861.5544388,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 5,
+                  "source_refs": [],
+                  "timestamp": 1792995861.554532,
+                  "token_estimate": 1042,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 6,
+                  "timestamp": 1792995861.555304,
+                  "token_estimate": 2003
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "68349939-35ff-5db9-8150-a7c729aec535",
+                  "resource": "model",
+                  "seq": 7,
+                  "task_id": null,
+                  "timestamp": 1792995861.555369,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 8,
+                  "stop_reason": "tool_calls",
+                  "timestamp": 1792995862.911873,
+                  "usage": {
+                    "input_tokens": 1619,
+                    "output_tokens": 71,
+                    "prompt_cache_hit_tokens": 1280,
+                    "prompt_cache_miss_tokens": 339
+                  }
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "68349939-35ff-5db9-8150-a7c729aec535",
+                  "resource": "tool",
+                  "seq": 9,
+                  "task_id": null,
+                  "timestamp": 1792995862.911883,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "68349939-35ff-5db9-8150-a7c729aec535",
+                  "seq": 10,
+                  "task_id": null,
+                  "timestamp": 1792995862.911884,
+                  "tool": "ask_student",
+                  "tool_call_id": "call_00_5pcm1ALnmjU9MTGUKW652287"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 0,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "question",
+                    "terminal"
+                  ],
+                  "seq": 11,
+                  "source_refs": [],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1792995862.911961,
+                  "tool": "ask_student",
+                  "tool_call_id": "call_00_5pcm1ALnmjU9MTGUKW652287"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "kind": "response_sources",
+                  "read_refs": [],
+                  "retrieved_refs": [],
+                  "seq": 12,
+                  "timestamp": 1792995862.911993
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 1358,
+                  "event_id": "3bf8231b-1563-443f-9d5d-28809920ccff",
+                  "kind": "handler_completed",
+                  "seq": 13,
+                  "timestamp": 1792995862.9120471
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "d1fe958b-f3ed-46e4-b808-a9b193a04a6e",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "3bf8231b-1563-443f-9d5d-28809920ccff",
+                  "seq": 14,
+                  "timestamp": 1792995862.912051
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 15,
+                  "timestamp": 1792995862.912086
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "awaiting_student",
+                  "kind": "run_completed",
+                  "seq": 16,
+                  "timestamp": 1792995862.9125178
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-20-main-idea-s1"
+        }
+      },
+      "s2": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 5125.017665999621,
+        "evidence": [],
+        "knowledge": {
+          "eval-live-20": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "reading_skimming",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "",
+            "duration_ms": 1000.340792001225,
+            "request_no": 2,
+            "stop_reason": "tool_calls",
+            "tool_calls": [
+              {
+                "arguments": {},
+                "batch_size": 2,
+                "id": "call_00_OA4MMm5ZJAwyu2Du3h1v3327",
+                "name": "get_knowledge_context"
+              },
+              {
+                "arguments": {},
+                "batch_size": 2,
+                "id": "call_01_iTN3PYbq9Mbajk7Da7m60664",
+                "name": "get_learner_profile"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1985,
+              "output_tokens": 39,
+              "prompt_cache_hit_tokens": 1280,
+              "prompt_cache_miss_tokens": 705
+            }
+          },
+          {
+            "content": "目标明确了：你要判断的是**全文主旨**，不是定位具体信息。这属于略读（skimming）任务，方法如下。\n\n**略读找主旨的四步**\n\n1. **先看标题、副标题、首段**。多数文章的主旨会在这里点明或暗示，首段常给出话题和作者态度。\n2. **读每段的第一句（有时加最后一句）**。英语说明文、议论文的段落主题句多在段首；如果首句是过渡或举例，就看段末的总结句。\n3. **抓重复出现的词和同义替换**。全文反复出现的名词或动词短语，往往就是核心话题；注意作者用不同说法重复同一概念，不要因为换了词就以为是新话题。\n4. **跳过细节**：例子、数据、人名、日期、引语、括号补充，这些是支撑主旨的证据，略读阶段不必逐字读，扫一眼知道它在支撑哪一句即可。\n\n**判断主旨时的自查点**\n\n- 你概括出的主旨，能否覆盖**每一段**？如果某段完全放不进去，说明你的概括太窄，可能只抓了局部。\n- 主旨应是**话题 + 作者关于该话题的核心说法**，而不是“文章讲了A、B、C”这样的清单。\n- 区分主旨与细节：如果一句话只在某一段成立，它是细节；如果它在多段都被支撑，才可能是主旨。\n\n**时间分配建议**：先花约三分之一时间做第1、2步建立框架，再用剩余时间回看各段首句验证你的概括，不要一开始就逐句读。\n\n你可以先按第1、2步把各段首句串起来，写一句自己的概括，再对照上面的自查点检验。",
+            "duration_ms": 4094.9525839987473,
+            "request_no": 3,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 2314,
+              "output_tokens": 370,
+              "prompt_cache_hit_tokens": 1920,
+              "prompt_cache_miss_tokens": 394
+            }
+          }
+        ],
+        "quizzes": {},
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "reading_skimming",
+              "response": "目标明确了：你要判断的是**全文主旨**，不是定位具体信息。这属于略读（skimming）任务，方法如下。\n\n**略读找主旨的四步**\n\n1. **先看标题、副标题、首段**。多数文章的主旨会在这里点明或暗示，首段常给出话题和作者态度。\n2. **读每段的第一句（有时加最后一句）**。英语说明文、议论文的段落主题句多在段首；如果首句是过渡或举例，就看段末的总结句。\n3. **抓重复出现的词和同义替换**。全文反复出现的名词或动词短语，往往就是核心话题；注意作者用不同说法重复同一概念，不要因为换了词就以为是新话题。\n4. **跳过细节**：例子、数据、人名、日期、引语、括号补充，这些是支撑主旨的证据，略读阶段不必逐字读，扫一眼知道它在支撑哪一句即可。\n\n**判断主旨时的自查点**\n\n- 你概括出的主旨，能否覆盖**每一段**？如果某段完全放不进去，说明你的概括太窄，可能只抓了局部。\n- 主旨应是**话题 + 作者关于该话题的核心说法**，而不是“文章讲了A、B、C”这样的清单。\n- 区分主旨与细节：如果一句话只在某一段成立，它是细节；如果它在多段都被支撑，才可能是主旨。\n\n**时间分配建议**：先花约三分之一时间做第1、2步建立框架，再用剩余时间回看各段首句验证你的概括，不要一开始就逐句读。\n\n你可以先按第1、2步把各段首句串起来，写一句自己的概括，再对照上面的自查点检验。",
+              "response_variant": "tool_loop",
+              "source_refs": [
+                "message:54fc6e07-3452-4650-a741-c476064ba07d",
+                "message:9fae2bab-28a2-4e67-96d8-8d620238dc17"
+              ],
+              "teaching_style": "question_answer"
+            }
+          },
+          "correlation_id": "675819b7-b588-5799-81ff-a6750783d3b2",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": "b8ad4d00-5ea7-49a2-bb50-951d5c7c3b08",
+            "app_version": "0.3.0",
+            "attempt_id": "07086a97-7571-4535-943e-09dae90f2e3d",
+            "cited_refs": [],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "answered",
+            "model": "deepseek-flash",
+            "pending_question_id": null,
+            "provider": "deepseek",
+            "read_refs": [],
+            "request_id": "live-20-main-idea-s2",
+            "retrieved_refs": [
+              "message:54fc6e07-3452-4650-a741-c476064ba07d",
+              "message:9fae2bab-28a2-4e67-96d8-8d620238dc17"
+            ],
+            "run_id": "675819b7-b588-5799-81ff-a6750783d3b2",
+            "session_id": "eval-live-20-new",
+            "source_refs": [
+              "message:54fc6e07-3452-4650-a741-c476064ba07d",
+              "message:9fae2bab-28a2-4e67-96d8-8d620238dc17"
+            ],
+            "status": "completed",
+            "thread_id": "3783416b-a9f1-5ce8-948b-108ea2d6e3e5",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "675819b7-b588-5799-81ff-a6750783d3b2",
+              "data": {
+                "knowledge_id": "reading_skimming",
+                "question": "这次问整篇文章主要讲什么，不是找日期或数字。"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-26T14:24:22.913692"
+            },
+            {
+              "correlation_id": "675819b7-b588-5799-81ff-a6750783d3b2",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "reading_skimming",
+                "response": "目标明确了：你要判断的是**全文主旨**，不是定位具体信息。这属于略读（skimming）任务，方法如下。\n\n**略读找主旨的四步**\n\n1. **先看标题、副标题、首段**。多数文章的主旨会在这里点明或暗示，首段常给出话题和作者态度。\n2. **读每段的第一句（有时加最后一句）**。英语说明文、议论文的段落主题句多在段首；如果首句是过渡或举例，就看段末的总结句。\n3. **抓重复出现的词和同义替换**。全文反复出现的名词或动词短语，往往就是核心话题；注意作者用不同说法重复同一概念，不要因为换了词就以为是新话题。\n4. **跳过细节**：例子、数据、人名、日期、引语、括号补充，这些是支撑主旨的证据，略读阶段不必逐字读，扫一眼知道它在支撑哪一句即可。\n\n**判断主旨时的自查点**\n\n- 你概括出的主旨，能否覆盖**每一段**？如果某段完全放不进去，说明你的概括太窄，可能只抓了局部。\n- 主旨应是**话题 + 作者关于该话题的核心说法**，而不是“文章讲了A、B、C”这样的清单。\n- 区分主旨与细节：如果一句话只在某一段成立，它是细节；如果它在多段都被支撑，才可能是主旨。\n\n**时间分配建议**：先花约三分之一时间做第1、2步建立框架，再用剩余时间回看各段首句验证你的概括，不要一开始就逐句读。\n\n你可以先按第1、2步把各段首句串起来，写一句自己的概括，再对照上面的自查点检验。",
+                "response_variant": "tool_loop",
+                "source_refs": [
+                  "message:54fc6e07-3452-4650-a741-c476064ba07d",
+                  "message:9fae2bab-28a2-4e67-96d8-8d620238dc17"
+                ],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-26T14:24:28.036161"
+            }
+          ],
+          "knowledge_id": "reading_skimming",
+          "learner_id": "eval-live-20",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "reading_skimming",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "reading_skimming",
+            "response": "目标明确了：你要判断的是**全文主旨**，不是定位具体信息。这属于略读（skimming）任务，方法如下。\n\n**略读找主旨的四步**\n\n1. **先看标题、副标题、首段**。多数文章的主旨会在这里点明或暗示，首段常给出话题和作者态度。\n2. **读每段的第一句（有时加最后一句）**。英语说明文、议论文的段落主题句多在段首；如果首句是过渡或举例，就看段末的总结句。\n3. **抓重复出现的词和同义替换**。全文反复出现的名词或动词短语，往往就是核心话题；注意作者用不同说法重复同一概念，不要因为换了词就以为是新话题。\n4. **跳过细节**：例子、数据、人名、日期、引语、括号补充，这些是支撑主旨的证据，略读阶段不必逐字读，扫一眼知道它在支撑哪一句即可。\n\n**判断主旨时的自查点**\n\n- 你概括出的主旨，能否覆盖**每一段**？如果某段完全放不进去，说明你的概括太窄，可能只抓了局部。\n- 主旨应是**话题 + 作者关于该话题的核心说法**，而不是“文章讲了A、B、C”这样的清单。\n- 区分主旨与细节：如果一句话只在某一段成立，它是细节；如果它在多段都被支撑，才可能是主旨。\n\n**时间分配建议**：先花约三分之一时间做第1、2步建立框架，再用剩余时间回看各段首句验证你的概括，不要一开始就逐句读。\n\n你可以先按第1、2步把各段首句串起来，写一句自己的概括，再对照上面的自查点检验。",
+            "response_variant": "tool_loop",
+            "source_refs": [
+              "message:54fc6e07-3452-4650-a741-c476064ba07d",
+              "message:9fae2bab-28a2-4e67-96d8-8d620238dc17"
+            ],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "这次问整篇文章主要讲什么，不是找日期或数字。",
+        "tool_results": [
+          {
+            "result": {
+              "cached": false,
+              "data": {
+                "knowledge_id": "reading_skimming",
+                "materials": [],
+                "materials_status": "not_provided",
+                "name": "略读技巧",
+                "prerequisites": [
+                  "vocab_basic",
+                  "grammar_tenses"
+                ]
+              },
+              "error_code": null,
+              "errors": [],
+              "next_cursor": null,
+              "retryable": false,
+              "source_refs": [],
+              "status": "ok",
+              "truncated": false
+            },
+            "tool_call_id": "call_00_OA4MMm5ZJAwyu2Du3h1v3327"
+          },
+          {
+            "result": {
+              "cached": false,
+              "data": {
+                "knowledge_states": [
+                  {
+                    "alpha": 1.0,
+                    "attempts": 0,
+                    "beta": 9.0,
+                    "correct_count": 0,
+                    "knowledge_id": "reading_skimming",
+                    "last_attempt": null,
+                    "mastery": 0.1,
+                    "streak": 0
+                  }
+                ],
+                "memories": [],
+                "memory_write_state": {
+                  "accepted_count": 0,
+                  "items": [],
+                  "state": "not_staged"
+                },
+                "source_refs": [],
+                "staged_memories": []
+              },
+              "error_code": null,
+              "errors": [],
+              "next_cursor": null,
+              "retryable": false,
+              "source_refs": [],
+              "status": "ok",
+              "truncated": false
+            },
+            "tool_call_id": "call_01_iTN3PYbq9Mbajk7Da7m60664"
+          }
+        ],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "07086a97-7571-4535-943e-09dae90f2e3d",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1792995868.0371132,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "675819b7-b588-5799-81ff-a6750783d3b2",
+              "started": 1792995862.913515,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1792995862.9136472
+                },
+                {
+                  "agent": "api",
+                  "event_id": "7013ddb5-9fde-4615-9904-df11e6cac0bf",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 2,
+                  "timestamp": 1792995862.913703
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "7013ddb5-9fde-4615-9904-df11e6cac0bf",
+                  "kind": "handler_started",
+                  "seq": 3,
+                  "timestamp": 1792995862.913712
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 1,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 2,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 4,
+                  "timestamp": 1792995862.914252,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 5,
+                  "source_refs": [
+                    "message:54fc6e07-3452-4650-a741-c476064ba07d",
+                    "message:9fae2bab-28a2-4e67-96d8-8d620238dc17"
+                  ],
+                  "timestamp": 1792995862.914402,
+                  "token_estimate": 1432,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 6,
+                  "timestamp": 1792995862.939779,
+                  "token_estimate": 2394
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "675819b7-b588-5799-81ff-a6750783d3b2",
+                  "resource": "model",
+                  "seq": 7,
+                  "task_id": null,
+                  "timestamp": 1792995862.939848,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 8,
+                  "stop_reason": "tool_calls",
+                  "timestamp": 1792995863.940199,
+                  "usage": {
+                    "input_tokens": 1985,
+                    "output_tokens": 39,
+                    "prompt_cache_hit_tokens": 1280,
+                    "prompt_cache_miss_tokens": 705
+                  }
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "675819b7-b588-5799-81ff-a6750783d3b2",
+                  "resource": "tool",
+                  "seq": 9,
+                  "task_id": null,
+                  "timestamp": 1792995863.9402251,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "675819b7-b588-5799-81ff-a6750783d3b2",
+                  "seq": 10,
+                  "task_id": null,
+                  "timestamp": 1792995863.9402292,
+                  "tool": "get_knowledge_context",
+                  "tool_call_id": "call_00_OA4MMm5ZJAwyu2Du3h1v3327"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 0,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "knowledge_id",
+                    "materials",
+                    "materials_status",
+                    "name",
+                    "prerequisites"
+                  ],
+                  "seq": 11,
+                  "source_refs": [],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1792995863.940376,
+                  "tool": "get_knowledge_context",
+                  "tool_call_id": "call_00_OA4MMm5ZJAwyu2Du3h1v3327"
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "675819b7-b588-5799-81ff-a6750783d3b2",
+                  "resource": "tool",
+                  "seq": 12,
+                  "task_id": null,
+                  "timestamp": 1792995863.940455,
+                  "used": 2
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "675819b7-b588-5799-81ff-a6750783d3b2",
+                  "seq": 13,
+                  "task_id": null,
+                  "timestamp": 1792995863.9404569,
+                  "tool": "get_learner_profile",
+                  "tool_call_id": "call_01_iTN3PYbq9Mbajk7Da7m60664"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 0,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "knowledge_states",
+                    "memories",
+                    "memory_write_state",
+                    "source_refs",
+                    "staged_memories"
+                  ],
+                  "seq": 14,
+                  "source_refs": [],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1792995863.9407518,
+                  "tool": "get_learner_profile",
+                  "tool_call_id": "call_01_iTN3PYbq9Mbajk7Da7m60664"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 2,
+                  "seq": 15,
+                  "timestamp": 1792995863.940896,
+                  "token_estimate": 2851
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "675819b7-b588-5799-81ff-a6750783d3b2",
+                  "resource": "model",
+                  "seq": 16,
+                  "task_id": null,
+                  "timestamp": 1792995863.941092,
+                  "used": 2
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 2,
+                  "seq": 17,
+                  "stop_reason": "stop",
+                  "timestamp": 1792995868.036074,
+                  "usage": {
+                    "input_tokens": 2314,
+                    "output_tokens": 370,
+                    "prompt_cache_hit_tokens": 1920,
+                    "prompt_cache_miss_tokens": 394
+                  }
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "kind": "response_sources",
+                  "read_refs": [],
+                  "retrieved_refs": [
+                    "message:54fc6e07-3452-4650-a741-c476064ba07d",
+                    "message:9fae2bab-28a2-4e67-96d8-8d620238dc17"
+                  ],
+                  "seq": 18,
+                  "timestamp": 1792995868.0360918
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 5122,
+                  "event_id": "7013ddb5-9fde-4615-9904-df11e6cac0bf",
+                  "kind": "handler_completed",
+                  "seq": 19,
+                  "timestamp": 1792995868.0361972
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "5c12900c-d8b1-4dd1-bb83-86f6aaa86155",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "7013ddb5-9fde-4615-9904-df11e6cac0bf",
+                  "seq": 20,
+                  "timestamp": 1792995868.036202
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 21,
+                  "timestamp": 1792995868.036255
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "answered",
+                  "kind": "run_completed",
+                  "seq": 22,
+                  "timestamp": 1792995868.036958
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-20-main-idea-s2"
+        }
+      }
+    }
+  },
+  "policy_sha256": "801ee10f7f37bcdc90d363b8791a76a4198d67ae2f05e4652e306b2d4d28ca82",
+  "score": {
+    "automatic_passed": true,
+    "decision_rate": 1.0,
+    "decisions": [
+      {
+        "calls": [
+          {
+            "arguments_correct": true,
+            "index": 0,
+            "selection_correct": true
+          }
+        ],
+        "evidence": "",
+        "reason": "单独调用ask_student，只询问阅读目标，未索要额外信息。",
+        "required_tools_present": true,
+        "step_id": "s1"
+      },
+      {
+        "calls": [
+          {
+            "arguments_correct": true,
+            "index": 0,
+            "selection_correct": true
+          },
+          {
+            "arguments_correct": true,
+            "index": 1,
+            "selection_correct": true
+          }
+        ],
+        "evidence": "",
+        "reason": "目标已明确，直接给出略读策略；知识上下文与学习者画像查询合理，未继续追问。",
+        "required_tools_present": true,
+        "step_id": "s2"
+      }
+    ],
+    "judge_input_sha256": "17ffef5745bf24e12e75454566d6cab43b1edb3d44aa9a77928d7b5b09053bef",
+    "judge_prompt_sha256": "36406800d0d4ad94aab535d97748c17ae7a599d7c40ea30fdedb96127c605192",
+    "review_status": "ai_reviewed",
+    "score": 1.0,
+    "semantic": [
+      {
+        "evidence": "1. **先看标题、副标题、首段**。多数文章的主旨会在这里点明或暗示，首段常给出话题和作者态度。\n2. **读每段的第一句（有时加最后一句）**。英语说明文、议论文的段落主题句多在段首；如果首句是过渡或举例，就看段末的总结句。",
+        "id": "H5",
+        "passed": true,
+        "reason": "s2先看标题、首段、各段主题句，再概括中心，未只扫描数字。"
+      }
+    ],
+    "task_success": true
+  },
+  "scoring_status": "completed"
+}

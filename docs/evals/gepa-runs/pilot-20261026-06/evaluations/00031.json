@@ -1,0 +1,507 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": false,
+    "case_id": "live-38-receiver-checklist",
+    "category": "跨会话记忆",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [
+      {
+        "reason": "context_budget",
+        "status": "exhausted",
+        "step_id": "s1"
+      }
+    ],
+    "execution_outcome": "incomplete",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "fixture_validation",
+        "passed": true,
+        "path": "ContextBuilder 初始消息 / search.excerpt",
+        "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": false,
+        "path": "s1.trace.steps",
+        "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。",
+        "status": "failed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": false,
+        "path": "s1.execution",
+        "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。",
+        "status": "failed"
+      },
+      {
+        "id": "H4",
+        "method": "automatic",
+        "passed": false,
+        "path": "s1.teaching_response.response",
+        "rule": "规范化引号、空白后包含“先圈提交物，再找接收方”。",
+        "status": "failed"
+      },
+      {
+        "id": "H5",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.vocab_basic",
+        "rule": "所有 KnowledgeState 字段保持不变。",
+        "status": "passed"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+        "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+        "targeting": "2 分：提供 N38 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "failed",
+    "title": "旧笔记：读取提交物与接收方口令"
+  },
+  "capability": "full_history_retrieval",
+  "case_id": "live-38-receiver-checklist",
+  "evaluation_index": 31,
+  "observed": {
+    "final": {
+      "assistant_history": [],
+      "evidence": [],
+      "knowledge": {
+        "eval-live-38": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [],
+      "quizzes": {}
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true,
+        "phrase_beyond_excerpt": true,
+        "phrase_not_in_initial": true,
+        "search_hides_phrase": true,
+        "target_discoverable": true,
+        "target_fits_read": true,
+        "target_not_in_initial": true
+      },
+      "initial_source_refs": [
+        "message:eval-live-38-decoy-9",
+        "message:eval-live-38-decoy-8",
+        "message:eval-live-38-decoy-7",
+        "message:eval-live-38-decoy-6",
+        "message:eval-live-38-decoy-5",
+        "message:eval-live-38-decoy-4",
+        "message:eval-live-38-decoy-3",
+        "message:eval-live-38-decoy-2"
+      ],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-38": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {},
+      "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 1152.9746249998425,
+        "error": "HTTPException",
+        "evidence": [],
+        "knowledge": {
+          "eval-live-38": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "vocab_basic",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "我先检索历史记录，定位这份旧笔记的原始来源。",
+            "duration_ms": 1142.9864580004505,
+            "request_no": 1,
+            "stop_reason": "tool_calls",
+            "tool_calls": [
+              {
+                "arguments": {
+                  "limit": 10,
+                  "query": "N38 旧笔记 口令 原文"
+                },
+                "batch_size": 2,
+                "id": "call_00_4lpewE3Ibb9Js8JckT7T4933",
+                "name": "search_learning_history"
+              },
+              {
+                "arguments": {
+                  "limit": 10,
+                  "query": "N38 笔记"
+                },
+                "batch_size": 2,
+                "id": "call_01_Dltn5vJCEP6Hjq6cRgNg4703",
+                "name": "search_learning_history"
+              }
+            ],
+            "usage": {
+              "input_tokens": 2977,
+              "output_tokens": 124,
+              "prompt_cache_hit_tokens": 1664,
+              "prompt_cache_miss_tokens": 1313
+            }
+          }
+        ],
+        "quizzes": {},
+        "status": "exhausted",
+        "stop_reason": "context_budget",
+        "student_input": "N38 旧笔记的口令原文是什么？请读完再回答。",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "34b4f9e5-dcb4-4e64-851f-a996e4dfe8a6",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1792995698.998165,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "4beb325b-e164-502d-8769-fc9a3b05453d",
+              "started": 1792995697.845657,
+              "status": "exhausted",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1792995697.845803
+                },
+                {
+                  "agent": "api",
+                  "event_id": "aa2c455c-4da0-4c0f-8bf8-611ed66ae99b",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 2,
+                  "timestamp": 1792995697.8458781
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "aa2c455c-4da0-4c0f-8bf8-611ed66ae99b",
+                  "kind": "handler_started",
+                  "seq": 3,
+                  "timestamp": 1792995697.845885
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 10,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 4,
+                  "timestamp": 1792995697.8463192,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 5,
+                  "source_refs": [
+                    "message:eval-live-38-decoy-9",
+                    "message:eval-live-38-decoy-8",
+                    "message:eval-live-38-decoy-7",
+                    "message:eval-live-38-decoy-6",
+                    "message:eval-live-38-decoy-5",
+                    "message:eval-live-38-decoy-4",
+                    "message:eval-live-38-decoy-3",
+                    "message:eval-live-38-decoy-2"
+                  ],
+                  "timestamp": 1792995697.846632,
+                  "token_estimate": 2637,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 6,
+                  "timestamp": 1792995697.847456,
+                  "token_estimate": 3599
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "4beb325b-e164-502d-8769-fc9a3b05453d",
+                  "resource": "model",
+                  "seq": 7,
+                  "task_id": null,
+                  "timestamp": 1792995697.847548,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 8,
+                  "stop_reason": "tool_calls",
+                  "timestamp": 1792995698.9905221,
+                  "usage": {
+                    "input_tokens": 2977,
+                    "output_tokens": 124,
+                    "prompt_cache_hit_tokens": 1664,
+                    "prompt_cache_miss_tokens": 1313
+                  }
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "4beb325b-e164-502d-8769-fc9a3b05453d",
+                  "resource": "tool",
+                  "seq": 9,
+                  "task_id": null,
+                  "timestamp": 1792995698.990535,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "4beb325b-e164-502d-8769-fc9a3b05453d",
+                  "seq": 10,
+                  "task_id": null,
+                  "timestamp": 1792995698.990536,
+                  "tool": "search_learning_history",
+                  "tool_call_id": "call_00_4lpewE3Ibb9Js8JckT7T4933"
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 1,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 10,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 11,
+                  "timestamp": 1792995698.9913101,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 1,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "items",
+                    "retrieval_mode"
+                  ],
+                  "seq": 12,
+                  "source_refs": [
+                    "message:eval-live-38-decoy-9",
+                    "message:eval-live-38-decoy-8",
+                    "message:eval-live-38-decoy-7",
+                    "message:eval-live-38-decoy-6",
+                    "message:eval-live-38-decoy-5",
+                    "message:eval-live-38-decoy-4",
+                    "message:eval-live-38-decoy-3",
+                    "message:eval-live-38-decoy-2",
+                    "message:eval-live-38-decoy-1",
+                    "message:eval-live-38-target"
+                  ],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1792995698.991391,
+                  "tool": "search_learning_history",
+                  "tool_call_id": "call_00_4lpewE3Ibb9Js8JckT7T4933"
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "4beb325b-e164-502d-8769-fc9a3b05453d",
+                  "resource": "tool",
+                  "seq": 13,
+                  "task_id": null,
+                  "timestamp": 1792995698.99146,
+                  "used": 2
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "4beb325b-e164-502d-8769-fc9a3b05453d",
+                  "seq": 14,
+                  "task_id": null,
+                  "timestamp": 1792995698.991461,
+                  "tool": "search_learning_history",
+                  "tool_call_id": "call_01_Dltn5vJCEP6Hjq6cRgNg4703"
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 10,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 15,
+                  "timestamp": 1792995698.991968,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 1,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "items",
+                    "retrieval_mode"
+                  ],
+                  "seq": 16,
+                  "source_refs": [
+                    "message:eval-live-38-decoy-9",
+                    "message:eval-live-38-decoy-8",
+                    "message:eval-live-38-decoy-7",
+                    "message:eval-live-38-decoy-6",
+                    "message:eval-live-38-decoy-5",
+                    "message:eval-live-38-decoy-4",
+                    "message:eval-live-38-decoy-3",
+                    "message:eval-live-38-decoy-2",
+                    "message:eval-live-38-decoy-1",
+                    "message:eval-live-38-target"
+                  ],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1792995698.992021,
+                  "tool": "search_learning_history",
+                  "tool_call_id": "call_01_Dltn5vJCEP6Hjq6cRgNg4703"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "context_compacted",
+                  "reason": "make_room_for_tool_evidence",
+                  "seq": 17,
+                  "timestamp": 1792995698.992171
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "context_compacted",
+                  "reason": "make_room_for_tool_evidence",
+                  "seq": 18,
+                  "timestamp": 1792995698.992254
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "context_compacted",
+                  "reason": "make_room_for_tool_evidence",
+                  "seq": 19,
+                  "timestamp": 1792995698.9923332
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "context_compacted",
+                  "reason": "make_room_for_tool_evidence",
+                  "seq": 20,
+                  "timestamp": 1792995698.992413
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "context_compacted",
+                  "reason": "make_room_for_tool_evidence",
+                  "seq": 21,
+                  "timestamp": 1792995698.9924889
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "context_compacted",
+                  "reason": "make_room_for_tool_evidence",
+                  "seq": 22,
+                  "timestamp": 1792995698.9925609
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "context_compacted",
+                  "reason": "make_room_for_tool_evidence",
+                  "seq": 23,
+                  "timestamp": 1792995698.992631
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "context_compacted",
+                  "reason": "make_room_for_tool_evidence",
+                  "seq": 24,
+                  "timestamp": 1792995698.9926982
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "aa2c455c-4da0-4c0f-8bf8-611ed66ae99b",
+                  "kind": "handler_failed",
+                  "reason": "RunExhausted",
+                  "seq": 25,
+                  "timestamp": 1792995698.997854
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "run_failed",
+                  "reason": "context_budget",
+                  "seq": 26,
+                  "status": "exhausted",
+                  "timestamp": 1792995698.9979122
+                }
+              ],
+              "stop_reason": "context_budget",
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-38-receiver-checklist-s1"
+        }
+      }
+    }
+  },
+  "policy_sha256": "08fef9a59fb4775c988330fd9dc6a4583b7ea1bf66989b51473588a42cb5fc43",
+  "scoring_error_type": "OptimizationStopped",
+  "scoring_status": "interrupted"
+}

@@ -52,7 +52,7 @@ def test_legacy_attempt_survives_additive_migration():
     )
     db.execute("PRAGMA user_version = 1")
     db.commit()
-    assert harness_migrations.migrate(db) == 2
+    assert harness_migrations.migrate(db) == harness_migrations.LATEST_SCHEMA_VERSION
     row = db.execute(
         "SELECT status,app_version,trace_schema_version FROM run_attempts "
         "WHERE id='a'"

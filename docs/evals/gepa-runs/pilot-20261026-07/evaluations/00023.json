@@ -1,0 +1,480 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": true,
+    "case_id": "live-29-skim-scan",
+    "category": "跨会话记忆",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [],
+    "execution_outcome": "completed",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution",
+        "rule": "status=completed、dialogue_state=answered；thread 与预置 reading_skimming 主题相同。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution.source_refs",
+        "rule": "与两条预置真实来源至少有一个交集；所有引用均可按当前 learner 读取。",
+        "status": "passed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.reading_skimming",
+        "rule": "所有 KnowledgeState 字段保持不变。",
+        "status": "passed"
+      },
+      {
+        "id": "H4",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s1.teaching_response.response",
+        "rule": "准确复述两方法混淆，主旨对应略读、日期对应扫描并核对上下文。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+        "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+        "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "review_pending",
+    "title": "历史：区分略读主旨与扫描细节"
+  },
+  "capability": "grounded_history",
+  "case_id": "live-29-skim-scan",
+  "evaluation_index": 23,
+  "metering": [
+    {
+      "estimated_off_peak_cny": 0.0008231600000000001,
+      "estimated_peak_cny": 0.0016463200000000002,
+      "request_no": 54,
+      "reservation_cny": 0.020282,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 1663,
+        "output_tokens": 135,
+        "prompt_cache_hit_tokens": 1408,
+        "prompt_cache_miss_tokens": 255
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.00146936,
+      "estimated_peak_cny": 0.00293872,
+      "request_no": 55,
+      "reservation_cny": 0.030934,
+      "role": "judge",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 1414,
+        "output_tokens": 202,
+        "prompt_cache_hit_tokens": 768
+      }
+    }
+  ],
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "skimming 快速抓主旨结构；scanning 带着具体关键词找信息，定位后还要核对上下文。",
+        "上次你混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种阅读方法。\n\n- **找文章中心、抓主旨结构** → 用 **skimming**：快速浏览标题、首尾段、每段主题句，不必逐字读。\n- **找具体日期、人名、数字等信息** → 用 **scanning**：带着明确目标词在文中快速扫视定位，找到后再核对上下文，确认是不是你要的那个日期。\n\n两者的关键区别在于目的：skimming 是“先知道文章讲什么”，scanning 是“已知要找什么，只去定位它”。"
+      ],
+      "evidence": [],
+      "knowledge": {
+        "eval-live-29": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "reading_skimming",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [],
+      "quizzes": {}
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true,
+        "seeded_history_visible": true
+      },
+      "initial_source_refs": [
+        "message:eval-live-29-old-tutor",
+        "message:eval-live-29-old-user"
+      ],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-29": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "reading_skimming",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {},
+      "thread_id": "1a5576d8-0233-548c-afcb-ae4f8631337b"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 1708.7378750002244,
+        "evidence": [],
+        "knowledge": {
+          "eval-live-29": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "reading_skimming",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "上次你混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种阅读方法。\n\n- **找文章中心、抓主旨结构** → 用 **skimming**：快速浏览标题、首尾段、每段主题句，不必逐字读。\n- **找具体日期、人名、数字等信息** → 用 **scanning**：带着明确目标词在文中快速扫视定位，找到后再核对上下文，确认是不是你要的那个日期。\n\n两者的关键区别在于目的：skimming 是“先知道文章讲什么”，scanning 是“已知要找什么，只去定位它”。",
+            "duration_ms": 1705.3935420008202,
+            "request_no": 1,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1663,
+              "output_tokens": 135,
+              "prompt_cache_hit_tokens": 1408,
+              "prompt_cache_miss_tokens": 255
+            }
+          }
+        ],
+        "quizzes": {},
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "reading_skimming",
+              "response": "上次你混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种阅读方法。\n\n- **找文章中心、抓主旨结构** → 用 **skimming**：快速浏览标题、首尾段、每段主题句，不必逐字读。\n- **找具体日期、人名、数字等信息** → 用 **scanning**：带着明确目标词在文中快速扫视定位，找到后再核对上下文，确认是不是你要的那个日期。\n\n两者的关键区别在于目的：skimming 是“先知道文章讲什么”，scanning 是“已知要找什么，只去定位它”。",
+              "response_variant": "tool_loop",
+              "source_refs": [
+                "message:eval-live-29-old-tutor",
+                "message:eval-live-29-old-user"
+              ],
+              "teaching_style": "question_answer"
+            }
+          },
+          "correlation_id": "58c4cedc-b31f-5790-9391-a66ba40ed127",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "35e6f4cb-b3d4-44b4-be88-dc9e44169ff8",
+            "cited_refs": [],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "answered",
+            "model": "deepseek-flash",
+            "pending_question_id": null,
+            "provider": "deepseek",
+            "read_refs": [],
+            "request_id": "live-29-skim-scan-s1",
+            "retrieved_refs": [
+              "message:eval-live-29-old-user"
+            ],
+            "run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127",
+            "session_id": "eval-live-29-new",
+            "source_refs": [
+              "message:eval-live-29-old-tutor",
+              "message:eval-live-29-old-user"
+            ],
+            "status": "completed",
+            "thread_id": "1a5576d8-0233-548c-afcb-ae4f8631337b",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "58c4cedc-b31f-5790-9391-a66ba40ed127",
+              "data": {
+                "knowledge_id": "reading_skimming",
+                "question": "回顾上次，我混淆了哪两种方法？找文章中心和找日期各用什么？"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-26T14:24:44.073935"
+            },
+            {
+              "correlation_id": "58c4cedc-b31f-5790-9391-a66ba40ed127",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "reading_skimming",
+                "response": "上次你混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种阅读方法。\n\n- **找文章中心、抓主旨结构** → 用 **skimming**：快速浏览标题、首尾段、每段主题句，不必逐字读。\n- **找具体日期、人名、数字等信息** → 用 **scanning**：带着明确目标词在文中快速扫视定位，找到后再核对上下文，确认是不是你要的那个日期。\n\n两者的关键区别在于目的：skimming 是“先知道文章讲什么”，scanning 是“已知要找什么，只去定位它”。",
+                "response_variant": "tool_loop",
+                "source_refs": [
+                  "message:eval-live-29-old-tutor",
+                  "message:eval-live-29-old-user"
+                ],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-26T14:24:45.781137"
+            }
+          ],
+          "knowledge_id": "reading_skimming",
+          "learner_id": "eval-live-29",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "reading_skimming",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "reading_skimming",
+            "response": "上次你混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种阅读方法。\n\n- **找文章中心、抓主旨结构** → 用 **skimming**：快速浏览标题、首尾段、每段主题句，不必逐字读。\n- **找具体日期、人名、数字等信息** → 用 **scanning**：带着明确目标词在文中快速扫视定位，找到后再核对上下文，确认是不是你要的那个日期。\n\n两者的关键区别在于目的：skimming 是“先知道文章讲什么”，scanning 是“已知要找什么，只去定位它”。",
+            "response_variant": "tool_loop",
+            "source_refs": [
+              "message:eval-live-29-old-tutor",
+              "message:eval-live-29-old-user"
+            ],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "回顾上次，我混淆了哪两种方法？找文章中心和找日期各用什么？",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "35e6f4cb-b3d4-44b4-be88-dc9e44169ff8",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1792995885.781764,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127",
+              "started": 1792995884.0736902,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1792995884.073863
+                },
+                {
+                  "agent": "api",
+                  "event_id": "36b7e030-7ee3-4d22-ac8f-4737860e6ab6",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 2,
+                  "timestamp": 1792995884.073953
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "36b7e030-7ee3-4d22-ac8f-4737860e6ab6",
+                  "kind": "handler_started",
+                  "seq": 3,
+                  "timestamp": 1792995884.073964
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 1,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 4,
+                  "timestamp": 1792995884.07422,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 5,
+                  "source_refs": [
+                    "message:eval-live-29-old-tutor",
+                    "message:eval-live-29-old-user"
+                  ],
+                  "timestamp": 1792995884.074402,
+                  "token_estimate": 1011,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 6,
+                  "timestamp": 1792995884.075556,
+                  "token_estimate": 1973
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127",
+                  "resource": "model",
+                  "seq": 7,
+                  "task_id": null,
+                  "timestamp": 1792995884.075658,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 8,
+                  "stop_reason": "stop",
+                  "timestamp": 1792995885.7810571,
+                  "usage": {
+                    "input_tokens": 1663,
+                    "output_tokens": 135,
+                    "prompt_cache_hit_tokens": 1408,
+                    "prompt_cache_miss_tokens": 255
+                  }
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "kind": "response_sources",
+                  "read_refs": [],
+                  "retrieved_refs": [
+                    "message:eval-live-29-old-user"
+                  ],
+                  "seq": 9,
+                  "timestamp": 1792995885.7810729
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 1707,
+                  "event_id": "36b7e030-7ee3-4d22-ac8f-4737860e6ab6",
+                  "kind": "handler_completed",
+                  "seq": 10,
+                  "timestamp": 1792995885.7811708
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "18c3f791-833b-4dc2-9cd8-03f57e3d082f",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "36b7e030-7ee3-4d22-ac8f-4737860e6ab6",
+                  "seq": 11,
+                  "timestamp": 1792995885.781174
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 12,
+                  "timestamp": 1792995885.7812228
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "answered",
+                  "kind": "run_completed",
+                  "seq": 13,
+                  "timestamp": 1792995885.781675
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-29-skim-scan-s1"
+        }
+      }
+    }
+  },
+  "policy_sha256": "c94bc2da8cf065d64bb78d04637c959efa5b0cc08410d217dbaf2ee60b78eaef",
+  "score": {
+    "automatic_passed": true,
+    "decision_rate": 1.0,
+    "decisions": [
+      {
+        "calls": [],
+        "evidence": "",
+        "reason": "历史已注入上下文，直接回答即可，无需额外工具调用。",
+        "required_tools_present": true,
+        "step_id": "s1"
+      }
+    ],
+    "judge_input_sha256": "af6ff9214ecfd9e6972b99e812825abae9a639f555867db47b5c574a6bcdb0d5",
+    "judge_prompt_sha256": "36406800d0d4ad94aab535d97748c17ae7a599d7c40ea30fdedb96127c605192",
+    "review_status": "ai_reviewed",
+    "score": 1.0,
+    "semantic": [
+      {
+        "evidence": "上次你混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种阅读方法。\n\n- **找文章中心、抓主旨结构** → 用 **skimming**：快速浏览标题、首尾段、每段主题句，不必逐字读。\n- **找具体日期、人名、数字等信息** → 用 **scanning**：带着明确目标词在文中快速扫视定位，找到后再核对上下文，确认是不是你要的那个日期。",
+        "id": "H4",
+        "passed": true,
+        "reason": "准确复述了 skimming 与 scanning 的混淆，并分别对应主旨与日期，且说明定位后核对上下文。"
+      }
+    ],
+    "task_success": true
+  },
+  "scoring_status": "completed"
+}

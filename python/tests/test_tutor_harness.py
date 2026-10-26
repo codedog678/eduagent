@@ -34,7 +34,7 @@ def scripted(monkeypatch, turns):
     observed = []
     async def turn(messages, tools, max_tokens):
         observed.append(json.loads(json.dumps(messages)))
-        assert all("learner" not in json.dumps(tool) for tool in tools)
+        assert all("learner" not in json.dumps(tool["function"]["parameters"]) for tool in tools)
         if not turns:
             raise AssertionError("unexpected model request")
         return turns.pop(0)
@@ -207,9 +207,10 @@ async def test_tool_gate_rejects_unregistered_or_invalid(store, monkeypatch, too
         NativeTurn(content="请给出一个例句，我来讲解。", stop_reason="stop"),
     ])
     await store.converse("student", "denied", "vocab_basic", "帮我")
-    assert json.loads(observed[1][-1]["content"])["status"] == "denied"
+    expected = "invalid_arguments" if tool == "search_learning_history" else "denied"
+    assert json.loads(observed[1][-1]["content"])["status"] == expected
     trace = store.history.trace("student", "denied")["attempts"][0]["steps"]
-    assert any(step.get("status") == "denied" for step in trace)
+    assert any(step.get("status") == expected for step in trace)
     assert store.orch.learner_models["student"].get_state("vocab_basic").mastery < 1
 
 

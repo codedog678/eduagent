@@ -1,0 +1,456 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": true,
+    "case_id": "live-43-no-quizzing",
+    "category": "工具与缺失证据决策",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [],
+    "execution_outcome": "completed",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution.status",
+        "rule": "等于 completed。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution.dialogue_state",
+        "rule": "等于 answered；pending_question_id 为空。",
+        "status": "passed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.vocab_basic",
+        "rule": "场景前后所有 KnowledgeState 字段相同。",
+        "status": "passed"
+      },
+      {
+        "id": "H4",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s1.teaching_response.response",
+        "rule": "借入对应 borrow from、借出对应 lend to；没有测验，不能捏造选项、答案或作答结果。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+        "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+        "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "review_pending",
+    "title": "工具决策：公开讲解不能捏造活动测验"
+  },
+  "capability": "tool_and_evidence_decision",
+  "case_id": "live-43-no-quizzing",
+  "evaluation_index": 10,
+  "metering": [
+    {
+      "estimated_off_peak_cny": 0.0012246,
+      "estimated_peak_cny": 0.0024492,
+      "request_no": 21,
+      "reservation_cny": 0.018778,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 1447,
+        "output_tokens": 258,
+        "prompt_cache_hit_tokens": 1280,
+        "prompt_cache_miss_tokens": 167
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.0015898,
+      "estimated_peak_cny": 0.0031796,
+      "request_no": 22,
+      "reservation_cny": 0.030674,
+      "role": "judge",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 1413,
+        "output_tokens": 201,
+        "prompt_cache_hit_tokens": 640
+      }
+    }
+  ],
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "**borrow from** 和 **lend to** 的方向正好相反，关键看“东西往哪边走”。\n\n- **borrow from sb**：你从别人那里**拿进来**，你是得到的一方。\n  - *I borrowed a book from Tom.* 我从汤姆那儿借来一本书。（书：Tom → 我）\n- **lend to sb**：你把东西**给出去**，你是给出的一方。\n  - *Tom lent a book to me.* 汤姆借给我一本书。（书：Tom → 我）\n\n同一件事可以有两种说法，主语不同：\n\n- *I borrowed a book from Tom.* = *Tom lent a book to me.*\n\n记忆抓手：**borrow 后面跟 from（来源），lend 后面跟 to（去向）**。判断时先问自己“我是拿到东西的人，还是给出东西的人”，再选词。\n\n两个常见易错点：\n\n1. 不要混搭介词：不说 *borrow to*、*lend from*。\n2. lend 的过去式和过去分词是 **lent**（不是 lended）。\n\n自查方法：把句子里的箭头画出来（谁 → 谁），箭头指向主语就用 borrow，箭头从主语指出就用 lend。"
+      ],
+      "evidence": [],
+      "knowledge": {
+        "eval-live-43": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [],
+      "quizzes": {}
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true
+      },
+      "initial_source_refs": [],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-43": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {},
+      "thread_id": "639a2242-a46a-50f8-8650-929d96bad527"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 2329.962207999415,
+        "evidence": [],
+        "knowledge": {
+          "eval-live-43": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "vocab_basic",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "**borrow from** 和 **lend to** 的方向正好相反，关键看“东西往哪边走”。\n\n- **borrow from sb**：你从别人那里**拿进来**，你是得到的一方。\n  - *I borrowed a book from Tom.* 我从汤姆那儿借来一本书。（书：Tom → 我）\n- **lend to sb**：你把东西**给出去**，你是给出的一方。\n  - *Tom lent a book to me.* 汤姆借给我一本书。（书：Tom → 我）\n\n同一件事可以有两种说法，主语不同：\n\n- *I borrowed a book from Tom.* = *Tom lent a book to me.*\n\n记忆抓手：**borrow 后面跟 from（来源），lend 后面跟 to（去向）**。判断时先问自己“我是拿到东西的人，还是给出东西的人”，再选词。\n\n两个常见易错点：\n\n1. 不要混搭介词：不说 *borrow to*、*lend from*。\n2. lend 的过去式和过去分词是 **lent**（不是 lended）。\n\n自查方法：把句子里的箭头画出来（谁 → 谁），箭头指向主语就用 borrow，箭头从主语指出就用 lend。",
+            "duration_ms": 2326.969833000476,
+            "request_no": 1,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1447,
+              "output_tokens": 258,
+              "prompt_cache_hit_tokens": 1280,
+              "prompt_cache_miss_tokens": 167
+            }
+          }
+        ],
+        "quizzes": {},
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "vocab_basic",
+              "response": "**borrow from** 和 **lend to** 的方向正好相反，关键看“东西往哪边走”。\n\n- **borrow from sb**：你从别人那里**拿进来**，你是得到的一方。\n  - *I borrowed a book from Tom.* 我从汤姆那儿借来一本书。（书：Tom → 我）\n- **lend to sb**：你把东西**给出去**，你是给出的一方。\n  - *Tom lent a book to me.* 汤姆借给我一本书。（书：Tom → 我）\n\n同一件事可以有两种说法，主语不同：\n\n- *I borrowed a book from Tom.* = *Tom lent a book to me.*\n\n记忆抓手：**borrow 后面跟 from（来源），lend 后面跟 to（去向）**。判断时先问自己“我是拿到东西的人，还是给出东西的人”，再选词。\n\n两个常见易错点：\n\n1. 不要混搭介词：不说 *borrow to*、*lend from*。\n2. lend 的过去式和过去分词是 **lent**（不是 lended）。\n\n自查方法：把句子里的箭头画出来（谁 → 谁），箭头指向主语就用 borrow，箭头从主语指出就用 lend。",
+              "response_variant": "tool_loop",
+              "source_refs": [],
+              "teaching_style": "question_answer"
+            }
+          },
+          "correlation_id": "d4ed39e3-50b0-58ab-94f2-6269b1053379",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "1e748e9c-fed3-45c9-8d7c-5e64d29e7d3f",
+            "cited_refs": [],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "answered",
+            "model": "deepseek-flash",
+            "pending_question_id": null,
+            "provider": "deepseek",
+            "read_refs": [],
+            "request_id": "live-43-no-quizzing-s1",
+            "retrieved_refs": [],
+            "run_id": "d4ed39e3-50b0-58ab-94f2-6269b1053379",
+            "session_id": "eval-live-43-s1",
+            "source_refs": [],
+            "status": "completed",
+            "thread_id": "639a2242-a46a-50f8-8650-929d96bad527",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "d4ed39e3-50b0-58ab-94f2-6269b1053379",
+              "data": {
+                "knowledge_id": "vocab_basic",
+                "question": "没有正在做的测验。我只想知道 borrow from 和 lend to 的方向区别，请直接讲解。"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-26T14:23:39.113345"
+            },
+            {
+              "correlation_id": "d4ed39e3-50b0-58ab-94f2-6269b1053379",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "vocab_basic",
+                "response": "**borrow from** 和 **lend to** 的方向正好相反，关键看“东西往哪边走”。\n\n- **borrow from sb**：你从别人那里**拿进来**，你是得到的一方。\n  - *I borrowed a book from Tom.* 我从汤姆那儿借来一本书。（书：Tom → 我）\n- **lend to sb**：你把东西**给出去**，你是给出的一方。\n  - *Tom lent a book to me.* 汤姆借给我一本书。（书：Tom → 我）\n\n同一件事可以有两种说法，主语不同：\n\n- *I borrowed a book from Tom.* = *Tom lent a book to me.*\n\n记忆抓手：**borrow 后面跟 from（来源），lend 后面跟 to（去向）**。判断时先问自己“我是拿到东西的人，还是给出东西的人”，再选词。\n\n两个常见易错点：\n\n1. 不要混搭介词：不说 *borrow to*、*lend from*。\n2. lend 的过去式和过去分词是 **lent**（不是 lended）。\n\n自查方法：把句子里的箭头画出来（谁 → 谁），箭头指向主语就用 borrow，箭头从主语指出就用 lend。",
+                "response_variant": "tool_loop",
+                "source_refs": [],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-26T14:23:41.441723"
+            }
+          ],
+          "knowledge_id": "vocab_basic",
+          "learner_id": "eval-live-43",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "vocab_basic",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "vocab_basic",
+            "response": "**borrow from** 和 **lend to** 的方向正好相反，关键看“东西往哪边走”。\n\n- **borrow from sb**：你从别人那里**拿进来**，你是得到的一方。\n  - *I borrowed a book from Tom.* 我从汤姆那儿借来一本书。（书：Tom → 我）\n- **lend to sb**：你把东西**给出去**，你是给出的一方。\n  - *Tom lent a book to me.* 汤姆借给我一本书。（书：Tom → 我）\n\n同一件事可以有两种说法，主语不同：\n\n- *I borrowed a book from Tom.* = *Tom lent a book to me.*\n\n记忆抓手：**borrow 后面跟 from（来源），lend 后面跟 to（去向）**。判断时先问自己“我是拿到东西的人，还是给出东西的人”，再选词。\n\n两个常见易错点：\n\n1. 不要混搭介词：不说 *borrow to*、*lend from*。\n2. lend 的过去式和过去分词是 **lent**（不是 lended）。\n\n自查方法：把句子里的箭头画出来（谁 → 谁），箭头指向主语就用 borrow，箭头从主语指出就用 lend。",
+            "response_variant": "tool_loop",
+            "source_refs": [],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "没有正在做的测验。我只想知道 borrow from 和 lend to 的方向区别，请直接讲解。",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "1e748e9c-fed3-45c9-8d7c-5e64d29e7d3f",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1792995821.4423301,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "d4ed39e3-50b0-58ab-94f2-6269b1053379",
+              "started": 1792995819.1131678,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1792995819.113292
+                },
+                {
+                  "agent": "api",
+                  "event_id": "64f6cb53-0e28-409b-bdc5-328e01f11025",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 2,
+                  "timestamp": 1792995819.113357
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "64f6cb53-0e28-409b-bdc5-328e01f11025",
+                  "kind": "handler_started",
+                  "seq": 3,
+                  "timestamp": 1792995819.113364
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 0,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 4,
+                  "timestamp": 1792995819.113493,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 5,
+                  "source_refs": [],
+                  "timestamp": 1792995819.1135879,
+                  "token_estimate": 760,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 6,
+                  "timestamp": 1792995819.114613,
+                  "token_estimate": 1722
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "d4ed39e3-50b0-58ab-94f2-6269b1053379",
+                  "resource": "model",
+                  "seq": 7,
+                  "task_id": null,
+                  "timestamp": 1792995819.114675,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 8,
+                  "stop_reason": "stop",
+                  "timestamp": 1792995821.441673,
+                  "usage": {
+                    "input_tokens": 1447,
+                    "output_tokens": 258,
+                    "prompt_cache_hit_tokens": 1280,
+                    "prompt_cache_miss_tokens": 167
+                  }
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "kind": "response_sources",
+                  "read_refs": [],
+                  "retrieved_refs": [],
+                  "seq": 9,
+                  "timestamp": 1792995821.441685
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 2328,
+                  "event_id": "64f6cb53-0e28-409b-bdc5-328e01f11025",
+                  "kind": "handler_completed",
+                  "seq": 10,
+                  "timestamp": 1792995821.4417448
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "4bf2d685-11b2-4254-ba0f-867e56dc59d9",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "64f6cb53-0e28-409b-bdc5-328e01f11025",
+                  "seq": 11,
+                  "timestamp": 1792995821.441748
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 12,
+                  "timestamp": 1792995821.441781
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "answered",
+                  "kind": "run_completed",
+                  "seq": 13,
+                  "timestamp": 1792995821.442252
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-43-no-quizzing-s1"
+        }
+      }
+    }
+  },
+  "policy_sha256": "c94bc2da8cf065d64bb78d04637c959efa5b0cc08410d217dbaf2ee60b78eaef",
+  "score": {
+    "automatic_passed": true,
+    "decision_rate": 1.0,
+    "decisions": [
+      {
+        "calls": [],
+        "evidence": "",
+        "reason": "学生明确要求直接讲解且无活动测验，直接回答即可，无需调用工具，也未编造测验内容。",
+        "required_tools_present": true,
+        "step_id": "s1"
+      }
+    ],
+    "judge_input_sha256": "492902a6a26c8c575f7d2828541c91e2316e1bcfea8bc36d5bf6e76ab4925e00",
+    "judge_prompt_sha256": "36406800d0d4ad94aab535d97748c17ae7a599d7c40ea30fdedb96127c605192",
+    "review_status": "ai_reviewed",
+    "score": 1.0,
+    "semantic": [
+      {
+        "evidence": "**borrow from** 和 **lend to** 的方向正好相反，关键看“东西往哪边走”。\n\n- **borrow from sb**：你从别人那里**拿进来**，你是得到的一方。\n  - *I borrowed a book from Tom.* 我从汤姆那儿借来一本书。（书：Tom → 我）\n- **lend to sb**：你把东西**给出去**，你是给出的一方。",
+        "id": "H4",
+        "passed": true,
+        "reason": "正确区分 borrow from（借入/来源）与 lend to（借出/去向），未捏造测验选项或作答结果。"
+      }
+    ],
+    "task_success": true
+  },
+  "scoring_status": "completed"
+}

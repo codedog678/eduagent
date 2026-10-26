@@ -1,0 +1,855 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": true,
+    "case_id": "live-14-finished-past",
+    "category": "澄清与接续",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [],
+    "execution_outcome": "completed",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution",
+        "rule": "status=completed、dialogue_state=awaiting_student、pending_question_id 非空；ask_student 为单独调用。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": true,
+        "path": "s2.execution",
+        "rule": "status=completed、dialogue_state=answered，answered_question_id 等于 s1.pending_question_id。",
+        "status": "passed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": true,
+        "path": "pending_questions",
+        "rule": "s1 待答记录的 answered_by 非空，场景结束没有未回答的该问题。",
+        "status": "passed"
+      },
+      {
+        "id": "H4",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.grammar_tenses",
+        "rule": "所有 KnowledgeState 字段保持不变。",
+        "status": "passed"
+      },
+      {
+        "id": "H5",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s1/s2.teaching_response.response",
+        "rule": "s1 索取题干；s2 用 last Sunday 与已结束事件解释一般过去时，不能套用 since 规则。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+        "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+        "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "review_pending",
+    "title": "时态：补充已结束事件后接续"
+  },
+  "capability": "multi_turn_continuation",
+  "case_id": "live-14-finished-past",
+  "evaluation_index": 2,
+  "metering": [
+    {
+      "estimated_off_peak_cny": 0.0004326,
+      "estimated_peak_cny": 0.0008652,
+      "request_no": 4,
+      "reservation_cny": 0.018722,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 1439,
+        "output_tokens": 62,
+        "prompt_cache_hit_tokens": 1280,
+        "prompt_cache_miss_tokens": 159
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.00211004,
+      "estimated_peak_cny": 0.00422008,
+      "request_no": 5,
+      "reservation_cny": 0.020936,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 1783,
+        "output_tokens": 364,
+        "prompt_cache_hit_tokens": 1152,
+        "prompt_cache_miss_tokens": 631
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.0026746800000000005,
+      "estimated_peak_cny": 0.005349360000000001,
+      "request_no": 6,
+      "reservation_cny": 0.035764,
+      "role": "judge",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 2171,
+        "output_tokens": 220,
+        "prompt_cache_hit_tokens": 384
+      }
+    }
+  ],
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "请把这道题的完整题干（原句和选项）发给我，我才能具体说明为什么这里不能用现在完成时。",
+        "现在有了原句，可以具体说明了。\n\n**原句：We visited the museum last Sunday.**\n\n这里用一般过去时 `visited`，关键在于**时间参照点**：`last Sunday` 指向一个已经过去、并且已经结束的具体时间段。说话时，这个“上周日”和“现在”之间没有延续关系，参观这个动作在该时间段内完成并封闭，所以用一般过去时。\n\n**为什么不用现在完成时（have visited）**\n\n现在完成时的核心不是“动作发生在过去”，而是**把过去的事和现在联系起来**，常见两种情况：\n\n1. 动作发生在过去，但结果或影响留到现在（如 *We have visited the museum, so we don't need to go again.*）\n2. 时间段从过去一直延续到现在（如 *We have visited it three times this year.*，今年还没过完）\n\n而 `last Sunday` 是一个**明确结束的过去时间点**，它把动作“钉”在过去，切断了与现在的联系。英语里一旦给出这类明确的过去时间（last Sunday, yesterday, in 2019, two days ago），通常就用一般过去时，不用现在完成时。\n\n**一个自查方法**：问自己“这个时间范围到说话时还在继续吗？”\n- 还在继续（this week, so far, recently）→ 可以考虑现在完成时\n- 已经结束（last Sunday, yesterday）→ 用一般过去时\n\n注意，这不是“看到时间词就机械套规则”，而是判断时间参照与现在的联系：`last Sunday` 之所以排除现在完成时，是因为它本身就把参照点定在了过去，而不是因为它是某个特定单词。\n\n你补充的“这次参观已经结束”正是这个判断的依据，理解得对。"
+      ],
+      "evidence": [],
+      "knowledge": {
+        "eval-live-14": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "grammar_tenses",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [
+        {
+          "answered_by": "12098935-269c-4f3b-9fc1-756f8d4e6371",
+          "id": "976a6281-cb60-47ad-8dae-b74a29676284"
+        }
+      ],
+      "quizzes": {}
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true
+      },
+      "initial_source_refs": [],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-14": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "grammar_tenses",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {},
+      "thread_id": "b466c67f-ac76-5f5f-be11-8f394515514f"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 1072.9093749996537,
+        "evidence": [],
+        "knowledge": {
+          "eval-live-14": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "grammar_tenses",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "",
+            "duration_ms": 1067.363457999818,
+            "request_no": 1,
+            "stop_reason": "tool_calls",
+            "tool_calls": [
+              {
+                "arguments": {
+                  "question": "请把这道题的完整题干（原句和选项）发给我，我才能具体说明为什么这里不能用现在完成时。"
+                },
+                "batch_size": 1,
+                "id": "call_00_MVcYW6Xk275EA5c0JzsG9453",
+                "name": "ask_student"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1439,
+              "output_tokens": 62,
+              "prompt_cache_hit_tokens": 1280,
+              "prompt_cache_miss_tokens": 159
+            }
+          }
+        ],
+        "quizzes": {},
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "awaiting_student",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "grammar_tenses",
+              "response": "请把这道题的完整题干（原句和选项）发给我，我才能具体说明为什么这里不能用现在完成时。",
+              "response_variant": "tool_loop",
+              "source_refs": [],
+              "teaching_style": "question_answer"
+            }
+          },
+          "correlation_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "bc4c377e-8e29-4615-92b2-1564930f51b0",
+            "cited_refs": [],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "awaiting_student",
+            "model": "deepseek-flash",
+            "pending_question_id": "976a6281-cb60-47ad-8dae-b74a29676284",
+            "provider": "deepseek",
+            "read_refs": [],
+            "request_id": "live-14-finished-past-s1",
+            "retrieved_refs": [],
+            "run_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+            "session_id": "eval-live-14-s1",
+            "source_refs": [],
+            "status": "completed",
+            "thread_id": "b466c67f-ac76-5f5f-be11-8f394515514f",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+              "data": {
+                "knowledge_id": "grammar_tenses",
+                "question": "这一题为什么不能用现在完成时？我还没有发题干。"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-26T14:19:08.832545"
+            },
+            {
+              "correlation_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "awaiting_student",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "grammar_tenses",
+                "response": "请把这道题的完整题干（原句和选项）发给我，我才能具体说明为什么这里不能用现在完成时。",
+                "response_variant": "tool_loop",
+                "source_refs": [],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-26T14:19:09.902494"
+            }
+          ],
+          "knowledge_id": "grammar_tenses",
+          "learner_id": "eval-live-14",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "grammar_tenses",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "awaiting_student",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "grammar_tenses",
+            "response": "请把这道题的完整题干（原句和选项）发给我，我才能具体说明为什么这里不能用现在完成时。",
+            "response_variant": "tool_loop",
+            "source_refs": [],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "这一题为什么不能用现在完成时？我还没有发题干。",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "bc4c377e-8e29-4615-92b2-1564930f51b0",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1792995549.90354,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+              "started": 1792995548.832254,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1792995548.832441
+                },
+                {
+                  "agent": "api",
+                  "event_id": "a896efe2-a427-40cc-aacc-a186711ae6c8",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 2,
+                  "timestamp": 1792995548.8325682
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "a896efe2-a427-40cc-aacc-a186711ae6c8",
+                  "kind": "handler_started",
+                  "seq": 3,
+                  "timestamp": 1792995548.832582
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 0,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 4,
+                  "timestamp": 1792995548.832778,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 5,
+                  "source_refs": [],
+                  "timestamp": 1792995548.8329291,
+                  "token_estimate": 751,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 6,
+                  "timestamp": 1792995548.834717,
+                  "token_estimate": 1713
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+                  "resource": "model",
+                  "seq": 7,
+                  "task_id": null,
+                  "timestamp": 1792995548.834822,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 8,
+                  "stop_reason": "tool_calls",
+                  "timestamp": 1792995549.902176,
+                  "usage": {
+                    "input_tokens": 1439,
+                    "output_tokens": 62,
+                    "prompt_cache_hit_tokens": 1280,
+                    "prompt_cache_miss_tokens": 159
+                  }
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+                  "resource": "tool",
+                  "seq": 9,
+                  "task_id": null,
+                  "timestamp": 1792995549.9022038,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+                  "seq": 10,
+                  "task_id": null,
+                  "timestamp": 1792995549.902208,
+                  "tool": "ask_student",
+                  "tool_call_id": "call_00_MVcYW6Xk275EA5c0JzsG9453"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 0,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "question",
+                    "terminal"
+                  ],
+                  "seq": 11,
+                  "source_refs": [],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1792995549.9023738,
+                  "tool": "ask_student",
+                  "tool_call_id": "call_00_MVcYW6Xk275EA5c0JzsG9453"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "kind": "response_sources",
+                  "read_refs": [],
+                  "retrieved_refs": [],
+                  "seq": 12,
+                  "timestamp": 1792995549.902435
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 1070,
+                  "event_id": "a896efe2-a427-40cc-aacc-a186711ae6c8",
+                  "kind": "handler_completed",
+                  "seq": 13,
+                  "timestamp": 1792995549.902535
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "3e85a4f9-3844-4542-8c78-5dcf51b36715",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "a896efe2-a427-40cc-aacc-a186711ae6c8",
+                  "seq": 14,
+                  "timestamp": 1792995549.9025412
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 15,
+                  "timestamp": 1792995549.902611
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "awaiting_student",
+                  "kind": "run_completed",
+                  "seq": 16,
+                  "timestamp": 1792995549.903373
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-14-finished-past-s1"
+        }
+      },
+      "s2": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 3630.7115830004477,
+        "evidence": [],
+        "knowledge": {
+          "eval-live-14": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "grammar_tenses",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "现在有了原句，可以具体说明了。\n\n**原句：We visited the museum last Sunday.**\n\n这里用一般过去时 `visited`，关键在于**时间参照点**：`last Sunday` 指向一个已经过去、并且已经结束的具体时间段。说话时，这个“上周日”和“现在”之间没有延续关系，参观这个动作在该时间段内完成并封闭，所以用一般过去时。\n\n**为什么不用现在完成时（have visited）**\n\n现在完成时的核心不是“动作发生在过去”，而是**把过去的事和现在联系起来**，常见两种情况：\n\n1. 动作发生在过去，但结果或影响留到现在（如 *We have visited the museum, so we don't need to go again.*）\n2. 时间段从过去一直延续到现在（如 *We have visited it three times this year.*，今年还没过完）\n\n而 `last Sunday` 是一个**明确结束的过去时间点**，它把动作“钉”在过去，切断了与现在的联系。英语里一旦给出这类明确的过去时间（last Sunday, yesterday, in 2019, two days ago），通常就用一般过去时，不用现在完成时。\n\n**一个自查方法**：问自己“这个时间范围到说话时还在继续吗？”\n- 还在继续（this week, so far, recently）→ 可以考虑现在完成时\n- 已经结束（last Sunday, yesterday）→ 用一般过去时\n\n注意，这不是“看到时间词就机械套规则”，而是判断时间参照与现在的联系：`last Sunday` 之所以排除现在完成时，是因为它本身就把参照点定在了过去，而不是因为它是某个特定单词。\n\n你补充的“这次参观已经结束”正是这个判断的依据，理解得对。",
+            "duration_ms": 3624.604459000693,
+            "request_no": 2,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1783,
+              "output_tokens": 364,
+              "prompt_cache_hit_tokens": 1152,
+              "prompt_cache_miss_tokens": 631
+            }
+          }
+        ],
+        "quizzes": {},
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "grammar_tenses",
+              "response": "现在有了原句，可以具体说明了。\n\n**原句：We visited the museum last Sunday.**\n\n这里用一般过去时 `visited`，关键在于**时间参照点**：`last Sunday` 指向一个已经过去、并且已经结束的具体时间段。说话时，这个“上周日”和“现在”之间没有延续关系，参观这个动作在该时间段内完成并封闭，所以用一般过去时。\n\n**为什么不用现在完成时（have visited）**\n\n现在完成时的核心不是“动作发生在过去”，而是**把过去的事和现在联系起来**，常见两种情况：\n\n1. 动作发生在过去，但结果或影响留到现在（如 *We have visited the museum, so we don't need to go again.*）\n2. 时间段从过去一直延续到现在（如 *We have visited it three times this year.*，今年还没过完）\n\n而 `last Sunday` 是一个**明确结束的过去时间点**，它把动作“钉”在过去，切断了与现在的联系。英语里一旦给出这类明确的过去时间（last Sunday, yesterday, in 2019, two days ago），通常就用一般过去时，不用现在完成时。\n\n**一个自查方法**：问自己“这个时间范围到说话时还在继续吗？”\n- 还在继续（this week, so far, recently）→ 可以考虑现在完成时\n- 已经结束（last Sunday, yesterday）→ 用一般过去时\n\n注意，这不是“看到时间词就机械套规则”，而是判断时间参照与现在的联系：`last Sunday` 之所以排除现在完成时，是因为它本身就把参照点定在了过去，而不是因为它是某个特定单词。\n\n你补充的“这次参观已经结束”正是这个判断的依据，理解得对。",
+              "response_variant": "tool_loop",
+              "source_refs": [
+                "message:c9c461b5-d674-45aa-bbd5-66b56640f425",
+                "message:cf8a99ba-94fa-4ce6-9628-3006ddb4bc3a"
+              ],
+              "teaching_style": "question_answer"
+            }
+          },
+          "correlation_id": "2673a3aa-795f-5501-a9c5-4e1b3978268c",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": "976a6281-cb60-47ad-8dae-b74a29676284",
+            "app_version": "0.3.0",
+            "attempt_id": "d03b2f17-ef4b-40ec-8a12-6fb70f165ed1",
+            "cited_refs": [],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "answered",
+            "model": "deepseek-flash",
+            "pending_question_id": null,
+            "provider": "deepseek",
+            "read_refs": [],
+            "request_id": "live-14-finished-past-s2",
+            "retrieved_refs": [
+              "message:cf8a99ba-94fa-4ce6-9628-3006ddb4bc3a",
+              "message:c9c461b5-d674-45aa-bbd5-66b56640f425"
+            ],
+            "run_id": "2673a3aa-795f-5501-a9c5-4e1b3978268c",
+            "session_id": "eval-live-14-s1",
+            "source_refs": [
+              "message:c9c461b5-d674-45aa-bbd5-66b56640f425",
+              "message:cf8a99ba-94fa-4ce6-9628-3006ddb4bc3a"
+            ],
+            "status": "completed",
+            "thread_id": "b466c67f-ac76-5f5f-be11-8f394515514f",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "2673a3aa-795f-5501-a9c5-4e1b3978268c",
+              "data": {
+                "knowledge_id": "grammar_tenses",
+                "question": "题干是 We visited the museum last Sunday. 这次参观已经结束。为什么用 visited？"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-26T14:19:09.905872"
+            },
+            {
+              "correlation_id": "2673a3aa-795f-5501-a9c5-4e1b3978268c",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "grammar_tenses",
+                "response": "现在有了原句，可以具体说明了。\n\n**原句：We visited the museum last Sunday.**\n\n这里用一般过去时 `visited`，关键在于**时间参照点**：`last Sunday` 指向一个已经过去、并且已经结束的具体时间段。说话时，这个“上周日”和“现在”之间没有延续关系，参观这个动作在该时间段内完成并封闭，所以用一般过去时。\n\n**为什么不用现在完成时（have visited）**\n\n现在完成时的核心不是“动作发生在过去”，而是**把过去的事和现在联系起来**，常见两种情况：\n\n1. 动作发生在过去，但结果或影响留到现在（如 *We have visited the museum, so we don't need to go again.*）\n2. 时间段从过去一直延续到现在（如 *We have visited it three times this year.*，今年还没过完）\n\n而 `last Sunday` 是一个**明确结束的过去时间点**，它把动作“钉”在过去，切断了与现在的联系。英语里一旦给出这类明确的过去时间（last Sunday, yesterday, in 2019, two days ago），通常就用一般过去时，不用现在完成时。\n\n**一个自查方法**：问自己“这个时间范围到说话时还在继续吗？”\n- 还在继续（this week, so far, recently）→ 可以考虑现在完成时\n- 已经结束（last Sunday, yesterday）→ 用一般过去时\n\n注意，这不是“看到时间词就机械套规则”，而是判断时间参照与现在的联系：`last Sunday` 之所以排除现在完成时，是因为它本身就把参照点定在了过去，而不是因为它是某个特定单词。\n\n你补充的“这次参观已经结束”正是这个判断的依据，理解得对。",
+                "response_variant": "tool_loop",
+                "source_refs": [
+                  "message:c9c461b5-d674-45aa-bbd5-66b56640f425",
+                  "message:cf8a99ba-94fa-4ce6-9628-3006ddb4bc3a"
+                ],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-26T14:19:13.533313"
+            }
+          ],
+          "knowledge_id": "grammar_tenses",
+          "learner_id": "eval-live-14",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "grammar_tenses",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "grammar_tenses",
+            "response": "现在有了原句，可以具体说明了。\n\n**原句：We visited the museum last Sunday.**\n\n这里用一般过去时 `visited`，关键在于**时间参照点**：`last Sunday` 指向一个已经过去、并且已经结束的具体时间段。说话时，这个“上周日”和“现在”之间没有延续关系，参观这个动作在该时间段内完成并封闭，所以用一般过去时。\n\n**为什么不用现在完成时（have visited）**\n\n现在完成时的核心不是“动作发生在过去”，而是**把过去的事和现在联系起来**，常见两种情况：\n\n1. 动作发生在过去，但结果或影响留到现在（如 *We have visited the museum, so we don't need to go again.*）\n2. 时间段从过去一直延续到现在（如 *We have visited it three times this year.*，今年还没过完）\n\n而 `last Sunday` 是一个**明确结束的过去时间点**，它把动作“钉”在过去，切断了与现在的联系。英语里一旦给出这类明确的过去时间（last Sunday, yesterday, in 2019, two days ago），通常就用一般过去时，不用现在完成时。\n\n**一个自查方法**：问自己“这个时间范围到说话时还在继续吗？”\n- 还在继续（this week, so far, recently）→ 可以考虑现在完成时\n- 已经结束（last Sunday, yesterday）→ 用一般过去时\n\n注意，这不是“看到时间词就机械套规则”，而是判断时间参照与现在的联系：`last Sunday` 之所以排除现在完成时，是因为它本身就把参照点定在了过去，而不是因为它是某个特定单词。\n\n你补充的“这次参观已经结束”正是这个判断的依据，理解得对。",
+            "response_variant": "tool_loop",
+            "source_refs": [
+              "message:c9c461b5-d674-45aa-bbd5-66b56640f425",
+              "message:cf8a99ba-94fa-4ce6-9628-3006ddb4bc3a"
+            ],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "题干是 We visited the museum last Sunday. 这次参观已经结束。为什么用 visited？",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "d03b2f17-ef4b-40ec-8a12-6fb70f165ed1",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1792995553.5344572,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "2673a3aa-795f-5501-a9c5-4e1b3978268c",
+              "started": 1792995549.905426,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1792995549.9057438
+                },
+                {
+                  "agent": "api",
+                  "event_id": "4c891431-7310-4ce0-9c7d-6cae87b25bbe",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 2,
+                  "timestamp": 1792995549.905899
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "4c891431-7310-4ce0-9c7d-6cae87b25bbe",
+                  "kind": "handler_started",
+                  "seq": 3,
+                  "timestamp": 1792995549.905914
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 1,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 2,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 4,
+                  "timestamp": 1792995549.906803,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 5,
+                  "source_refs": [
+                    "message:c9c461b5-d674-45aa-bbd5-66b56640f425",
+                    "message:cf8a99ba-94fa-4ce6-9628-3006ddb4bc3a"
+                  ],
+                  "timestamp": 1792995549.907039,
+                  "token_estimate": 1120,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 6,
+                  "timestamp": 1792995549.908426,
+                  "token_estimate": 2082
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "2673a3aa-795f-5501-a9c5-4e1b3978268c",
+                  "resource": "model",
+                  "seq": 7,
+                  "task_id": null,
+                  "timestamp": 1792995549.90854,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 8,
+                  "stop_reason": "stop",
+                  "timestamp": 1792995553.5331872,
+                  "usage": {
+                    "input_tokens": 1783,
+                    "output_tokens": 364,
+                    "prompt_cache_hit_tokens": 1152,
+                    "prompt_cache_miss_tokens": 631
+                  }
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "kind": "response_sources",
+                  "read_refs": [],
+                  "retrieved_refs": [
+                    "message:cf8a99ba-94fa-4ce6-9628-3006ddb4bc3a",
+                    "message:c9c461b5-d674-45aa-bbd5-66b56640f425"
+                  ],
+                  "seq": 9,
+                  "timestamp": 1792995553.533216
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 3627,
+                  "event_id": "4c891431-7310-4ce0-9c7d-6cae87b25bbe",
+                  "kind": "handler_completed",
+                  "seq": 10,
+                  "timestamp": 1792995553.5334551
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "aacb9310-aa00-4dde-bdb2-9d8168ea66c7",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "4c891431-7310-4ce0-9c7d-6cae87b25bbe",
+                  "seq": 11,
+                  "timestamp": 1792995553.533462
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 12,
+                  "timestamp": 1792995553.533529
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "answered",
+                  "kind": "run_completed",
+                  "seq": 13,
+                  "timestamp": 1792995553.5343459
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-14-finished-past-s2"
+        }
+      }
+    }
+  },
+  "policy_sha256": "c94bc2da8cf065d64bb78d04637c959efa5b0cc08410d217dbaf2ee60b78eaef",
+  "score": {
+    "automatic_passed": true,
+    "decision_rate": 1.0,
+    "decisions": [
+      {
+        "calls": [
+          {
+            "arguments_correct": true,
+            "index": 0,
+            "selection_correct": true
+          }
+        ],
+        "evidence": "",
+        "reason": "单独调用 ask_student，问题只针对缺失的完整题干，符合要求。",
+        "required_tools_present": true,
+        "step_id": "s1"
+      },
+      {
+        "calls": [],
+        "evidence": "",
+        "reason": "原句已充分，直接作答，未再次索取已给事实，无需工具调用。",
+        "required_tools_present": true,
+        "step_id": "s2"
+      }
+    ],
+    "judge_input_sha256": "0dfbf7b563158481cf9a9418f0797f66d0b87a543cc759b6b2129f09cb6f1320",
+    "judge_prompt_sha256": "36406800d0d4ad94aab535d97748c17ae7a599d7c40ea30fdedb96127c605192",
+    "review_status": "ai_reviewed",
+    "score": 1.0,
+    "semantic": [
+      {
+        "evidence": "请把这道题的完整题干（原句和选项）发给我……`last Sunday` 指向一个已经过去、并且已经结束的具体时间段……而 `last Sunday` 是一个**明确结束的过去时间点**，它把动作“钉”在过去，切断了与现在的联系。",
+        "id": "H5",
+        "passed": true,
+        "reason": "s1 索取题干；s2 用 last Sunday 与已结束事件解释一般过去时，未套用 since 规则。"
+      }
+    ],
+    "task_success": true
+  },
+  "scoring_status": "completed"
+}

@@ -1,0 +1,432 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": true,
+    "case_id": "live-31-no-score-inference",
+    "category": "跨会话记忆",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [],
+    "execution_outcome": "completed",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution",
+        "rule": "status=completed、dialogue_state=answered；thread 与预置 vocab_basic 主题相同。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution.source_refs",
+        "rule": "与两条预置真实来源至少有一个交集；所有引用均可按当前 learner 读取。",
+        "status": "passed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.vocab_basic",
+        "rule": "所有 KnowledgeState 字段保持不变。",
+        "status": "passed"
+      },
+      {
+        "id": "H4",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s1.teaching_response.response",
+        "rule": "从历史准确回答五个词，明确没有测验通过证据，不编成绩或提高 mastery。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+        "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+        "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "review_pending",
+    "title": "历史：计划记录不能推出考试成绩"
+  },
+  "capability": "grounded_history",
+  "case_id": "live-31-no-score-inference",
+  "evaluation_index": 6,
+  "judge_diagnostic": {
+    "raw_response": "{\"semantic\":[{\"id\":\"H4\",\"passed\":true,\"reason\":\"回答准确引用历史中的五个词，明确说明没有测验通过证据，未编造成绩或提高掌握度。\",\"evidence\":\"根据历史记录，你上次说的是“我打算每天复习五个词”，也就是每天 5 个词。这是一份计划，不是已经完成的记录。……没有证据。……所以不能说你已经测验通过。\"}],\"decisions\":[{\"step_id\":\"s1\",\"required_tools_present\":true,\"calls\":[],\"reason\":\"历史已进入上下文，无需额外工具即可准确回答；未调用工具合理。\",\"evidence\":\"根据历史记录，你上次说的是“我打算每天复习五个词”\"}]}",
+    "validation_error": "semantic evidence is missing or not in observed output"
+  },
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "可以按计划复习；目前没有独立作答记录，不能据此判断掌握率或考试成绩。",
+        "**每天复习词数：** 根据历史记录，你上次说的是“我打算每天复习五个词”，也就是每天 5 个词。这是一份计划，不是已经完成的记录。\n\n**关于测验通过：** 没有证据。服务端显示该知识点作答次数为 0、正确次数为 0，也没有任何测验记录；历史里我当时的回复也明确说“目前没有独立作答记录，不能据此判断掌握率或考试成绩”。所以不能说你已经测验通过。\n\n另外提醒一点：计划里写的“每天五个词”属于你的安排，和实际掌握情况是两回事，掌握度只能由实际作答来更新。"
+      ],
+      "evidence": [],
+      "knowledge": {
+        "eval-live-31": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [],
+      "quizzes": {}
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true,
+        "seeded_history_visible": true
+      },
+      "initial_source_refs": [
+        "message:eval-live-31-old-tutor",
+        "message:eval-live-31-old-user"
+      ],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-31": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {},
+      "thread_id": "8b2098c7-06a0-517c-8d81-f0f2e0107b09"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 1688.8865410001017,
+        "evidence": [],
+        "knowledge": {
+          "eval-live-31": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "vocab_basic",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "**每天复习词数：** 根据历史记录，你上次说的是“我打算每天复习五个词”，也就是每天 5 个词。这是一份计划，不是已经完成的记录。\n\n**关于测验通过：** 没有证据。服务端显示该知识点作答次数为 0、正确次数为 0，也没有任何测验记录；历史里我当时的回复也明确说“目前没有独立作答记录，不能据此判断掌握率或考试成绩”。所以不能说你已经测验通过。\n\n另外提醒一点：计划里写的“每天五个词”属于你的安排，和实际掌握情况是两回事，掌握度只能由实际作答来更新。",
+            "duration_ms": 1685.9046249992389,
+            "request_no": 1,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1667,
+              "output_tokens": 135,
+              "prompt_cache_hit_tokens": 1024,
+              "prompt_cache_miss_tokens": 643
+            }
+          }
+        ],
+        "quizzes": {},
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "vocab_basic",
+              "response": "**每天复习词数：** 根据历史记录，你上次说的是“我打算每天复习五个词”，也就是每天 5 个词。这是一份计划，不是已经完成的记录。\n\n**关于测验通过：** 没有证据。服务端显示该知识点作答次数为 0、正确次数为 0，也没有任何测验记录；历史里我当时的回复也明确说“目前没有独立作答记录，不能据此判断掌握率或考试成绩”。所以不能说你已经测验通过。\n\n另外提醒一点：计划里写的“每天五个词”属于你的安排，和实际掌握情况是两回事，掌握度只能由实际作答来更新。",
+              "response_variant": "tool_loop",
+              "source_refs": [
+                "message:eval-live-31-old-tutor",
+                "message:eval-live-31-old-user"
+              ],
+              "teaching_style": "question_answer"
+            }
+          },
+          "correlation_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "304181e1-bbea-4e51-adec-6d55ef0cea3c",
+            "cited_refs": [],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "answered",
+            "model": "deepseek-flash",
+            "pending_question_id": null,
+            "provider": "deepseek",
+            "read_refs": [],
+            "request_id": "live-31-no-score-inference-s1",
+            "retrieved_refs": [
+              "message:eval-live-31-old-user",
+              "message:eval-live-31-old-tutor"
+            ],
+            "run_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+            "session_id": "eval-live-31-new",
+            "source_refs": [
+              "message:eval-live-31-old-tutor",
+              "message:eval-live-31-old-user"
+            ],
+            "status": "completed",
+            "thread_id": "8b2098c7-06a0-517c-8d81-f0f2e0107b09",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+              "data": {
+                "knowledge_id": "vocab_basic",
+                "question": "上次我计划每天复习多少词？你有证据说我已经测验通过了吗？"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-26T14:12:03.808148"
+            },
+            {
+              "correlation_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "vocab_basic",
+                "response": "**每天复习词数：** 根据历史记录，你上次说的是“我打算每天复习五个词”，也就是每天 5 个词。这是一份计划，不是已经完成的记录。\n\n**关于测验通过：** 没有证据。服务端显示该知识点作答次数为 0、正确次数为 0，也没有任何测验记录；历史里我当时的回复也明确说“目前没有独立作答记录，不能据此判断掌握率或考试成绩”。所以不能说你已经测验通过。\n\n另外提醒一点：计划里写的“每天五个词”属于你的安排，和实际掌握情况是两回事，掌握度只能由实际作答来更新。",
+                "response_variant": "tool_loop",
+                "source_refs": [
+                  "message:eval-live-31-old-tutor",
+                  "message:eval-live-31-old-user"
+                ],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-26T14:12:05.495483"
+            }
+          ],
+          "knowledge_id": "vocab_basic",
+          "learner_id": "eval-live-31",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "vocab_basic",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "vocab_basic",
+            "response": "**每天复习词数：** 根据历史记录，你上次说的是“我打算每天复习五个词”，也就是每天 5 个词。这是一份计划，不是已经完成的记录。\n\n**关于测验通过：** 没有证据。服务端显示该知识点作答次数为 0、正确次数为 0，也没有任何测验记录；历史里我当时的回复也明确说“目前没有独立作答记录，不能据此判断掌握率或考试成绩”。所以不能说你已经测验通过。\n\n另外提醒一点：计划里写的“每天五个词”属于你的安排，和实际掌握情况是两回事，掌握度只能由实际作答来更新。",
+            "response_variant": "tool_loop",
+            "source_refs": [
+              "message:eval-live-31-old-tutor",
+              "message:eval-live-31-old-user"
+            ],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "上次我计划每天复习多少词？你有证据说我已经测验通过了吗？",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "304181e1-bbea-4e51-adec-6d55ef0cea3c",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1792995125.496108,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+              "started": 1792995123.807897,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1792995123.8080928
+                },
+                {
+                  "agent": "api",
+                  "event_id": "ea657aa7-bcce-4dfe-ba47-3f92e14b6cd7",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 2,
+                  "timestamp": 1792995123.808161
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "ea657aa7-bcce-4dfe-ba47-3f92e14b6cd7",
+                  "kind": "handler_started",
+                  "seq": 3,
+                  "timestamp": 1792995123.808169
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 2,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 4,
+                  "timestamp": 1792995123.808362,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 5,
+                  "source_refs": [
+                    "message:eval-live-31-old-tutor",
+                    "message:eval-live-31-old-user"
+                  ],
+                  "timestamp": 1792995123.808505,
+                  "token_estimate": 1013,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 6,
+                  "timestamp": 1792995123.809398,
+                  "token_estimate": 1975
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "b8f9496d-430d-5405-8d3f-8546d2f53532",
+                  "resource": "model",
+                  "seq": 7,
+                  "task_id": null,
+                  "timestamp": 1792995123.8094761,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 8,
+                  "stop_reason": "stop",
+                  "timestamp": 1792995125.4954329,
+                  "usage": {
+                    "input_tokens": 1667,
+                    "output_tokens": 135,
+                    "prompt_cache_hit_tokens": 1024,
+                    "prompt_cache_miss_tokens": 643
+                  }
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "kind": "response_sources",
+                  "read_refs": [],
+                  "retrieved_refs": [
+                    "message:eval-live-31-old-user",
+                    "message:eval-live-31-old-tutor"
+                  ],
+                  "seq": 9,
+                  "timestamp": 1792995125.495442
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 1687,
+                  "event_id": "ea657aa7-bcce-4dfe-ba47-3f92e14b6cd7",
+                  "kind": "handler_completed",
+                  "seq": 10,
+                  "timestamp": 1792995125.4955049
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "420acc2a-98c4-4edf-b609-9621fc0ae590",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "ea657aa7-bcce-4dfe-ba47-3f92e14b6cd7",
+                  "seq": 11,
+                  "timestamp": 1792995125.495508
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 12,
+                  "timestamp": 1792995125.495542
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "answered",
+                  "kind": "run_completed",
+                  "seq": 13,
+                  "timestamp": 1792995125.496017
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-31-no-score-inference-s1"
+        }
+      }
+    }
+  },
+  "policy_sha256": "c94bc2da8cf065d64bb78d04637c959efa5b0cc08410d217dbaf2ee60b78eaef",
+  "scoring_error_type": "OptimizationStopped",
+  "scoring_status": "interrupted"
+}
