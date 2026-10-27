@@ -1,0 +1,277 @@
+{
+  "L01_lexical_replay": {
+    "conclusion": "recorded queries miss existing indexed texts; knowledge_id is a filter, not an indexed content term",
+    "index_chunks": 4,
+    "queries": [
+      {
+        "hit_refs": [],
+        "query": "时态 错误 tense",
+        "query_role": "recorded"
+      },
+      {
+        "hit_refs": [],
+        "query": "grammar_tenses",
+        "query_role": "recorded"
+      },
+      {
+        "hit_refs": [],
+        "query": "",
+        "query_role": "recorded"
+      },
+      {
+        "hit_refs": [
+          "message:l01-error-1"
+        ],
+        "query": "since",
+        "query_role": "offline diagnostic alternative"
+      },
+      {
+        "hit_refs": [
+          "message:l01-error-2"
+        ],
+        "query": "by the time",
+        "query_role": "offline diagnostic alternative"
+      },
+      {
+        "hit_refs": [
+          "message:l01-error-1",
+          "message:l01-error-2"
+        ],
+        "query": "过去时 将来时",
+        "query_role": "offline diagnostic alternative"
+      }
+    ],
+    "scope": "same learner and knowledge; new isolated database seeded from frozen fixtures"
+  },
+  "L04_action_replay": {
+    "conclusion": "recorded action fails the prerequisite gate in the recorded initial state",
+    "initial_knowledge": {
+      "reading_skimming": {
+        "alpha": 1.0,
+        "attempts": 0,
+        "beta": 9.0,
+        "correct_count": 0,
+        "knowledge_id": "reading_skimming",
+        "last_attempt": null,
+        "mastery": 0.1,
+        "streak": 0
+      }
+    },
+    "limit": "original HTTP detail was not archived; replay localizes the gate without replacing original trace",
+    "mastered_prerequisites": [],
+    "recorded_action": {
+      "difficulty": 0.3,
+      "knowledge_id": "reading_skimming"
+    },
+    "recorded_error_code": "unavailable_or_not_allowed",
+    "recorded_receipt_status": "denied",
+    "replay": {
+      "detail": "前置知识尚未满足，请先练习基础知识点",
+      "status_code": 409
+    },
+    "required_prerequisites": [
+      "vocab_basic",
+      "grammar_tenses"
+    ]
+  },
+  "analysis_date": "2026-10-27",
+  "budget_allocations": [
+    {
+      "agent": "Assessment",
+      "case_id": "L01",
+      "kind": "agent_budget_allocated",
+      "model_calls_available": 3,
+      "seq": 9,
+      "stage_id": "s1",
+      "task_id": "step-1",
+      "timestamp": 1793066721.5018182,
+      "tool_calls_available": 4
+    },
+    {
+      "agent": "Assessment",
+      "case_id": "L02",
+      "kind": "agent_budget_allocated",
+      "model_calls_available": 3,
+      "seq": 6,
+      "stage_id": "s3",
+      "task_id": "s1_assess",
+      "timestamp": 1793066734.0077581,
+      "tool_calls_available": 4
+    },
+    {
+      "agent": "Curriculum",
+      "case_id": "L02",
+      "kind": "agent_budget_allocated",
+      "model_calls_available": 2,
+      "seq": 39,
+      "stage_id": "s3",
+      "task_id": "s2_curriculum_v2",
+      "timestamp": 1793066742.950926,
+      "tool_calls_available": 4
+    },
+    {
+      "agent": "Curriculum",
+      "case_id": "L04",
+      "kind": "agent_budget_allocated",
+      "model_calls_available": 3,
+      "seq": 9,
+      "stage_id": "s4",
+      "task_id": "step-1",
+      "timestamp": 1793066757.010566,
+      "tool_calls_available": 4
+    },
+    {
+      "agent": "Assessment",
+      "case_id": "L04",
+      "kind": "agent_budget_allocated",
+      "model_calls_available": 1,
+      "seq": 44,
+      "stage_id": "s4",
+      "task_id": "rev1-step-a",
+      "timestamp": 1793066765.1519291,
+      "tool_calls_available": 4
+    },
+    {
+      "agent": "Curriculum",
+      "case_id": "L05",
+      "kind": "agent_budget_allocated",
+      "model_calls_available": 3,
+      "seq": 9,
+      "stage_id": "s1",
+      "task_id": "step-1",
+      "timestamp": 1793066769.850861,
+      "tool_calls_available": 4
+    },
+    {
+      "agent": "Assessment",
+      "case_id": "L06",
+      "kind": "agent_budget_allocated",
+      "model_calls_available": 3,
+      "seq": 8,
+      "stage_id": "s1",
+      "task_id": "step_1_assess_since",
+      "timestamp": 1793066781.032959,
+      "tool_calls_available": 4
+    }
+  ],
+  "data_role": "recorded_engineering_regression_fixtures",
+  "expert_failure_role_counts": {
+    "Assessment": 4,
+    "Curriculum": 1
+  },
+  "expert_failures": [
+    {
+      "case_id": "L01",
+      "cause_type": "ValueError",
+      "error_code": "expert_result_invalid",
+      "final_model_stop_reason": "stop",
+      "role": "Assessment",
+      "stage_id": "s1",
+      "task_id": "step-1",
+      "trace_seq": 35
+    },
+    {
+      "case_id": "L02",
+      "cause_type": "ValueError",
+      "error_code": "expert_result_invalid",
+      "final_model_stop_reason": "stop",
+      "role": "Assessment",
+      "stage_id": "s3",
+      "task_id": "s1_assess",
+      "trace_seq": 31
+    },
+    {
+      "case_id": "L02",
+      "cause_type": "ValueError",
+      "error_code": "expert_result_invalid",
+      "final_model_stop_reason": "stop",
+      "role": "Curriculum",
+      "stage_id": "s3",
+      "task_id": "s2_curriculum_v2",
+      "trace_seq": 56
+    },
+    {
+      "case_id": "L04",
+      "cause_type": "ValueError",
+      "error_code": "expert_result_invalid",
+      "final_model_stop_reason": "stop",
+      "role": "Assessment",
+      "stage_id": "s4",
+      "task_id": "rev1-step-a",
+      "trace_seq": 49
+    },
+    {
+      "case_id": "L06",
+      "cause_type": "ValueError",
+      "error_code": "expert_result_invalid",
+      "final_model_stop_reason": "stop",
+      "role": "Assessment",
+      "stage_id": "s1",
+      "task_id": "step_1_assess_since",
+      "trace_seq": 33
+    }
+  ],
+  "expert_schema_gap": {
+    "runtime_rejects_as": "incomplete_expert_result",
+    "schema_accepts_completed_without_findings": true,
+    "scope": "schema diagnostic, not an assertion about the unarchived five model payloads"
+  },
+  "is_new_live_evaluation": false,
+  "method": "offline source inspection and isolated replay of recorded fixtures; no model responses synthesized",
+  "original_result_modified": false,
+  "planning_regex_diagnostic": {
+    "cases": [
+      {
+        "result": "planner_evidence_conflict",
+        "text": "采用已保存偏好，不能声称偏好缺失。"
+      },
+      {
+        "result": "planner_evidence_conflict",
+        "text": "学生没有学习偏好"
+      }
+    ],
+    "causal_limit": "shows an implementation false-positive path; does not establish it caused L01 or L04",
+    "conclusion": "known preference negation instruction also matches missing-evidence regex",
+    "scope": "diagnostic sentences, not original missing model plan JSON"
+  },
+  "provider_requests": 0,
+  "python_source_sha256": "d21f73cc8c72747b14ee208a09979dc03d8dc463a2f5ac8aff67f54a8b76fb9f",
+  "runtime_git_head": "d583a336197470079dc4ad933ad92270a7a55945",
+  "schema": "eduagent.harness-failure-analysis-evidence.v1",
+  "source_result_sha256": "cc20fbf8d31cd6ddd647236f6cf7ac2e21333184c2d82d8009c960db5a71a8a7",
+  "tool_skips": [
+    {
+      "agent": "Assessment",
+      "case_id": "L01",
+      "error_code": "budget_exhausted",
+      "kind": "tool_skipped",
+      "seq": 31,
+      "stage_id": "s1",
+      "task_id": "step-1",
+      "timestamp": 1793066723.216039,
+      "tool": "search_learning_history"
+    },
+    {
+      "agent": "Assessment",
+      "case_id": "L02",
+      "error_code": "budget_exhausted",
+      "kind": "tool_skipped",
+      "seq": 27,
+      "stage_id": "s3",
+      "task_id": "s1_assess",
+      "timestamp": 1793066736.612766,
+      "tool": "search_learning_history"
+    },
+    {
+      "agent": "Assessment",
+      "case_id": "L06",
+      "error_code": "budget_exhausted",
+      "kind": "tool_skipped",
+      "seq": 29,
+      "stage_id": "s1",
+      "task_id": "step_1_assess_since",
+      "timestamp": 1793066783.308296,
+      "tool": "read_learning_history"
+    }
+  ]
+}
