@@ -6,8 +6,11 @@ import re
 import time
 import uuid
 
+from pydantic import ValidationError
+
 from config.settings import settings
 from core.agent_errors import AgentExecutionError
+from core.context_handoff import model_value
 from core.coordination_budget import feasible, practice_required, remaining_cost
 from core.coordination_models import AgentResult, LearningPlan, PlanDraft, PlanRevision, PlanStep
 from core.llm_service import NativeToolCall, TeachingReply
@@ -140,15 +143,14 @@ class Coordinator:
                 raise ValueError("planner_context_budget")
             async with asyncio.timeout(ctx.remaining()):
                 response = await self.service.generate(
-                    prompt=json.dumps(prompt, ensure_ascii=False), system_prompt=system,
+                    prompt=json.dumps(model_value(ctx, prompt), ensure_ascii=False), system_prompt=system,
                     temperature=0.2, max_tokens=1200)
             if schema is PlanDraft:
                 raw = json.loads(response.content)
                 if not isinstance(raw, dict):
-                    raise ValueError("invalid_plan_schema")
+                    raise AgentExecutionError("planner_input_not_object", "json_type")
                 # 旧公开协议兼容读取，但不允许模型提交执行成果。
-                if (any(key in raw for key in ("evidence", "plan_id", "status", "results"))
-                        or any("status" in step or "source_refs" in step for step in raw.get("steps", []))):
+                if any(key in raw for key in ("evidence", "plan_id", "status", "results")):
                     legacy = LearningPlan.model_validate(raw)
                     if (legacy.results or legacy.action_receipts or legacy.practice_quiz_id
                             or legacy.status != "running" or legacy.outcome != "running"
@@ -194,9 +196,14 @@ class Coordinator:
                 PlanStep(**step.model_dump())
                 for step in generated.steps]))
         except (ValueError, TypeError) as exc:
-            reason = ("planner_evidence_conflict" if str(exc) == "planner_evidence_conflict"
-                      else "invalid_plan_schema")
-            self.ctx.record("plan_fallback", "Coordinator", reason=reason)
+            reason = (exc.code if isinstance(exc, AgentExecutionError) else
+                      str(exc) if str(exc) in {"planner_evidence_conflict", "planner_context_budget",
+                                              "delegation_budget"} else "invalid_plan_schema")
+            errors = ([{"field": ".".join(map(str, e["loc"])), "type": e["type"]}
+                       for e in exc.errors(include_input=False, include_url=False)]
+                      if isinstance(exc, ValidationError) else getattr(exc, "details", []))
+            self.ctx.record("plan_fallback", "Coordinator", reason=reason,
+                            cause_type=type(exc).__name__, errors=errors)
             return fallback
 
     def restore_plan(self, previous, text):
@@ -337,6 +344,19 @@ class Coordinator:
                 step.status = "blocked"
         self.sync(plan)
         findings = [f for r in plan.results.values() if r.status == "completed" for f in r.findings]
+        verified = {ref for result in plan.results.values() for ref in result.source_refs
+                    if ref in self.ctx.source_refs and self.ctx.history.memory.source(self.ctx.learner, ref)}
+        # 降级不允许无效内联引用再次导致父事务回滚，也不能把未知引用升级成事实。
+        removed = set()
+        def citation(match):
+            ref = match.group()
+            if ref not in verified:
+                removed.add(ref)
+                return "[来源未验证]"
+            return ref
+        findings = [re.sub(r"(?:message|evidence|memory):[A-Za-z0-9_-]+", citation, f) for f in findings]
+        if removed:
+            self.ctx.record("partial_citations_removed", "Coordinator", count=len(removed))
         text = "已完成的部分：" + "；".join(findings[:4]) if findings else "这次还没能完成完整的学习安排。"
         text += "\n部分步骤未完成，暂不能确认完整计划或练习已准备好。请缩小任务范围后继续。"
         return TutorRuntime(self.ctx, self.service, self.ctx.knowledge_graph).reply(text)

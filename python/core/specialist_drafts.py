@@ -16,9 +16,12 @@ class Draft(BaseModel):
     uncertainty: str = Field(default="", max_length=1000)
 
 
+Finding = Annotated[str, Field(max_length=1000)]
+
+
 class Completed(Draft):
     status: Literal["completed"]
-    findings: list[str] = Field(min_length=1, max_length=8)
+    findings: list[Finding] = Field(min_length=1, max_length=8)
 
 
 class CurriculumCompleted(Completed):
@@ -27,13 +30,13 @@ class CurriculumCompleted(Completed):
 
 class NeedsInput(Draft):
     status: Literal["needs_input"]
-    findings: list[str] = Field(default_factory=list, max_length=8)
+    findings: list[Finding] = Field(default_factory=list, max_length=8)
     needs_input: str = Field(min_length=1, max_length=1000)
 
 
 class Failed(Draft):
     status: Literal["failed"]
-    findings: list[str] = Field(default_factory=list, max_length=8)
+    findings: list[Finding] = Field(default_factory=list, max_length=8)
     error_code: str | None = None
 
 
@@ -65,6 +68,8 @@ def parse_result(content, step, refs, history, learner, last_failure=None):
         fields = {e["field"].split(".")[-1] for e in errors}
         code = ("expert_action_not_allowed" if "proposed_actions" in fields else
                 "expert_schema_invalid" if any(e["type"] == "extra_forbidden" for e in errors) else
+                "expert_findings_too_long" if any("findings" in e["field"].split(".")
+                    and e["type"] in {"too_long", "string_too_long"} for e in errors) else
                 "expert_findings_missing" if "findings" in fields else
                 "expert_question_missing" if "needs_input" in fields and raw.get("status") == "needs_input" else
                 "expert_status_invalid" if any(e["type"].startswith("union_tag") for e in errors) else

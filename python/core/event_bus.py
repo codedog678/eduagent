@@ -11,6 +11,7 @@ from typing import Any, Callable, Coroutine, Optional
 
 from pydantic import BaseModel, Field
 from core.run_context import RunExhausted, active_run
+from core.agent_errors import AgentExecutionError
 
 logger = logging.getLogger(__name__)
 
@@ -265,8 +266,9 @@ class EventBus:
                 event.source,
             )
             if run:
-                run.record("handler_failed", agent, event_id=event.id, reason=type(exc).__name__)
-            if isinstance(exc, (ExecutionError, RunExhausted, TimeoutError)):
+                run.record("handler_failed", agent, event_id=event.id,
+                           reason=exc.code if isinstance(exc, AgentExecutionError) else type(exc).__name__)
+            if isinstance(exc, (AgentExecutionError, ExecutionError, RunExhausted, TimeoutError)):
                 raise
             raise ExecutionError(f"{event.type.value}: {type(exc).__name__}") from exc
         finally:

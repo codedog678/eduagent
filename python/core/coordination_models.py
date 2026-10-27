@@ -49,7 +49,7 @@ class AgentResult(BaseModel):
     error_code: Literal[
         "budget_exhausted", "expert_schema_invalid", "expert_result_invalid",
         "expert_task_mismatch", "expert_sources_unverified", "expert_status_invalid",
-        "expert_findings_missing", "expert_question_missing", "expert_action_not_allowed",
+        "expert_findings_missing", "expert_findings_too_long", "expert_question_missing", "expert_action_not_allowed",
         "expert_output_incomplete",
         "tool_argument_invalid", "source_unavailable", "expert_failed",
         "expert_action_invalid", "delegate_unavailable", "question_not_created",

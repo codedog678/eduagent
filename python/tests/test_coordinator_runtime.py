@@ -50,7 +50,7 @@ class Model:
     async def tool_turn(self, messages, tools, max_tokens):
         self.consume()
         self.turns.append(json.loads(json.dumps(messages)))
-        if "专家" not in messages[0]["content"]:
+        if not messages[0]["content"].startswith(("你是教育系统的Assessment专家", "你是教育系统的Curriculum专家")):
             return NativeTurn(content="根据已核实的信息先复习基础词汇。", stop_reason="stop")
         return self.handler(messages, tools)
 

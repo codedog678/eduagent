@@ -47,6 +47,8 @@ class RunContext:
     max_model_calls: int = 8
     max_tool_calls: int = 16
     tool_cache: dict = field(default_factory=dict)
+    read_evidence: dict = field(default_factory=dict)
+    sensitive_payloads: set[str] = field(default_factory=set)
     retrieved_items: list | None = None
     history_discovery_used: bool = False
     role: str = "Tutor"

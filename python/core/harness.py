@@ -23,6 +23,8 @@ from core.memory_retrieval import MemoryWorker
 from core.run_context import RunContext, RunExhausted, active_run
 from core.spaced_repetition import ReviewItem
 from core.versions import runtime_metadata
+from core.agent_errors import AgentExecutionError
+from core.output_safety import guard_public, register_untrusted
 
 
 class IssuedQuestion(BaseModel):
@@ -169,10 +171,12 @@ class LearningHarness:
                      metadata["provider"], metadata["model"],
                      metadata["config_fingerprint"]))
             token = active_run.set(ctx)
+            register_untrusted(ctx, ctx.input_text)
             ctx.record("run_started")
             try:
                 async with asyncio.timeout(self.timeout):
                     result, quiz_update = await operation()
+                result = guard_public(ctx, result)
                 result["execution"] = {
                     "request_id": request_id, "run_id": ctx.run_id, "attempt_id": ctx.attempt_id,
                     "session_id": ctx.session_id, "thread_id": ctx.thread_id, "status": "completed",
@@ -236,8 +240,10 @@ class LearningHarness:
                          if event.id not in previous_events]
                 status = ("cancelled" if isinstance(exc, asyncio.CancelledError) else
                           "exhausted" if isinstance(exc, (RunExhausted, TimeoutError)) else "failed")
-                reason = str(exc) if isinstance(exc, RunExhausted) else type(exc).__name__
+                reason = (str(exc) if isinstance(exc, RunExhausted) else
+                          exc.code if isinstance(exc, AgentExecutionError) else type(exc).__name__)
                 ctx.record("run_failed", status=status, reason=reason)
+                trace = guard_public(ctx, {"events": trace})["events"]
                 with self.db:
                     self.db.execute("UPDATE runs SET status=?,error=?,result=?,updated=? "
                                     "WHERE learner=? AND request=?",

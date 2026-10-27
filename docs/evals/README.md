@@ -10,7 +10,8 @@
 | Harness 失败原因与优化方案（零模型请求；补充词法检索、前置门禁及正则误报核对） | [优化方案](harness-failure-analysis-20261027/optimization-plan.md)、[离线证据](harness-failure-analysis-20261027/evidence.json)、[复现脚本](harness-failure-analysis-20261027/reproduce-probes.py) |
 | Harness 第二轮优化与真实复测（后端306项、确定性8/8；v2真实1/6，未达门槛） | [工程分析](harness-long-runs/20261027-optimized-deepseek-flash/analysis.md)、[三轮同v2对照](harness-long-runs/20261027-optimized-deepseek-flash/comparison-summary.json)、[完整归档](harness-long-runs/20261027-optimized-deepseek-flash/)、[问题→原因→解决→效果](../engineering/problem-solution-log.md)、[实施检查表](../engineering/harness-optimization-20261027.md) |
 | GEPA 离线策略优化（36 训练 + 14 开发验证，独立测试另建） | [设计、代码说明与执行命令](gepa-offline-optimization.md)、[当前冻结协议](gepa-protocol-v7.json)、[真实试跑报告](gepa-runs/pilot-20261026-report.md) |
-| 50 条 Agent 主任务扩展（8 原任务 + 42 新任务，尚未真实运行） | [完整场景说明](tutor-agent-50-review.md)、[JSONL](tutor-agent-50-review.jsonl)、[清单与分批计划](tutor-agent-50-manifest.json)、[设计](tutor-agent-50-design.md)、[离线验证说明](20261025/tutor-agent50-validation.md)、[逐条记录](20261025/tutor-agent50-validation.json) |
+| 50 条 Agent 主任务扩展（已真实运行82请求，自动40/50；语义审阅暂停） | [运行状态](20261025/agent50-live/run-state.json)、[真实结果](20261025/agent50-live/tutor-agent50-live.json)、[完整场景说明](tutor-agent-50-review.md)、[JSONL](tutor-agent-50-review.jsonl)、[清单与分批计划](tutor-agent-50-manifest.json)、[设计](tutor-agent-50-design.md)、[离线验证说明](20261025/tutor-agent50-validation.md) |
+| 历史修改和持续工程循环 | [历史回顾H01–H27](../engineering/historical-change-log.md)、[过程记录C01起](../engineering/problem-solution-log.md) |
 | 任务最终成功与工具语义评分（AI 审阅） | [评分报告](20261025/tutor-final-scoring-20261025.md)、[逐条标签](20261025/tutor-semantic-review-20261025.jsonl)、[分组指标](20261025/tutor-reviewed-metrics-20261025.json)、[评分口径](20261025/tutor-semantic-rubric-20261025.md) |
 | 12 条场景设计与评分规则 | [场景说明](tutor-live-12-review.md)、[原始 JSONL](tutor-live-12-review.jsonl) |
 | 常见 Agent 指标、计算口径和实测结果 | [指标报告](20261025/agent-metrics-20261025.md)、[指标 JSON](20261025/agent-metrics-20261025.json) |
@@ -33,7 +34,7 @@
 
 后续 AI 最终审阅已完成：Agent 主任务基线 6/8、v2 4/5、v3 2/2；三轮全部实际工具调用的联合语义比例分别为 19/21、4/4、3/3。仅主任务的工具比例与漏调决策另见[评分报告](20261025/tutor-final-scoring-20261025.md)。04、09 基线按严格口径裁定，保留人工复核敏感性；这是单次 AI 审阅，没有独立人工确认。原始报告未被改写，也没有新增模型请求。
 
-主评测数据现已扩至 50 条，新增 42 条在运行前写明最终成功及工具决策要求。整套经过离线预置和状态链路校验，尚未执行真实模型或新增语义评分；不能把脚本校验结果当作 Agent 成功率。原有 4 条教学辅助独立保留。新套共 64 个答疑轮次，最坏 192 次请求；单批 42 次请求上限保留，后续用 `--case-id` 分批执行。
+主评测数据现已扩至 50 条，新增 42 条在运行前写明最终成功及工具决策要求。整套离线预置校验后分五批真实执行，82次请求、自动契约40/50，冻结高峰费用估算0.17986140元。最终任务与工具语义审阅按用户要求暂停，两项结果仍为null，不能把自动契约当作最终任务成功率。原有4条教学辅助独立保留，未做整套三次重复验证。
 
 ## 复现
 

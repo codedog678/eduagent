@@ -6,6 +6,7 @@ import time
 
 from config.settings import settings
 from core.agent_errors import AgentExecutionError
+from core.context_handoff import compact_results, model_value, read_evidence
 from core.coordination_budget import specialist_limits
 from core.coordination_models import AgentResult
 from core.llm_service import NativeToolCall
@@ -91,6 +92,8 @@ class SpecialistRuntime:
         ctx = self.ctx
         memories = ctx.history.memory.profile(ctx.learner)
         refs.update(memory["source_ref"] for memory in memories)
+        refs.update(item["source_ref"] for item in read_evidence(ctx)
+                    if ctx.history.memory.source(ctx.learner, item["source_ref"]))
         ctx.source_refs = list(dict.fromkeys(ctx.source_refs + sorted(refs)))
         messages = [
             {"role": "system", "content": (
@@ -108,17 +111,19 @@ class SpecialistRuntime:
                 "get_knowledge_context和get_learner_profile已提供快照，避免重复调用。"
                 "Curriculum的findings必须包含具体时间/阶段安排，proposed_actions必须通过前置快照。"
                 + json.dumps(adapter(step.agent).json_schema(), ensure_ascii=False))},
-            {"role": "user", "content": json.dumps({
+            {"role": "user", "content": json.dumps(model_value(ctx, {
                 "task": step.model_dump(), "goal": plan.goal, "constraints": plan.constraints,
                 "current_input": ctx.input_text, "student_inputs": plan.student_inputs,
-                "previous_results": upstream, "practice_already_prepared": bool(plan.practice_quiz_id),
+                "previous_results": compact_results(upstream), "practice_already_prepared": bool(plan.practice_quiz_id),
                 "stable_memories": memories, "knowledge_state": ctx.model_state,
                 "learner_profile": ctx.profile_state,
                 "knowledge_context": executor.knowledge_context(ctx.knowledge_id),
                 "history_candidates": ctx.history.discovery(ctx.learner, ctx.knowledge_id),
                 "read_source_refs": ctx.read_refs,
+                "read_evidence": read_evidence(ctx),
+                "verified_source_refs": sorted(refs),
                 "review_queue": ctx.review_queue,
-            }, ensure_ascii=False)},
+            }), ensure_ascii=False)},
         ]
         schemas, seen, tool_count, last_failure_code = executor.schemas(), set(), 0, None
         schemas = [schema for schema in schemas if schema["function"]["name"]
@@ -159,9 +164,12 @@ class SpecialistRuntime:
                             or exc.code in {"expert_task_mismatch", "expert_sources_unverified", "source_unavailable"}):
                         raise
                     repaired = True
-                    messages.append({"role": "assistant", "content": turn.content})
+                    # 原无效输出常比结论还长；由已有事实重生成，避免整段追加耗尽上下文。
                     messages.append({"role": "user", "content": json.dumps({
-                        "correction": "仅修正草稿，不增加工具调用；必须符合角色与status协议。",
+                        "correction": "根据已有事实重新输出合规JSON，不增加工具调用。"
+                        "findings为1至8条，每条最多1000字符；uncertainty最多1000字符。"
+                        "source_refs只能选verified_source_refs；状态快照不可引用。",
+                        "verified_source_refs": sorted(refs),
                         "error_code": exc.code, "errors": exc.details}, ensure_ascii=False)})
                     schemas = []
                     ctx.record("expert_draft_repair", step.agent, task_id=step.step_id)

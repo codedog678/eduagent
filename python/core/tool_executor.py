@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from core.agent_errors import AgentExecutionError
 from core.run_context import RunExhausted
 from core.memory_store import MemoryProposalError
+from core.output_safety import register_untrusted, safe_value
 
 
 class Params(BaseModel):
@@ -209,6 +210,11 @@ class ToolExecutor:
             ctx.retrieved_refs = list(dict.fromkeys(ctx.retrieved_refs + result["source_refs"]))
         elif call.name == "read_learning_history":
             ctx.read_refs = list(dict.fromkeys(ctx.read_refs + result["source_refs"]))
+            if result["status"] == "ok" and not result["truncated"] and params.offset == 0:
+                ctx.read_evidence[params.source_ref] = result["data"]
+        if spec and not spec.write:
+            register_untrusted(ctx, result["data"])
+        result["data"] = safe_value(ctx, result["data"])
         ctx.record("after_tool", self.role + "Agent", tool=call.name, tool_call_id=call.id,
                    task_id=ctx.task_id, status=result["status"], source_refs=result["source_refs"],
                    error_code=result["error_code"], cached=result.get("cached", False),

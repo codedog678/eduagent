@@ -482,11 +482,11 @@ eduagent-eval fetch mrbench
 
 已执行的基线、提示 v2/v3 复测、逐条公开 Trace 和常见 Agent 指标见[评测文档与数据索引](docs/evals/README.md)。这些记录保留失败与待审阅项；各版本成绩分别报告。
 
-多 Agent 长任务第二轮工程优化采用精简模型草稿、有限历史发现、事实快照和必要/可选动作区分，未运行进化。[本轮分析与三轮同评分对照](docs/evals/harness-long-runs/20261027-optimized-deepseek-flash/analysis.md)记录实际效果；[工程过程记录](docs/engineering/problem-solution-log.md)持续按“问题→原因→解决→效果”保存修改、失败和下一轮待办。
+多 Agent 长任务第二轮工程优化采用精简模型草稿、有限历史发现、事实快照和必要/可选动作区分，未运行进化。[本轮分析与三轮同评分对照](docs/evals/harness-long-runs/20261027-optimized-deepseek-flash/analysis.md)记录实际效果；[历史修改回顾](docs/engineering/historical-change-log.md)补记此前原型、前端/API、形成性评价、模型、评测、记忆和协作修改，[工程过程记录](docs/engineering/problem-solution-log.md)持续按“问题→原因→解决→效果”保存修改、失败和下一轮待办。
 
 已有任务的[成功评分与工具语义评分](docs/evals/20261025/tutor-final-scoring-20261025.md)已完成单次 AI 审阅，包含逐项原文证据、工具选择/参数及漏调标签、分组成功率和边界裁定。原始报告不改写，没有新增模型请求；AI 标签不代表独立人工确认。
 
-Agent 主评测数据已[扩至 50 条](docs/evals/tutor-agent-50-review.md)：保留原 8 条、补充 42 条，覆盖接续、历史依据、完整检索、工具决策、权限和学习证据。新增数据在执行前定义语义与工具决策要求；目前仅完成离线脚本验证，尚无整套真实模型成绩。`eduagent-eval validate-live --dataset evals/datasets/tutor_agent50_review.jsonl` 不调用供应商，真实运行可用重复的 `--case-id` 按[清单](docs/evals/tutor-agent-50-manifest.json)分批，保留原预算上限。
+Agent 主评测数据已[扩至 50 条](docs/evals/tutor-agent-50-review.md)：保留原 8 条、补充 42 条，覆盖接续、历史依据、完整检索、工具决策、权限和学习证据。新增数据在执行前定义语义与工具决策要求；[整套真实运行](docs/evals/20261025/agent50-live/run-state.json)已完成，82次请求，自动契约40/50；最终任务语义与工具语义审阅按用户要求暂停，不能将自动契约视为最终成功率。`eduagent-eval validate-live --dataset evals/datasets/tutor_agent50_review.jsonl` 不调用供应商，真实运行可用重复的 `--case-id` 按[清单](docs/evals/tutor-agent-50-manifest.json)分批，保留原预算上限。
 
 根目录 `.env` 配置 `LLM_PROVIDER=deepseek`、`DEEPSEEK_MODEL=deepseek-flash`、`DEEPSEEK_THINKING=disabled` 后运行：
 

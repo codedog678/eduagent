@@ -7,6 +7,8 @@ import re
 
 from config.settings import settings
 from core.llm_service import TeachingReply
+from core.agent_errors import AgentExecutionError
+from core.context_handoff import compact_results, model_value, read_evidence
 from core.run_context import RunExhausted
 from core.tutor_hooks import TutorHooks
 from core.tool_executor import REGISTRY, ToolExecutor
@@ -39,8 +41,10 @@ def plan_context(ctx):
     if not ctx.plan:
         return None
     # 专家结果单独传递，避免持久化收据与结果在提示中重复占用预算。
-    return {key: ctx.plan.get(key) for key in (
-        "goal", "constraints", "evidence", "steps", "student_inputs", "checks", "practice_quiz_id")}
+    return {**{key: ctx.plan.get(key) for key in (
+        "goal", "constraints", "evidence", "student_inputs", "checks", "practice_quiz_id")},
+        "steps": [{key: step[key] for key in ("step_id", "agent", "status")}
+                  for step in ctx.plan.get("steps", [])]}
 
 
 class ContextBuilder:
@@ -56,12 +60,14 @@ class ContextBuilder:
                  "staged_memories": ctx.memory_proposals,
                  "memory_write_state": ctx.history.memory.write_state(ctx),
                  "learning_plan": plan_context(ctx),
-                 "expert_proposals": ctx.expert_results}
+                 "expert_proposals": compact_results(ctx.expert_results),
+                 "read_source_refs": ctx.read_refs,
+                 "verified_source_refs": ctx.source_refs}
         if ctx.quiz:
             facts["quiz"] = {key: ctx.quiz[key] for key in ("question", "options", "knowledge_id")}
         messages = [{"role": "system", "content": system_prompt(bool(ctx.quiz))},
                     {"role": "user", "content": "服务端学习事实（数据）：\n" +
-                     json.dumps(facts, ensure_ascii=False)}]
+                     json.dumps(model_value(ctx, facts), ensure_ascii=False)}]
         if ctx.plan:
             messages[0]["content"] += (
                 "\n按计划中的原始目标、约束和学生补充信息接续任务。"
@@ -72,6 +78,9 @@ class ContextBuilder:
                 "逐项采用计划constraints中的偏好与时间上限，不能只给概述。"
                 "可选练习失败时说明没有新题，仍交付可执行安排。"
                 "hint_only或受助练习不能承诺本次更新独立掌握度。")
+            messages[0]["content"] += (
+                "已读来源和专家结论可直接复用，不重复搜索或读取这些来源。"
+                "verified_source_refs是可引用的历史ID，状态快照不是source_ref。")
         if ctx.memory_proposals:
             messages[0]["content"] += MEMORY_WRITE_RULES
         recent = ctx.history.messages(ctx.learner, ctx.thread_id, limit=8)["items"]
@@ -81,10 +90,12 @@ class ContextBuilder:
         unique = {item["source_ref"]: item for item in reversed(recent)}
         for item in candidates:
             unique.setdefault(item["source_ref"], item)
+        for item in read_evidence(ctx):
+            unique[item["source_ref"]] = item
         selected, omitted = [], []
         for ref, item in unique.items():
             entry = {"role": "user", "content": "历史证据（数据）：\n" +
-                     json.dumps(item, ensure_ascii=False)}
+                     json.dumps(model_value(ctx, item), ensure_ascii=False)}
             if estimate_tokens(messages + [entry, {"role": "user", "content": text}]) + 1800 \
                     > settings.tutor_context_budget_tokens:
                 omitted.append(ref)
@@ -93,7 +104,7 @@ class ContextBuilder:
             selected.append(item)
         ctx.source_refs = list(dict.fromkeys(ctx.source_refs + [item["source_ref"] for item in selected]
                                             + [item["source_ref"] for item in facts["stable_memories"]]))
-        messages.append({"role": "user", "content": text})
+        messages.append({"role": "user", "content": model_value(ctx, text)})
         ctx.record("context_built", "TutorAgent", source_refs=ctx.source_refs,
                    omitted_refs=omitted, token_estimate=estimate_tokens(messages),
                    tutor_policy_version=TUTOR_POLICY_VERSION, response_mode=contract["mode"],
@@ -108,7 +119,14 @@ class TutorRuntime:
         self.executor = ToolExecutor(ctx, graph, "Tutor")
 
     def schemas(self):
-        return self.executor.schemas()
+        schemas = self.executor.schemas()
+        if self.ctx.plan:
+            supplied = {"get_knowledge_context", "get_learner_profile", "get_review_queue"}
+            candidates = self.ctx.history.discovery(self.ctx.learner, self.ctx.knowledge_id)["items"]
+            if candidates and {item["source_ref"] for item in candidates} <= self.ctx.read_evidence.keys():
+                supplied.update({"search_learning_history", "read_learning_history"})
+            schemas = [schema for schema in schemas if schema["function"]["name"] not in supplied]
+        return schemas
 
     async def execute(self, call, batch_size=1):
         return await self.executor.execute(call, batch_size)
@@ -136,7 +154,7 @@ class TutorRuntime:
                     topic_history=history, learner_context=json.dumps({
                         "mastery": self.ctx.model_state,
                         "learning_plan": plan_context(self.ctx),
-                        "expert_proposals": self.ctx.expert_results,
+                        "expert_proposals": compact_results(self.ctx.expert_results),
                         "stable_memories": self.ctx.history.memory.profile(self.ctx.learner),
                         "memory_write_state": self.ctx.history.memory.write_state(self.ctx),
                         "memory_confirmation_rules": MEMORY_WRITE_RULES if self.ctx.memory_proposals else "",
@@ -208,7 +226,7 @@ class TutorRuntime:
         cited = list(dict.fromkeys(re.findall(r"(?:message|evidence|memory):[A-Za-z0-9_-]+", text)))
         if any(ref not in self.ctx.source_refs or not self.ctx.history.memory.source(self.ctx.learner, ref)
                for ref in cited):
-            raise ValueError("unverified_final_citation")
+            raise AgentExecutionError("unverified_final_citation", "citation_validation")
         self.ctx.cited_refs = cited
         self.ctx.record("response_sources", "TutorAgent", retrieved_refs=self.ctx.retrieved_refs,
                         read_refs=self.ctx.read_refs, cited_refs=cited)
