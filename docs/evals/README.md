@@ -5,7 +5,8 @@
 | 内容 | 文件 |
 | --- | --- |
 | Harness 双层长任务评测（确定性合同 8/8；真实任务 0/6） | [冻结设计与门槛](harness-long-task-design.md)、[工程分析](harness-long-runs/20261026-deepseek-flash/analysis.md)、[完整归档](harness-long-runs/20261026-deepseek-flash/) |
-| Harness 长任务工程修复（新增 23 项回归，未进行进化或真实复测） | [修改范围、实现和验证](harness-engineering-fixes.md) |
+| Harness 长任务工程修复（新增 23 项回归，未进行进化） | [修改范围、实现和验证](harness-engineering-fixes.md) |
+| Harness 修复后长任务复测（确定性 8/8；自动 2/6，L02 为 partial，L05 闭环完成） | [工程分析](harness-long-runs/20261027-deepseek-flash/analysis.md)、[助手离线审计](harness-long-runs/20261027-deepseek-flash/agent-audit.json)、[两轮对照](harness-long-runs/20261027-deepseek-flash/comparison-summary.json)、[完整归档](harness-long-runs/20261027-deepseek-flash/) |
 | GEPA 离线策略优化（36 训练 + 14 开发验证，独立测试另建） | [设计、代码说明与执行命令](gepa-offline-optimization.md)、[当前冻结协议](gepa-protocol-v7.json)、[真实试跑报告](gepa-runs/pilot-20261026-report.md) |
 | 50 条 Agent 主任务扩展（8 原任务 + 42 新任务，尚未真实运行） | [完整场景说明](tutor-agent-50-review.md)、[JSONL](tutor-agent-50-review.jsonl)、[清单与分批计划](tutor-agent-50-manifest.json)、[设计](tutor-agent-50-design.md)、[离线验证说明](20261025/tutor-agent50-validation.md)、[逐条记录](20261025/tutor-agent50-validation.json) |
 | 任务最终成功与工具语义评分（AI 审阅） | [评分报告](20261025/tutor-final-scoring-20261025.md)、[逐条标签](20261025/tutor-semantic-review-20261025.jsonl)、[分组指标](20261025/tutor-reviewed-metrics-20261025.json)、[评分口径](20261025/tutor-semantic-rubric-20261025.md) |
@@ -102,3 +103,10 @@ eduagent-eval run-live \
 ```
 
 `python/eval-results/` 继续作为忽略的本地输出目录。经过核对、需要长期保存的评测记录归档到本目录；其他本地设计文档和缓存仍不纳入 Git。
+
+修复后长任务归档可离线校验（不调用模型，也不改原始自动评分）：
+
+```bash
+LLM_PROVIDER=template MEMORY_EMBEDDING_API_KEY='' SILICONFLOW_API_KEY='' \
+  python docs/evals/harness-long-runs/20261027-deepseek-flash/verify-archive.py --verify-only
+```

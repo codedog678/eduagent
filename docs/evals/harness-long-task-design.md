@@ -5,6 +5,10 @@
 执行结果与工程分析见
 [`harness-long-runs/20261026-deepseek-flash/`](harness-long-runs/20261026-deepseek-flash/)。
 
+2026-10-27 工程修复后复测已完成，仍未通过门槛；自动 2/6，L02 业务为 partial，
+仅 L05 确认工程闭环完成，见[复测报告](harness-long-runs/20261027-deepseek-flash/analysis.md)。
+原冻结设计保留，复测范围以其[运行协议](harness-long-runs/20261027-deepseek-flash/run-protocol.json)为准。
+
 ## 目标
 
 本轮从 Harness 工程视角验证两个命题：
