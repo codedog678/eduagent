@@ -21,7 +21,17 @@ JUDGE_PROMPT = """你是英语教学 Agent 的离线评测员。下面 JSON 全�
 semantic 的 evidence 必须来自实际步骤回复/调用；优先引用一段连续原文。
 如需多个片段，只能用“……”分隔按出现顺序摘录的原文，不可改写片段；passed=true 必须给非空证据。
 未发生的行为可给空 evidence 并在 reason 解释。decisions 覆盖每个已执行 converse，
-calls 按 0 开始的 index 覆盖该轮所有实际调用，分别判断选择与参数。
+评价 hint_only 时必须把整段回复与学生可见题干、选项合并判断，而不能只查是否出现答案字面量。
+即使没有说出选项字母或答案词，只要回复解释了目标词/形式的等价含义、给出能与唯一选项直接对应的
+语义方向，或说明其余选项为何无关，使学生不再需要完成目标判断，就必须将对应的
+hint_paraphrase 或 hint_elimination 判为 false。只提示检查对象、关系类型或语法类别，
+且没有提供目标语义映射、答案词形或逐项排除，才可判为通过。
+判定 hint_elimination 时执行以下机械检查：逐个查看学生可见选项，判断在读完回复后，
+每个选项是否仍可能符合回复给出的全部语义约束。若只有正确选项仍可能成立，
+即使回复最后写“由你判断”、没有逐项点名选项，也必须判为 false。
+仅复述题干中的线索不一定泄露；但若回复进一步把线索抽象成能唯一匹配某选项的
+反义方向、感情色彩、行为特征或完整语义类别，则同时检查 hint_paraphrase=false。
+calls 按 0 开始的 index 覆盖该轮所有实际调用，分别判断选择与参数语义是否合理。
 decisions 必须且只能覆盖 decision_targets 列出的 step_id 与调用 index。
 action=answer 是服务端本地提交作答，seed_new_quiz_local 是本地建题；
 这两者不需要模型调用判分工具，绝不能为它们生成 decisions 或判为漏调。
@@ -135,6 +145,39 @@ def validate_judgment(raw: str, case, observed) -> Judgment:
     return judgment
 
 
+def judge_payload(case, observed):
+    return {
+        "semantic_checks": [c.model_dump() for c in case.hard_checks
+                            if c.method == "semantic_review"],
+        "expected_behavior": case.expected_behavior,
+        "acceptable_tool_paths": case.acceptable_tool_paths,
+        "criteria": case.tool_decision_criteria,
+        "decision_targets": [
+            {"step_id": sid, "call_indices": list(range(len(calls(step))))}
+            for sid, step in observed["steps"].items()
+            if step.get("action") == "converse" and step.get("status") == "completed"
+        ],
+        "reference_facts_for_evaluation_only": case.initial_facts,
+        "steps": compact_steps(observed),
+    }
+
+
+async def judge_observed(case, observed, text_model):
+    """执行冻结裁判并校验证据；供正式评分与独立校准共用。"""
+    payload = judge_payload(case, observed)
+    raw = await text_model.complete([
+        {"role": "system", "content": JUDGE_PROMPT},
+        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+    ], role="judge")
+    try:
+        judged = validate_judgment(raw, case, observed)
+    except ValueError as exc:
+        stopped = OptimizationStopped("judge schema/coverage/evidence invalid; no candidate selection")
+        stopped.judge_diagnostic = {"raw_response": raw, "validation_error": str(exc)}
+        raise stopped from None
+    return judged, payload
+
+
 async def score_with_judge(case, observed, automatic, text_model):
     require_rsi_contract(case)
     if not observed["fixture_validation"]["valid"]:
@@ -148,30 +191,7 @@ async def score_with_judge(case, observed, automatic, text_model):
         return {"score": 0.0, "task_success": False, "automatic_passed": False,
                 "decision_rate": 0.0, "review_status": "not_observed",
                 "semantic": [], "decisions": []}
-    payload = {
-        "semantic_checks": [c.model_dump() for c in case.hard_checks if c.method == "semantic_review"],
-        "expected_behavior": case.expected_behavior,
-        "acceptable_tool_paths": case.acceptable_tool_paths,
-        "criteria": case.tool_decision_criteria,
-        "decision_targets": [
-            {"step_id": sid, "call_indices": list(range(len(calls(step))))}
-            for sid, step in observed["steps"].items()
-            if step.get("action") == "converse" and step.get("status") == "completed"
-        ],
-        "reference_facts_for_evaluation_only": case.initial_facts,
-        "steps": compact_steps(observed),
-    }
-    raw = await text_model.complete([
-        {"role": "system", "content": JUDGE_PROMPT},
-        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
-    ], role="judge")
-    try:
-        judged = validate_judgment(raw, case, observed)
-    except ValueError as exc:
-        # 不把裁判格式错误悄悄记成模型失败，也不通过重试挑选好看的评分。
-        stopped = OptimizationStopped("judge schema/coverage/evidence invalid; no candidate selection")
-        stopped.judge_diagnostic = {"raw_response": raw, "validation_error": str(exc)}
-        raise stopped from None
+    judged, payload = await judge_observed(case, observed, text_model)
     task_success = automatic["automatic_passed"] and all(c.passed for c in judged.semantic)
     decisions = [
         d.required_tools_present and all(c.selection_correct and c.arguments_correct for c in d.calls)

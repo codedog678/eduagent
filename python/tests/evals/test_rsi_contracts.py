@@ -176,3 +176,9 @@ def test_calibration_positive_requires_all_semantic_dimensions(tmp_path):
     }]})
     report = verify_manifest(tmp_path / "manifest.json")
     assert report["matches"]["hint_compliant"] == 0
+
+
+def test_judge_prompt_requires_option_aware_indirect_leak_review():
+    assert "整段回复与学生可见题干、选项合并判断" in JUDGE_PROMPT
+    assert "唯一选项直接对应" in JUDGE_PROMPT
+    assert "若只有正确选项仍可能成立" in JUDGE_PROMPT

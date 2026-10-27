@@ -1,0 +1,1095 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": true,
+    "case_id": "live-52-assisted-contrast",
+    "category": "学习证据",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [],
+    "execution_outcome": "completed",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.assistance / quiz.eval-live-52-q1",
+        "rule": "s1.assistance.recorded=true；s1 提交后 assisted=true，attempts=0。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": true,
+        "path": "s2.evaluation.is_correct",
+        "rule": "等于 true。",
+        "status": "passed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": true,
+        "path": "s2.learning_evidence",
+        "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice、attempt=1。",
+        "status": "passed"
+      },
+      {
+        "id": "H4",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.vocab_basic",
+        "rule": "场景前后所有 KnowledgeState 字段相同，mastery=0.1、attempts=0、correct_count=0。",
+        "status": "passed"
+      },
+      {
+        "id": "H5",
+        "method": "automatic",
+        "passed": true,
+        "path": "learning_evidence 与 quiz.eval-live-52-q1",
+        "rule": "有与 q1 关联的 assistance 和 assessment；最终 quiz.attempts=1、assisted=true、solved=true。",
+        "status": "passed"
+      },
+      {
+        "id": "H6",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s1.teaching_response.response",
+        "rule": "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。",
+        "status": "review_pending"
+      },
+      {
+        "id": "S1",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "hint_direct",
+        "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。",
+        "status": "review_pending"
+      },
+      {
+        "id": "S2",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "hint_paraphrase",
+        "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。",
+        "status": "review_pending"
+      },
+      {
+        "id": "S3",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "hint_elimination",
+        "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+        "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+        "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "review_pending",
+    "title": "证据：转折语境提示后答对仍非独立"
+  },
+  "calibration_provenance": "Assistant-authored controlled calibration response over an archived fixture; not a real Tutor output or human gold.",
+  "case_id": "live-52-assisted-contrast",
+  "judge_identity": {
+    "model": "deepseek-flash",
+    "provider": "deepseek",
+    "thinking": "disabled"
+  },
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "这道题的关键是看 **Unlike** 引出的对比关系。\n\n判断步骤：\n\n1. 找到对比的两端：`the crowded city`（拥挤的城市）和 `the village`（村庄）。\n2. 注意 `Unlike` 的作用：它表示前后两者在某方面**相反**，所以空格词的含义应与 `crowded` 所体现的特征方向相反。\n3. 再看逗号后的补充 `with almost no noise`：这是对村庄状态的进一步说明，可用来验证你判断的方向是否一致。\n\n所以你要做的是：先确定 `crowded` 描述的是哪一类特征，再找选项中与这个特征**方向相反**、并且能和 `almost no noise` 相呼应的那个词。词义和最终选项由你自己判断。"
+      ],
+      "evidence": [
+        {
+          "body": {
+            "assisted": true,
+            "source_refs": []
+          },
+          "kind": "assistance",
+          "quiz_id": "eval-live-52-q1",
+          "source_ref": "evidence:f9dffb7a-471a-4c9d-9333-1c2407ab4fac"
+        },
+        {
+          "body": {
+            "assisted": true,
+            "attempt": 1,
+            "confidence": 0.8,
+            "hints_used": 0,
+            "independent": false,
+            "is_correct": true,
+            "knowledge_id": "vocab_basic",
+            "mastery_updated": false,
+            "outcome": "guided_practice",
+            "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+            "quiz_id": "eval-live-52-q1",
+            "source_refs": [],
+            "student_answer": "C. peaceful"
+          },
+          "kind": "assessment",
+          "quiz_id": "eval-live-52-q1",
+          "source_ref": "evidence:90ecf5f7-0936-4d85-b249-e00926084873"
+        }
+      ],
+      "knowledge": {
+        "eval-live-52": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [],
+      "quizzes": {
+        "eval-live-52-q1": {
+          "assisted": true,
+          "attempts": 1,
+          "created": 1792995987.3539572,
+          "difficulty": 0.5,
+          "hints": 0,
+          "knowledge_id": "vocab_basic",
+          "mode": "practice",
+          "options": [
+            "A. busy",
+            "B. expensive",
+            "C. peaceful",
+            "D. distant"
+          ],
+          "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+          "quiz_id": "eval-live-52-q1",
+          "revealed": false,
+          "session_id": "eval-live-52-s1",
+          "solved": true,
+          "thread_id": "52354c01-24e9-557f-a5e2-c2d562c6ce17"
+        }
+      }
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true
+      },
+      "initial_source_refs": [],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-52": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {
+        "eval-live-52-q1": {
+          "assisted": false,
+          "attempts": 0,
+          "created": 1792995987.3539572,
+          "difficulty": 0.5,
+          "hints": 0,
+          "knowledge_id": "vocab_basic",
+          "mode": "practice",
+          "options": [
+            "A. busy",
+            "B. expensive",
+            "C. peaceful",
+            "D. distant"
+          ],
+          "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+          "quiz_id": "eval-live-52-q1",
+          "revealed": false,
+          "session_id": "eval-live-52-s1",
+          "solved": false,
+          "thread_id": "52354c01-24e9-557f-a5e2-c2d562c6ce17"
+        }
+      },
+      "thread_id": "52354c01-24e9-557f-a5e2-c2d562c6ce17"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 1895.8165000003646,
+        "evidence": [
+          {
+            "body": {
+              "assisted": true,
+              "source_refs": []
+            },
+            "kind": "assistance",
+            "quiz_id": "eval-live-52-q1",
+            "source_ref": "evidence:f9dffb7a-471a-4c9d-9333-1c2407ab4fac"
+          }
+        ],
+        "knowledge": {
+          "eval-live-52": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "vocab_basic",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "这道题的关键是看 **Unlike** 引出的对比关系。\n\n判断步骤：\n\n1. 找到对比的两端：`the crowded city`（拥挤的城市）和 `the village`（村庄）。\n2. 注意 `Unlike` 的作用：它表示前后两者在某方面**相反**，所以空格词的含义应与 `crowded` 所体现的特征方向相反。\n3. 再看逗号后的补充 `with almost no noise`：这是对村庄状态的进一步说明，可用来验证你判断的方向是否一致。\n\n所以你要做的是：先确定 `crowded` 描述的是哪一类特征，再找选项中与这个特征**方向相反**、并且能和 `almost no noise` 相呼应的那个词。词义和最终选项由你自己判断。",
+            "duration_ms": 1893.3946659999492,
+            "request_no": 1,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1794,
+              "output_tokens": 161,
+              "prompt_cache_hit_tokens": 256,
+              "prompt_cache_miss_tokens": 1538
+            }
+          }
+        ],
+        "quizzes": {
+          "eval-live-52-q1": {
+            "assisted": true,
+            "attempts": 0,
+            "created": 1792995987.3539572,
+            "difficulty": 0.5,
+            "hints": 0,
+            "knowledge_id": "vocab_basic",
+            "mode": "practice",
+            "options": [
+              "A. busy",
+              "B. expensive",
+              "C. peaceful",
+              "D. distant"
+            ],
+            "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+            "quiz_id": "eval-live-52-q1",
+            "revealed": false,
+            "session_id": "eval-live-52-s1",
+            "solved": false,
+            "thread_id": "52354c01-24e9-557f-a5e2-c2d562c6ce17"
+          }
+        },
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "vocab_basic",
+              "response": "这道题的关键是看 **Unlike** 引出的对比关系。\n\n判断步骤：\n\n1. 找到对比的两端：`the crowded city`（拥挤的城市）和 `the village`（村庄）。\n2. 注意 `Unlike` 的作用：它表示前后两者在某方面**相反**，所以空格词的含义应与 `crowded` 所体现的特征方向相反。\n3. 再看逗号后的补充 `with almost no noise`：这是对村庄状态的进一步说明，可用来验证你判断的方向是否一致。\n\n所以你要做的是：先确定 `crowded` 描述的是哪一类特征，再找选项中与这个特征**方向相反**、并且能和 `almost no noise` 相呼应的那个词。词义和最终选项由你自己判断。",
+              "response_variant": "tool_loop",
+              "source_refs": [],
+              "teaching_style": "question_answer"
+            }
+          },
+          "assistance": {
+            "recorded": true,
+            "source_ref": "evidence:f9dffb7a-471a-4c9d-9333-1c2407ab4fac"
+          },
+          "correlation_id": "ba93b684-40cd-5f7c-ac17-1fac872a27ac",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "24f76325-4994-410a-83b2-b6efa91871c8",
+            "cited_refs": [],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "answered",
+            "model": "deepseek-flash",
+            "pending_question_id": null,
+            "provider": "deepseek",
+            "read_refs": [],
+            "request_id": "live-52-assisted-contrast-s1",
+            "retrieved_refs": [],
+            "run_id": "ba93b684-40cd-5f7c-ac17-1fac872a27ac",
+            "session_id": "eval-live-52-s1",
+            "source_refs": [],
+            "status": "completed",
+            "thread_id": "52354c01-24e9-557f-a5e2-c2d562c6ce17",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "ba93b684-40cd-5f7c-ac17-1fac872a27ac",
+              "data": {
+                "knowledge_id": "vocab_basic",
+                "question": "只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-26T14:26:27.354677"
+            },
+            {
+              "correlation_id": "ba93b684-40cd-5f7c-ac17-1fac872a27ac",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "vocab_basic",
+                "response": "这道题的关键是看 **Unlike** 引出的对比关系。\n\n判断步骤：\n\n1. 找到对比的两端：`the crowded city`（拥挤的城市）和 `the village`（村庄）。\n2. 注意 `Unlike` 的作用：它表示前后两者在某方面**相反**，所以空格词的含义应与 `crowded` 所体现的特征方向相反。\n3. 再看逗号后的补充 `with almost no noise`：这是对村庄状态的进一步说明，可用来验证你判断的方向是否一致。\n\n所以你要做的是：先确定 `crowded` 描述的是哪一类特征，再找选项中与这个特征**方向相反**、并且能和 `almost no noise` 相呼应的那个词。词义和最终选项由你自己判断。",
+                "response_variant": "tool_loop",
+                "source_refs": [],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-26T14:26:29.249270"
+            }
+          ],
+          "knowledge_id": "vocab_basic",
+          "learner_id": "eval-live-52",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "vocab_basic",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "vocab_basic",
+            "response": "先圈出题干里的关系信号，再说明它连接了哪两个描述对象；到这里停止，不比较选项含义。",
+            "response_variant": "tool_loop",
+            "source_refs": [],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "24f76325-4994-410a-83b2-b6efa91871c8",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1792995989.2499032,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "ba93b684-40cd-5f7c-ac17-1fac872a27ac",
+              "started": 1792995987.354512,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1792995987.354621
+                },
+                {
+                  "agent": "api",
+                  "event_id": "24ef0a55-190b-4e3f-a54b-971c14e8ea7b",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 2,
+                  "timestamp": 1792995987.3546891
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "24ef0a55-190b-4e3f-a54b-971c14e8ea7b",
+                  "kind": "handler_started",
+                  "seq": 3,
+                  "timestamp": 1792995987.354696
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 0,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 4,
+                  "timestamp": 1792995987.354804,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "hint_only",
+                  "seq": 5,
+                  "source_refs": [],
+                  "timestamp": 1792995987.354891,
+                  "token_estimate": 1232,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 6,
+                  "timestamp": 1792995987.3556428,
+                  "token_estimate": 2274
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "ba93b684-40cd-5f7c-ac17-1fac872a27ac",
+                  "resource": "model",
+                  "seq": 7,
+                  "task_id": null,
+                  "timestamp": 1792995987.355711,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 8,
+                  "stop_reason": "stop",
+                  "timestamp": 1792995989.249223,
+                  "usage": {
+                    "input_tokens": 1794,
+                    "output_tokens": 161,
+                    "prompt_cache_hit_tokens": 256,
+                    "prompt_cache_miss_tokens": 1538
+                  }
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "kind": "response_sources",
+                  "read_refs": [],
+                  "retrieved_refs": [],
+                  "seq": 9,
+                  "timestamp": 1792995989.249231
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 1894,
+                  "event_id": "24ef0a55-190b-4e3f-a54b-971c14e8ea7b",
+                  "kind": "handler_completed",
+                  "seq": 10,
+                  "timestamp": 1792995989.24929
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "c976b2da-62aa-40ca-bdb5-df16dbc64f9f",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "24ef0a55-190b-4e3f-a54b-971c14e8ea7b",
+                  "seq": 11,
+                  "timestamp": 1792995989.2492921
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 12,
+                  "timestamp": 1792995989.24932
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "answered",
+                  "kind": "run_completed",
+                  "seq": 13,
+                  "timestamp": 1792995989.2498372
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-52-assisted-contrast-s1"
+        }
+      },
+      "s2": {
+        "action": "answer",
+        "all_sources_readable": true,
+        "duration_ms": 1.8457919995853445,
+        "evidence": [
+          {
+            "body": {
+              "assisted": true,
+              "source_refs": []
+            },
+            "kind": "assistance",
+            "quiz_id": "eval-live-52-q1",
+            "source_ref": "evidence:f9dffb7a-471a-4c9d-9333-1c2407ab4fac"
+          },
+          {
+            "body": {
+              "assisted": true,
+              "attempt": 1,
+              "confidence": 0.8,
+              "hints_used": 0,
+              "independent": false,
+              "is_correct": true,
+              "knowledge_id": "vocab_basic",
+              "mastery_updated": false,
+              "outcome": "guided_practice",
+              "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+              "quiz_id": "eval-live-52-q1",
+              "source_refs": [],
+              "student_answer": "C. peaceful"
+            },
+            "kind": "assessment",
+            "quiz_id": "eval-live-52-q1",
+            "source_ref": "evidence:90ecf5f7-0936-4d85-b249-e00926084873"
+          }
+        ],
+        "knowledge": {
+          "eval-live-52": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "vocab_basic",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [],
+        "quizzes": {
+          "eval-live-52-q1": {
+            "assisted": true,
+            "attempts": 1,
+            "created": 1792995987.3539572,
+            "difficulty": 0.5,
+            "hints": 0,
+            "knowledge_id": "vocab_basic",
+            "mode": "practice",
+            "options": [
+              "A. busy",
+              "B. expensive",
+              "C. peaceful",
+              "D. distant"
+            ],
+            "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+            "quiz_id": "eval-live-52-q1",
+            "revealed": false,
+            "session_id": "eval-live-52-s1",
+            "solved": true,
+            "thread_id": "52354c01-24e9-557f-a5e2-c2d562c6ce17"
+          }
+        },
+        "result": {
+          "agent_insights": {
+            "assessment": {
+              "assessment_strategy": {
+                "confidence": 0.45,
+                "diagnosis": "掌握度正在提升",
+                "generation_mode": "local_policy",
+                "recommended_action": "practice",
+                "student_message": "这次答对了，但还可以继续练几题来稳固。"
+              },
+              "attempts": 0,
+              "confidence": 0.5,
+              "error_patterns": [],
+              "evaluation_feedback": "",
+              "independent": false,
+              "is_correct": true,
+              "is_strong_point": false,
+              "is_weakness": false,
+              "knowledge_id": "vocab_basic",
+              "level": "not_started",
+              "mastery": 0.1,
+              "overall_progress": {
+                "accuracy": 0.0,
+                "avg_mastery": 0.1,
+                "level_distribution": {
+                  "not_started": 1
+                },
+                "total_attempts": 0,
+                "total_correct": 0,
+                "total_knowledge_points": 1,
+                "total_wrong": 0
+              },
+              "protected_quiz": true,
+              "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+              "streak": 0,
+              "student_answer": "C. peaceful"
+            },
+            "curriculum": {},
+            "engagement": {
+              "engagement_strategy": {
+                "consecutive_correct": 1,
+                "consecutive_errors": 0,
+                "generation_mode": "local_policy",
+                "reason": "学习状态稳定。",
+                "recent_accuracy": 1.0,
+                "state": "focused",
+                "suggestion": "保持当前节奏。"
+              }
+            },
+            "tutor": {
+              "context_type": "formative_feedback",
+              "dialogue_state": "answered",
+              "generation_mode": "local_policy",
+              "history_scope": "topic_thread",
+              "knowledge_id": "vocab_basic",
+              "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+              "response_variant": "formative-feedback",
+              "source_refs": [],
+              "teaching_style": "confirmation"
+            }
+          },
+          "correlation_id": "5e57688d-f4a0-54ef-a8b6-f7962902a81f",
+          "evaluation": {
+            "feedback": "判断正确。请用相同方法完成一道新题检验迁移。",
+            "is_correct": true
+          },
+          "events_triggered": 5,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "4963948b-82a7-4954-922f-8e0f5acf6773",
+            "cited_refs": [],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "answered",
+            "model": "deepseek-flash",
+            "pending_question_id": null,
+            "provider": "deepseek",
+            "read_refs": [],
+            "request_id": "live-52-assisted-contrast-s2",
+            "retrieved_refs": [],
+            "run_id": "5e57688d-f4a0-54ef-a8b6-f7962902a81f",
+            "session_id": "eval-live-52-s1",
+            "source_refs": [],
+            "status": "completed",
+            "thread_id": "52354c01-24e9-557f-a5e2-c2d562c6ce17",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "5e57688d-f4a0-54ef-a8b6-f7962902a81f",
+              "data": {
+                "independent": false,
+                "is_correct": true,
+                "knowledge_id": "vocab_basic",
+                "protected_quiz": true,
+                "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+                "student_answer": "C. peaceful",
+                "time_spent_seconds": 10
+              },
+              "event_type": "student.submission",
+              "source": "api",
+              "timestamp": "2026-10-26T14:26:29.250600"
+            },
+            {
+              "correlation_id": "5e57688d-f4a0-54ef-a8b6-f7962902a81f",
+              "data": {
+                "assessment_strategy": {
+                  "confidence": 0.45,
+                  "diagnosis": "掌握度正在提升",
+                  "generation_mode": "local_policy",
+                  "recommended_action": "practice",
+                  "student_message": "这次答对了，但还可以继续练几题来稳固。"
+                },
+                "attempts": 0,
+                "confidence": 0.5,
+                "independent": false,
+                "is_correct": true,
+                "is_strong_point": false,
+                "is_weakness": false,
+                "knowledge_id": "vocab_basic",
+                "level": "not_started",
+                "mastery": 0.1,
+                "streak": 0
+              },
+              "event_type": "assessment.mastery_updated",
+              "source": "AssessmentAgent",
+              "timestamp": "2026-10-26T14:26:29.250637"
+            },
+            {
+              "correlation_id": "5e57688d-f4a0-54ef-a8b6-f7962902a81f",
+              "data": {
+                "assessment_strategy": {
+                  "confidence": 0.45,
+                  "diagnosis": "掌握度正在提升",
+                  "generation_mode": "local_policy",
+                  "recommended_action": "practice",
+                  "student_message": "这次答对了，但还可以继续练几题来稳固。"
+                },
+                "error_patterns": [],
+                "evaluation_feedback": "",
+                "independent": false,
+                "is_correct": true,
+                "knowledge_id": "vocab_basic",
+                "level": "not_started",
+                "mastery": 0.1,
+                "overall_progress": {
+                  "accuracy": 0.0,
+                  "avg_mastery": 0.1,
+                  "level_distribution": {
+                    "not_started": 1
+                  },
+                  "total_attempts": 0,
+                  "total_correct": 0,
+                  "total_knowledge_points": 1,
+                  "total_wrong": 0
+                },
+                "protected_quiz": true,
+                "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+                "student_answer": "C. peaceful"
+              },
+              "event_type": "assessment.complete",
+              "source": "AssessmentAgent",
+              "timestamp": "2026-10-26T14:26:29.250649"
+            },
+            {
+              "correlation_id": "5e57688d-f4a0-54ef-a8b6-f7962902a81f",
+              "data": {
+                "context_type": "formative_feedback",
+                "dialogue_state": "answered",
+                "generation_mode": "local_policy",
+                "history_scope": "topic_thread",
+                "knowledge_id": "vocab_basic",
+                "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+                "response_variant": "formative-feedback",
+                "source_refs": [],
+                "teaching_style": "confirmation"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-26T14:26:29.251085"
+            },
+            {
+              "correlation_id": "5e57688d-f4a0-54ef-a8b6-f7962902a81f",
+              "data": {
+                "engagement_strategy": {
+                  "consecutive_correct": 1,
+                  "consecutive_errors": 0,
+                  "generation_mode": "local_policy",
+                  "reason": "学习状态稳定。",
+                  "recent_accuracy": 1.0,
+                  "state": "focused",
+                  "suggestion": "保持当前节奏。"
+                }
+              },
+              "event_type": "engagement.emotion_detected",
+              "source": "EngagementAgent",
+              "timestamp": "2026-10-26T14:26:29.251182"
+            }
+          ],
+          "knowledge_id": "vocab_basic",
+          "learner_id": "eval-live-52",
+          "learning_evidence": {
+            "assisted": true,
+            "attempt": 1,
+            "confidence": 0.8,
+            "hints_used": 0,
+            "independent": false,
+            "mastery_updated": false,
+            "outcome": "guided_practice",
+            "quiz_id": "eval-live-52-q1"
+          },
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "vocab_basic",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {
+                "confidence": 0.45,
+                "diagnosis": "掌握度正在提升",
+                "generation_mode": "local_policy",
+                "recommended_action": "practice",
+                "student_message": "这次答对了，但还可以继续练几题来稳固。"
+              },
+              "curriculum": {},
+              "engagement": {
+                "consecutive_correct": 1,
+                "consecutive_errors": 0,
+                "generation_mode": "local_policy",
+                "reason": "学习状态稳定。",
+                "recent_accuracy": 1.0,
+                "state": "focused",
+                "suggestion": "保持当前节奏。"
+              },
+              "tutor": {
+                "context_type": "formative_feedback",
+                "generation_mode": "local_policy",
+                "teaching_style": "confirmation"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "再完成一题相似练习。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "practice",
+            "summary": "继续做相似练习以稳定掌握。"
+          },
+          "teaching_response": {
+            "context_type": "formative_feedback",
+            "dialogue_state": "answered",
+            "generation_mode": "local_policy",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "topic_thread",
+            "knowledge_id": "vocab_basic",
+            "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+            "response_variant": "formative-feedback",
+            "source_refs": [],
+            "teaching_style": "confirmation"
+          }
+        },
+        "status": "completed",
+        "student_input": "第一题我选择 C。",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "4963948b-82a7-4954-922f-8e0f5acf6773",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1792995989.251696,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "5e57688d-f4a0-54ef-a8b6-f7962902a81f",
+              "started": 1792995989.250467,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1792995989.250557
+                },
+                {
+                  "agent": "api",
+                  "event_id": "eaad107b-09ea-4cb9-8ca1-da10167387a4",
+                  "event_type": "student.submission",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 2,
+                  "timestamp": 1792995989.2506082
+                },
+                {
+                  "agent": "AssessmentAgent",
+                  "event_id": "eaad107b-09ea-4cb9-8ca1-da10167387a4",
+                  "kind": "handler_started",
+                  "seq": 3,
+                  "timestamp": 1792995989.250613
+                },
+                {
+                  "agent": "AssessmentAgent",
+                  "duration_ms": 0,
+                  "event_id": "eaad107b-09ea-4cb9-8ca1-da10167387a4",
+                  "kind": "handler_completed",
+                  "seq": 4,
+                  "timestamp": 1792995989.250656
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "event_id": "eaad107b-09ea-4cb9-8ca1-da10167387a4",
+                  "kind": "handler_started",
+                  "seq": 5,
+                  "timestamp": 1792995989.250657
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "duration_ms": 0,
+                  "event_id": "eaad107b-09ea-4cb9-8ca1-da10167387a4",
+                  "kind": "handler_completed",
+                  "seq": 6,
+                  "timestamp": 1792995989.250669
+                },
+                {
+                  "agent": "AssessmentAgent",
+                  "event_id": "70b986dc-edaa-4f2f-8c5b-888f32c0bc1a",
+                  "event_type": "assessment.mastery_updated",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "eaad107b-09ea-4cb9-8ca1-da10167387a4",
+                  "seq": 7,
+                  "timestamp": 1792995989.2506711
+                },
+                {
+                  "agent": "CurriculumAgent",
+                  "event_id": "70b986dc-edaa-4f2f-8c5b-888f32c0bc1a",
+                  "kind": "handler_started",
+                  "seq": 8,
+                  "timestamp": 1792995989.2506728
+                },
+                {
+                  "agent": "CurriculumAgent",
+                  "duration_ms": 0,
+                  "event_id": "70b986dc-edaa-4f2f-8c5b-888f32c0bc1a",
+                  "kind": "handler_completed",
+                  "seq": 9,
+                  "timestamp": 1792995989.250678
+                },
+                {
+                  "agent": "AssessmentAgent",
+                  "event_id": "5f589ea8-5e30-4fe9-93ab-7e29dfcb7893",
+                  "event_type": "assessment.complete",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "eaad107b-09ea-4cb9-8ca1-da10167387a4",
+                  "seq": 10,
+                  "timestamp": 1792995989.250679
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "5f589ea8-5e30-4fe9-93ab-7e29dfcb7893",
+                  "kind": "handler_started",
+                  "seq": 11,
+                  "timestamp": 1792995989.2506812
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 0,
+                  "event_id": "5f589ea8-5e30-4fe9-93ab-7e29dfcb7893",
+                  "kind": "handler_completed",
+                  "seq": 12,
+                  "timestamp": 1792995989.251102
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "event_id": "5f589ea8-5e30-4fe9-93ab-7e29dfcb7893",
+                  "kind": "handler_started",
+                  "seq": 13,
+                  "timestamp": 1792995989.251105
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "duration_ms": 0,
+                  "event_id": "5f589ea8-5e30-4fe9-93ab-7e29dfcb7893",
+                  "kind": "handler_completed",
+                  "seq": 14,
+                  "timestamp": 1792995989.2512388
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "023740f5-f0f2-4f65-8b71-c5bc0dcbee63",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "5f589ea8-5e30-4fe9-93ab-7e29dfcb7893",
+                  "seq": 15,
+                  "timestamp": 1792995989.251244
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "event_id": "183b294a-06e6-4e92-bd5e-f5db7cac191b",
+                  "event_type": "engagement.emotion_detected",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "5f589ea8-5e30-4fe9-93ab-7e29dfcb7893",
+                  "seq": 16,
+                  "timestamp": 1792995989.25125
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 17,
+                  "timestamp": 1792995989.251316
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "answered",
+                  "kind": "run_completed",
+                  "seq": 18,
+                  "timestamp": 1792995989.25162
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-52-assisted-contrast-s2"
+        }
+      }
+    }
+  },
+  "schema": "eduagent.rsi-calibration-evidence.v1",
+  "score": {
+    "decisions": [
+      {
+        "calls": [],
+        "evidence": "",
+        "reason": "公开题干已足够，直接提示即可，无需工具调用。",
+        "required_tools_present": true,
+        "step_id": "s1"
+      }
+    ],
+    "judge_input_sha256": "ce22f1d1e17959c6d3d7f2877704d50886a7b100cd1e72aece16711bafb31fd5",
+    "judge_prompt_sha256": "36406800d0d4ad94aab535d97748c17ae7a599d7c40ea30fdedb96127c605192",
+    "review_status": "ai_reviewed",
+    "semantic": [
+      {
+        "evidence": "先圈出题干里的关系信号，再说明它连接了哪两个描述对象；到这里停止，不比较选项含义。",
+        "id": "H6",
+        "passed": true,
+        "reason": "提示聚焦关系信号与连接对象，未直接给出词义或选项。"
+      },
+      {
+        "evidence": "先圈出题干里的关系信号，再说明它连接了哪两个描述对象；到这里停止，不比较选项含义。",
+        "id": "S1",
+        "passed": true,
+        "reason": "未给出正确选项、词形或完整词义。"
+      },
+      {
+        "evidence": "先圈出题干里的关系信号，再说明它连接了哪两个描述对象；到这里停止，不比较选项含义。",
+        "id": "S2",
+        "passed": true,
+        "reason": "未通过翻译、同义词或变形表直接对应答案。"
+      },
+      {
+        "evidence": "先圈出题干里的关系信号，再说明它连接了哪两个描述对象；到这里停止，不比较选项含义。",
+        "id": "S3",
+        "passed": true,
+        "reason": "未逐项排除选项，也未使正确选项成为唯一剩余答案。"
+      }
+    ]
+  }
+}

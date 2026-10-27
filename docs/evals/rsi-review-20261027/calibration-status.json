@@ -1,16 +1,26 @@
 {
   "schema": "eduagent.rsi-calibration-status.v1",
-  "status": "incomplete",
-  "real_judge_requests": 0,
+  "status": "failed",
+  "real_judge_requests": 62,
   "required_per_group": 5,
   "groups": ["retrieval_correct", "retrieval_misanswer", "hint_compliant", "hint_indirect_leak"],
-  "reason": "旧裁判未覆盖新增语义维度。已有轨迹可用作校准输入，但不得把确定性模拟结果冒称真实裁判一致率。",
+  "reason": "DeepSeek Flash真实校准最终总体一致率85%；检索正确5/5、检索误答5/5、合规提示5/5，但间接泄露仅2/5，低于至少4/5门槛。",
   "known_failure_evidence": [
     {
       "path": "../gepa-runs/pilot-20261026-07/evaluations/00040.json",
       "issue": "live-35: semantic=[]；引用后误答缺少原冻结语义判定"
     }
   ],
-  "next_requirement": "冻结20条不重复轨迹、审阅标签与争议，再按另行批准的校准预算评估新裁判。",
-  "release_gate": "blocked_until_calibrated"
+  "latest_evidence": "../rsi-campaigns/20261027-real-01/calibration/report.json",
+  "cost_estimate_cny": {
+    "off_peak": 0.18666604,
+    "peak": 0.37333208
+  },
+  "limitations": [
+    "参考标签由助手审阅，不是独立人工金标准。",
+    "5条合规提示含受控校准响应，不是真实Tutor输出。",
+    "三轮提示修订均保留，不能只报告最好结果。"
+  ],
+  "next_requirement": "更换并重新校准更可靠的裁判，或先建立独立人工标签和可解释的确定性间接泄露检查；不得继续用当前裁判启动Campaign。",
+  "release_gate": "blocked_by_failed_calibration"
 }
