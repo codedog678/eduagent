@@ -20,6 +20,7 @@ class RunContext:
     thread_id: str = ""
     knowledge_id: str = ""
     conversation: bool = False
+    effective_policy_hash: str = ""
     quiz: dict | None = None
     history: Any = None
     knowledge_graph: Any = None

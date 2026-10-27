@@ -25,6 +25,8 @@ from core.spaced_repetition import ReviewItem
 from core.versions import runtime_metadata
 from core.agent_errors import AgentExecutionError
 from core.output_safety import guard_public, register_untrusted
+from core.policy_store import BUILTIN_HASH, PolicyRegistry, effective_hash
+from core.tutor_policy import current_retrieval_rules, use_retrieval_rules
 
 
 class IssuedQuestion(BaseModel):
@@ -70,6 +72,70 @@ class LearningHarness:
     def close(self):
         self.db.close()
         self._owner.close()
+
+    def resolve_policy(self, learner, thread, quiz, knowledge, payload):
+        """先固定创建版本；旧数据明确视作内置版本，冲突不默默切换。"""
+        pins = set()
+        if not quiz and payload.get("kind") in {"question", "message", "task"}:
+            for body, in self.db.execute(
+                    "SELECT body FROM quizzes WHERE learner=? ORDER BY rowid DESC", (learner,)):
+                candidate = json.loads(body)
+                if (candidate["knowledge_id"] == knowledge and not candidate["solved"]
+                        and not candidate["revealed"]
+                        and time.time() - candidate["created"] <= self.quiz_ttl):
+                    quiz = candidate
+                    break
+        if quiz:
+            pins.add(quiz.get("effective_policy_hash") or BUILTIN_HASH)
+        plan = self.db.execute(
+            "SELECT body FROM learning_plans WHERE learner_id=? AND thread_id=? "
+            "AND status='awaiting_student' ORDER BY updated DESC LIMIT 1", (learner, thread)).fetchone()
+        if plan:
+            pins.add(json.loads(plan[0]).get("effective_policy_hash") or BUILTIN_HASH)
+        pending = self.history.pending(learner, thread)
+        if pending:
+            row = self.db.execute(
+                "SELECT r.result FROM runs r JOIN run_attempts a ON "
+                "r.learner=a.learner AND r.request=a.request WHERE a.run=? "
+                "AND r.learner=? AND r.status='completed' LIMIT 1",
+                (pending["run_id"], learner)).fetchone()
+            pins.add(json.loads(row[0]).get("execution", {}).get("effective_policy_hash", BUILTIN_HASH)
+                     if row else BUILTIN_HASH)
+        if len(pins) > 1:
+            raise HTTPException(409, "待答任务与练习的策略版本不一致")
+        if settings.policy_loading_enabled:
+            from core.versions import policy_runtime_hash
+            from evals.live_runner import code_revision
+            registry = PolicyRegistry(settings.policy_registry_path,
+                                      runtime_hash=policy_runtime_hash(settings),
+                                      source_revision=code_revision()["python_source_sha256"])
+            self._policy_registry = registry
+            try:
+                return registry.read(next(iter(pins))) if pins else registry.active()
+            except (ValueError, OSError):
+                raise HTTPException(503, "固定策略版本不可用，请恢复对应策略包") from None
+        # 离线评测覆盖已有独立 ContextVar；不能用生产指针替换候选。
+        components = {"retrieval_rules": current_retrieval_rules()}
+        current_hash = effective_hash(components)
+        if pins and next(iter(pins)) not in {BUILTIN_HASH, current_hash}:
+            raise HTTPException(503, "固定策略版本需要启用策略加载")
+        return {"policy_hash": current_hash, "components": components}
+
+    def observe_policy_health(self, ctx, outcome):
+        if not settings.policy_loading_enabled:
+            return
+        try:
+            from core.policy_health import PolicyHealthMonitor
+            PolicyHealthMonitor(
+                self._policy_registry, window=settings.policy_health_window,
+                min_samples=settings.policy_health_min_samples,
+                max_commit_failure_rate=settings.policy_commit_failure_rate,
+            ).observe(ctx.effective_policy_hash, outcome,
+                      release_enabled=settings.policy_auto_rollback_enabled)
+        except Exception as exc:
+            # 健康记录是提交后的旁路，不能把已成功的学习事务改报为失败。
+            import logging
+            logging.getLogger(__name__).warning("policy health recording failed: %s", type(exc).__name__)
 
     def capture(self, learner):
         model = self.orch.get_learner_model_sync(learner)
@@ -145,6 +211,7 @@ class LearningHarness:
             session, thread = self.history.bind(
                 learner, payload.get("session_id") or scoped_quiz.get("session_id"),
                 payload.get("thread_id") or scoped_quiz.get("thread_id"), knowledge)
+            policy = self.resolve_policy(learner, thread, scoped_quiz, knowledge, payload)
             ctx = RunContext(
                 learner=learner,
                 run_id=str(uuid.uuid5(uuid.NAMESPACE_URL, json.dumps(["edu:run", learner, request_id]))),
@@ -152,10 +219,12 @@ class LearningHarness:
                 session_id=session, thread_id=thread, knowledge_id=knowledge, history=self.history,
                 knowledge_graph=self.orch.curriculum.knowledge_graph,
                 input_text=payload.get("text", ""),
+                effective_policy_hash=policy["policy_hash"],
                 max_model_calls=settings.coordinator_max_model_calls,
                 max_tool_calls=settings.coordinator_max_tool_calls,
             )
             metadata = runtime_metadata(settings)
+            metadata["effective_policy_hash"] = ctx.effective_policy_hash
             with self.db:
                 self.db.execute("INSERT OR REPLACE INTO runs "
                                 "(learner,request,fingerprint,status,result,error,updated) "
@@ -172,10 +241,11 @@ class LearningHarness:
                      metadata["config_fingerprint"]))
             token = active_run.set(ctx)
             register_untrusted(ctx, ctx.input_text)
-            ctx.record("run_started")
+            ctx.record("run_started", effective_policy_hash=ctx.effective_policy_hash)
             try:
-                async with asyncio.timeout(self.timeout):
-                    result, quiz_update = await operation()
+                with use_retrieval_rules(policy["components"]["retrieval_rules"]):
+                    async with asyncio.timeout(self.timeout):
+                        result, quiz_update = await operation()
                 result = guard_public(ctx, result)
                 result["execution"] = {
                     "request_id": request_id, "run_id": ctx.run_id, "attempt_id": ctx.attempt_id,
@@ -230,6 +300,7 @@ class LearningHarness:
                     self.history.save_steps(ctx)
                     self.db.execute("UPDATE run_attempts SET status='completed',finished=? WHERE id=?",
                                     (time.time(), ctx.attempt_id))
+                self.observe_policy_health(ctx, "completed")
                 return result
             except BaseException as exc:
                 self.restore(learner, before)
@@ -252,6 +323,8 @@ class LearningHarness:
                     self.history.save_steps(ctx)
                     self.db.execute("UPDATE run_attempts SET status=?,reason=?,finished=? WHERE id=?",
                                     (status, reason, time.time(), ctx.attempt_id))
+                if any(step["kind"] == "commit_started" for step in ctx.steps):
+                    self.observe_policy_health(ctx, "commit_failed")
                 if isinstance(exc, HTTPException):
                     raise
                 if isinstance(exc, asyncio.CancelledError):
@@ -405,6 +478,7 @@ class LearningHarness:
         quiz = {**question.model_dump(), "knowledge_id": knowledge, "difficulty": difficulty,
                 "created": time.time(), "attempts": 0, "hints": 0, "revealed": False,
                 "solved": False, "assisted": False, "mode": mode,
+                "effective_policy_hash": ctx.effective_policy_hash,
                 "session_id": ctx.session_id,
                 "thread_id": self.history.bind(learner, ctx.session_id, None, knowledge)[1]}
         if knowledge == ctx.knowledge_id:

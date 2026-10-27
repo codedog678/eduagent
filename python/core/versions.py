@@ -65,6 +65,16 @@ def config_fingerprint(settings: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def policy_runtime_hash(settings: Any) -> str:
+    """策略兼容性同时绑定公开运行参数与模型身份，不包含凭据或地址。"""
+    encoded = json.dumps({
+        "config": public_runtime_config(settings),
+        "provider": settings.configured_llm_provider,
+        "model": settings.configured_llm_model,
+    }, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def runtime_metadata(settings: Any) -> dict[str, Any]:
     return {
         "app_version": APP_VERSION,

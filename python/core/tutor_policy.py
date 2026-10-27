@@ -64,6 +64,10 @@ def fixed_components() -> dict[str, str]:
             "turn_rules": TURN_RULES, "quiz_rules": QUIZ_RULES}
 
 
+def current_retrieval_rules():
+    return _retrieval_rules_override.get() or RETRIEVAL_RULES
+
+
 @contextmanager
 def use_retrieval_rules(rules: str):
     if not isinstance(rules, str) or not rules.strip() or len(rules) > 6000:

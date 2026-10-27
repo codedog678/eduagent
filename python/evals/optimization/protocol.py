@@ -14,6 +14,7 @@ from evals.semantic_contract import require_rsi_contract
 SCHEMA = "eduagent.gepa.v2"
 GEPA_VERSION = "0.1.4"
 RUNTIME = {
+    "policy_loading_enabled": False,
     "enable_tutor_tools": True, "enable_agent_llm_decisions": False,
     "enable_db_logging": False, "enable_coordinator": False,
     "memory_retrieval_mode": "lexical", "memory_extraction_enabled": False,
@@ -111,6 +112,7 @@ def prepare_protocol(path: Path, seed: int = 42) -> dict:
         "reflection_train_ids": sorted(c.case_id for c in cases
                                        if c.case_id in train and c.number in (7, 8)),
         "counts": counts, "dataset_role": "development_only",
+        "campaign_search_cache": "first completed candidate/case; comparisons use three independent repeats",
         "holdout": "must be supplied separately after development",
         "seed_policy": policy_artifact(seed_candidate()),
         "runtime": RUNTIME, "gepa_version": GEPA_VERSION,

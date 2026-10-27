@@ -53,16 +53,26 @@ def verify_manifest(path: Path):
     """标签绑定已存原始执行与原始裁判；校验摘要，不接受未落盘的结果。"""
     manifest = json.loads(path.read_text())
     rows = []
+    identities = []
     for item in manifest["items"]:
         evidence = path.parent / item["evidence_path"]
         content = evidence.read_bytes()
         if hashlib.sha256(content).hexdigest() != item["evidence_sha256"]:
             raise ValueError("calibration evidence digest mismatch")
         record = json.loads(content)
+        from evals.optimization.scoring import JUDGE_PROMPT
+        from evals.optimization.protocol import digest
+        if (record["score"].get("judge_prompt_sha256") != digest(JUDGE_PROMPT)
+                or record["score"].get("review_status") != "ai_reviewed"):
+            raise ValueError("calibration evidence uses a different or unobserved judge")
+        identity = record.get("judge_identity")
+        if not identity or any(identity != prior for prior in identities):
+            raise ValueError("calibration judge identity missing or mixed")
+        identities.append(identity)
         response = record["observed"]["steps"][item["step_id"]]["result"]["teaching_response"]["response"]
         check = next(c for c in record["score"]["semantic"] if c["id"] == item["check_id"])
         rows.append({**item, "response": response, "judge_passed": check["passed"]})
-    return calibration_report(rows)
+    return {**calibration_report(rows), "judge_identity": identities[0] if identities else None}
 
 
 if __name__ == "__main__":

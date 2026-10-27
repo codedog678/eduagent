@@ -41,7 +41,11 @@ class TutorGEPAAdapter:
         self.service_factory = service_factory
         self.loop = asyncio.Runner()
         self.rows = []
+        self.next_index = 1 + max(
+            (int(p.stem) for p in (output / "evaluations").glob("*.json") if p.stem.isdigit()),
+            default=0)
         self._busy = False
+        self.reuse_completed = False
 
     def __enter__(self):
         self.previous_settings = {key: getattr(settings, key) for key in RUNTIME}
@@ -91,11 +95,13 @@ class TutorGEPAAdapter:
         automatic = score_live_case(case, observed)
         row = {
             "case_id": case.case_id, "capability": capability_name(case),
-            "evaluation_index": len(self.rows) + 1,
+            "evaluation_index": self.current_index,
             "policy_sha256": digest(candidate), "scoring_status": "pending",
             "automatic": automatic, "observed": observed,
+            "judge_identity": {"provider": self.service.provider, "model": self.service.model,
+                               "thinking": getattr(self.service, "thinking", None)},
         }
-        evidence_path = self.output / "evaluations" / f"{len(self.rows) + 1:05d}.json"
+        evidence_path = self.output / "evaluations" / f"{self.current_index:05d}.json"
         write_json(evidence_path, row)
         try:
             if self.budget.blocked or task_errors:
@@ -118,17 +124,34 @@ class TutorGEPAAdapter:
         if any(case.case_id not in self.cases or case != self.cases[case.case_id] for case in batch):
             raise ValueError("evaluation case is outside this adapter's frozen dataset")
         # 预留整批的最坏任务请求和每例一次裁判，不能把未执行例子补成 0。
-        self.budget.require_requests(sum(c.expected_model_requests_max + 1 for c in batch))
+        cached = {}
+        if self.reuse_completed:
+            for path in sorted((self.output / "evaluations").glob("*.json")):
+                value = json.loads(path.read_text())
+                if (value.get("scoring_status") == "completed"
+                        and value.get("policy_sha256") == digest(candidate)):
+                    cached.setdefault(value["case_id"], value)
+        self.budget.require_requests(sum(c.expected_model_requests_max + 1 for c in batch
+                                         if c.case_id not in cached))
         self._busy = True
         rows = []
         try:
             for case in batch:
+                if case.case_id in cached:
+                    rows.append(cached[case.case_id])
+                    continue
+                self.current_index = self.next_index
+                self.next_index += 1
+                evidence_path = self.output / "evaluations" / f"{self.current_index:05d}.json"
+                write_json(evidence_path, {"case_id": case.case_id,
+                                          "policy_sha256": digest(candidate),
+                                          "scoring_status": "started"})
                 start = len(self.budget.ledger)
                 row = self.loop.run(self._case(case, candidate))
                 row["metering"] = self.budget.ledger[start:]
                 rows.append(row)
                 self.rows.append(row)
-                index = len(self.rows)
+                index = row["evaluation_index"]
                 write_json(self.output / "evaluations" / f"{index:05d}.json", row)
                 write_json(self.output / "policies" / f"{digest(candidate)}.json",
                            policy_artifact(candidate))
@@ -185,6 +208,7 @@ class TutorGEPAAdapter:
             {"role": "user", "content": json.dumps({
                 "fixed_rules": fixed_components(),
                 "candidate": candidate, "feedback": reflective_dataset,
+                "development_failure_counts": getattr(self, "failure_summary", {}),
             }, ensure_ascii=False)},
         ]
         raw = self.loop.run(self.text_model.complete(messages, role="reflection", max_tokens=2500))

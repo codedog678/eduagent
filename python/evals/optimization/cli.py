@@ -11,21 +11,21 @@ from config.settings import settings
 from core.llm_service import get_llm_service
 from core.versions import public_runtime_config
 from evals.io import write_json
-from evals.live_cases import load_live_cases
 from evals.live_runner import code_revision
 from evals.optimization.adapter import TutorGEPAAdapter
-from evals.optimization.budget import OptimizationBudget, OptimizationStopped
+from evals.optimization.budget import OptimizationStopped
 from evals.optimization.protocol import (
-    GEPA_VERSION, SCHEMA, assert_holdout_disjoint, digest, file_digest,
+    GEPA_VERSION, SCHEMA, digest,
     load_policy, load_protocol, policy_artifact, prepare_protocol, seed_candidate,
 )
-from evals.optimization.scoring import summarize
+from evals.optimization.gates import acceptance
 
 
 DEFAULT_DATASET = Path(__file__).resolve().parents[1] / "datasets/tutor_agent50_rsi_v2.jsonl"
 
 
-def run_search(adapter, protocol, cases, *, max_metric_calls=160, minibatch=3, run_dir=None):
+def run_search(adapter, protocol, cases, *, max_metric_calls=160, minibatch=3, run_dir=None,
+               parent=None):
     import gepa
     if version("gepa") != GEPA_VERSION:
         raise ValueError(f"install the verified dependency gepa=={GEPA_VERSION}")
@@ -36,7 +36,8 @@ def run_search(adapter, protocol, cases, *, max_metric_calls=160, minibatch=3, r
     # 采用真实 GEPA 搜索/候选选择；Adapter 自定义反思请求用于统一计费。
     iteration_requests = 2 * minibatch * 7 + sum(c.expected_model_requests_max + 1 for c in val) + 1
     return gepa.optimize(
-        seed_candidate=seed_candidate(), trainset=train, valset=val, adapter=adapter,
+        seed_candidate=seed_candidate() if parent is None else parent,
+        trainset=train, valset=val, adapter=adapter,
         reflection_minibatch_size=minibatch, max_metric_calls=max_metric_calls,
         candidate_selection_strategy="pareto", module_selector="round_robin",
         skip_perfect_score=False, use_merge=False, cache_evaluation=False,
@@ -46,34 +47,6 @@ def run_search(adapter, protocol, cases, *, max_metric_calls=160, minibatch=3, r
             or adapter.budget.exhausted
         ),
     )
-
-
-def acceptance(baseline_rows, candidate_rows):
-    if ([(r["repeat"], r["case_id"]) for r in baseline_rows]
-            != [(r["repeat"], r["case_id"]) for r in candidate_rows]):
-        raise ValueError("paired comparison coverage mismatch")
-    baseline, candidate = summarize(baseline_rows), summarize(candidate_rows)
-    regressions = [
-        {"repeat": b["repeat"], "case_id": b["case_id"]}
-        for b, c in zip(baseline_rows, candidate_rows)
-        if b["score"]["automatic_passed"] and not c["score"]["automatic_passed"]
-    ]
-    group_regressions = [
-        name for name, score in baseline["by_capability"].items()
-        if candidate["by_capability"][name]["task_success_rate"] < score["task_success_rate"]
-    ]
-    improved = (
-        candidate["task_success_rate"] > baseline["task_success_rate"]
-        or candidate["task_success_rate"] == baseline["task_success_rate"]
-        and candidate["mean_score"] > baseline["mean_score"]
-    )
-    passed = improved and not regressions and not group_regressions
-    return {
-        "passed": passed, "baseline": baseline, "candidate": candidate,
-        "automatic_regressions": regressions, "capability_regressions": group_regressions,
-        "policy": "strict improvement, zero paired automatic regressions, no capability TSR decrease",
-        "interpretation": "AI-judged engineering gate, not statistical significance or learning gains",
-    }
 
 
 def configured_service():
@@ -90,8 +63,8 @@ def run_remote(args):
     evaluation_cases = [cases[cid] for cid in protocol["dev_validation_ids"]]
     origin = None
     if args.command == "compare":
-        if args.repeats < 1:
-            raise ValueError("repeats must be positive")
+        if args.repeats != 3:
+            raise ValueError("exactly three paired repeats required")
         candidate = load_policy(args.candidate)
         origin = json.loads((args.origin_run / "run.json").read_text())
         if (origin["status"] != "completed"
@@ -99,10 +72,11 @@ def run_remote(args):
                 or origin["best_policy_sha256"] != digest(candidate)):
             raise ValueError("candidate must match a completed optimization and its frozen protocol")
         if args.holdout:
-            evaluation_cases = load_live_cases(args.holdout)
-            assert_holdout_disjoint(list(cases.values()), evaluation_cases)
+            raise ValueError("holdout requires the campaign entrypoint and bound development receipt")
     service = configured_service()
-    budget = OptimizationBudget(max_requests=args.max_requests, max_cny=args.max_cny)
+    from evals.optimization.ledger import DurableBudget, SharedLedger
+    budget = DurableBudget(SharedLedger(), str(args.output.resolve()),
+                           max_requests=args.max_requests, max_cny=args.max_cny)
     if args.command == "compare":
         budget.require_requests(
             2 * args.repeats * sum(c.expected_model_requests_max + 1 for c in evaluation_cases)
@@ -120,9 +94,7 @@ def run_remote(args):
     write_json(args.output / "protocol.json", protocol)
     write_json(args.output / "baseline-policy.json", policy_artifact(seed_candidate()))
     try:
-        all_cases = list(cases.values()) + (
-            evaluation_cases if args.command == "compare" and args.holdout else []
-        )
+        all_cases = list(cases.values())
         with TutorGEPAAdapter(all_cases, protocol.get("reflection_train_ids", protocol["train_ids"]), budget, args.output,
                               service=service) as adapter:
             record["runtime"] = public_runtime_config(settings)
@@ -155,16 +127,6 @@ def run_remote(args):
                     metric_calls=result.total_metric_calls,
                 )
             else:
-                if args.holdout:
-                    holdout_hash = file_digest(args.holdout)
-                    # 对同一优化结果的一次留出集验收包含事先指定的全部重复。
-                    # 开始请求前封存；失败也不允许悄悄重跑并挑选结果。
-                    with (args.origin_run / "holdout-used.json").open("x") as handle:
-                        json.dump({"dataset_sha256": holdout_hash,
-                                   "repeats": args.repeats,
-                                   "candidate_sha256": digest(candidate)}, handle)
-                    record.update(evaluation_role="holdout",
-                                  holdout_sha256=holdout_hash)
                 record.update(repeats=args.repeats, candidate_sha256=digest(candidate),
                               case_ids=[c.case_id for c in evaluation_cases])
                 write_json(args.output / "run.json", record)
@@ -184,12 +146,10 @@ def run_remote(args):
                 write_json(args.output / "comparison.json", {
                     **gate, "role": record["evaluation_role"], "repeats": args.repeats,
                 })
-                eligible = gate["passed"] and record["evaluation_role"] == "holdout"
-                # 仅产生可审阅选择文件，绝不覆盖 tutor_policy.py 或线上配置。
+                # 单轮命令只提供开发结果；发布资格只能由 campaign 产生。
                 write_json(args.output / "selected-policy.json",
-                           policy_artifact(candidate if eligible else seed_candidate()))
+                           policy_artifact(seed_candidate()))
                 record["selection"] = (
-                    "eligible_for_release_review" if eligible else
                     "development_improved_needs_holdout" if gate["passed"] else "keep_baseline"
                 )
                 record["gate_passed"] = gate["passed"]

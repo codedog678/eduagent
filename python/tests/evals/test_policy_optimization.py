@@ -250,11 +250,13 @@ def test_acceptance_keeps_baseline_on_hard_or_capability_regression():
         return {"case_id": cid, "repeat": 0, "capability": capability,
                 "score": {"score": score, "task_success": score > 0,
                           "automatic_passed": auto, "decision_rate": score}}
-    baseline = [row("a", 1), row("b", 0)]
-    improved = [row("a", 1), row("b", 1)]
+    def repeats(rows):
+        return [{**r, "repeat": i} for i in range(3) for r in rows]
+    baseline = repeats([row("a", 1), row("b", 0)])
+    improved = repeats([row("a", 1), row("b", 1)])
     assert acceptance(baseline, improved)["passed"]
     assert not acceptance(baseline, baseline)["passed"]
-    assert not acceptance(baseline, [row("a", 1, False), row("b", 1)])["passed"]
+    assert not acceptance(baseline, repeats([row("a", 1, False), row("b", 1)]))["passed"]
     with pytest.raises(ValueError, match="coverage"):
         acceptance(baseline, improved[:1])
 
@@ -262,6 +264,9 @@ def test_acceptance_keeps_baseline_on_hard_or_capability_regression():
 def test_cli_search_compare_and_all50_fixtures(monkeypatch, tmp_path):
     pytest.importorskip("gepa")
     from evals.optimization import cli
+    from evals.optimization import ledger
+    original_ledger = ledger.SharedLedger
+    monkeypatch.setattr(ledger, "SharedLedger", lambda: original_ledger(tmp_path / "ledger.sqlite"))
 
     def adapter_factory(cases, train_ids, budget, output, service):
         return TutorGEPAAdapter(cases, train_ids, budget, output, service=service,
@@ -279,7 +284,7 @@ def test_cli_search_compare_and_all50_fixtures(monkeypatch, tmp_path):
     assert report["status"] == "completed" and report["candidate_count"] > 1
     assert cli.main(["compare", "--protocol", str(protocol_path), "--output", str(comparison),
                      "--candidate", str(search / "best-policy.json"), "--origin-run", str(search),
-                     "--repeats", "1", "--max-requests", "600", "--max-cny", "20"]) == 0
+                     "--repeats", "3", "--max-requests", "600", "--max-cny", "20"]) == 0
     report = json.loads((comparison / "run.json").read_text())
     assert report["selection"] == "development_improved_needs_holdout"
     assert load_policy(comparison / "selected-policy.json") == seed_candidate()

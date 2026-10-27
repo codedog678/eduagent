@@ -297,9 +297,11 @@ class Coordinator:
         return self.bind_evidence(plan, validate=False)
 
     def sync(self, plan):
+        plan.effective_policy_hash = self.ctx.effective_policy_hash
         self.ctx.plan = plan.model_dump()
         self.ctx.expert_results = [
-            {**result.model_dump(), **({"practice": plan.action_receipts[key]}
+            {**result.model_dump(), "effective_policy_hash": self.ctx.effective_policy_hash,
+             **({"practice": plan.action_receipts[key]}
                                       if key in plan.action_receipts else {})}
             for key, result in plan.results.items()]
 

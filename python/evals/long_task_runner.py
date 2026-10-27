@@ -51,7 +51,8 @@ def run_contract_suite() -> dict:
     for contract, name in CONTRACT_TESTS.items():
         started = time.perf_counter()
         process = subprocess.run(
-            [sys.executable, "-m", "pytest", f"{test_file}::{name}", "-q"],
+            [sys.executable, str(PROJECT_ROOT / "python/scripts/test_offline.py"),
+             f"{test_file}::{name}", "-q"],
             cwd=PROJECT_ROOT / "python", capture_output=True, text=True, check=False,
             env={**__import__("os").environ, "LLM_PROVIDER": "template"},
         )

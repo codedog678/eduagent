@@ -94,6 +94,12 @@ class Settings(BaseSettings):
     memory_rerank_base_url: str = "https://api.siliconflow.cn/v1"
     memory_rerank_api_key: str = Field(default="", repr=False)
     enable_coordinator: bool = True
+    policy_registry_path: str = ""
+    policy_loading_enabled: bool = False
+    policy_auto_rollback_enabled: bool = False
+    policy_health_window: int = Field(default=50, ge=1)
+    policy_health_min_samples: int = Field(default=20, ge=1)
+    policy_commit_failure_rate: float = Field(default=.1, gt=0, le=1)
     coordinator_max_model_calls: int = Field(default=8, ge=3, le=16)
     coordinator_max_tool_calls: int = Field(default=16, ge=4, le=40)
     coordinator_max_delegations: int = Field(default=3, ge=1, le=6)

@@ -65,6 +65,7 @@ class PlanEvidence(BaseModel):
 
 class LearningPlan(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    effective_policy_hash: str = ""
     plan_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     version: int = Field(default=1, ge=1)
     goal: str = Field(min_length=1, max_length=2000)

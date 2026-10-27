@@ -17,6 +17,7 @@
 | 分层记忆、协作和工具层 | 2026-10-25～26 | H17–H19 | `ff4d235`及对应聊天 |
 | GEPA试跑及逐次修复 | 2026-10-26 | H20–H27 | GEPA v1～v7与失败档案 |
 | 长任务评测和两轮工程修复 | 2026-10-26～27 | C01–C20 | [持续过程记录](problem-solution-log.md) |
+| 交付、来源恢复及RSI R1–R6 | 2026-10-27 | C21–C59 | [持续过程记录](problem-solution-log.md)、[RSI实施记录](../evals/rsi-review-20261027/implementation-plan.md) |
 
 ## H01：原始教学系统与早期主链路
 
