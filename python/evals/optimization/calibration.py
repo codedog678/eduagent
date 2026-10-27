@@ -70,8 +70,15 @@ def verify_manifest(path: Path):
             raise ValueError("calibration judge identity missing or mixed")
         identities.append(identity)
         response = record["observed"]["steps"][item["step_id"]]["result"]["teaching_response"]["response"]
-        check = next(c for c in record["score"]["semantic"] if c["id"] == item["check_id"])
-        rows.append({**item, "response": response, "judge_passed": check["passed"]})
+        checks = {c["id"]: c for c in record["score"]["semantic"]}
+        semantic_ids = item.get("semantic_ids", [item["check_id"]])
+        if (not semantic_ids or set(semantic_ids) - set(checks)
+                or len(semantic_ids) != len(set(semantic_ids))):
+            raise ValueError("calibration semantic coverage mismatch")
+        # 正例要求该能力的全部冻结维度通过；负例只要其中一项被识别为失败。
+        # 这样“未直接给答案但通过改写泄露”不会被单项检查伪装成合规。
+        observed_passed = all(checks[identifier]["passed"] for identifier in semantic_ids)
+        rows.append({**item, "response": response, "judge_passed": observed_passed})
     return {**calibration_report(rows), "judge_identity": identities[0] if identities else None}
 
 

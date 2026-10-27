@@ -14,9 +14,11 @@ from core.tutor_policy import (
     BASE_RULES, QUIZ_RULES, TURN_RULES, RETRIEVAL_RULES, system_prompt, use_retrieval_rules,
 )
 from evals.live_cases import load_live_cases
-from evals.optimization.protocol import prepare_protocol, validate_candidate
-from evals.optimization.calibration import GROUPS, calibration_report
-from evals.optimization.scoring import score_with_judge, validate_judgment
+from evals.optimization.protocol import (
+    assert_holdout_disjoint, capability_name, prepare_protocol, validate_candidate,
+)
+from evals.optimization.calibration import GROUPS, calibration_report, verify_manifest
+from evals.optimization.scoring import JUDGE_PROMPT, score_with_judge, validate_judgment
 from tests.test_coordinator_runtime import Model, final, plan_steps
 from tests.test_memory_coordination import context, harness
 
@@ -28,6 +30,16 @@ def test_old_artifacts_remain_readable_but_cannot_start_new_rsi():
     assert len(load_live_cases(old)) == 50
     with pytest.raises(ValueError, match="v2 semantic"):
         prepare_protocol(old)
+
+
+def test_holdout_has_three_new_cases_per_capability():
+    development = load_live_cases(DATA / "tutor_agent50_rsi_v2.jsonl")
+    holdout = load_live_cases(DATA / "tutor_agent18_holdout_v1.jsonl")
+    assert len(holdout) == 18
+    assert_holdout_disjoint(development, holdout)
+    counts = {name: sum(capability_name(case) == name for case in holdout)
+              for name in {capability_name(case) for case in holdout}}
+    assert len(counts) == 6 and set(counts.values()) == {3}
 
 
 @pytest.mark.parametrize("number,dimension", [
@@ -135,3 +147,32 @@ def test_calibration_requires_actual_distinct_cases_and_discloses_assistant_labe
     assert not calibration_report(rows)["passed"]
     rows[5]["disputed"] = True
     assert calibration_report(rows)["status"] == "incomplete"
+
+
+def test_calibration_positive_requires_all_semantic_dimensions(tmp_path):
+    from evals.io import write_json
+    from evals.optimization.protocol import digest, file_digest
+    record = {
+        "judge_identity": {"provider": "deepseek", "model": "deepseek-flash",
+                           "thinking": "disabled"},
+        "observed": {"steps": {"s1": {"result": {
+            "teaching_response": {"response": "只说明检查方法，不代答。"}}}}},
+        "score": {
+            "judge_prompt_sha256": digest(JUDGE_PROMPT), "review_status": "ai_reviewed",
+            "semantic": [
+                {"id": "S1", "passed": True},
+                {"id": "S2", "passed": False},
+                {"id": "S3", "passed": True},
+            ],
+        },
+    }
+    write_json(tmp_path / "evidence.json", record)
+    write_json(tmp_path / "manifest.json", {"items": [{
+        "evidence_path": "evidence.json",
+        "evidence_sha256": file_digest(tmp_path / "evidence.json"),
+        "step_id": "s1", "check_id": "S1", "semantic_ids": ["S1", "S2", "S3"],
+        "group": "hint_compliant", "reference_passed": True,
+        "reviewer_kind": "assistant", "reviewer": "test",
+    }]})
+    report = verify_manifest(tmp_path / "manifest.json")
+    assert report["matches"]["hint_compliant"] == 0
