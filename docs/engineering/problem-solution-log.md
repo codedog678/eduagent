@@ -491,3 +491,36 @@
 2. **原因**：测试任务的语义与要验证的诊断失败/重规划/预算链不一致。
 3. **怎么解决**：七处旧夹具明确输入“诊断后安排复习”，保留原调用、失败、依赖、预算和回滚断言；不为测试添加生产豁免。新增只搜索/截断来源回归后368通过；再增加成功/失败提交两项回归后最终370通过，4.37秒。
 4. **效果**：本循环全部template及空embedding离线，供应商请求0。真实复测依用户本次明确要求追加一轮，不沿用“仅余3次”停止理由；事前另冻结预算与协议，累计117请求及C34未知用量/费用继续披露。
+
+## C49：第五循环L02恢复成功，原工程门槛通过
+
+日期：2026-10-27。状态：原六例各单次完成，自动5/6，CLI实际exit0，未进化或选优重跑。
+
+1. **问题／动机**：需要验证普通计划/候选来源/修复链修改能否改善L02真实接续；用户明确授权本轮追加复测。
+2. **原因与实际路径**：L02本轮Planner直接生成Curriculum→Tutor且保留真正缺时间/重点的澄清；新session恢复同计划，课程先搜索再全文读取两条澄清对话，合法来源提交。没有Assessment、未读来源拒绝或修复。
+3. **怎么解决／如何验证**：源码52157e6、原数据/评分v2/模型/预算冻结；后端370项、D01–D08 8/8后实跑。离线核对原question_id关闭、thread/plan保持、每天20分钟七天主题句/支撑句完整交付，无题，不做无证据水平诊断。
+4. **实际效果**：通过集合中L02替代L01，总数仍5/6；恢复1/2→2/2、原计划完成4/5→5/5、冻结权限违规0，因此原工程门槛通过。原分母排除L01；全部六个最终计划为5 completed、1 partial，不是全任务成功或教学质量达标。新Assessment简化/unread_source修复均未触发，单次整体改善不能归功于这些分支。
+
+证据：[第五循环分析](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/analysis.md)、[L02实际字段路径](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/agent-audit.json)、[CLI执行记录](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/execution-metadata.json)。
+
+## C50：L01修正后仍超条数，门槛通过不覆盖退化
+
+日期：2026-10-27。状态：失败和剩余教学问题已记录，未追加覆盖运行。
+
+1. **问题**：上轮L01备题待答，本轮没有题且partial；L03首次课程草稿也被同类校验拒绝。
+2. **原因**：L01两次completed.findings/too_long对应列表最多8条，不是单条1000字符超限；原无效草稿未归档，实际条数未知。一次schema修正提示已明确1–8条但仍失败。此时5模型+重规划1+Tutor预留2+必要备题1=9，超过父8，所以未重规划；没有来源错误或批次耗尽。
+3. **已实施行为／下一步区分**：既有失败隔离只交已验证Assessment观察，保留failed课程、blocked Tutor和required_practice_missing，题/收据为空，不删除失败改分。后续应核对schema呈现与紧凑分组，尚未在本轮修改；不能自动截掉发现或动作凑合规。临时审计最初读取不存在的check_result报KeyError，改读实际checks，未改原结果。
+4. **实际效果与边界**：L03既有schema重生成成功，L01同一路径仍失败；本轮两次schema修复、一处L06委派超限fallback，其他新增修复分支均0。教学仍有enough/scarce近义关系错误、provide/offer框架过度合写、共同成因外推、未提供阅读/复习材料、预提示选项、80%自测上调措辞和内部状态。自动工程门槛未覆盖这些问题。
+
+证据：[完整Trace和未改评分](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/result.json)、[逐条审计](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/agent-audit.json)。
+
+## C51：第五循环成本和八轮同评分归档核验
+
+日期：2026-10-27。状态：离线复算通过，新增供应商请求0。
+
+1. **问题**：需同时保留L02改善、L01退化、真实触发和费用，不能只写“门槛通过”。
+2. **怎么解决**：新增本轮协议/源码与数据摘要、原输出、逐条助手审计、字段路径、逐请求账本、执行元数据与manifest；旧七档仅完整哈希核验，在新档派生八轮同v2对照，不改历史数据或分数。核验实际outcome、六例初末知识一致、L05两条受助评估不更新独立掌握，以及本轮修复计数。
+3. **实际效果**：6例14阶段原评分/聚合复算一致，30请求连续且usage全部确认，冻结源码/配置匹配，旧七档manifest完整一致；八轮同v2为0、1、1、4、3、5、5、5。30模型/29工具，估算0.10400680–0.20801360元，比上一轮峰估增加3.70%，不宣称费用下降。
+4. **账本边界**：本对话五轮正式累计147请求、峰估1.01813016元，未超本批120请求/1.5元；此前C34未完整计量的联网测试usage/可能费用仍未知。价格是冻结估算，不是供应商账单。助手审计不是人工/独立裁判，复用六例不是留出集或学习效果证明。
+
+证据：[核验脚本](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/verify-archive.py)、[核验结果](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/verification.json)、[账本](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/cost-ledger.json)、[八轮对照](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/comparison-summary.json)、[manifest](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/manifest.json)。
