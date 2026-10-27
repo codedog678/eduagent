@@ -111,6 +111,9 @@ class SpecialistRuntime:
                 "最后一次请求只输出结论；预算不足时说明证据限制，不继续调用工具。"
                 "最终仅输出符合以下schema的JSON；needs_input仅用于阻断任务的必要信息。"
                 "completed必须有非空findings，needs_input必须有非空问题。"
+                "findings最多8条，建议3至5条；先按主题或阶段分组，再写每组结论。"
+                "多天计划将时间安排合并到同一条，不按天、例句、检查点分别增加条目。"
+                "每条最多1000字符；只保留任务必要的证据、安排与限制，练习动作单列proposed_actions。"
                 "服务端绑定task_id，不输出task_id。"
                 "优先阅读全文读取history_candidates中相关来源，可同轮读多个；"
                 "get_knowledge_context和get_learner_profile已提供快照，避免重复调用。"
@@ -212,6 +215,7 @@ class SpecialistRuntime:
                     messages.append({"role": "user", "content": json.dumps({
                         "correction": "根据已有事实重新输出合规JSON，不增加工具调用。"
                         "findings为1至8条，每条最多1000字符；uncertainty最多1000字符。"
+                        "将多天安排和重复检查点按主题合并为3至5条，保留必要结论与动作，不能截断原稿。"
                         "source_refs只能选verified_source_refs；状态快照不可引用。",
                         "source_correction": (
                             "未读取的候选摘要不能作为结论证据。不能仅删除引用而保留依赖该来源的结论。"

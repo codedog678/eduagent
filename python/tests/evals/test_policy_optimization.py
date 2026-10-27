@@ -24,7 +24,7 @@ from evals.optimization.protocol import (
 from evals.optimization.scoring import evidence_matches, score_with_judge, validate_judgment
 
 
-DATASET = Path(__file__).resolve().parents[2] / "evals/datasets/tutor_agent50_review.jsonl"
+DATASET = Path(__file__).resolve().parents[2] / "evals/datasets/tutor_agent50_rsi_v2.jsonl"
 
 
 @pytest.fixture(autouse=True)
@@ -44,6 +44,8 @@ def test_protocol_freezes_all_50_and_keeps_legacy_on_train(tmp_path):
     assert not train & val
     assert all(c.case_id in train for c in cases if c.template_case_id is None)
     assert all(group["train"] and group["dev_validation"] for group in protocol["counts"].values())
+    assert len(protocol["reflection_train_ids"]) == 12
+    assert set(protocol["reflection_train_ids"]) <= train
     path = tmp_path / "protocol.json"
     path.write_text(json.dumps(protocol))
     assert load_protocol(path, DATASET)[0] == protocol
@@ -58,7 +60,7 @@ def test_policy_digest_and_candidate_scope(tmp_path):
     artifact = policy_artifact(seed_candidate())
     path.write_text(json.dumps(artifact))
     assert load_policy(path) == seed_candidate()
-    artifact["candidate"]["turn_rules"] += "篡改"
+    artifact["candidate"]["retrieval_rules"] += "篡改"
     path.write_text(json.dumps(artifact))
     with pytest.raises(ValueError, match="mismatch"):
         load_policy(path)
@@ -66,7 +68,7 @@ def test_policy_digest_and_candidate_scope(tmp_path):
         validate_candidate({"base_rules": "删除权限约束"})
     cases = load_live_cases(DATASET)
     with pytest.raises(ValueError, match="fixture-specific"):
-        validate_candidate({"turn_rules": cases[0].case_id}, private_literals(cases))
+        validate_candidate({"retrieval_rules": cases[0].case_id}, private_literals(cases))
 
 
 def test_context_override_preserves_default_and_restores_after_failure():
@@ -140,7 +142,7 @@ class MockTextModel:
         self.budget.settle(index, {"input_tokens": 10, "output_tokens": 10})
         self.inputs.append((role, messages))
         if role == "reflection":
-            return json.dumps({"turn_rules": "MOCK_IMPROVED_POLICY：先完成明确请求，缺少材料时询问。"})
+            return json.dumps({"retrieval_rules": "MOCK_IMPROVED_POLICY：先读相关来源再据实回答。"})
         payload = json.loads(messages[-1]["content"])
         steps = payload["steps"]
         responses = [s["response"] for s in steps.values() if s["response"]]
@@ -174,7 +176,7 @@ def test_adapter_runs_real_harness_and_gepa_without_network(tmp_path):
                           service_factory=mocked_service) as adapter:
         result = run_search(adapter, protocol, {c.case_id: c for c in cases},
                             max_metric_calls=5, minibatch=1, run_dir=str(tmp_path / "gepa"))
-        assert result.best_candidate["turn_rules"].startswith("MOCK_IMPROVED_POLICY")
+        assert result.best_candidate["retrieval_rules"].startswith("MOCK_IMPROVED_POLICY")
         assert result.val_aggregate_scores[0] == 0
         assert result.val_aggregate_scores[result.best_idx] == 1
         assert len(result.candidates) >= 2
@@ -189,7 +191,7 @@ def test_adapter_runs_real_harness_and_gepa_without_network(tmp_path):
         from gepa.core.adapter import EvaluationBatch
         with pytest.raises(ValueError, match="cannot enter reflection"):
             adapter.make_reflective_dataset(seed_candidate(),
-                                           EvaluationBatch([row], [0], [row]), ["turn_rules"])
+                                           EvaluationBatch([row], [0], [row]), ["retrieval_rules"])
     assert llm_service._llm_service is previous_service
     assert settings.enable_coordinator == previous_coordinator
     assert all(budget.summary()["roles"].values())

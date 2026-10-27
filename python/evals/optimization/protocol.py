@@ -6,11 +6,12 @@ import json
 from pathlib import Path
 import random
 
-from core.tutor_policy import BASE_RULES, QUIZ_RULES, TURN_RULES
+from core.tutor_policy import RETRIEVAL_RULES, fixed_components
 from evals.live_cases import CASE_IDS, load_live_cases
+from evals.semantic_contract import require_rsi_contract
 
 
-SCHEMA = "eduagent.gepa.v1"
+SCHEMA = "eduagent.gepa.v2"
 GEPA_VERSION = "0.1.4"
 RUNTIME = {
     "enable_tutor_tools": True, "enable_agent_llm_decisions": False,
@@ -33,7 +34,7 @@ def file_digest(path) -> str:
 
 
 def seed_candidate() -> dict:
-    return {"turn_rules": TURN_RULES}
+    return {"retrieval_rules": RETRIEVAL_RULES}
 
 
 def capability_name(case) -> str:
@@ -49,15 +50,15 @@ def capability_name(case) -> str:
 def policy_artifact(candidate: dict) -> dict:
     validate_candidate(candidate)
     return {"schema": SCHEMA, "candidate": candidate, "policy_sha256": digest(candidate),
-            "fixed_rules_sha256": digest([BASE_RULES, QUIZ_RULES])}
+            "fixed_rules_sha256": digest(fixed_components())}
 
 
 def validate_candidate(candidate: dict, forbidden: tuple[str, ...] = ()) -> None:
-    if (not isinstance(candidate, dict) or set(candidate) != {"turn_rules"}
-            or not isinstance(candidate["turn_rules"], str)
-            or not candidate["turn_rules"].strip() or len(candidate["turn_rules"]) > 6000):
-        raise ValueError("only a nonempty turn_rules component (<=6000 chars) is allowed")
-    if any(text and text in candidate["turn_rules"] for text in forbidden):
+    if (not isinstance(candidate, dict) or set(candidate) != {"retrieval_rules"}
+            or not isinstance(candidate["retrieval_rules"], str)
+            or not candidate["retrieval_rules"].strip() or len(candidate["retrieval_rules"]) > 6000):
+        raise ValueError("only a nonempty retrieval_rules component (<=6000 chars) is allowed")
+    if any(text and text in candidate["retrieval_rules"] for text in forbidden):
         raise ValueError("candidate contains fixture-specific identifiers or private literals")
 
 
@@ -85,6 +86,8 @@ def private_literals(cases) -> tuple[str, ...]:
 
 def prepare_protocol(path: Path, seed: int = 42) -> dict:
     cases = load_live_cases(path)
+    for case in cases:
+        require_rsi_contract(case)
     groups = defaultdict(list)
     for case in cases:
         groups[capability_name(case)].append(case)
@@ -105,11 +108,15 @@ def prepare_protocol(path: Path, seed: int = 42) -> dict:
     return {
         "schema": SCHEMA, "dataset_sha256": file_digest(path), "seed": seed,
         "train_ids": sorted(train), "dev_validation_ids": sorted(val),
+        "reflection_train_ids": sorted(c.case_id for c in cases
+                                       if c.case_id in train and c.number in (7, 8)),
         "counts": counts, "dataset_role": "development_only",
         "holdout": "must be supplied separately after development",
         "seed_policy": policy_artifact(seed_candidate()),
         "runtime": RUNTIME, "gepa_version": GEPA_VERSION,
         "scorer_sha256": file_digest(Path(__file__).with_name("scoring.py")),
+        "semantic_contract_sha256": file_digest(
+            Path(__file__).parents[1] / "semantic_contract.py"),
     }
 
 

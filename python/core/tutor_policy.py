@@ -6,6 +6,9 @@ from contextvars import ContextVar
 TUTOR_POLICY_VERSION = "2026-10-25.3"
 
 _turn_rules_override: ContextVar[str | None] = ContextVar("tutor_turn_rules", default=None)
+_retrieval_rules_override: ContextVar[str | None] = ContextVar("tutor_retrieval_rules", default=None)
+
+RETRIEVAL_RULES = "检索工具返回的 source_ref 用于追溯，不能编造来源。"
 
 BASE_RULES = (
     "你是英语学习导师。掌握度只由服务端独立评估更新。"
@@ -50,8 +53,26 @@ def response_contract(quiz_bound: bool, has_pending: bool) -> dict[str, str]:
 
 def system_prompt(quiz_bound: bool) -> str:
     rules = _turn_rules_override.get()
-    # 两组使用同一拼接方式；仅替换决策文本，默认提示逐字不变。
-    return BASE_RULES + (TURN_RULES if rules is None else rules) + (QUIZ_RULES if quiz_bound else "")
+    retrieval = _retrieval_rules_override.get()
+    base = BASE_RULES if retrieval is None else BASE_RULES[:-len(RETRIEVAL_RULES)] + retrieval
+    # 默认字节序列保持不变；RSI只允许替换来源检索组件。
+    return base + (TURN_RULES if rules is None else rules) + (QUIZ_RULES if quiz_bound else "")
+
+
+def fixed_components() -> dict[str, str]:
+    return {"base_rules": BASE_RULES[:-len(RETRIEVAL_RULES)],
+            "turn_rules": TURN_RULES, "quiz_rules": QUIZ_RULES}
+
+
+@contextmanager
+def use_retrieval_rules(rules: str):
+    if not isinstance(rules, str) or not rules.strip() or len(rules) > 6000:
+        raise ValueError("retrieval_rules must contain 1..6000 characters")
+    token = _retrieval_rules_override.set(rules)
+    try:
+        yield
+    finally:
+        _retrieval_rules_override.reset(token)
 
 
 @contextmanager

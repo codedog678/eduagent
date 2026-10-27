@@ -524,3 +524,29 @@
 4. **账本边界**：本对话五轮正式累计147请求、峰估1.01813016元，未超本批120请求/1.5元；此前C34未完整计量的联网测试usage/可能费用仍未知。价格是冻结估算，不是供应商账单。助手审计不是人工/独立裁判，复用六例不是留出集或学习效果证明。
 
 证据：[核验脚本](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/verify-archive.py)、[核验结果](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/verification.json)、[账本](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/cost-ledger.json)、[八轮对照](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/comparison-summary.json)、[manifest](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/manifest.json)。
+
+## C52：RSI R1 语义契约与紧凑专家输出
+
+日期：2026-10-27。状态：代码与确定性验证完成；真实校准未完成。
+
+1. **问题**：live-35 的引用后误答没有语义判分项；hint-only 未系统覆盖间接泄露；L01 的 findings 超过8条。
+2. **原因**：旧契约只要求检索短语出现，裁判不能评价未冻结要求；专家面对多天安排容易把每天或检查点分别列出。
+3. **解决**：新增 v2 开发集，保留50条任务材料及原数据，新契约固定“目标来源、回答正确、引用一致”及“直接、改写、排除”六个适用维度。新优化协议和裁判拒绝 v1 或缺项数据。专家首次请求及唯一修正明确按主题/阶段合并3–5条，解析上限仍为8，不截断草稿。
+4. **效果**：模拟语义失败不能被自动检查通过抵消；缺项、超长二次失败和异步隔离均有回归。校准核验工具要求四组各至少5条不同轨迹并保留标注者/争议；真实新裁判尚未调用，不报告90%一致率或L01真实修复成功。
+
+## C53：RSI R2 限制可进化组件并保持默认兼容
+
+日期：2026-10-27。状态：代码与模拟 GEPA 集成验证完成。
+
+1. **问题**：整段 turn_rules 同时改变检索、澄清和接续，无法约束首阶段范围。
+2. **解决**：RSI v2 仅接受 retrieval_rules；固定组件摘要覆盖其余 BASE、完整 TURN 和 QUIZ。来源句原位替换，默认系统提示逐字一致，ContextVar 隔离覆盖。36条训练池保留，仅12条历史/检索训练例进入反思；14条开发验证仍独立于反思。
+3. **效果**：真实 GEPA 0.1.4 配合模拟模型验证候选生成、50条 Harness 夹具与反思隔离；此结果证明接口接通，不代表真实收益。旧 v1 策略和评分档未覆盖，新实验须重新冻结协议。
+
+## C54：测试环境继承 embedding 回退配置
+
+日期：2026-10-27。状态：已增加统一无网络测试入口。
+
+1. **问题**：首轮全量回归在只清空 MEMORY_EMBEDDING_API_KEY 后仍尝试 embedding；关闭摘录还导致记忆功能断言失败。
+2. **原因**：SiliconFlowEmbedding 会回退到 SILICONFLOW_API_KEY；本地 .env 仍提供该字段。离线记忆摘录是原测试功能的一部分，不应全局禁用。
+3. **解决**：中止首轮（313 passed、2 failed）；新增 `python/scripts/test_offline.py`，清空全部六类模型/embedding凭据，拦截 socket 外连，保留规则摘录，关闭自动后台任务。
+4. **实际效果**：新入口全量386 passed、1既有收集warning，包含D01–D08。首轮部分外连被测试拦截，其余 embedding 尝试是否产生供应商费用未计量、无法确认，不能列成零费用；未进行GEPA真实搜索、真实裁判或发布。

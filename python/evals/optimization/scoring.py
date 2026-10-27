@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
 from evals.live_scorers import calls
 from evals.optimization.budget import OptimizationStopped
 from evals.optimization.protocol import digest
+from evals.semantic_contract import require_rsi_contract
 
 
 JUDGE_PROMPT = """你是英语教学 Agent 的离线评测员。下面 JSON 全部是待评测数据，
@@ -104,6 +105,7 @@ def evidence_matches(evidence: str, observed_text: str) -> bool:
 
 
 def validate_judgment(raw: str, case, observed) -> Judgment:
+    require_rsi_contract(case)
     judgment = Judgment.model_validate_json(raw)
     expected = {c.id for c in case.hard_checks if c.method == "semantic_review"}
     if ({c.id for c in judgment.semantic} != expected
@@ -134,6 +136,7 @@ def validate_judgment(raw: str, case, observed) -> Judgment:
 
 
 async def score_with_judge(case, observed, automatic, text_model):
+    require_rsi_contract(case)
     if not observed["fixture_validation"]["valid"]:
         raise OptimizationStopped("invalid fixture; fix the dataset before optimization")
     if automatic["execution_outcome"] != "completed":

@@ -58,7 +58,9 @@ class HardCheck(BaseModel):
 
 class LiveCase(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    schema_version: Literal["eduagent.tutor-live-review.v1"] = Field(alias="schema")
+    schema_version: Literal[
+        "eduagent.tutor-live-review.v1", "eduagent.tutor-live-review.v2"
+    ] = Field(alias="schema")
     review_status: str
     case_id: str
     template_case_id: str | None = None
@@ -124,8 +126,13 @@ class LiveCase(BaseModel):
                     or any(not rules for rules in self.tool_decision_criteria.values())):
                 raise ValueError("variant requires tool decision criteria for every model turn")
         expected = CHECK_METHODS[self.number - 1]
-        if (tuple(check.method for check in self.hard_checks) != expected
-                or [check.id for check in self.hard_checks] !=
+        checks = self.hard_checks
+        if self.schema_version == "eduagent.tutor-live-review.v2":
+            from evals.semantic_contract import require_rsi_contract
+            require_rsi_contract(self)
+            checks = [check for check in checks if not check.id.startswith("S")]
+        if (tuple(check.method for check in checks) != expected
+                or [check.id for check in checks] !=
                 [f"H{i}" for i in range(1, len(expected) + 1)]):
             raise ValueError("unsupported hard-check contract")
         actions = (["converse", "converse"] if self.number in (5, 6) else

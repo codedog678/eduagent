@@ -22,14 +22,14 @@ from evals.optimization.protocol import (
 from evals.optimization.scoring import summarize
 
 
-DEFAULT_DATASET = Path(__file__).resolve().parents[1] / "datasets/tutor_agent50_review.jsonl"
+DEFAULT_DATASET = Path(__file__).resolve().parents[1] / "datasets/tutor_agent50_rsi_v2.jsonl"
 
 
 def run_search(adapter, protocol, cases, *, max_metric_calls=160, minibatch=3, run_dir=None):
     import gepa
     if version("gepa") != GEPA_VERSION:
         raise ValueError(f"install the verified dependency gepa=={GEPA_VERSION}")
-    train = [cases[cid] for cid in protocol["train_ids"]]
+    train = [cases[cid] for cid in protocol.get("reflection_train_ids", protocol["train_ids"])]
     val = [cases[cid] for cid in protocol["dev_validation_ids"]]
     if minibatch < 1 or minibatch > len(train) or max_metric_calls <= len(val):
         raise ValueError("invalid minibatch or metric budget too small to go beyond seed validation")
@@ -123,7 +123,7 @@ def run_remote(args):
         all_cases = list(cases.values()) + (
             evaluation_cases if args.command == "compare" and args.holdout else []
         )
-        with TutorGEPAAdapter(all_cases, protocol["train_ids"], budget, args.output,
+        with TutorGEPAAdapter(all_cases, protocol.get("reflection_train_ids", protocol["train_ids"]), budget, args.output,
                               service=service) as adapter:
             record["runtime"] = public_runtime_config(settings)
             if origin:
