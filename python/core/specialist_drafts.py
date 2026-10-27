@@ -79,8 +79,15 @@ def parse_result(content, step, refs, history, learner, last_failure=None):
             or (isinstance(draft, NeedsInput) and not draft.needs_input.strip())):
         raise AgentExecutionError("expert_result_invalid", "blank_required_field")
     if not set(draft.source_refs) <= refs:
+        invalid = set(draft.source_refs) - refs
+        kinds = {
+            "non_history_reference" if not ref.startswith(("message:", "evidence:", "memory:"))
+            else "unread_source" if history.memory.source(learner, ref)
+            else "unavailable_source" for ref in invalid
+        }
         raise AgentExecutionError("expert_sources_unverified", "unverified_sources",
-                                  [{"field": "source_refs", "type": "unverified_sources"}])
+                                  [{"field": "source_refs", "type": kind}
+                                   for kind in sorted(kinds)])
     if any(not history.memory.source(learner, ref)
            for ref in draft.source_refs):
         raise AgentExecutionError("source_unavailable", "expired_sources")

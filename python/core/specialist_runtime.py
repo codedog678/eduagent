@@ -110,6 +110,12 @@ class SpecialistRuntime:
                 "优先阅读全文读取history_candidates中相关来源，可同轮读多个；"
                 "get_knowledge_context和get_learner_profile已提供快照，避免重复调用。"
                 "Curriculum的findings必须包含具体时间/阶段安排，proposed_actions必须通过前置快照。"
+                "source_refs只能选verified_source_refs或本轮成功读取工具返回的历史ID；"
+                "knowledge_id、状态快照、任务ID、学生当前请求都不是历史来源，无来源用[]。"
+                "只要普通复习且没有历史时，说明这是基础复习建议，不编造诊断。"
+                "目标practice_allowed=false时，学生允许选择最优先知识点才可建议"
+                "prerequisite_context中practice_allowed=true的基础前置，并在findings说明原因；"
+                "限定目标不能静默替换，学生确认或自评不能绕过前置。"
                 + json.dumps(adapter(step.agent).json_schema(), ensure_ascii=False))},
             {"role": "user", "content": json.dumps(model_value(ctx, {
                 "task": step.model_dump(), "goal": plan.goal, "constraints": plan.constraints,

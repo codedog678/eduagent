@@ -264,11 +264,26 @@ class ToolExecutor:
         mastered = {state["knowledge_id"] for state in
                     self.ctx.profile_state.get("knowledge_states", []) if state.get("mastery", 0) >= .6}
         missing = sorted(set(node.prerequisites) - mastered) if node else []
+        # 同一服务端状态计算前置候选，不通过自评改变掌握度；遍历有界且防环。
+        candidates, seen, queue = [], set(), list(missing)
+        while queue and len(seen) < 32:
+            key = queue.pop(0)
+            if key in seen:
+                continue
+            seen.add(key)
+            prerequisite = self.graph.nodes.get(key)
+            if not prerequisite:
+                continue
+            unmet = sorted(set(prerequisite.prerequisites) - mastered)
+            candidates.append({
+                "knowledge_id": key, "name": prerequisite.name,
+                "prerequisites": prerequisite.prerequisites,
+                "missing_prerequisites": unmet, "practice_allowed": not unmet})
+            queue.extend(item for item in unmet if item not in seen)
         return {"knowledge_id": knowledge_id, "name": node.name if node else knowledge_id,
                 "prerequisites": node.prerequisites if node else [],
                 "context_status": "available" if node else "not_provided",
                 "missing_prerequisites": missing, "practice_allowed": bool(node) and not missing,
                 "mastery_threshold": .6, "materials": [], "materials_status": "not_provided",
-                "prerequisite_context": [
-                    {"knowledge_id": key, "name": self.graph.nodes[key].name}
-                    for key in missing if key in self.graph.nodes]}
+                "prerequisite_context": candidates,
+                "prerequisite_context_truncated": any(key not in seen for key in queue)}

@@ -184,6 +184,11 @@ class Coordinator:
                 "证据和状态由服务端绑定，不生成身份、evidence、results或收据。"
                 "history_availability是同知识点已有历史的候选摘要，存在时先检索/读原文，"
                 "不能让学生重新提供这些历史；摘要不能当作阅读全文。"
+                "历史候选为空且学生只要普通复习/备题、没有要求诊断或测评时，"
+                "直接安排Curriculum→Tutor，不添加Assessment，不用虚构薄弱点支持计划。"
+                "备题遵守knowledge_context的practice_allowed及前置快照；"
+                "学生允许选择最优先知识点时，可先练可备题的基础前置，必须说明选择原因。"
+                "学生限定目标知识点时不得静默替换，不以学生确认或自评跳过前置。"
                 "缺少阻断任务的必要输入时，在needs_input中提出一个简短问题，先等待而不执行专家。"
                 "每个专家至少留一次结论请求；Tutor和备题也要留预算，避免不必要诊断。"
                 "steps必须拓扑排序，所有步骤pending；仅生成目标、约束和步骤，不填执行成果。"})
@@ -343,7 +348,16 @@ class Coordinator:
             if step.status == "pending":
                 step.status = "blocked"
         self.sync(plan)
-        findings = [f for r in plan.results.values() if r.status == "completed" for f in r.findings]
+        # 动作收据只在草稿通过身份/来源/角色校验后生成。
+        # 备题失败不抹掉有效安排；其他失败结果仍不能作为已完成产物交付。
+        deliverable = [
+            result for key, result in plan.results.items()
+            if result.status == "completed" or (
+                result.status == "failed" and result.error_code == "expert_action_invalid"
+                and plan.action_receipts.get(key, {}).get("status") in {
+                    "denied", "invalid_arguments", "transient_error", "exhausted", "failed"})
+        ]
+        findings = list(dict.fromkeys(f for result in deliverable for f in result.findings))
         verified = {ref for result in plan.results.values() for ref in result.source_refs
                     if ref in self.ctx.source_refs and self.ctx.history.memory.source(self.ctx.learner, ref)}
         # 降级不允许无效内联引用再次导致父事务回滚，也不能把未知引用升级成事实。
@@ -357,8 +371,15 @@ class Coordinator:
         findings = [re.sub(r"(?:message|evidence|memory):[A-Za-z0-9_-]+", citation, f) for f in findings]
         if removed:
             self.ctx.record("partial_citations_removed", "Coordinator", count=len(removed))
-        text = "已完成的部分：" + "；".join(findings[:4]) if findings else "这次还没能完成完整的学习安排。"
-        text += "\n部分步骤未完成，暂不能确认完整计划或练习已准备好。请缩小任务范围后继续。"
+        text = ("已形成的安排与观察：\n" + "\n".join(findings)
+                if findings else "这次还没能完成完整的学习安排。")
+        text += "\n部分步骤未完成，完整任务仍未完成。"
+        if "required_practice_missing" in plan.checks or (
+                practice_required(self.ctx, plan) and not plan.practice_quiz_id):
+            text += "本次没有成功准备所需练习题。"
+        if any(receipt.get("error_code") == "practice_prerequisites_missing"
+               for receipt in plan.action_receipts.values()):
+            text += "目标练习的前置知识未达到备题门槛，需先学习前置；确认或自评不能绕过检查。"
         return TutorRuntime(self.ctx, self.service, self.ctx.knowledge_graph).reply(text)
 
     async def run(self, text):
