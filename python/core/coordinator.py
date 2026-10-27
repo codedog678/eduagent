@@ -172,11 +172,12 @@ class Coordinator:
         fallback = self.fallback_plan(text)
         if not self.service._has_remote_llm() or not self.room(models=1):
             return fallback
+        policy = practice_policy(self.ctx, fallback)
         try:
             generated = await self.structured(PlanDraft, {
                 "request": text, "knowledge_id": self.ctx.knowledge_id,
                 "facts": self.planning_facts(),
-                "practice_policy": practice_policy(self.ctx, fallback),
+                "practice_policy": policy,
                 "max_delegations": settings.coordinator_max_delegations,
                 "remaining_model_calls": self.ctx.max_model_calls - self.ctx.model_calls - 1,
                 "remaining_tool_calls": self.ctx.max_tool_calls - self.ctx.tool_calls,
@@ -192,11 +193,16 @@ class Coordinator:
                 "学生限定目标知识点时不得静默替换，不以学生确认或自评跳过前置。"
                 "practice_policy由学生原话和服务端资格生成；只从allowed_knowledge_ids备题。"
                 "allow_prerequisite_selection=true已有选择许可，无需再次确认。"
+                "required=false时备题是可选动作，未达备题前置不阻断原目标的学习安排。"
+                "此时直接交付采用已保存偏好的安排并说明前置限制，"
+                "不因不能备题而追问先补前置还是先诊断；学生明确要求诊断时按原请求处理。"
                 "缺少阻断任务的必要输入时，在needs_input中提出一个简短问题，先等待而不执行专家。"
                 "每个专家至少留一次结论请求；Tutor和备题也要留预算，避免不必要诊断。"
                 "steps必须拓扑排序，所有步骤pending；仅生成目标、约束和步骤，不填执行成果。"})
             if len(generated.steps) > settings.coordinator_max_delegations:
                 raise ValueError("delegation_budget")
+            if self.nonblocking_practice_clarification(text, generated.needs_input, policy):
+                raise ValueError("nonblocking_practice_clarification")
             # 模型不能写入执行结果、收据、计划身份或学习任务状态。
             return self.bind_evidence(LearningPlan(
                 goal=generated.goal, original_request=text[:2000], constraints=generated.constraints,
@@ -206,13 +212,42 @@ class Coordinator:
         except (ValueError, TypeError) as exc:
             reason = (exc.code if isinstance(exc, AgentExecutionError) else
                       str(exc) if str(exc) in {"planner_evidence_conflict", "planner_context_budget",
-                                              "delegation_budget"} else "invalid_plan_schema")
+                                              "delegation_budget", "nonblocking_practice_clarification"}
+                      else "invalid_plan_schema")
             errors = ([{"field": ".".join(map(str, e["loc"])), "type": e["type"]}
                        for e in exc.errors(include_input=False, include_url=False)]
                       if isinstance(exc, ValidationError) else getattr(exc, "details", []))
             self.ctx.record("plan_fallback", "Coordinator", reason=reason,
                             cause_type=type(exc).__name__, errors=errors)
             return fallback
+
+    def nonblocking_practice_clarification(self, text, question, policy):
+        """只拒绝明确把可选备题资格当作规划阻塞的草稿，保留必要信息澄清。"""
+        if (not question or policy["required"]
+                or ToolExecutor(self.ctx).knowledge_context(self.ctx.knowledge_id)["practice_allowed"]):
+            return False
+        clauses = re.split(r"[。；\n，,]", text)
+        if any(re.search(r"诊断|测评|测验|assessment|diagnos", clause, re.I)
+               and not re.search(r"不要|无需|不需要|不想|don't|do not", clause, re.I)
+               for clause in clauses):
+            return False
+        # 混合问题可能确实缺少时间/范围等信息，不能由备题规则猜测并删除。
+        if re.search(
+                r"多久|几分钟|多长时间|可投入|学习目标|改善哪|哪个单元|哪些单元|哪类|哪种|"
+                r"how (?:much|long)|which (?:unit|topic)|learning goal", question, re.I):
+            return False
+        gate = re.search(
+            r"(?:不可|不能|无法|不允许).{0,6}(?:备题|准备.{0,3}题|生成.{0,3}题|练习)|"
+            r"(?:缺|未达|未满足).{0,16}(?:基础|前置|先修)|"
+            r"(?:前置|先修).{0,12}(?:未|不足|缺)|"
+            r"(?:cannot|not allowed).{0,20}(?:practice|quiz)|unmet prerequisite",
+            question, re.I)
+        selection = re.search(
+            r"先.{0,8}(?:补|练|学|诊断|测评)|"
+            r"(?:选择|选).{0,12}(?:前置|基础|诊断)|"
+            r"(?:first|choose).{0,20}(?:prerequisite|basic|diagnos|assessment)",
+            question, re.I)
+        return bool(gate and selection)
 
     def restore_plan(self, previous, text):
         plan = LearningPlan.model_validate(previous)
