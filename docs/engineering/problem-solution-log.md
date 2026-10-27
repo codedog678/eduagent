@@ -404,3 +404,14 @@
 2. **原因**：新模拟Planner误传完整PlanStep的source_refs，触发fallback而不是预期Curriculum；旧截断夹具仅提供一次响应；新测试误从execution读取不存在的model_calls。
 3. **怎么解决**：模拟器只发规划字段；截断回滚夹具明确提供两次截断响应；计数依据持久Trace的budget_used。未削弱目标/事务/来源断言。
 4. **效果**：全量338项通过，包含14个新增业务边界，4.86秒；使用template及空embedding配置，未触发此次真实供应商调用。C34旧失败轮的未知usage/可能费用仍保留，不混入正式账本。
+
+## C40：第三循环真实复测与规划阻塞定位
+
+日期：2026-10-27。状态：单次复测和归档完成，继续修L04。
+
+1. **问题**：自动3/6→5/6，但恢复1/2、门槛仍未通过。L04保存偏好成功，却没有交付略读安排。
+2. **原因**：Planner把未达可选备题门槛当作规划的必要信息，问先补词汇还是先诊断；原请求不要求新题，模型不应因此阻断可执行安排。另有三次Planner fallback（证据冲突1、委派超限2）。新档核验脚本最初假定awaiting_student必自动成功，这与L04实际待答但业务失败不符。
+3. **怎么解决**：先保存原失败、公开问题、Trace、24请求账本和六轮同v2对照；新档核验按实际待答状态检查，不假设任务成功，不改自动评分或旧档。下一循环限制纯可选备题门禁澄清，仍允许真正缺学生信息的必要问题。
+4. **实际效果**：L01合法前置题生成待答；L02无未授权题、恢复原写作计划并completed；L03/L06完整交付；L05保持3请求闭环。计划完成4/5、恢复1/2，exit1；24模型/24工具，估算0.08057728–0.16115456元。本轮没有触发截断/缺动作修正，不能因果归给未触发分支。三轮正式共87请求、峰估0.60953424元；C34旧未知费用单列。
+
+证据：[第三循环分析](../evals/harness-long-runs/20261027-bounded-delivery-deepseek-flash/analysis.md)、[审计](../evals/harness-long-runs/20261027-bounded-delivery-deepseek-flash/agent-audit.json)、[离线核验](../evals/harness-long-runs/20261027-bounded-delivery-deepseek-flash/verification.json)。
