@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from config.settings import settings
 from core.agent_errors import AgentExecutionError
 from core.context_handoff import model_value
-from core.coordination_budget import feasible, practice_required, remaining_cost
+from core.coordination_budget import feasible, practice_policy, practice_required, remaining_cost
 from core.coordination_models import AgentResult, LearningPlan, PlanDraft, PlanRevision, PlanStep
 from core.llm_service import NativeToolCall, TeachingReply
 from core.specialist_runtime import SpecialistRuntime
@@ -176,6 +176,7 @@ class Coordinator:
             generated = await self.structured(PlanDraft, {
                 "request": text, "knowledge_id": self.ctx.knowledge_id,
                 "facts": self.planning_facts(),
+                "practice_policy": practice_policy(self.ctx, fallback),
                 "max_delegations": settings.coordinator_max_delegations,
                 "remaining_model_calls": self.ctx.max_model_calls - self.ctx.model_calls - 1,
                 "remaining_tool_calls": self.ctx.max_tool_calls - self.ctx.tool_calls,
@@ -189,6 +190,8 @@ class Coordinator:
                 "备题遵守knowledge_context的practice_allowed及前置快照；"
                 "学生允许选择最优先知识点时，可先练可备题的基础前置，必须说明选择原因。"
                 "学生限定目标知识点时不得静默替换，不以学生确认或自评跳过前置。"
+                "practice_policy由学生原话和服务端资格生成；只从allowed_knowledge_ids备题。"
+                "allow_prerequisite_selection=true已有选择许可，无需再次确认。"
                 "缺少阻断任务的必要输入时，在needs_input中提出一个简短问题，先等待而不执行专家。"
                 "每个专家至少留一次结论请求；Tutor和备题也要留预算，避免不必要诊断。"
                 "steps必须拓扑排序，所有步骤pending；仅生成目标、约束和步骤，不填执行成果。"})
@@ -306,6 +309,7 @@ class Coordinator:
                 "failed_result": plan.results.get(failed.step_id).model_dump()
                 if failed.step_id in plan.results else None,
                 "facts": self.planning_facts(),
+                "practice_policy": practice_policy(self.ctx, plan),
                 "remaining_model_calls": self.ctx.max_model_calls - self.ctx.model_calls - 1,
                 "remaining_tool_calls": self.ctx.max_tool_calls - self.ctx.tool_calls,
                 "plan": plan.model_dump(), "remaining_delegations": settings.coordinator_max_delegations - self.delegations,
@@ -464,8 +468,15 @@ class Coordinator:
                         continue
                     if plan.practice_quiz_id or ctx.prepared_quiz:
                         raise ValueError("practice_already_prepared")
-                    response = await ToolExecutor(ctx, role="Coordinator").execute(NativeToolCall(
-                        id=f"{step.step_id}-practice", name="prepare_practice", arguments=action.model_dump_json()))
+                    policy = practice_policy(ctx, plan)
+                    if action.knowledge_id not in policy["authorized_knowledge_ids"]:
+                        response = {"status": "denied", "error_code": "practice_target_not_authorized",
+                                    "data": {}, "source_refs": []}
+                        ctx.record("practice_action_rejected", "Coordinator", task_id=step.step_id,
+                                   error_code="practice_target_not_authorized")
+                    else:
+                        response = await ToolExecutor(ctx, role="Coordinator").execute(NativeToolCall(
+                            id=f"{step.step_id}-practice", name="prepare_practice", arguments=action.model_dump_json()))
                     plan.action_receipts[step.step_id] = {**response, "requested_action": action.model_dump()}
                     if response["status"] != "ok":
                         result.uncertainty = (result.uncertainty + " 练习未生成：" +

@@ -7,7 +7,7 @@ import time
 from config.settings import settings
 from core.agent_errors import AgentExecutionError
 from core.context_handoff import compact_results, model_value, read_evidence
-from core.coordination_budget import specialist_limits
+from core.coordination_budget import practice_policy, specialist_limits
 from core.coordination_models import AgentResult
 from core.llm_service import NativeToolCall
 from core.run_context import RunExhausted
@@ -95,6 +95,7 @@ class SpecialistRuntime:
         refs.update(item["source_ref"] for item in read_evidence(ctx)
                     if ctx.history.memory.source(ctx.learner, item["source_ref"]))
         ctx.source_refs = list(dict.fromkeys(ctx.source_refs + sorted(refs)))
+        policy = practice_policy(ctx, plan)
         messages = [
             {"role": "system", "content": (
                 f"你是教育系统的{step.agent}专家。自主选择必要的只读工具，证据不足时明确说明。"
@@ -116,11 +117,16 @@ class SpecialistRuntime:
                 "目标practice_allowed=false时，学生允许选择最优先知识点才可建议"
                 "prerequisite_context中practice_allowed=true的基础前置，并在findings说明原因；"
                 "限定目标不能静默替换，学生确认或自评不能绕过前置。"
+                "practice_policy区分学生授权与备题资格，只可从allowed_knowledge_ids提出动作。"
+                "required=true且尚未备题、有合法候选时必须提出一道练习动作；"
+                "allow_prerequisite_selection=true已获选择许可，不再要求确认。"
+                "required=false时可只交付原目标的安排，不因前置缺失改成另一个知识点。"
                 + json.dumps(adapter(step.agent).json_schema(), ensure_ascii=False))},
             {"role": "user", "content": json.dumps(model_value(ctx, {
                 "task": step.model_dump(), "goal": plan.goal, "constraints": plan.constraints,
                 "current_input": ctx.input_text, "student_inputs": plan.student_inputs,
                 "previous_results": compact_results(upstream), "practice_already_prepared": bool(plan.practice_quiz_id),
+                "practice_policy": policy,
                 "stable_memories": memories, "knowledge_state": ctx.model_state,
                 "learner_profile": ctx.profile_state,
                 "knowledge_context": executor.knowledge_context(ctx.knowledge_id),
@@ -162,7 +168,26 @@ class SpecialistRuntime:
                 if turn.stop_reason not in {"stop", "end_turn"}:
                     raise AgentExecutionError("expert_output_incomplete", turn.stop_reason)
                 try:
-                    return parse_result(turn.content, step, refs, ctx.history, ctx.learner, last_failure_code)
+                    result = parse_result(turn.content, step, refs, ctx.history, ctx.learner, last_failure_code)
+                    missing_action = (
+                        step.agent == "Curriculum" and result.status == "completed"
+                        and policy["required"] and policy["allowed_knowledge_ids"]
+                        and not plan.practice_quiz_id and not ctx.prepared_quiz
+                        and not result.proposed_actions)
+                    if missing_action:
+                        ctx.record("required_practice_action_missing", step.agent, task_id=step.step_id)
+                        if not repaired and not final_turn and ctx.model_calls < ctx.max_model_calls:
+                            repaired = True
+                            messages.append({"role": "user", "content": json.dumps({
+                                "correction": "原请求必须准备一道题，尚未备题。保留具体安排，重新输出完整JSON，"
+                                "proposed_actions从allowed_knowledge_ids选择一个；已有选择授权，不再确认。"
+                                "仅输出结论，不调用工具。",
+                                "practice_policy": policy}, ensure_ascii=False)})
+                            schemas = []
+                            ctx.record("expert_draft_repair", step.agent, task_id=step.step_id,
+                                       reason="required_practice_action_missing")
+                            continue
+                    return result
                 except AgentExecutionError as exc:
                     ctx.record("expert_draft_rejected", step.agent, task_id=step.step_id,
                                error_code=exc.code, errors=exc.details)

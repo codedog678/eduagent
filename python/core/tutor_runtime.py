@@ -82,7 +82,9 @@ class ContextBuilder:
                 "未成功准备目标练习时不能声称已有该目标的新题。")
             messages[0]["content"] += (
                 "已读来源和专家结论可直接复用，不重复搜索或读取这些来源。"
-                "verified_source_refs是可引用的历史ID，状态快照不是source_ref。")
+                "verified_source_refs是可引用的历史ID，状态快照不是source_ref。"
+                "在800输出token内简洁完整交付：合并重复发现，保留具体阶段安排、"
+                "学生约束、关键来源、未完成缺口和已有题干，不展开长篇解释。")
         if ctx.memory_proposals:
             messages[0]["content"] += MEMORY_WRITE_RULES
         recent = ctx.history.messages(ctx.learner, ctx.thread_id, limit=8)["items"]
@@ -167,7 +169,7 @@ class TutorRuntime:
             self.ctx.record("model_fallback", "TutorAgent", mode=reply.generation_mode)
             return reply.model_copy(update={"source_refs": self.ctx.source_refs})
 
-        seen, tool_count = set(), 0
+        seen, tool_count, output_repaired = set(), 0, False
         schemas = self.schemas()
         for model_no in range(1, settings.tutor_max_model_calls + 1):
             if (self.ctx.model_calls + 1 >= self.ctx.max_model_calls
@@ -192,11 +194,27 @@ class TutorRuntime:
             self.ctx.record("after_model", "TutorAgent", model_call=model_no,
                             stop_reason=turn.stop_reason, usage=turn.usage)
             if turn.stop_reason in {"length", "max_tokens"}:
+                if (not turn.tool_calls and not output_repaired
+                        and model_no < settings.tutor_max_model_calls
+                        and self.ctx.model_calls < self.ctx.max_model_calls):
+                    # 截断稿和私有推理都不追加；仅用已有事实在原额度内重生成一次。
+                    self.ctx.remaining()
+                    output_repaired = True
+                    schemas = []
+                    messages.append({"role": "user", "content":
+                                     "上一稿达到输出上限，请用已有事实重新给出简短完整答复，"
+                                     "控制在450个汉字以内。保留时间/阶段安排、必要来源、"
+                                     "未完成缺口和已有题干；不要长篇解释，不调用工具。"})
+                    self.ctx.record("tutor_output_repair", "TutorAgent",
+                                    reason="output_token_limit", model_call=model_no)
+                    continue
                 raise RunExhausted("output_token_limit")
             if not turn.tool_calls:
                 if turn.stop_reason not in {"stop", "end_turn"} or not turn.content.strip():
                     raise RuntimeError("model_did_not_complete")
                 return self.reply(turn.content.strip())
+            if output_repaired:
+                raise RuntimeError("tools_on_output_repair")
             if turn.stop_reason not in {"tool_calls", "tool_use"}:
                 raise RuntimeError("invalid_tool_stop_reason")
             assistant = {"role": "assistant", "content": turn.content or None,

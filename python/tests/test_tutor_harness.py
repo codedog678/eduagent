@@ -219,7 +219,8 @@ async def test_tool_gate_rejects_unregistered_or_invalid(store, monkeypatch, too
     ([call("same", "get_knowledge_context"), call("same", "get_knowledge_context")], "duplicate_tool_call"),
     ([call("1", "get_knowledge_context"), call("2", "get_knowledge_context"),
       call("3", "get_knowledge_context")], "model_call_budget"),
-    ([NativeTurn(content="partial", stop_reason="length")], "output_token_limit"),
+    ([NativeTurn(content="partial", stop_reason="length"),
+      NativeTurn(content="partial again", stop_reason="length")], "output_token_limit"),
 ])
 async def test_exhaustion_keeps_attempts_and_rolls_back(store, monkeypatch, turns, reason):
     scripted(monkeypatch, turns)
