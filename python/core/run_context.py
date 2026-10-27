@@ -48,6 +48,7 @@ class RunContext:
     max_tool_calls: int = 16
     tool_cache: dict = field(default_factory=dict)
     retrieved_items: list | None = None
+    history_discovery_used: bool = False
     role: str = "Tutor"
     task_id: str | None = None
 

@@ -247,7 +247,7 @@ async def test_rejected_practice_marks_partial_and_does_not_store_quiz(harness, 
     model.steps[0]["depends_on"] = []
     model.install(monkeypatch)
     monkeypatch.setattr(settings, "coordinator_max_replans", 0)
-    result = await harness.converse("a", "denied-practice", "vocab_basic", "安排进阶练习")
+    result = await harness.converse("a", "denied-practice", "vocab_basic", "安排进阶练习并准备一道练习题")
     assert result["learning_plan"]["outcome"] == "partial"
     assert result["learning_plan"]["results"]["c"]["status"] == "failed"
     assert result["learning_plan"]["action_receipts"]["c"]["status"] == "denied"

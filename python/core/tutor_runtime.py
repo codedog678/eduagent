@@ -49,6 +49,7 @@ class ContextBuilder:
         ctx.answered_question_id = pending["id"] if pending else None
         contract = response_contract(bool(ctx.quiz), bool(pending))
         facts = {"knowledge_id": ctx.knowledge_id, "mastery": ctx.model_state,
+                 "knowledge_context": ToolExecutor(ctx).knowledge_context(ctx.knowledge_id),
                  "pending_question": pending, "quiz_bound": bool(ctx.quiz),
                  "response_contract": contract,
                  "stable_memories": ctx.history.memory.profile(ctx.learner),
@@ -66,6 +67,11 @@ class ContextBuilder:
                 "\n按计划中的原始目标、约束和学生补充信息接续任务。"
                 "检查步骤状态及动作收据：失败或阻塞的工作须说明缺口，不能声称完整完成。"
                 "只有已成功准备的练习才能说已准备好；发出练习不代表学生已掌握。")
+            messages[0]["content"] += (
+                "把findings写成学生可直接执行的安排，明确时间、顺序和每阶段的任务；"
+                "逐项采用计划constraints中的偏好与时间上限，不能只给概述。"
+                "可选练习失败时说明没有新题，仍交付可执行安排。"
+                "hint_only或受助练习不能承诺本次更新独立掌握度。")
         if ctx.memory_proposals:
             messages[0]["content"] += MEMORY_WRITE_RULES
         recent = ctx.history.messages(ctx.learner, ctx.thread_id, limit=8)["items"]
@@ -144,6 +150,11 @@ class TutorRuntime:
         seen, tool_count = set(), 0
         schemas = self.schemas()
         for model_no in range(1, settings.tutor_max_model_calls + 1):
+            if (self.ctx.model_calls + 1 >= self.ctx.max_model_calls
+                    or model_no == settings.tutor_max_model_calls
+                    or self.ctx.tool_calls >= self.ctx.max_tool_calls):
+                schemas = []
+                messages[0]["content"] += "\n现在用已有事实给出最终答复；工具已关闭。"
             estimate = estimate_tokens({"messages": messages, "tools": schemas})
             # 工具返回原文后释放旧历史块，为新证据留空间；当前输入/待答/工具协议不丢弃。
             while estimate + settings.tutor_max_output_tokens > settings.tutor_context_budget_tokens:

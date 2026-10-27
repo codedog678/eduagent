@@ -10,6 +10,7 @@ from core.coordination_budget import specialist_limits
 from core.coordination_models import AgentResult
 from core.llm_service import NativeToolCall
 from core.run_context import RunExhausted
+from core.specialist_drafts import adapter, parse_result
 from core.tool_executor import ToolExecutor, ToolResult
 from core.tutor_runtime import estimate_tokens
 
@@ -41,7 +42,7 @@ class SpecialistRuntime:
             else:
                 result = await self.local(step, executor, refs)
             if result.task_id != step.step_id or not set(result.source_refs) <= refs:
-                raise ValueError("unverified_expert_sources")
+                raise AgentExecutionError("expert_sources_unverified", "unverified_sources")
             if any(not ctx.history.memory.source(ctx.learner, ref) for ref in result.source_refs):
                 raise ValueError("expired_expert_sources")
             if result.proposed_actions and (step.agent != "Curriculum" or result.status != "completed"):
@@ -55,6 +56,8 @@ class SpecialistRuntime:
             return result
         except AgentExecutionError as exc:
             failure_code, cause_type = exc.code, exc.cause_type
+            ctx.record("expert_validation_failed", step.agent, task_id=step.step_id,
+                       error_code=exc.code, errors=exc.details)
             raise
         except RunExhausted as exc:
             if str(exc) in {"model_call_budget", "tool_call_budget", "expert_context_budget"}:
@@ -99,16 +102,28 @@ class SpecialistRuntime:
                 "缺少阻断任务的学生信息时用needs_input提出一个必要问题。"
                 "最后一次请求只输出结论；预算不足时说明证据限制，不继续调用工具。"
                 "最终仅输出符合以下schema的JSON；needs_input仅用于阻断任务的必要信息。"
-                + json.dumps(AgentResult.model_json_schema(), ensure_ascii=False))},
+                "completed必须有非空findings，needs_input必须有非空问题。"
+                "服务端绑定task_id，不输出task_id。"
+                "优先阅读全文读取history_candidates中相关来源，可同轮读多个；"
+                "get_knowledge_context和get_learner_profile已提供快照，避免重复调用。"
+                "Curriculum的findings必须包含具体时间/阶段安排，proposed_actions必须通过前置快照。"
+                + json.dumps(adapter(step.agent).json_schema(), ensure_ascii=False))},
             {"role": "user", "content": json.dumps({
                 "task": step.model_dump(), "goal": plan.goal, "constraints": plan.constraints,
                 "current_input": ctx.input_text, "student_inputs": plan.student_inputs,
                 "previous_results": upstream, "practice_already_prepared": bool(plan.practice_quiz_id),
                 "stable_memories": memories, "knowledge_state": ctx.model_state,
                 "learner_profile": ctx.profile_state,
+                "knowledge_context": executor.knowledge_context(ctx.knowledge_id),
+                "history_candidates": ctx.history.discovery(ctx.learner, ctx.knowledge_id),
+                "read_source_refs": ctx.read_refs,
+                "review_queue": ctx.review_queue,
             }, ensure_ascii=False)},
         ]
         schemas, seen, tool_count, last_failure_code = executor.schemas(), set(), 0, None
+        schemas = [schema for schema in schemas if schema["function"]["name"]
+                   not in {"get_knowledge_context", "get_learner_profile", "get_review_queue"}]
+        repaired = False
         for index in range(settings.specialist_max_model_calls):
             ctx.remaining()
             if ctx.model_calls >= ctx.max_model_calls:
@@ -119,6 +134,10 @@ class SpecialistRuntime:
                 or ctx.tool_calls >= ctx.max_tool_calls
             )
             active_schemas = [] if final_turn else schemas
+            messages[0]["content"] += (
+                f"\n剩余额度：模型{ctx.max_model_calls-ctx.model_calls}次，"
+                f"工具{min(settings.specialist_max_tool_calls-tool_count, ctx.max_tool_calls-ctx.tool_calls)}次；"
+                "先读必要来源，再下结论，不查询已有快照。")
             if final_turn:
                 messages[0]["content"] += "\n现在输出最终JSON结论；工具已关闭，证据不足时说明限制。"
             if estimate_tokens({"messages": messages, "tools": active_schemas}) + 1200 > settings.tutor_context_budget_tokens:
@@ -130,14 +149,23 @@ class SpecialistRuntime:
                        stop_reason=turn.stop_reason, usage=turn.usage)
             if not turn.tool_calls:
                 if turn.stop_reason not in {"stop", "end_turn"}:
-                    raise ValueError("expert_incomplete_output")
+                    raise AgentExecutionError("expert_output_incomplete", turn.stop_reason)
                 try:
-                    result = AgentResult.model_validate_json(turn.content)
-                    if result.status == "failed" and result.error_code is None:
-                        result.error_code = last_failure_code or "expert_failed"
-                    return result
-                except ValueError as exc:
-                    raise AgentExecutionError("expert_schema_invalid", type(exc).__name__) from exc
+                    return parse_result(turn.content, step, refs, ctx.history, ctx.learner, last_failure_code)
+                except AgentExecutionError as exc:
+                    ctx.record("expert_draft_rejected", step.agent, task_id=step.step_id,
+                               error_code=exc.code, errors=exc.details)
+                    if (repaired or final_turn or ctx.model_calls >= ctx.max_model_calls
+                            or exc.code in {"expert_task_mismatch", "expert_sources_unverified", "source_unavailable"}):
+                        raise
+                    repaired = True
+                    messages.append({"role": "assistant", "content": turn.content})
+                    messages.append({"role": "user", "content": json.dumps({
+                        "correction": "仅修正草稿，不增加工具调用；必须符合角色与status协议。",
+                        "error_code": exc.code, "errors": exc.details}, ensure_ascii=False)})
+                    schemas = []
+                    ctx.record("expert_draft_repair", step.agent, task_id=step.step_id)
+                    continue
             if final_turn:
                 raise AgentExecutionError("budget_exhausted", "tools_on_final_turn")
             if turn.stop_reason not in {"tool_calls", "tool_use"}:

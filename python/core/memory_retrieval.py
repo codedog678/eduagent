@@ -3,6 +3,7 @@
 import asyncio
 import json
 import math
+import re
 import sqlite3
 import time
 
@@ -79,6 +80,22 @@ class MemoryRetrieval:
     async def search(self, learner, knowledge, query, limit=5, ctx=None):
         start = time.monotonic()
         lexical = self.store.lexical(learner, knowledge, query)
+        expanded = []
+        # 通用错误/偏好术语映射；知识点ID仍只负责过滤，不植入答案词句。
+        if query.strip() and not lexical:
+            for pattern, terms in (
+                (r"错误|错题|薄弱|mistake|error", ("误", "错", "忽略", "混淆")),
+                (r"偏好|preference", ("喜欢", "先", "prefer")),
+                (r"时态|tense", ("过去", "现在", "完成", "将来")),
+                (r"词汇|搭配|vocab|collocation", ("词", "搭配", "混淆")),
+            ):
+                if re.search(pattern, query, re.I):
+                    expanded.extend(terms)
+            unique = {}
+            for term in dict.fromkeys(expanded):
+                for item in self.store.lexical(learner, knowledge, term):
+                    unique.setdefault(item["source_ref"], item)
+            lexical = list(unique.values())[:20]
         semantic, searched, usage = [], 0, {}
         if query.strip() and self.config.memory_retrieval_mode == "hybrid" and self.provider.key:
             try:
@@ -134,9 +151,16 @@ class MemoryRetrieval:
                        degraded_reason=self.degraded_reason, embedding_usage=usage,
                        rerank_usage=rerank_usage, rerank_error=rerank_error,
                        semantic_threshold=self.config.memory_semantic_threshold)
-        return {"items": [{k: v for k, v in items[ref].items() if k != "content"}
+        result = {"items": [{k: v for k, v in items[ref].items() if k != "content"}
                           for ref in refs[:limit]],
-                "retrieval_mode": self.health()["mode"]}
+                "retrieval_mode": self.health()["mode"], "query_expanded": bool(expanded)}
+        if query.strip() and not result["items"] and ctx and not ctx.history_discovery_used:
+            ctx.history_discovery_used = True
+            result.update(ctx.history.discovery(learner, knowledge, limit))
+            result["discovery_only"] = True
+            ctx.record("history_discovery", source_refs=[
+                item["source_ref"] for item in result["items"]], bounded=True)
+        return result
 
     async def rerank(self, query, refs, items):
         key = self.config.memory_rerank_api_key or self.provider.key

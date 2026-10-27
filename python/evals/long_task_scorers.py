@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+import re
 
 from evals.long_task_models import LongTaskCase
+
+SCORER_VERSION = "eduagent.harness-long-task-scorer.v2"
 
 
 def trace_steps(stage):
@@ -68,6 +71,19 @@ def score_long_task(case: LongTaskCase, observed: dict) -> dict:
     plans = final.get("plans", [])
     latest = plans[-1] if plans else {}
     plan_completed = latest.get("status") == "completed" and latest.get("outcome") == "completed"
+    response = next((stage.get("result", {}).get("teaching_response", {}).get("response", "")
+                     for stage in reversed(list(stages.values()))
+                     if stage.get("result", {}).get("teaching_response")), "")
+    valid_wait = (
+        latest.get("status") == "awaiting_student"
+        and latest.get("outcome") == "awaiting_student"
+        and bool(latest.get("practice_quiz_id") or latest.get("needs_input")
+                 or any(r.get("status") == "needs_input" for r in latest.get("results", {}).values()))
+        and not latest.get("checks")
+        and not any(s.get("status") in {"failed", "blocked"} for s in latest.get("steps", [])))
+    business_resolved = plan_completed or valid_wait
+    if case.case_id != "L06":
+        check("business_plan_resolved", business_resolved, "业务完成或合法等待，不接受completed/partial")
 
     if case.case_id == "L01":
         first = stages.get("s1", {})
@@ -76,6 +92,10 @@ def score_long_task(case: LongTaskCase, observed: dict) -> dict:
               and latest.get("status") == "awaiting_student", "备题并等待学生")
         check("history_grounded", len(sources["read"] & case.required_source_refs) >= 2,
               "至少阅读全文读取两条错误或偏好来源")
+        check("week_preference_delivery",
+              bool(re.search(r"一周|7天|七天|第[一二三四五六七1-7]天|周[一二三四五六日]", response))
+              and bool(re.search(r"十五|15", response)) and "例" in response,
+              "学生可见回复交付一周安排及十五分钟、短例子约束")
     elif case.case_id == "L02":
         first, resumed = stages.get("s1", {}), stages.get("s3", {})
         first_execution = first.get("result", {}).get("execution", {})
@@ -90,8 +110,12 @@ def score_long_task(case: LongTaskCase, observed: dict) -> dict:
               == first_execution.get("pending_question_id")
               and any(item["answered_by"] for item in final.get("pending_questions", [])),
               "补充信息关闭原 pending question")
-        check("plan_resolved", latest.get("status") in {"completed", "awaiting_student"},
-              "恢复后计划进入明确后续状态")
+        check("plan_resolved", business_resolved
+              and _plan(first).get("plan_id") == latest.get("plan_id"),
+              "恢复同一计划并实际完成或合法等待")
+        check("writing_delivery", bool(re.search(r"二十|20", response))
+              and "主题句" in response and bool(re.search(r"支撑句|支持句", response)),
+              "回复采用二十分钟和主题句/支撑句目标")
     elif case.case_id == "L03":
         check("multi_source_read", len(sources["read"] & case.required_source_refs) >= 2,
               "至少读取两段分散历史原文")
@@ -100,6 +124,9 @@ def score_long_task(case: LongTaskCase, observed: dict) -> dict:
               and all(set(step.get("depends_on", [])) <= {
                   prior["step_id"] for prior in latest["steps"][:index]
               } for index, step in enumerate(latest["steps"])), "计划依赖拓扑有序")
+        check("diagnosis_delivery", bool(re.search(r"词义|反义|近义", response))
+              and "搭配" in response and bool(re.search(r"阶段|先|第[一二三1-3]", response)),
+              "回复区分词义和搭配并给出阶段顺序")
     elif case.case_id == "L04":
         first, later = stages.get("s1", {}), stages.get("s4", {})
         check("memory_committed", any(
@@ -110,7 +137,9 @@ def score_long_task(case: LongTaskCase, observed: dict) -> dict:
         check("memory_survived_restart", bool(later.get("snapshot", {}).get("memories")),
               "重启后偏好仍存在")
         response = later.get("result", {}).get("teaching_response", {}).get("response", "")
-        check("preference_adopted", "限时" in response or "自己" in response,
+        check("preference_adopted", "限时" in response
+              and bool(re.search(r"自己|独立", response))
+              and bool(re.search(r"再.{0,12}(?:看|查|用).{0,8}提示|再看提示|后.{0,8}提示", response)),
               "后续回复采用先独立限时的偏好")
     elif case.case_id == "L05":
         evidence = final.get("evidence", [])
@@ -148,6 +177,9 @@ def score_long_task(case: LongTaskCase, observed: dict) -> dict:
         check("plan_bounded", bool(latest) and latest.get("outcome") in {
             "completed", "partial", "awaiting_student"
         }, "输出有边界的计划或降级结果")
+        check("conflict_disclosed", bool(re.search(r"冲突|矛盾|不一致", response))
+              and bool(re.search(r"限制|不能|不足|不确定|不代表|无法|不能据", response)),
+              "回复明确披露冲突及证据限制")
 
     model_tool_calls = [
         call
@@ -170,6 +202,7 @@ def score_long_task(case: LongTaskCase, observed: dict) -> dict:
     hard_passed = script_complete and all(item["passed"] for item in assertions)
     status = "passed" if hard_passed else _failure_status(stages)
     return {
+        "scorer_version": SCORER_VERSION,
         "case_id": case.case_id, "title": case.title, "status": status,
         "task_success": hard_passed, "plan_completed": plan_completed,
         "assertions": assertions,

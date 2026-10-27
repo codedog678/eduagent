@@ -183,7 +183,11 @@ class ToolExecutor:
             result.update(status="invalid_arguments", error_code="schema_validation",
                           errors=[{"field": ".".join(map(str, e["loc"])), "type": e["type"]}
                                   for e in exc.errors(include_input=False, include_url=False)])
-        except (PermissionError, HTTPException):
+        except HTTPException as exc:
+            result.update(error_code="practice_prerequisites_missing"
+                          if call.name == "prepare_practice" and exc.status_code == 409
+                          else "unavailable_or_not_allowed")
+        except PermissionError:
             result.update(error_code="unavailable_or_not_allowed")
         except MemoryProposalError:
             result.update(status="invalid_arguments", error_code="memory_requires_verbatim_student_statement",
@@ -220,10 +224,7 @@ class ToolExecutor:
         if name == "read_learning_history":
             return ctx.history.read(ctx.learner, params.source_ref, params.offset, params.limit)
         if name == "get_knowledge_context":
-            node = self.graph.nodes.get(ctx.knowledge_id)
-            return {"knowledge_id": ctx.knowledge_id, "name": node.name if node else ctx.knowledge_id,
-                    "prerequisites": node.prerequisites if node else [],
-                    "materials": [], "materials_status": "not_provided"}
+            return self.knowledge_context(ctx.knowledge_id)
         if name == "get_quiz_context":
             return {key: ctx.quiz[key] for key in ("question", "options", "knowledge_id")}
         if name == "get_learner_profile":
@@ -237,6 +238,9 @@ class ToolExecutor:
         if name == "propose_memory_update":
             return ctx.history.memory.propose(ctx, **params.model_dump())
         if name == "prepare_practice":
+            snapshot = self.knowledge_context(params.knowledge_id)
+            if snapshot["missing_prerequisites"]:
+                raise HTTPException(409, "前置知识尚未达到备题门槛")
             return ctx.prepare_practice(**params.model_dump())
         if name in self.delegates:
             return self.delegates[name](params.objective)
@@ -248,3 +252,17 @@ class ToolExecutor:
             ctx.pending_question = str(uuid.uuid4())
             return {"question": question, "terminal": True}
         raise PermissionError("unknown_tool")
+
+    def knowledge_context(self, knowledge_id):
+        node = self.graph.nodes.get(knowledge_id) if self.graph else None
+        mastered = {state["knowledge_id"] for state in
+                    self.ctx.profile_state.get("knowledge_states", []) if state.get("mastery", 0) >= .6}
+        missing = sorted(set(node.prerequisites) - mastered) if node else []
+        return {"knowledge_id": knowledge_id, "name": node.name if node else knowledge_id,
+                "prerequisites": node.prerequisites if node else [],
+                "context_status": "available" if node else "not_provided",
+                "missing_prerequisites": missing, "practice_allowed": bool(node) and not missing,
+                "mastery_threshold": .6, "materials": [], "materials_status": "not_provided",
+                "prerequisite_context": [
+                    {"knowledge_id": key, "name": self.graph.nodes[key].name}
+                    for key in missing if key in self.graph.nodes]}

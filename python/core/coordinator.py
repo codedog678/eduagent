@@ -8,8 +8,8 @@ import uuid
 
 from config.settings import settings
 from core.agent_errors import AgentExecutionError
-from core.coordination_budget import feasible, remaining_cost
-from core.coordination_models import AgentResult, LearningPlan, PlanRevision, PlanStep
+from core.coordination_budget import feasible, practice_required, remaining_cost
+from core.coordination_models import AgentResult, LearningPlan, PlanDraft, PlanRevision, PlanStep
 from core.llm_service import NativeToolCall, TeachingReply
 from core.specialist_runtime import SpecialistRuntime
 from core.tool_executor import ToolExecutor
@@ -56,6 +56,9 @@ class Coordinator:
     def planning_facts(self):
         memories = self.ctx.history.memory.profile(self.ctx.learner)
         return {"stable_memories": memories, "knowledge_state": self.ctx.model_state,
+                "knowledge_context": ToolExecutor(self.ctx).knowledge_context(self.ctx.knowledge_id),
+                "history_availability": self.ctx.history.discovery(
+                    self.ctx.learner, self.ctx.knowledge_id),
                 "pending_question": self.ctx.history.pending(self.ctx.learner, self.ctx.thread_id)}
 
     def bind_evidence(self, plan, *, validate=True):
@@ -74,18 +77,21 @@ class Coordinator:
                         or not set(slot.source_refs) <= known[slot.kind]):
                     raise ValueError("planner_evidence_conflict")
             # 兼容没有结构化证据槽的旧计划，挡住明确的“已保存却声明缺失”。
-            text = json.dumps({
-                "goal": plan.goal, "constraints": plan.constraints,
-                "objectives": [step.objective for step in plan.steps],
-            }, ensure_ascii=False)
+            sentences = [plan.goal] + plan.constraints + [step.objective for step in plan.steps]
             for kind, label in (("preference", r"偏好|preference"), ("goal", r"目标|goal")):
-                if known[kind] and re.search(
+                pattern = (
                     rf"(?:未提供|没有|暂无|缺少|尚未说明|未说明)[^。；\n]{{0,20}}(?:{label})"
                     rf"|(?:{label})[^。；\n]{{0,12}}(?:缺失|未知|未提供|未说明)"
-                    rf"|(?:no|missing|unknown)\s+(?:student\s+|learning\s+)?{kind}",
-                    text, re.I,
-                ):
-                    raise ValueError("planner_evidence_conflict")
+                    rf"|(?:no|missing|unknown)\s+(?:student\s+|learning\s+)?{kind}")
+                for text in sentences:
+                    for clause in re.split(r"[。；\n]", text):
+                        for match in re.finditer(pattern, clause, re.I):
+                            prefix = clause[max(0, match.start()-16):match.start()]
+                            negated = re.search(
+                                r"(?:不能|不得|不要|不应|避免)(?:声称|说|认为|表述)?[^，,]{0,4}$"
+                                r"|(?:do not|must not|never)\s+(?:claim\s+)?$", prefix, re.I)
+                            if known[kind] and not negated:
+                                raise ValueError("planner_evidence_conflict")
         plan.evidence = [
             PlanEvidence(kind=kind, status="available" if refs else "missing",
                          source_refs=sorted(refs)[:16]) for kind, refs in known.items()
@@ -111,7 +117,7 @@ class Coordinator:
         if re.search(r"复习|安排|计划|规划|路径|plan|schedule", text, re.I):
             roles.append("Curriculum")
         roles = roles[:settings.coordinator_max_delegations - 1] + ["Tutor"]
-        return self.bind_evidence(LearningPlan(goal=text[:2000], steps=[
+        return self.bind_evidence(LearningPlan(goal=text[:2000], original_request=text[:2000], steps=[
             PlanStep(step_id=f"step-{i+1}", agent=role, objective=text[:1000],
                      depends_on=[f"step-{i}"] if i else [])
             for i, role in enumerate(roles)]), validate=False)
@@ -136,6 +142,24 @@ class Coordinator:
                 response = await self.service.generate(
                     prompt=json.dumps(prompt, ensure_ascii=False), system_prompt=system,
                     temperature=0.2, max_tokens=1200)
+            if schema is PlanDraft:
+                raw = json.loads(response.content)
+                if not isinstance(raw, dict):
+                    raise ValueError("invalid_plan_schema")
+                # 旧公开协议兼容读取，但不允许模型提交执行成果。
+                if (any(key in raw for key in ("evidence", "plan_id", "status", "results"))
+                        or any("status" in step or "source_refs" in step for step in raw.get("steps", []))):
+                    legacy = LearningPlan.model_validate(raw)
+                    if (legacy.results or legacy.action_receipts or legacy.practice_quiz_id
+                            or legacy.status != "running" or legacy.outcome != "running"
+                            or any(s.status != "pending" or s.source_refs for s in legacy.steps)):
+                        raise ValueError("invalid_plan_schema")
+                    self.bind_evidence(legacy)
+                    raw = {"goal": legacy.goal, "constraints": legacy.constraints,
+                           "needs_input": legacy.needs_input, "steps": [
+                               {k: v for k, v in step.model_dump().items()
+                                if k not in {"status", "source_refs"}} for step in legacy.steps]}
+                return PlanDraft.model_validate(raw)
             return schema.model_validate_json(response.content)
         finally:
             ctx.role, ctx.task_id = original
@@ -147,7 +171,7 @@ class Coordinator:
         if not self.service._has_remote_llm() or not self.room(models=1):
             return fallback
         try:
-            generated = await self.structured(LearningPlan, {
+            generated = await self.structured(PlanDraft, {
                 "request": text, "knowledge_id": self.ctx.knowledge_id,
                 "facts": self.planning_facts(),
                 "max_delegations": settings.coordinator_max_delegations,
@@ -155,7 +179,9 @@ class Coordinator:
                 "remaining_tool_calls": self.ctx.max_tool_calls - self.ctx.tool_calls,
                 "instructions": "按需选Assessment诊断、Curriculum路径和最后的Tutor表达。"
                 "stable_memories含已保存的偏好和目标，必须采用，不能声称缺失。"
-                "在evidence中按preference/goal列明available或missing及对应来源。"
+                "证据和状态由服务端绑定，不生成身份、evidence、results或收据。"
+                "history_availability是同知识点已有历史的候选摘要，存在时先检索/读原文，"
+                "不能让学生重新提供这些历史；摘要不能当作阅读全文。"
                 "缺少阻断任务的必要输入时，在needs_input中提出一个简短问题，先等待而不执行专家。"
                 "每个专家至少留一次结论请求；Tutor和备题也要留预算，避免不必要诊断。"
                 "steps必须拓扑排序，所有步骤pending；仅生成目标、约束和步骤，不填执行成果。"})
@@ -163,9 +189,9 @@ class Coordinator:
                 raise ValueError("delegation_budget")
             # 模型不能写入执行结果、收据、计划身份或学习任务状态。
             return self.bind_evidence(LearningPlan(
-                goal=generated.goal, constraints=generated.constraints,
-                evidence=generated.evidence, needs_input=generated.needs_input, steps=[
-                step.model_copy(update={"status": "pending", "source_refs": []})
+                goal=generated.goal, original_request=text[:2000], constraints=generated.constraints,
+                needs_input=generated.needs_input, steps=[
+                PlanStep(**step.model_dump())
                 for step in generated.steps]))
         except (ValueError, TypeError) as exc:
             reason = ("planner_evidence_conflict" if str(exc) == "planner_evidence_conflict"
@@ -252,6 +278,9 @@ class Coordinator:
 
     async def revise(self, plan, failed):
         if (self.replans >= settings.coordinator_max_replans or not self.room(models=1, tools=1)
+                or self.ctx.model_calls + 1 + settings.coordinator_tutor_model_reserve
+                + int(practice_required(self.ctx, plan) and not plan.practice_quiz_id)
+                > self.ctx.max_model_calls
                 or self.delegations >= settings.coordinator_max_delegations
                 or not self.service._has_remote_llm()):
             return False
@@ -385,6 +414,8 @@ class Coordinator:
                     step.status = "waiting"
                     reply = TutorRuntime(ctx, self.service, ctx.knowledge_graph).reply(response["data"]["question"])
                     break
+                # 动作失败不能擦除已经通过验证的诊断/安排。
+                plan.results[step.step_id] = result
                 for action in result.proposed_actions:
                     receipt = plan.action_receipts.get(step.step_id, {})
                     if (plan.practice_quiz_id and receipt.get("status") == "ok"
@@ -396,7 +427,14 @@ class Coordinator:
                         id=f"{step.step_id}-practice", name="prepare_practice", arguments=action.model_dump_json()))
                     plan.action_receipts[step.step_id] = {**response, "requested_action": action.model_dump()}
                     if response["status"] != "ok":
-                        raise ValueError("practice_not_prepared")
+                        result.uncertainty = (result.uncertainty + " 练习未生成：" +
+                                              str(response.get("error_code")))[:1000]
+                        if practice_required(ctx, plan):
+                            raise ValueError("practice_not_prepared")
+                        result.proposed_actions = []
+                        ctx.record("optional_action_unavailable", "Coordinator",
+                                   task_id=step.step_id, reason=response.get("error_code"))
+                        continue
                     if ctx.prepared_quiz:
                         plan.practice_quiz_id = ctx.prepared_quiz[0]
                 step.status = "completed"
@@ -404,13 +442,19 @@ class Coordinator:
             except (ValueError, TypeError) as exc:
                 code = exc.code if isinstance(exc, AgentExecutionError) else "expert_action_invalid"
                 step.status = "failed"
+                prior = plan.results.get(step.step_id)
                 plan.results[step.step_id] = AgentResult(
                     task_id=step.step_id, status="failed", error_code=code,
+                    findings=prior.findings if prior else [],
+                    source_refs=prior.source_refs if prior else [],
                     uncertainty="专家结果或动作未通过执行检查。")
                 ctx.record("plan_step_failed", "Coordinator", task_id=step.step_id,
-                           reason=code, cause_type=getattr(exc, "cause_type", None) or type(exc).__name__)
+                           reason=code, errors=getattr(exc, "details", []),
+                           cause_type=getattr(exc, "cause_type", None) or type(exc).__name__)
                 if not await self.revise(plan, step):
                     reply = self.partial_reply(plan, "step_failed_without_valid_revision")
+        if practice_required(ctx, plan) and not plan.practice_quiz_id and not plan.needs_input:
+            plan.checks = list(dict.fromkeys(plan.checks + ["required_practice_missing"]))[-16:]
         if plan.practice_quiz_id and ctx.dialogue_state != "awaiting_student":
             ctx.dialogue_state, ctx.pending_question = "awaiting_student", str(uuid.uuid4())
             if plan.steps[-1].status == "completed":

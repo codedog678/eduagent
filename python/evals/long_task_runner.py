@@ -16,7 +16,7 @@ from evals.io import write_json
 from evals.live_runner import code_revision
 from evals.long_task_executor import LongTaskExecutor
 from evals.long_task_models import load_long_task_cases, public_case
-from evals.long_task_scorers import score_long_task
+from evals.long_task_scorers import SCORER_VERSION, score_long_task
 from evals.optimization.budget import OptimizationBudget, OptimizationStopped
 from evals.runner import dataset_revision
 
@@ -157,6 +157,7 @@ async def run_long_suite(*, path: Path, output: Path, max_requests=120, max_cny=
         "schema": "eduagent.harness-long-task-result.v1",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "code_revision": code_revision(),
+        "scorer_version": SCORER_VERSION,
         "dataset_revision": dataset_revision(path),
         "deterministic": deterministic,
         "live": None,

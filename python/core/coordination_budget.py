@@ -5,15 +5,19 @@ import re
 from config.settings import settings
 
 
+def practice_required(ctx, plan):
+    # 只能由原任务和学生补充确定必要性，模型生成的步骤不能升级任务。
+    return bool(re.search(
+        r"备题|准备.{0,12}(?:题|练习)|生成.{0,12}(?:题|练习)|"
+        r"(?:安排|给我).{0,8}(?:一|两|几)[道题].{0,4}(?:题|练习)?|"
+        r"(?:prepare|generate).{0,20}(?:quiz|question|exercise)",
+        " ".join([ctx.input_text, plan.original_request or plan.goal] + plan.student_inputs), re.I))
+
+
 def practice_reserve(ctx, plan):
     return int(
         not ctx.prepared_quiz and not plan.practice_quiz_id
-        and bool(re.search(
-            r"备题|准备.{0,12}(?:题|练习)|生成.{0,12}(?:题|练习)|"
-            r"(?:prepare|generate).{0,20}(?:quiz|question|exercise)",
-            " ".join([ctx.input_text, plan.goal] + [
-                step.objective for step in plan.steps if step.status == "pending"
-            ]), re.I))
+        and practice_required(ctx, plan)
     )
 
 

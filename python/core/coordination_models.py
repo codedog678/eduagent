@@ -19,6 +19,24 @@ class PlanStep(BaseModel):
     source_refs: list[str] = Field(default_factory=list)
 
 
+class StepDraft(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    step_id: str = Field(min_length=1, max_length=80)
+    agent: Literal["Assessment", "Curriculum", "Tutor"]
+    objective: str = Field(min_length=1, max_length=1000)
+    depends_on: list[str] = Field(default_factory=list, max_length=8)
+    expected_output: str = Field(default="结构化证据与建议", max_length=200)
+
+
+class PlanDraft(BaseModel):
+    """模型只负责意图；身份、来源、执行状态均由服务端生成。"""
+    model_config = ConfigDict(extra="forbid")
+    goal: str = Field(min_length=1, max_length=2000)
+    constraints: list[str] = Field(default_factory=list, max_length=8)
+    needs_input: str | None = Field(default=None, max_length=1000)
+    steps: list[StepDraft] = Field(min_length=1, max_length=12)
+
+
 class AgentResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
     task_id: str
@@ -30,6 +48,9 @@ class AgentResult(BaseModel):
     uncertainty: str = Field(default="", max_length=1000)
     error_code: Literal[
         "budget_exhausted", "expert_schema_invalid", "expert_result_invalid",
+        "expert_task_mismatch", "expert_sources_unverified", "expert_status_invalid",
+        "expert_findings_missing", "expert_question_missing", "expert_action_not_allowed",
+        "expert_output_incomplete",
         "tool_argument_invalid", "source_unavailable", "expert_failed",
         "expert_action_invalid", "delegate_unavailable", "question_not_created",
     ] | None = None
@@ -49,6 +70,7 @@ class LearningPlan(BaseModel):
     goal: str = Field(min_length=1, max_length=2000)
     constraints: list[str] = Field(default_factory=list, max_length=8)
     evidence: list[PlanEvidence] = Field(default_factory=list, max_length=2)
+    original_request: str = Field(default="", max_length=2000)
     needs_input: str | None = Field(default=None, max_length=1000)
     steps: list[PlanStep] = Field(min_length=1, max_length=12)
     status: Literal["running", "awaiting_student", "completed"] = "running"

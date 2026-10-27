@@ -70,6 +70,14 @@ class LearningHistory:
         return {"items": [{k: v for k, v in item.items() if k != "content"} for item in
                           self.memory.lexical(learner, knowledge, query, max(1, min(limit, 10)))]}
 
+    def discovery(self, learner, knowledge, limit=5):
+        """限于同学生同知识点的公开候选摘要；不表示相关命中或全文读取。"""
+        page = self.messages(learner, knowledge=knowledge, limit=limit)
+        return {"items": [
+            {k: v for k, v in item.items() if k not in {"content", "cursor"}}
+            | {"excerpt": item["content"][:200], "discovery_only": True}
+            for item in page["items"]], "bounded": True}
+
     def read(self, learner, source_ref, offset=0, limit=3000):
         if offset or limit != 3000 or source_ref.startswith("memory:"):
             return self.memory.read(learner, source_ref, offset, limit)
