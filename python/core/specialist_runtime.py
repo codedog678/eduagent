@@ -96,6 +96,10 @@ class SpecialistRuntime:
                     if ctx.history.memory.source(ctx.learner, item["source_ref"]))
         ctx.source_refs = list(dict.fromkeys(ctx.source_refs + sorted(refs)))
         policy = practice_policy(ctx, plan)
+        candidates = ctx.history.discovery(ctx.learner, ctx.knowledge_id)
+        candidates = {**candidates, "citable_without_read": False, "items": [
+            {**item, "citation_status": "verified" if item["source_ref"] in refs else "unread_candidate"}
+            for item in candidates["items"]]}
         messages = [
             {"role": "system", "content": (
                 f"你是教育系统的{step.agent}专家。自主选择必要的只读工具，证据不足时明确说明。"
@@ -112,6 +116,10 @@ class SpecialistRuntime:
                 "get_knowledge_context和get_learner_profile已提供快照，避免重复调用。"
                 "Curriculum的findings必须包含具体时间/阶段安排，proposed_actions必须通过前置快照。"
                 "source_refs只能选verified_source_refs或本轮成功读取工具返回的历史ID；"
+                "history_candidates的excerpt仅用于发现，不是已读证据，"
+                "citation_status=unread_candidate时必须成功读原文后才能引用。"
+                "只有时间/目标澄清对话时，可直接用current_input/student_inputs编排，"
+                "source_refs用[]；不把这些约束当作历史诊断证据。"
                 "knowledge_id、状态快照、任务ID、学生当前请求都不是历史来源，无来源用[]。"
                 "只要普通复习且没有历史时，说明这是基础复习建议，不编造诊断。"
                 "目标practice_allowed=false时，学生允许选择最优先知识点才可建议"
@@ -130,7 +138,7 @@ class SpecialistRuntime:
                 "stable_memories": memories, "knowledge_state": ctx.model_state,
                 "learner_profile": ctx.profile_state,
                 "knowledge_context": executor.knowledge_context(ctx.knowledge_id),
-                "history_candidates": ctx.history.discovery(ctx.learner, ctx.knowledge_id),
+                "history_candidates": candidates,
                 "read_source_refs": ctx.read_refs,
                 "read_evidence": read_evidence(ctx),
                 "verified_source_refs": sorted(refs),
@@ -191,8 +199,13 @@ class SpecialistRuntime:
                 except AgentExecutionError as exc:
                     ctx.record("expert_draft_rejected", step.agent, task_id=step.step_id,
                                error_code=exc.code, errors=exc.details)
+                    # 仅同学习者、仍可用但未读的引用可重生成；不自动清空来源或放行旧稿。
+                    unread_only = (
+                        exc.code == "expert_sources_unverified" and bool(exc.details)
+                        and all(error.get("type") == "unread_source" for error in exc.details))
                     if (repaired or final_turn or ctx.model_calls >= ctx.max_model_calls
-                            or exc.code in {"expert_task_mismatch", "expert_sources_unverified", "source_unavailable"}):
+                            or exc.code in {"expert_task_mismatch", "source_unavailable"}
+                            or (exc.code == "expert_sources_unverified" and not unread_only)):
                         raise
                     repaired = True
                     # 原无效输出常比结论还长；由已有事实重生成，避免整段追加耗尽上下文。
@@ -200,10 +213,16 @@ class SpecialistRuntime:
                         "correction": "根据已有事实重新输出合规JSON，不增加工具调用。"
                         "findings为1至8条，每条最多1000字符；uncertainty最多1000字符。"
                         "source_refs只能选verified_source_refs；状态快照不可引用。",
+                        "source_correction": (
+                            "未读取的候选摘要不能作为结论证据。不能仅删除引用而保留依赖该来源的结论。"
+                            "只用已提供的学生约束和已读证据重写完整安排；没有可引用历史时用[]，"
+                            "明确这是通用建议、无法作历史诊断。不添加工具，不编造证据。"
+                            if unread_only else ""),
                         "verified_source_refs": sorted(refs),
                         "error_code": exc.code, "errors": exc.details}, ensure_ascii=False)})
                     schemas = []
-                    ctx.record("expert_draft_repair", step.agent, task_id=step.step_id)
+                    ctx.record("expert_draft_repair", step.agent, task_id=step.step_id,
+                               reason="unread_source" if unread_only else "invalid_schema")
                     continue
             if final_turn:
                 raise AgentExecutionError("budget_exhausted", "tools_on_final_turn")
@@ -236,7 +255,9 @@ class SpecialistRuntime:
                         ctx.record("tool_retry_budget_exhausted", step.agent, task_id=step.step_id,
                                    tool=call.name, error_code="budget_exhausted")
                 if result["status"] in {"ok", "empty"}:
-                    refs.update(result["source_refs"])
+                    # 搜索返回的是候选ID；仅完整读原文的证据才能升级到可引用集合。
+                    refs.update(item["source_ref"] for item in read_evidence(ctx)
+                                if ctx.history.memory.source(ctx.learner, item["source_ref"]))
                 elif result["status"] == "invalid_arguments":
                     last_failure_code = "tool_argument_invalid"
                 elif result["status"] == "exhausted":

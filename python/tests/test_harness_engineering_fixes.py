@@ -99,7 +99,7 @@ async def test_delegate_failure_code_reaches_plan_and_trace(harness, monkeypatch
 
     model = Model(handler)
     model.install(monkeypatch)
-    result = await harness.converse("a", f"failure-{kind}", "vocab_basic", "安排复习")
+    result = await harness.converse("a", f"failure-{kind}", "vocab_basic", "诊断后安排复习")
     expected = "budget_exhausted" if kind == "budget" else "expert_schema_invalid"
     assert result["learning_plan"]["results"]["a"]["error_code"] == expected
     trace = steps_for(harness, "a", f"failure-{kind}")
@@ -113,7 +113,7 @@ async def test_delegate_failure_code_reaches_plan_and_trace(harness, monkeypatch
 
 @pytest.mark.asyncio
 async def test_chain_rejected_before_any_expert_when_delegates_exceed_tool_budget(harness):
-    ctx = context(harness, text="安排复习")
+    ctx = context(harness, text="诊断后安排复习")
     ctx.max_tool_calls = settings.coordinator_tutor_tool_reserve + 2
     model = Model(lambda *_: final("a"), ctx)
     result = await Coordinator(ctx, model).run(ctx.input_text)
@@ -299,7 +299,7 @@ async def test_invalid_tool_arguments_identified_when_expert_cannot_recover(harn
         return final("a", status="failed")
 
     Model(handler).install(monkeypatch)
-    result = await harness.converse("a", "invalid-tool", "vocab_basic", "安排复习")
+    result = await harness.converse("a", "invalid-tool", "vocab_basic", "诊断后安排复习")
     assert result["learning_plan"]["results"]["a"]["error_code"] == "tool_argument_invalid"
 
 
@@ -334,7 +334,7 @@ async def test_replan_receives_failure_code_and_keeps_final_request_for_curricul
         {"step_id": "t2", "agent": "Tutor", "objective": "解释缺口", "depends_on": ["c2"]},
     ]})
     model.install(monkeypatch)
-    result = await harness.converse("a", "coded-replan", "vocab_basic", "安排复习")
+    result = await harness.converse("a", "coded-replan", "vocab_basic", "诊断后安排复习")
     assert model.plans[1]["failed_result"]["error_code"] == "budget_exhausted"
     assert result["learning_plan"]["results"]["c2"]["status"] == "completed"
     assert result["learning_plan"]["outcome"] == "partial"

@@ -14,6 +14,7 @@ from core.context_handoff import model_value
 from core.coordination_budget import feasible, practice_policy, practice_required, remaining_cost
 from core.coordination_models import AgentResult, LearningPlan, PlanDraft, PlanRevision, PlanStep
 from core.llm_service import NativeToolCall, TeachingReply
+from core.planning_policy import assessment_requested, simplify_initial_plan
 from core.specialist_runtime import SpecialistRuntime
 from core.tool_executor import ToolExecutor
 from core.tutor_runtime import TutorRuntime, estimate_tokens
@@ -115,7 +116,7 @@ class Coordinator:
 
     def fallback_plan(self, text):
         roles = []
-        if re.search(r"上次|错误|错题|薄弱|诊断|error|mistake", text, re.I):
+        if assessment_requested(text):
             roles.append("Assessment")
         if re.search(r"复习|安排|计划|规划|路径|plan|schedule", text, re.I):
             roles.append("Curriculum")
@@ -173,11 +174,13 @@ class Coordinator:
         if not self.service._has_remote_llm() or not self.room(models=1):
             return fallback
         policy = practice_policy(self.ctx, fallback)
+        assessment_needed = assessment_requested(text)
         try:
             generated = await self.structured(PlanDraft, {
                 "request": text, "knowledge_id": self.ctx.knowledge_id,
                 "facts": self.planning_facts(),
                 "practice_policy": policy,
+                "assessment_policy": {"dedicated_assessment_required": assessment_needed},
                 "max_delegations": settings.coordinator_max_delegations,
                 "remaining_model_calls": self.ctx.max_model_calls - self.ctx.model_calls - 1,
                 "remaining_tool_calls": self.ctx.max_tool_calls - self.ctx.tool_calls,
@@ -186,8 +189,11 @@ class Coordinator:
                 "证据和状态由服务端绑定，不生成身份、evidence、results或收据。"
                 "history_availability是同知识点已有历史的候选摘要，存在时先检索/读原文，"
                 "不能让学生重新提供这些历史；摘要不能当作阅读全文。"
-                "历史候选为空且学生只要普通复习/备题、没有要求诊断或测评时，"
-                "直接安排Curriculum→Tutor，不添加Assessment，不用虚构薄弱点支持计划。"
+                "dedicated_assessment_required=false时，普通学习计划、复习或备题"
+                "直接安排Curriculum→Tutor，不添加Assessment。"
+                "仅有偏好或时间/目标澄清历史不构成需要诊断的作答证据。"
+                "Curriculum可自行读取相关历史，按已提供的时间/目标直接编排，"
+                "不将低掌握度先验或缺前置当作诊断结果。"
                 "备题遵守knowledge_context的practice_allowed及前置快照；"
                 "学生允许选择最优先知识点时，可先练可备题的基础前置，必须说明选择原因。"
                 "学生限定目标知识点时不得静默替换，不以学生确认或自评跳过前置。"
@@ -204,11 +210,12 @@ class Coordinator:
             if self.nonblocking_practice_clarification(text, generated.needs_input, policy):
                 raise ValueError("nonblocking_practice_clarification")
             # 模型不能写入执行结果、收据、计划身份或学习任务状态。
-            return self.bind_evidence(LearningPlan(
+            candidate = LearningPlan(
                 goal=generated.goal, original_request=text[:2000], constraints=generated.constraints,
                 needs_input=generated.needs_input, steps=[
                 PlanStep(**step.model_dump())
-                for step in generated.steps]))
+                for step in generated.steps])
+            return self.bind_evidence(simplify_initial_plan(self.ctx, candidate, assessment_needed))
         except (ValueError, TypeError) as exc:
             reason = (exc.code if isinstance(exc, AgentExecutionError) else
                       str(exc) if str(exc) in {"planner_evidence_conflict", "planner_context_budget",

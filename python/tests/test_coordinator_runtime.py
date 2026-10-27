@@ -154,7 +154,7 @@ async def test_invalid_revision_blocks_downstream(harness, monkeypatch, bad_step
     model = Model(lambda messages, tools: final("a", status="failed"),
                   revision={"reason": "无效修订", "steps": bad_steps})
     model.install(monkeypatch)
-    result = await harness.converse("a", "bad-revision", "vocab_basic", "安排复习")
+    result = await harness.converse("a", "bad-revision", "vocab_basic", "诊断后安排复习")
     assert len(model.turns) == 1
     assert result["learning_plan"]["outcome"] == "partial"
     assert [s["status"] for s in result["learning_plan"]["steps"]] == ["failed", "blocked", "blocked"]
@@ -294,7 +294,7 @@ async def test_revision_reexecutes_same_role_objective_without_delegate_cache(ha
         {"step_id": "a2", "agent": "Assessment", "objective": "定位历史问题"},
         {"step_id": "t2", "agent": "Tutor", "objective": "总结", "depends_on": ["a2"]}]})
     model.install(monkeypatch)
-    result = await harness.converse("a", "same-objective", "vocab_basic", "安排复习")
+    result = await harness.converse("a", "same-objective", "vocab_basic", "诊断后安排复习")
     assert tasks == ["a", "a2"]
     assert result["learning_plan"]["results"]["a2"]["status"] == "completed"
 
@@ -307,7 +307,7 @@ async def test_revision_preserves_already_completed_expert(harness, monkeypatch)
     model = Model(handler, revision={"reason": "保留诊断，说明课程缺口", "steps": [
         {"step_id": "t2", "agent": "Tutor", "objective": "说明缺口", "depends_on": ["a"]}]})
     model.install(monkeypatch)
-    result = await harness.converse("a", "preserve", "vocab_basic", "安排复习")
+    result = await harness.converse("a", "preserve", "vocab_basic", "诊断后安排复习")
     assert result["learning_plan"]["results"]["a"]["status"] == "completed"
     assert result["learning_plan"]["steps"][0]["step_id"] == "a"
     assert result["learning_plan"]["outcome"] == "partial"
