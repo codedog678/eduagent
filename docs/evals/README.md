@@ -8,6 +8,7 @@
 | Harness 长任务工程修复（新增 23 项回归，未进行进化） | [修改范围、实现和验证](harness-engineering-fixes.md) |
 | Harness 修复后长任务复测（确定性 8/8；自动 2/6，L02 为 partial，L05 闭环完成） | [工程分析](harness-long-runs/20261027-deepseek-flash/analysis.md)、[助手离线审计](harness-long-runs/20261027-deepseek-flash/agent-audit.json)、[两轮对照](harness-long-runs/20261027-deepseek-flash/comparison-summary.json)、[完整归档](harness-long-runs/20261027-deepseek-flash/) |
 | Harness 失败原因与优化方案（零模型请求；补充词法检索、前置门禁及正则误报核对） | [优化方案](harness-failure-analysis-20261027/optimization-plan.md)、[离线证据](harness-failure-analysis-20261027/evidence.json)、[复现脚本](harness-failure-analysis-20261027/reproduce-probes.py) |
+| Harness 第二轮优化与真实复测（后端306项、确定性8/8；v2真实1/6，未达门槛） | [工程分析](harness-long-runs/20261027-optimized-deepseek-flash/analysis.md)、[三轮同v2对照](harness-long-runs/20261027-optimized-deepseek-flash/comparison-summary.json)、[完整归档](harness-long-runs/20261027-optimized-deepseek-flash/)、[问题→原因→解决→效果](../engineering/problem-solution-log.md)、[实施检查表](../engineering/harness-optimization-20261027.md) |
 | GEPA 离线策略优化（36 训练 + 14 开发验证，独立测试另建） | [设计、代码说明与执行命令](gepa-offline-optimization.md)、[当前冻结协议](gepa-protocol-v7.json)、[真实试跑报告](gepa-runs/pilot-20261026-report.md) |
 | 50 条 Agent 主任务扩展（8 原任务 + 42 新任务，尚未真实运行） | [完整场景说明](tutor-agent-50-review.md)、[JSONL](tutor-agent-50-review.jsonl)、[清单与分批计划](tutor-agent-50-manifest.json)、[设计](tutor-agent-50-design.md)、[离线验证说明](20261025/tutor-agent50-validation.md)、[逐条记录](20261025/tutor-agent50-validation.json) |
 | 任务最终成功与工具语义评分（AI 审阅） | [评分报告](20261025/tutor-final-scoring-20261025.md)、[逐条标签](20261025/tutor-semantic-review-20261025.jsonl)、[分组指标](20261025/tutor-reviewed-metrics-20261025.json)、[评分口径](20261025/tutor-semantic-rubric-20261025.md) |
@@ -105,9 +106,9 @@ eduagent-eval run-live \
 
 `python/eval-results/` 继续作为忽略的本地输出目录。经过核对、需要长期保存的评测记录归档到本目录；其他本地设计文档和缓存仍不纳入 Git。
 
-修复后长任务归档可离线校验（不调用模型，也不改原始自动评分）：
+第二轮优化归档可离线校验（在冻结运行时源码 `454a094` 上执行，不调用模型）：核验本轮逐条结果、成本与全部档案哈希，同时校验旧两轮manifest并用v2派生重算。历史脚本要求各自旧源码，不能直接在新版运行。
 
 ```bash
 LLM_PROVIDER=template MEMORY_EMBEDDING_API_KEY='' SILICONFLOW_API_KEY='' \
-  python docs/evals/harness-long-runs/20261027-deepseek-flash/verify-archive.py --verify-only
+  python docs/evals/harness-long-runs/20261027-optimized-deepseek-flash/verify-archive.py --verify-only
 ```
