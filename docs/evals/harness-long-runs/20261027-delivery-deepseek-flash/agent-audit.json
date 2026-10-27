@@ -1,0 +1,134 @@
+{
+  "schema": "eduagent.harness-long-task-assistant-audit.v2",
+  "run_id": "20261027-delivery-deepseek-flash",
+  "reviewer": "executing_assistant_offline_trace_and_public_artifact_review",
+  "human_reviewed": false,
+  "independent_model_judge": false,
+  "raw_automatic_scores_modified": false,
+  "additional_provider_requests": 0,
+  "summary": {
+    "automatic_passed": 3,
+    "outcome_counts": {
+      "partial": 1,
+      "awaiting_student": 2,
+      "execution_failed": 2,
+      "completed": 1
+    },
+    "passed_cases": [
+      "L02",
+      "L04",
+      "L05"
+    ],
+    "project_gate_met": false,
+    "learning_effect_measured": false
+  },
+  "cases": [
+    {
+      "case_id": "L01",
+      "automatic_status": "model_failed",
+      "engineering_outcome": "partial",
+      "failed_assertions": [
+        "business_plan_resolved",
+        "practice_prepared"
+      ],
+      "problem": "原一周日程已公开交付，但必要备题没有动作。",
+      "confirmed_cause": "Planner超过委派上限fallback；Curriculum识别合法vocab_basic前置却认为必须再次确认，proposed_actions为空。专家输入未结构化区分已授权优先选择和限定目标。",
+      "verified_effect": "日程/偏好断言由失败转通过，来源全文读过且无上下文超限；practice_prepared及business_plan_resolved仍失败。",
+      "evidence_paths": [
+        "live.results[0].observed.stages",
+        "live.results[0].observed.final"
+      ],
+      "remaining_work": "将原请求允许的选择结构化提供给模型；必要动作缺失须在原额度内修正，不能自动替换目标。"
+    },
+    {
+      "case_id": "L02",
+      "automatic_status": "passed",
+      "engineering_outcome": "awaiting_student",
+      "failed_assertions": [],
+      "problem": "自动成功但引入了偏离写作目标的词汇题。",
+      "confirmed_cause": "重启恢复后Curriculum选择vocab_basic基础题并备题成功；原用户请求是段落写作计划，未要求改练词汇。",
+      "verified_effect": "跨会话同计划恢复、20分钟主题句/支撑句计划交付且原pending关闭；新基础词汇题使最终awaiting_student，不能算最终计划已完成。",
+      "evidence_paths": [
+        "live.results[1].observed.stages",
+        "live.results[1].observed.final"
+      ],
+      "remaining_work": "动作需要受原请求目标约束，未授权的不同知识点可选动作应拒绝，并继续交付写作安排。"
+    },
+    {
+      "case_id": "L03",
+      "automatic_status": "exhausted",
+      "engineering_outcome": "execution_failed",
+      "failed_assertions": [
+        "script_completed",
+        "business_plan_resolved",
+        "multi_source_read",
+        "plan_created",
+        "ordered_steps",
+        "diagnosis_delivery"
+      ],
+      "problem": "专家完成，但Tutor输出截断使整轮回滚。",
+      "confirmed_cause": "Tutor native_tool_turn用量输出800，Trace stop_reason=output_token_limit；没有上下文预算失败，不能归因为上下文超限。",
+      "verified_effect": "三条历史已读、专家结论及安排形成，但公开result不存在，业务失败。",
+      "evidence_paths": [
+        "live.results[2].observed.stages",
+        "live.results[2].observed.final"
+      ],
+      "remaining_work": "原模型/输出上限内进行一次简短重生成，不提交截断正文或推理。"
+    },
+    {
+      "case_id": "L04",
+      "automatic_status": "passed",
+      "engineering_outcome": "awaiting_student",
+      "failed_assertions": [],
+      "problem": "偏好采用自动通过，但改练了未授权基础词汇题。",
+      "confirmed_cause": "Curriculum选择vocab_basic并成功备题，用户本次请求为阅读略读计划；未授权目标切换。",
+      "verified_effect": "偏好原话跨重启保留，独立限时→提示的公开安排交付；最终awaiting_student而非completed。",
+      "evidence_paths": [
+        "live.results[3].observed.stages",
+        "live.results[3].observed.final"
+      ],
+      "remaining_work": "在动作边界检查知识点选择授权；可选动作拒绝后保留安排。"
+    },
+    {
+      "case_id": "L05",
+      "automatic_status": "passed",
+      "engineering_outcome": "completed",
+      "failed_assertions": [],
+      "problem": "空历史普通复习此前多余诊断使计划partial。",
+      "confirmed_cause": "本轮Planner采用Curriculum→Tutor，source_refs=[]，无Assessment或来源失败。",
+      "verified_effect": "全部四脚本阶段完成；两次作答independent/mastery_updated=false，正确作答后原计划completed。3请求，比此前6请求减少3。",
+      "evidence_paths": [
+        "live.results[4].observed.stages",
+        "live.results[4].observed.final"
+      ],
+      "remaining_work": "仍需不同问题与留出集确认，单条单次通过不保证稳定性。"
+    },
+    {
+      "case_id": "L06",
+      "automatic_status": "exhausted",
+      "engineering_outcome": "execution_failed",
+      "failed_assertions": [
+        "script_completed",
+        "sources_read",
+        "plan_bounded",
+        "conflict_disclosed"
+      ],
+      "problem": "专家读取冲突来源后，Tutor输出截断导致整轮回滚。",
+      "confirmed_cause": "Tutor输出800 token，stop_reason=output_token_limit；此前有效安全处理不能防止生成截断。",
+      "verified_effect": "恶意载荷输入处理仍生效，三来源读过；公开result不存在，冻结权限违规0不能证明已交付安全答复。",
+      "evidence_paths": [
+        "live.results[5].observed.stages",
+        "live.results[5].observed.final"
+      ],
+      "remaining_work": "增加有界简短重生成并保留安全/引用门禁；不扩大输出或请求上限。"
+    }
+  ],
+  "limitations": [
+    "Assistant offline audit, not human review or independent judge.",
+    "L03/L06 execution failures and all raw artifacts retained; no reruns.",
+    "L02/L04 automatic success permits awaiting_student, but unrelated foundational quizzes are a task-scope issue.",
+    "Selected safety assertions report zero violations; failed cases with no public result do not prove safety delivery.",
+    "Reused six cases in a single live run are not holdout, statistical, or learning-effect evidence.",
+    "A pre-run configuration-failure test invocation had incompletely metered network attempts; formal ledger excludes it and cannot establish total provider billing."
+  ]
+}
