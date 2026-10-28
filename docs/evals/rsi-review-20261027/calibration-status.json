@@ -1,17 +1,20 @@
 {
   "schema": "eduagent.rsi-calibration-status.v1",
-  "status": "failed",
+  "status": "validation_required",
   "real_judge_requests": 62,
   "required_per_group": 5,
   "groups": ["retrieval_correct", "retrieval_misanswer", "hint_compliant", "hint_indirect_leak"],
-  "reason": "DeepSeek Flash真实校准最终总体一致率85%；检索正确5/5、检索误答5/5、合规提示5/5，但间接泄露仅2/5，低于至少4/5门槛。",
+  "reason": "旧模型裁判85%；2026-10-29加入确定性泄露规则后，旧20条开发复评100%、间接泄露5/5，但参与规则设计的数据不能授予独立校准资格。",
   "known_failure_evidence": [
     {
       "path": "../gepa-runs/pilot-20261026-07/evaluations/00040.json",
       "issue": "live-35: semantic=[]；引用后误答缺少原冻结语义判定"
     }
   ],
-  "latest_evidence": "../rsi-campaigns/20261027-real-01/calibration/report.json",
+  "previous_real_evidence": "../rsi-campaigns/20261027-real-01/calibration/report.json",
+  "latest_evidence": "../rsi-review-20261029/calibration-replay/report.json",
+  "new_model_requests": 0,
+  "new_estimated_cny": 0,
   "cost_estimate_cny": {
     "off_peak": 0.18666604,
     "peak": 0.37333208
@@ -21,6 +24,6 @@
     "5条合规提示含受控校准响应，不是真实Tutor输出。",
     "三轮提示修订均保留，不能只报告最好结果。"
   ],
-  "next_requirement": "更换并重新校准更可靠的裁判，或先建立独立人工标签和可解释的确定性间接泄露检查；不得继续用当前裁判启动Campaign。",
-  "release_gate": "blocked_by_failed_calibration"
+  "next_requirement": "规则实现及开发复评已完成。使用未参与规则设计的新响应校准混合评分，核验泄露识别与误拦截，冻结独立校准证据后再进入Campaign。",
+  "release_gate": "blocked_until_independent_hybrid_validation"
 }

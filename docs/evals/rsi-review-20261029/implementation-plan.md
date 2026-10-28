@@ -20,10 +20,10 @@
 
 ## 任务
 
-- [ ] 1. `python/evals/optimization/leakage.py`与`leakage_rules.json`：合同、规范化、证据片段、三维判定、未知/矛盾分支。测试直接/改写/组合/否定/引用/词边界/不同题目/缺合同。
-- [ ] 2. `scoring.py`、`protocol.py`、`gates.py`：合并评分、保留原裁判、摘要冻结、从原轨迹重算规则以防结果篡改；校准执行与正式评分复用同一合并函数。
-- [ ] 3. `calibration.py`、独立replay入口：验证模型提示、规则、案例、输入摘要；输出逐项对照、三值规则覆盖、混合一致率；开发资料禁止生成可晋级passed。
-- [ ] 4. 运行`.venv/bin/python python/scripts/test_offline.py tests -q`；离线重放旧20条，追加工程日志、报告与费用账本，提交推送。
+- [x] 1. `python/evals/optimization/leakage.py`与`leakage_rules.json`：合同、规范化、证据片段、三维判定、未知/矛盾分支。测试直接/改写/组合/否定/引用/词边界/不同题目/缺合同。
+- [x] 2. `scoring.py`、`protocol.py`、`gates.py`：合并评分、保留原裁判、摘要冻结、从原轨迹重算规则以防结果篡改；校准执行与正式评分复用同一合并函数。
+- [x] 3. `calibration.py`、独立replay入口：验证模型提示、规则、案例、输入摘要；输出逐项对照、三值规则覆盖、混合一致率；开发资料禁止生成可晋级passed。
+- [x] 4. 运行`.venv/bin/python python/scripts/test_offline.py tests -q`；离线重放旧20条，追加工程日志、报告与费用账本，随本轮提交推送。
 
 ## 验证重点
 
