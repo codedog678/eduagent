@@ -51,6 +51,8 @@ class Campaign:
                     "calibration_manifest", "simulation", "max_metric_calls", "minibatch"}
         if not required <= config.keys():
             raise ValueError("incomplete campaign configuration")
+        if config.get("mode", "qualification") not in {"qualification", "exploratory"}:
+            raise ValueError("unknown campaign mode")
         if not config["simulation"]:
             if config.get("calibration_sha256") != file_digest(config["calibration_manifest"]):
                 raise ValueError("freeze calibration manifest digest before creating campaign")
@@ -117,7 +119,10 @@ class Campaign:
             if file_digest(self.config["calibration_manifest"]) != self.config["calibration_sha256"]:
                 raise ValueError("calibration manifest changed")
             report = verify_manifest(Path(self.config["calibration_manifest"]))
-            if not report["passed"]:
+            if self.config.get("mode") == "exploratory":
+                from evals.optimization.exploratory import check_exploratory_calibration
+                check_exploratory_calibration(report)
+            elif not report["passed"]:
                 raise ValueError("real calibration is incomplete or failed")
             from config.settings import settings
             identity = {"provider": settings.configured_llm_provider,
@@ -239,6 +244,7 @@ class Campaign:
         return gate
 
     def compare_holdout(self, path, service, *, adapter_factory=TutorGEPAAdapter):
+        self.require_qualification()
         if self.data["state"] not in {"dev_passed", "holdout_testing"}:
             raise ValueError("holdout requires passed development")
         self.verify_receipt("dev")
@@ -273,6 +279,7 @@ class Campaign:
         return gate
 
     def qualify(self, harness_evidence):
+        self.require_qualification()
         if self.data["state"] != "holdout_passed":
             raise ValueError("qualification requires holdout")
         source = Path(harness_evidence)
@@ -290,6 +297,7 @@ class Campaign:
         self.transition("eligible", {"holdout_passed"})
 
     def verify_eligibility(self):
+        self.require_qualification()
         if self.config["simulation"]:
             raise ValueError("simulation cannot grant release eligibility")
         self.verify_environment()
@@ -306,6 +314,7 @@ class Campaign:
         verify_harness_evidence(value, self)
 
     def policy_artifact(self):
+        self.require_qualification()
         value = self.data["artifact"]
         expected = artifact(
             self.data["candidate"], parent=self.data["parent"]["policy_hash"],
@@ -320,11 +329,16 @@ class Campaign:
         return value
 
     def register(self):
+        self.require_qualification()
         registry = PolicyRegistry(self.data["registry"], runtime_hash=self.config["deployment_runtime_hash"],
                                   source_revision=self.config["source_revision"])
         policy_hash = registry.register(self.policy_artifact(), self)
         self.transition("registered", {"eligible", "registered"}, policy_hash=policy_hash)
         return policy_hash
+
+    def require_qualification(self):
+        if self.config.get("mode") == "exploratory":
+            raise ValueError("exploratory campaign cannot grant promotion or release eligibility")
 
     def execute(self, service, *, holdout=None, harness_evidence=None, adapter_factory=TutorGEPAAdapter):
         """串行恢复同一个 campaign；中断不释放预算，不删除已完成配对。"""
@@ -336,6 +350,9 @@ class Campaign:
                 self.save()
             try:
                 self.verify_environment()
+                if self.config.get("mode") == "exploratory":
+                    from evals.optimization.exploratory import run_exploration
+                    return run_exploration(self, service, adapter_factory=adapter_factory)
                 if self.data["state"] == "prepared":
                     self.preflight()
                 if self.data["state"] in {"preflight_passed", "searching"}:

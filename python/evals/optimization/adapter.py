@@ -46,6 +46,7 @@ class TutorGEPAAdapter:
             default=0)
         self._busy = False
         self.reuse_completed = False
+        self.tolerate_judge_failure = False
 
     def __enter__(self):
         self.previous_settings = {key: getattr(settings, key) for key in RUNTIME}
@@ -113,6 +114,13 @@ class TutorGEPAAdapter:
             row.update(scoring_status="interrupted", scoring_error_type=type(exc).__name__)
             if diagnostic := getattr(exc, "judge_diagnostic", None):
                 row["judge_diagnostic"] = diagnostic
+                if self.tolerate_judge_failure and isinstance(exc, OptimizationStopped):
+                    row.update(scoring_status="unknown", score={
+                        "score": None, "task_success": None, "decision_rate": None,
+                        "automatic_passed": automatic["automatic_passed"],
+                        "review_status": "unknown", "semantic": [], "decisions": []})
+                    write_json(evidence_path, row)
+                    return row
             write_json(evidence_path, row)
             raise
         return row
@@ -128,7 +136,8 @@ class TutorGEPAAdapter:
         if self.reuse_completed:
             for path in sorted((self.output / "evaluations").glob("*.json")):
                 value = json.loads(path.read_text())
-                if (value.get("scoring_status") == "completed"
+                if (value.get("scoring_status") in (
+                        {"completed", "unknown"} if self.tolerate_judge_failure else {"completed"})
                         and value.get("policy_sha256") == digest(candidate)):
                     cached.setdefault(value["case_id"], value)
         self.budget.require_requests(sum(c.expected_model_requests_max + 1 for c in batch
@@ -156,7 +165,9 @@ class TutorGEPAAdapter:
                 write_json(self.output / "policies" / f"{digest(candidate)}.json",
                            policy_artifact(candidate))
                 write_json(self.output / "budget.json", self.budget.summary())
-                print(f"[eval {index}] {case.case_id}: score={row['score']['score']:.3f}, "
+                score_text = ("unknown" if row["score"]["score"] is None
+                              else f"{row['score']['score']:.3f}")
+                print(f"[eval {index}] {case.case_id}: score={score_text}, "
                       f"requests={self.budget.requests}", flush=True)
             return rows
         finally:
@@ -165,6 +176,8 @@ class TutorGEPAAdapter:
     def evaluate(self, batch, candidate, capture_traces=False):
         from gepa.core.adapter import EvaluationBatch
         rows = self.evaluate_rows(batch, candidate)
+        if any(row["score"]["score"] is None for row in rows):
+            raise OptimizationStopped("unknown judgments cannot enter GEPA scalar optimization")
         return EvaluationBatch(
             outputs=rows, scores=[row["score"]["score"] for row in rows],
             trajectories=rows if capture_traces else None,
@@ -175,6 +188,8 @@ class TutorGEPAAdapter:
             raise ValueError("reflection requires retrieval_rules and captured trajectories")
         records = []
         for row in eval_batch.trajectories:
+            if row.get("scoring_status") == "unknown":
+                raise ValueError("unknown judgments cannot enter reflection")
             if row["case_id"] not in self.train_ids:
                 raise ValueError("development validation or holdout trace cannot enter reflection")
             records.append({
@@ -214,6 +229,10 @@ class TutorGEPAAdapter:
             }, ensure_ascii=False)},
         ]
         raw = self.loop.run(self.text_model.complete(messages, role="reflection", max_tokens=2500))
+        write_json(self.output / "proposals" / f"request-{self.budget.requests:05d}.json",
+                   {"input_sha256": digest(messages), "raw_response": raw,
+                    "parent_policy_sha256": digest(candidate),
+                    "request_no": self.budget.requests})
         try:
             proposal = json.loads(raw)
             validate_candidate(proposal, self.forbidden)

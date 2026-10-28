@@ -82,6 +82,7 @@ def main(argv=None):
             if args.command == "run":
                 campaign.execute(service, holdout=args.holdout, harness_evidence=args.harness_evidence)
             else:
+                campaign.require_qualification()
                 if campaign.data["state"] != "holdout_passed":
                     raise ValueError("harness gate requires completed holdout")
                 campaign.verify_receipt("holdout")
@@ -89,6 +90,7 @@ def main(argv=None):
         elif args.command == "register":
             campaign.register()
         elif args.command in {"release", "rollback"}:
+            campaign.require_qualification()
             registry = PolicyRegistry(campaign.data["registry"],
                                       runtime_hash=campaign.config["deployment_runtime_hash"],
                                       source_revision=campaign.config["source_revision"])
