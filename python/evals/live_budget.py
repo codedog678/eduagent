@@ -17,8 +17,17 @@ PRICING = {
 }
 
 
-def cost_estimate(usage: dict, period: str = "peak") -> float:
-    rates = PRICING["per_million_tokens"][period]
+PRO_PRICING = {
+    **PRICING, "verified_date": "2026-10-29", "model": "deepseek-v4-pro",
+    "per_million_tokens": {
+        "peak": {"input_miss": 9.0, "input_hit": 0.30, "output": 27.0},
+        "off_peak": {"input_miss": 4.5, "input_hit": 0.15, "output": 13.5},
+    },
+}
+
+
+def cost_estimate(usage: dict, period: str = "peak", pricing=None) -> float:
+    rates = (pricing or PRICING)["per_million_tokens"][period]
     total = usage.get("input_tokens", 0)
     hit = min(total, usage.get("prompt_cache_hit_tokens", 0))
     # 缺少供应商缓存字段时按未命中计价。
@@ -40,12 +49,13 @@ class LiveBudget:
         if not 0 < self.max_requests <= 42 or not 0 < self.max_cny <= 3:
             raise ValueError("live batch caps must be <=42 requests and <=3 CNY")
 
-    def reserve(self, messages: list, tools: list, max_tokens: int) -> int:
+    def reserve(self, messages: list, tools: list, max_tokens: int, *, pricing=None) -> int:
         # UTF-8 字节数加协议余量作为保守输入上界；不是供应商精确 Token 数。
         input_bound = len(json.dumps(
             {"messages": messages, "tools": tools}, ensure_ascii=False
         ).encode("utf-8")) + 1024
-        reserved = cost_estimate({"input_tokens": input_bound, "output_tokens": max_tokens})
+        reserved = cost_estimate({"input_tokens": input_bound, "output_tokens": max_tokens},
+                                 pricing=pricing)
         if self.requests >= self.max_requests:
             raise RunExhausted("live_request_budget")
         if self.estimated_peak_cny + self.unconfirmed_reservation_cny + reserved > self.max_cny:
@@ -54,6 +64,8 @@ class LiveBudget:
         self.unconfirmed_reservation_cny += reserved
         self.ledger.append({"request_no": self.requests, "reservation_cny": reserved,
                             "usage": None, "status": "unconfirmed"})
+        if pricing:
+            self.ledger[-1]["pricing"] = pricing
         return len(self.ledger) - 1
 
     def settle(self, index: int, usage: dict):
@@ -66,8 +78,9 @@ class LiveBudget:
             raise ValueError("invalid provider usage")
         self.unconfirmed_reservation_cny -= record["reservation_cny"]
         record.update(usage=usage, status="usage_recorded",
-                      estimated_peak_cny=cost_estimate(usage),
-                      estimated_off_peak_cny=cost_estimate(usage, "off_peak"))
+                      estimated_peak_cny=cost_estimate(usage, pricing=record.get("pricing")),
+                      estimated_off_peak_cny=cost_estimate(usage, "off_peak",
+                                                         pricing=record.get("pricing")))
         self.estimated_peak_cny += record["estimated_peak_cny"]
         self.estimated_off_peak_cny += record["estimated_off_peak_cny"]
 
@@ -89,4 +102,5 @@ class LiveBudget:
             "unconfirmed_reservation_cny": max(0, self.unconfirmed_reservation_cny),
             "billing_status": "estimate_only",
             "pricing": PRICING,
+            "pricing_note": "Default Flash rates; per-request pricing overrides apply when present.",
         }

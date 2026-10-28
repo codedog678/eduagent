@@ -52,6 +52,9 @@ def calibration_report(rows):
 def verify_manifest(path: Path):
     """标签绑定已存原始执行与原始裁判；校验摘要，不接受未落盘的结果。"""
     manifest = json.loads(path.read_text())
+    if manifest.get("data_role") == "independent_calibration":
+        from evals.optimization.calibrate_fresh import verify_fresh_manifest
+        verify_fresh_manifest(path.parent, manifest)
     rows = []
     identities = []
     hybrid = manifest.get("scoring_protocol") is not None

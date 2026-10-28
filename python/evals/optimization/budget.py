@@ -20,9 +20,9 @@ class OptimizationBudget(LiveBudget):
                 or not math.isfinite(self.max_cny) or self.max_cny <= 0):
             raise ValueError("positive finite total request and CNY caps are required")
 
-    def reserve_for(self, role, messages, tools, max_tokens):
+    def reserve_for(self, role, messages, tools, max_tokens, *, pricing=None):
         try:
-            index = super().reserve(messages, tools, max_tokens)
+            index = super().reserve(messages, tools, max_tokens, pricing=pricing)
         except RunExhausted:
             self.blocked = True
             raise OptimizationStopped("global model request or estimated CNY budget exhausted") from None
@@ -45,11 +45,13 @@ class OptimizationBudget(LiveBudget):
 class TextModel:
     """复用已配置 DeepSeek 客户端；纯文本请求不传空工具，不启用 SDK 重试。"""
 
-    def __init__(self, service, budget):
+    def __init__(self, service, budget, *, pricing=None):
         self.service, self.budget = service, budget
+        self.pricing = pricing
 
     async def complete(self, messages, *, role, max_tokens=2200):
-        index = self.budget.reserve_for(role, messages, [], max_tokens)
+        kwargs = {"pricing": self.pricing} if self.pricing else {}
+        index = self.budget.reserve_for(role, messages, [], max_tokens, **kwargs)
         try:
             response = await self.service._get_client().chat.completions.create(
                 model=self.service.model, messages=messages, max_tokens=max_tokens,

@@ -88,9 +88,10 @@ class DurableBudget(OptimizationBudget):
                     row["recovery_state"] = "unknown"
         self._transaction(mark)
 
-    def reserve_for(self, role, messages, tools, max_tokens):
+    def reserve_for(self, role, messages, tools, max_tokens, *, pricing=None):
         def reserve():
-            index = super(DurableBudget, self).reserve_for(role, messages, tools, max_tokens)
+            index = super(DurableBudget, self).reserve_for(
+                role, messages, tools, max_tokens, pricing=pricing)
             self.ledger[index]["input_sha256"] = digest({"messages": messages, "tools": tools})
             return index
         return self._transaction(reserve)
