@@ -86,9 +86,11 @@ def private_literals(cases) -> tuple[str, ...]:
 
 
 def prepare_protocol(path: Path, seed: int = 42) -> dict:
+    from evals.optimization.leakage import load_contract, protocol_identity
     cases = load_live_cases(path)
     for case in cases:
         require_rsi_contract(case)
+        load_contract(case)
     groups = defaultdict(list)
     for case in cases:
         groups[capability_name(case)].append(case)
@@ -117,6 +119,7 @@ def prepare_protocol(path: Path, seed: int = 42) -> dict:
         "seed_policy": policy_artifact(seed_candidate()),
         "runtime": RUNTIME, "gepa_version": GEPA_VERSION,
         "scorer_sha256": file_digest(Path(__file__).with_name("scoring.py")),
+        "leakage_protocol": protocol_identity(),
         "semantic_contract_sha256": file_digest(
             Path(__file__).parents[1] / "semantic_contract.py"),
     }

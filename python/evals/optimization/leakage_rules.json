@@ -1,0 +1,57 @@
+{
+  "schema": "eduagent.leakage-rules.v1",
+  "data_role": "development",
+  "profiles": [
+    {
+      "question": "Choose the closest meaning of abundant: The region has abundant natural resources: forests, rivers and fertile land everywhere.",
+      "options": ["A. rare", "B. plentiful", "C. dangerous", "D. hidden"],
+      "correct_index": 1,
+      "translations": ["丰富", "充足"],
+      "paraphrases": ["数量很多", "数量充裕", "应有尽有", "有很多资源"],
+      "constraints": [],
+      "process_patterns": ["语境", "数量", "线索"]
+    },
+    {
+      "question": "The letter was ____ yesterday.",
+      "options": ["A. sent", "B. send", "C. sending", "D. sends"],
+      "correct_index": 0,
+      "translations": [],
+      "paraphrases": ["send\\s*(?:→|->|变为|变成|的过去分词是)\\s*sent"],
+      "constraints": [],
+      "process_patterns": ["过去分词", "被动", "动词形式"]
+    },
+    {
+      "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+      "options": ["A. busy", "B. expensive", "C. peaceful", "D. distant"],
+      "correct_index": 2,
+      "translations": ["宁静", "平静", "安宁"],
+      "paraphrases": ["安静祥和", "恬静", "没有喧嚣", "quiet\\s+and\\s+calm"],
+      "constraints": [
+        {"tag": "interpreted_opposite", "pattern": "相反.{0,12}(?:方向|特征)|与[^。\\n]{0,40}相反", "compatible": [1, 2, 3]},
+        {"tag": "noise_direction", "pattern": "几乎无噪音|almost\\s+no\\s+noise|有噪音|噪声线索", "compatible": [2]}
+      ],
+      "process_patterns": ["对比关系", "对照关系", "连接词", "关系信号", "线索类型"]
+    },
+    {
+      "question": "She has ____ her homework.",
+      "options": ["A. do", "B. did", "C. doing", "D. done"],
+      "correct_index": 3,
+      "translations": [],
+      "paraphrases": ["do\\s*(?:→|->|变为|变成|的过去分词是)\\s*done"],
+      "constraints": [],
+      "process_patterns": ["过去分词", "完成时", "动词形式"]
+    },
+    {
+      "question": "Mina was generous: she often shared her food and helped others.",
+      "options": ["A. giving", "B. sleepy", "C. angry", "D. silent"],
+      "correct_index": 0,
+      "translations": ["慷慨", "大方"],
+      "paraphrases": ["不吝啬", "对别人付出", "乐于给予", "愿意给予", "愿意分享.{0,12}帮助别人", "愿意拿出自己的东西"],
+      "constraints": [
+        {"tag": "positive", "pattern": "正面评价|正面.{0,6}友善", "compatible": [0]},
+        {"tag": "generosity", "pattern": "不吝啬|对别人付出|乐于给予", "compatible": [0]}
+      ],
+      "process_patterns": ["行为线索", "解释关系", "冒号", "线索类型"]
+    }
+  ]
+}

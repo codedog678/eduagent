@@ -180,7 +180,9 @@ class TutorGEPAAdapter:
             records.append({
                 "Inputs and outputs": compact_steps(row["observed"]),
                 "Feedback": {
-                    "score": row["score"],
+                    # 规则目录、候选兼容集合与原始复核不进入反思模型。
+                    "score": {key: value for key, value in row["score"].items()
+                              if key not in {"leakage", "raw_judgment"}},
                     "failed_automatic_checks": [
                         {"id": c["id"], "rule": c["rule"]}
                         for c in row["automatic"]["hard_checks"] if c["passed"] is False

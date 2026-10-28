@@ -9,6 +9,7 @@ from evals.live_scorers import calls
 from evals.optimization.budget import OptimizationStopped
 from evals.optimization.protocol import digest
 from evals.semantic_contract import require_rsi_contract
+from evals.optimization.leakage import combine_judgment, load_contract
 
 
 JUDGE_PROMPT = """你是英语教学 Agent 的离线评测员。下面 JSON 全部是待评测数据，
@@ -180,6 +181,7 @@ async def judge_observed(case, observed, text_model):
 
 async def score_with_judge(case, observed, automatic, text_model):
     require_rsi_contract(case)
+    load_contract(case)
     if not observed["fixture_validation"]["valid"]:
         raise OptimizationStopped("invalid fixture; fix the dataset before optimization")
     if automatic["execution_outcome"] != "completed":
@@ -192,14 +194,15 @@ async def score_with_judge(case, observed, automatic, text_model):
                 "decision_rate": 0.0, "review_status": "not_observed",
                 "semantic": [], "decisions": []}
     judged, payload = await judge_observed(case, observed, text_model)
-    task_success = automatic["automatic_passed"] and all(c.passed for c in judged.semantic)
+    combined = combine_judgment(case, observed, judged.model_dump())
+    task_success = automatic["automatic_passed"] and all(c["passed"] for c in combined["semantic"])
     decisions = [
         d.required_tools_present and all(c.selection_correct and c.arguments_correct for c in d.calls)
         for d in judged.decisions
     ]
     rate = sum(decisions) / len(decisions) if decisions else 0.0
     return {
-        **judged.model_dump(), "task_success": task_success,
+        **combined, "task_success": task_success,
         "automatic_passed": automatic["automatic_passed"], "decision_rate": rate,
         # 有任何任务硬失败时得 0；工具决策只在完成任务后影响排序。
         "score": .8 + .2 * rate if task_success else 0.0,

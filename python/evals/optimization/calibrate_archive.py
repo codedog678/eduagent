@@ -11,7 +11,6 @@ from pathlib import Path
 
 from config.settings import settings
 from core.llm_service import get_llm_service
-from core.policy_store import atomic_json
 from evals.io import write_json
 from evals.live_cases import load_live_cases
 from evals.live_scorers import score_live_case
@@ -19,12 +18,15 @@ from evals.optimization.budget import TextModel
 from evals.optimization.calibration import verify_manifest
 from evals.optimization.ledger import DurableBudget, SharedLedger
 from evals.optimization.protocol import digest
-from evals.optimization.scoring import JUDGE_PROMPT, judge_observed, validate_judgment
+from evals.optimization.scoring import JUDGE_PROMPT, judge_observed, judge_payload, validate_judgment
+from evals.optimization.leakage import combine_judgment, protocol_identity, load_contract
 
 
 async def run(args):
     spec = json.loads(args.spec.read_text())
     cases = {case.case_id: case for case in load_live_cases(args.dataset)}
+    for item in spec["items"]:
+        load_contract(cases[item["case_id"]])
     service = get_llm_service()
     if (service.provider != "deepseek" or service.model != "deepseek-flash"
             or service.thinking != "disabled" or not service._has_remote_llm()):
@@ -48,10 +50,13 @@ async def run(args):
             cached = json.loads(evidence.read_text())
             score = cached.get("score", {})
             if (score.get("review_status") == "ai_reviewed"
-                    and score.get("judge_prompt_sha256") == digest(JUDGE_PROMPT)):
-                validate_judgment(json.dumps({
-                    "semantic": score["semantic"], "decisions": score["decisions"],
-                }), case, observed)
+                    and score.get("judge_prompt_sha256") == digest(JUDGE_PROMPT)
+                    and score.get("judge_input_sha256") == digest(judge_payload(case, observed))
+                    and score.get("leakage", {}).get("protocol") == protocol_identity()):
+                raw = validate_judgment(json.dumps(score["raw_judgment"]), case, observed)
+                expected = combine_judgment(case, observed, raw.model_dump())
+                if any(score.get(key) != expected[key] for key in expected):
+                    raise ValueError("cached hybrid calibration mismatch")
                 output_items.append({
                     **{key: value for key, value in item.items()
                        if key not in {"source_path", "response_override"}},
@@ -61,10 +66,11 @@ async def run(args):
                 print(f"[calibration {index}/{len(spec['items'])}] reused {item['group']} "
                       f"{case.case_id}", flush=True)
                 continue
+            raise ValueError("existing calibration evidence is incompatible; use a new output directory")
         try:
             judged, payload = await judge_observed(case, observed, text_model)
             score = {
-                **judged.model_dump(), "review_status": "ai_reviewed",
+                **combine_judgment(case, observed, judged.model_dump()), "review_status": "ai_reviewed",
                 "judge_prompt_sha256": digest(JUDGE_PROMPT),
                 "judge_input_sha256": digest(payload),
             }
@@ -84,6 +90,7 @@ async def run(args):
             raise
         record = {
             "schema": "eduagent.rsi-calibration-evidence.v1",
+            "case": case.model_dump(by_alias=True),
             "case_id": case.case_id, "observed": observed, "automatic": automatic, "score": score,
             "judge_identity": {"provider": service.provider, "model": service.model,
                                "thinking": service.thinking},
@@ -102,6 +109,8 @@ async def run(args):
         print(f"[calibration {index}/{len(spec['items'])}] {item['group']} {case.case_id}",
               flush=True)
     manifest = {"schema": "eduagent.rsi-calibration-manifest.v1",
+                "scoring_protocol": protocol_identity(),
+                "data_role": "development_calibration",
                 "budget_id": spec["budget_id"], "items": output_items}
     write_json(args.output / "manifest.json", manifest)
     report = verify_manifest(args.output / "manifest.json")

@@ -54,6 +54,12 @@ def verify_manifest(path: Path):
     manifest = json.loads(path.read_text())
     rows = []
     identities = []
+    hybrid = manifest.get("scoring_protocol") is not None
+    if hybrid:
+        from evals.optimization.leakage import protocol_identity
+        from evals.live_cases import LiveCase
+        if manifest["scoring_protocol"] != protocol_identity():
+            raise ValueError("calibration leakage protocol changed")
     for item in manifest["items"]:
         evidence = path.parent / item["evidence_path"]
         content = evidence.read_bytes()
@@ -69,9 +75,28 @@ def verify_manifest(path: Path):
         if not identity or any(identity != prior for prior in identities):
             raise ValueError("calibration judge identity missing or mixed")
         identities.append(identity)
+        if hybrid:
+            from evals.optimization.leakage import combine_judgment
+            from evals.optimization.scoring import judge_payload, validate_judgment
+            case = LiveCase.model_validate(record["case"])
+            case.validate_contract()
+            if (case.case_id != item["case_id"]
+                    or record["score"]["judge_input_sha256"] != digest(
+                        judge_payload(case, record["observed"]))):
+                raise ValueError("calibration case/input binding mismatch")
+            raw = record["score"]["raw_judgment"]
+            validate_judgment(json.dumps(raw), case, record["observed"])
+            combined = combine_judgment(case, record["observed"], raw)
+            if any(record["score"].get(key) != combined[key] for key in combined):
+                raise ValueError("calibration hybrid evidence mismatch")
         response = record["observed"]["steps"][item["step_id"]]["result"]["teaching_response"]["response"]
         checks = {c["id"]: c for c in record["score"]["semantic"]}
         semantic_ids = item.get("semantic_ids", [item["check_id"]])
+        if hybrid:
+            prefix = "hint_" if item["group"].startswith("hint_") else "retrieval_"
+            required = {c.id for c in case.hard_checks if c.path.startswith(prefix)}
+            if not required or set(semantic_ids) != required:
+                raise ValueError("hybrid calibration requires all frozen dimensions")
         if (not semantic_ids or set(semantic_ids) - set(checks)
                 or len(semantic_ids) != len(set(semantic_ids))):
             raise ValueError("calibration semantic coverage mismatch")
@@ -79,7 +104,15 @@ def verify_manifest(path: Path):
         # 这样“未直接给答案但通过改写泄露”不会被单项检查伪装成合规。
         observed_passed = all(checks[identifier]["passed"] for identifier in semantic_ids)
         rows.append({**item, "response": response, "judge_passed": observed_passed})
-    return {**calibration_report(rows), "judge_identity": identities[0] if identities else None}
+    report = calibration_report(rows)
+    # 旧协议或参与规则设计的资料只能回归复评；命中20条不等于独立校准。
+    eligible = hybrid and manifest.get("data_role") == "independent_calibration"
+    return {**report, "measured_passed": report["passed"],
+            "passed": report["passed"] and eligible,
+            "status": report["status"] if eligible else "validation_required",
+            "data_role": manifest.get("data_role", "legacy"),
+            "judge_identity": identities[0] if identities else None,
+            "scoring_protocol": manifest.get("scoring_protocol")}
 
 
 if __name__ == "__main__":

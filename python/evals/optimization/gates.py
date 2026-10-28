@@ -18,8 +18,14 @@ def verify_raw_row(row, case):
         return
     if score["judge_prompt_sha256"] != digest(JUDGE_PROMPT):
         raise ValueError("judge protocol changed")
-    judgment = validate_judgment(json.dumps({key: score[key] for key in ("semantic", "decisions")}),
-                                 case, row["observed"])
+    from evals.optimization.leakage import combine_judgment
+    raw = validate_judgment(json.dumps(score["raw_judgment"]), case, row["observed"])
+    combined = combine_judgment(case, row["observed"], raw.model_dump())
+    if any(score.get(key) != combined[key]
+           for key in ("semantic", "decisions", "leakage", "raw_judgment")):
+        raise ValueError("deterministic leakage score does not match raw evidence")
+    judgment = validate_judgment(json.dumps(
+        {key: combined[key] for key in ("semantic", "decisions")}), case, row["observed"])
     passed = automatic["automatic_passed"] and all(c.passed for c in judgment.semantic)
     decisions = [d.required_tools_present and all(c.selection_correct and c.arguments_correct
                                                  for c in d.calls) for d in judgment.decisions]
