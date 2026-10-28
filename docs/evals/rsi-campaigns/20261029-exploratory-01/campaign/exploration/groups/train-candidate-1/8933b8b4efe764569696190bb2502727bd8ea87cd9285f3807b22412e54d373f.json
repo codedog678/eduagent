@@ -1,0 +1,533 @@
+{
+  "binding": "f256e966f55d32e3034d5279460f4d6bc61fbbcd5769a45b1bd7dc5520d84a02",
+  "row": {
+    "case_id": "live-25-since-repaired",
+    "capability": "grounded_history",
+    "evaluation_index": 15,
+    "policy_sha256": "2583577037340575dc664e66a2785627038f08043ec7ce43ae6d768ea303ef51",
+    "scoring_status": "completed",
+    "automatic": {
+      "case_id": "live-25-since-repaired",
+      "category": "跨会话记忆",
+      "title": "历史：纠正 since 只配完成时的旧误解",
+      "evaluation_role": "agent_primary",
+      "status": "review_pending",
+      "automatic_passed": true,
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "path": "s1.execution",
+          "rule": "status=completed、dialogue_state=answered；thread 与预置 grammar_tenses 主题相同。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "path": "s1.execution.source_refs",
+          "rule": "与两条预置真实来源至少有一个交集；所有引用均可按当前 learner 读取。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "path": "learner.knowledge_states.grammar_tenses",
+          "rule": "所有 KnowledgeState 字段保持不变。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "semantic_review",
+          "path": "s1.teaching_response.response",
+          "rule": "回溯学生把 since 与完成时一一对应的误解，区分起点义与原因义，给合理原因义例句。",
+          "passed": null,
+          "status": "review_pending"
+        }
+      ],
+      "execution_outcome": "completed",
+      "execution_failures": [],
+      "annotations": {},
+      "quality_review": {
+        "status": "review_pending",
+        "reviewer": null,
+        "scores": null,
+        "anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。"
+        }
+      }
+    },
+    "observed": {
+      "initial": {
+        "knowledge": {
+          "eval-live-25": {
+            "knowledge_id": "grammar_tenses",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "thread_id": "244b41e3-f4d0-5f57-a3c1-083450db1ed1"
+      },
+      "fixture_validation": {
+        "valid": true,
+        "checks": {
+          "default_knowledge": true,
+          "no_answer_fields_in_context": true,
+          "no_preexisting_pending": true,
+          "seeded_history_visible": true
+        },
+        "initial_source_refs": [
+          "message:eval-live-25-old-tutor",
+          "message:eval-live-25-old-user"
+        ]
+      },
+      "steps": {
+        "s1": {
+          "action": "converse",
+          "student_input": "接着上次讲，我关于 since 的理解哪里太绝对？给一个原因义的例子。",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-25",
+            "knowledge_id": "grammar_tenses",
+            "correlation_id": "1ec10fcf-84aa-5991-9b03-74cfc5534ca7",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "你上次的原话是：“我以为所有含 since 的句子都必须用现在完成时。”这个理解太绝对的地方在于：**since 本身不决定时态，要看它在句子里承担什么意义，以及动作和现在有没有联系。**\n\n分两种情况看：\n\n1. **表示“从……起”（时间起点）**：这时常见现在完成时，因为要说明从过去某点延续到现在，例如 *I've lived here since 2015.* 但也不是“必须”——如果描述的是过去某段时期内的习惯，也可能用一般过去时，例如 *He worked there since 2015 and left in 2019.*（起点在过去，终点也在过去，与现在无关）。\n\n2. **表示“因为”（原因）**：这时 since 是连词，相当于 because，从句时态由从句自身的时间意义决定，跟“完成”无关。例如：\n\n> **Since you're free tonight, why not join us?**\n> （既然你今晚有空，不如一起来？）\n\n这里从句用一般现在时，因为说的是现在的状态；主句用祈使句。再如 *Since it was raining, we stayed in.* 从句用过去时，因为原因发生在过去。\n\n所以判断顺序是：先看 since 是“起点”还是“原因”，再看那个动作与现在的关系，而不是见到 since 就套现在完成时。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "grammar_tenses",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [
+                "message:eval-live-25-old-tutor",
+                "message:eval-live-25-old-user"
+              ],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "grammar_tenses",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "grammar_tenses",
+                "response": "你上次的原话是：“我以为所有含 since 的句子都必须用现在完成时。”这个理解太绝对的地方在于：**since 本身不决定时态，要看它在句子里承担什么意义，以及动作和现在有没有联系。**\n\n分两种情况看：\n\n1. **表示“从……起”（时间起点）**：这时常见现在完成时，因为要说明从过去某点延续到现在，例如 *I've lived here since 2015.* 但也不是“必须”——如果描述的是过去某段时期内的习惯，也可能用一般过去时，例如 *He worked there since 2015 and left in 2019.*（起点在过去，终点也在过去，与现在无关）。\n\n2. **表示“因为”（原因）**：这时 since 是连词，相当于 because，从句时态由从句自身的时间意义决定，跟“完成”无关。例如：\n\n> **Since you're free tonight, why not join us?**\n> （既然你今晚有空，不如一起来？）\n\n这里从句用一般现在时，因为说的是现在的状态；主句用祈使句。再如 *Since it was raining, we stayed in.* 从句用过去时，因为原因发生在过去。\n\n所以判断顺序是：先看 since 是“起点”还是“原因”，再看那个动作与现在的关系，而不是见到 since 就套现在完成时。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [
+                  "message:eval-live-25-old-tutor",
+                  "message:eval-live-25-old-user"
+                ],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "grammar_tenses",
+                  "question": "接着上次讲，我关于 since 的理解哪里太绝对？给一个原因义的例子。"
+                },
+                "timestamp": "2026-10-29T03:45:06.160854",
+                "correlation_id": "1ec10fcf-84aa-5991-9b03-74cfc5534ca7"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "grammar_tenses",
+                  "response": "你上次的原话是：“我以为所有含 since 的句子都必须用现在完成时。”这个理解太绝对的地方在于：**since 本身不决定时态，要看它在句子里承担什么意义，以及动作和现在有没有联系。**\n\n分两种情况看：\n\n1. **表示“从……起”（时间起点）**：这时常见现在完成时，因为要说明从过去某点延续到现在，例如 *I've lived here since 2015.* 但也不是“必须”——如果描述的是过去某段时期内的习惯，也可能用一般过去时，例如 *He worked there since 2015 and left in 2019.*（起点在过去，终点也在过去，与现在无关）。\n\n2. **表示“因为”（原因）**：这时 since 是连词，相当于 because，从句时态由从句自身的时间意义决定，跟“完成”无关。例如：\n\n> **Since you're free tonight, why not join us?**\n> （既然你今晚有空，不如一起来？）\n\n这里从句用一般现在时，因为说的是现在的状态；主句用祈使句。再如 *Since it was raining, we stayed in.* 从句用过去时，因为原因发生在过去。\n\n所以判断顺序是：先看 since 是“起点”还是“原因”，再看那个动作与现在的关系，而不是见到 since 就套现在完成时。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [
+                    "message:eval-live-25-old-tutor",
+                    "message:eval-live-25-old-user"
+                  ],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:45:09.144290",
+                "correlation_id": "1ec10fcf-84aa-5991-9b03-74cfc5534ca7"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-25-since-repaired-s1",
+              "run_id": "1ec10fcf-84aa-5991-9b03-74cfc5534ca7",
+              "attempt_id": "8f7a3b5d-6b26-42e7-bf6a-43a32223aca6",
+              "session_id": "eval-live-25-new",
+              "thread_id": "244b41e3-f4d0-5f57-a3c1-083450db1ed1",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [
+                "message:eval-live-25-old-tutor",
+                "message:eval-live-25-old-user"
+              ],
+              "retrieved_refs": [
+                "message:eval-live-25-old-tutor",
+                "message:eval-live-25-old-user"
+              ],
+              "read_refs": [],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "0bca65fdef1734532905e86fb02db3c0da008ddab4b2ee8ab01e5152132d9a9d"
+            }
+          },
+          "trace": {
+            "request_id": "live-25-since-repaired-s1",
+            "attempts": [
+              {
+                "attempt_id": "8f7a3b5d-6b26-42e7-bf6a-43a32223aca6",
+                "run_id": "1ec10fcf-84aa-5991-9b03-74cfc5534ca7",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216706.160668,
+                "finished": 1793216709.1449962,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216706.1608,
+                    "effective_policy_hash": "0bca65fdef1734532905e86fb02db3c0da008ddab4b2ee8ab01e5152132d9a9d"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793216706.160842,
+                    "route": "Tutor",
+                    "reason": "question_intent"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216706.160863,
+                    "event_id": "07ca3e36-9701-4705-bf89-50cba3c71247",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216706.1608698,
+                    "event_id": "07ca3e36-9701-4705-bf89-50cba3c71247"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216706.1611588,
+                    "lexical_hits": 2,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216706.161281,
+                    "source_refs": [
+                      "message:eval-live-25-old-tutor",
+                      "message:eval-live-25-old-user"
+                    ],
+                    "omitted_refs": [],
+                    "token_estimate": 1873,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "explanation",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216706.1618931,
+                    "model_call": 1,
+                    "token_estimate": 2835
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216706.164364,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "1ec10fcf-84aa-5991-9b03-74cfc5534ca7"
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216709.1442182,
+                    "model_call": 1,
+                    "stop_reason": "stop",
+                    "usage": {
+                      "input_tokens": 2228,
+                      "output_tokens": 285,
+                      "prompt_cache_hit_tokens": 1792,
+                      "prompt_cache_miss_tokens": 436
+                    }
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216709.144233,
+                    "retrieved_refs": [
+                      "message:eval-live-25-old-tutor",
+                      "message:eval-live-25-old-user"
+                    ],
+                    "read_refs": [],
+                    "cited_refs": []
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216709.144376,
+                    "event_id": "07ca3e36-9701-4705-bf89-50cba3c71247",
+                    "duration_ms": 2984
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216709.1443799,
+                    "event_id": "5ed2d4b4-7a8e-4919-a650-28d60279b1d0",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "07ca3e36-9701-4705-bf89-50cba3c71247"
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216709.1444669
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216709.14492,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 1,
+              "content": "你上次的原话是：“我以为所有含 since 的句子都必须用现在完成时。”这个理解太绝对的地方在于：**since 本身不决定时态，要看它在句子里承担什么意义，以及动作和现在有没有联系。**\n\n分两种情况看：\n\n1. **表示“从……起”（时间起点）**：这时常见现在完成时，因为要说明从过去某点延续到现在，例如 *I've lived here since 2015.* 但也不是“必须”——如果描述的是过去某段时期内的习惯，也可能用一般过去时，例如 *He worked there since 2015 and left in 2019.*（起点在过去，终点也在过去，与现在无关）。\n\n2. **表示“因为”（原因）**：这时 since 是连词，相当于 because，从句时态由从句自身的时间意义决定，跟“完成”无关。例如：\n\n> **Since you're free tonight, why not join us?**\n> （既然你今晚有空，不如一起来？）\n\n这里从句用一般现在时，因为说的是现在的状态；主句用祈使句。再如 *Since it was raining, we stayed in.* 从句用过去时，因为原因发生在过去。\n\n所以判断顺序是：先看 since 是“起点”还是“原因”，再看那个动作与现在的关系，而不是见到 since 就套现在完成时。",
+              "tool_calls": [],
+              "stop_reason": "stop",
+              "usage": {
+                "input_tokens": 2228,
+                "output_tokens": 285,
+                "prompt_cache_hit_tokens": 1792,
+                "prompt_cache_miss_tokens": 436
+              },
+              "duration_ms": 2982.3044579989073
+            }
+          ],
+          "tool_results": [],
+          "quizzes": {},
+          "knowledge": {
+            "eval-live-25": {
+              "knowledge_id": "grammar_tenses",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [],
+          "duration_ms": 2984.965250001551,
+          "all_sources_readable": true
+        }
+      },
+      "final": {
+        "knowledge": {
+          "eval-live-25": {
+            "knowledge_id": "grammar_tenses",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "evidence": [],
+        "pending_questions": [],
+        "assistant_history": [
+          "since 有多种用法；表示起点时还需看动作与现在的联系，作为 because 的原因义不能机械套时态。",
+          "你上次的原话是：“我以为所有含 since 的句子都必须用现在完成时。”这个理解太绝对的地方在于：**since 本身不决定时态，要看它在句子里承担什么意义，以及动作和现在有没有联系。**\n\n分两种情况看：\n\n1. **表示“从……起”（时间起点）**：这时常见现在完成时，因为要说明从过去某点延续到现在，例如 *I've lived here since 2015.* 但也不是“必须”——如果描述的是过去某段时期内的习惯，也可能用一般过去时，例如 *He worked there since 2015 and left in 2019.*（起点在过去，终点也在过去，与现在无关）。\n\n2. **表示“因为”（原因）**：这时 since 是连词，相当于 because，从句时态由从句自身的时间意义决定，跟“完成”无关。例如：\n\n> **Since you're free tonight, why not join us?**\n> （既然你今晚有空，不如一起来？）\n\n这里从句用一般现在时，因为说的是现在的状态；主句用祈使句。再如 *Since it was raining, we stayed in.* 从句用过去时，因为原因发生在过去。\n\n所以判断顺序是：先看 since 是“起点”还是“原因”，再看那个动作与现在的关系，而不是见到 since 就套现在完成时。"
+        ]
+      }
+    },
+    "judge_identity": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "thinking": "disabled"
+    },
+    "score": {
+      "semantic": [
+        {
+          "id": "H4",
+          "passed": true,
+          "reason": "回复回溯了学生原话，区分since的起点义与原因义，并给出原因义例句及解释。",
+          "evidence": "你上次的原话是：“我以为所有含 since 的句子都必须用现在完成时。”这个理解太绝对的地方在于：**since 本身不决定时态，要看它在句子里承担什么意义，以及动作和现在有没有联系。**……2. **表示“因为”（原因）**：这时 since 是连词，相当于 because，从句时态由从句自身的时间意义决定，跟“完成”无关。例如：\n\n> **Since you're free tonight, why not join us?**"
+        }
+      ],
+      "decisions": [
+        {
+          "step_id": "s1",
+          "required_tools_present": true,
+          "calls": [],
+          "reason": "历史已注入上下文，直接回答即可，无需额外工具调用；未调用不构成漏调。",
+          "evidence": ""
+        }
+      ],
+      "raw_judgment": {
+        "semantic": [
+          {
+            "id": "H4",
+            "passed": true,
+            "reason": "回复回溯了学生原话，区分since的起点义与原因义，并给出原因义例句及解释。",
+            "evidence": "你上次的原话是：“我以为所有含 since 的句子都必须用现在完成时。”这个理解太绝对的地方在于：**since 本身不决定时态，要看它在句子里承担什么意义，以及动作和现在有没有联系。**……2. **表示“因为”（原因）**：这时 since 是连词，相当于 because，从句时态由从句自身的时间意义决定，跟“完成”无关。例如：\n\n> **Since you're free tonight, why not join us?**"
+          }
+        ],
+        "decisions": [
+          {
+            "step_id": "s1",
+            "required_tools_present": true,
+            "calls": [],
+            "reason": "历史已注入上下文，直接回答即可，无需额外工具调用；未调用不构成漏调。",
+            "evidence": ""
+          }
+        ]
+      },
+      "leakage": {
+        "protocol": {
+          "schema": "eduagent.hybrid-leakage.v2",
+          "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+          "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7"
+        },
+        "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "case_sha256": "86e9519baa8959258d86dfd5052959bf07b4605c6c25b34bf23ea4f1e4cfb27d",
+        "steps": {},
+        "verdict": "not_applicable"
+      },
+      "task_success": true,
+      "automatic_passed": true,
+      "decision_rate": 1.0,
+      "score": 1.0,
+      "review_status": "ai_reviewed",
+      "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+      "judge_input_sha256": "0b68e52efca8fbe77161267127abd2c4c0a6b58995cb8b1a649c6c85cfa7df82"
+    },
+    "metering": [
+      {
+        "request_no": 189,
+        "reservation_cny": 0.025456,
+        "usage": {
+          "input_tokens": 2228,
+          "output_tokens": 285,
+          "prompt_cache_hit_tokens": 1792,
+          "prompt_cache_miss_tokens": 436
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "eb8b8b00c6377fd5c01b21027cc88c1b767cfff9bbfa586fae8b0d3ab7aaac37",
+        "estimated_peak_cny": 0.0032236800000000005,
+        "estimated_off_peak_cny": 0.0016118400000000002
+      },
+      {
+        "request_no": 190,
+        "reservation_cny": 0.039506,
+        "usage": {
+          "input_tokens": 2390,
+          "output_tokens": 205,
+          "prompt_cache_hit_tokens": 1152
+        },
+        "status": "usage_recorded",
+        "role": "judge",
+        "input_sha256": "a719ac64c91f8039d7fe5b4d7e3ecae910c3b6683e87f1bac6659cd1ed24f505",
+        "estimated_peak_cny": 0.00416208,
+        "estimated_off_peak_cny": 0.00208104
+      }
+    ]
+  },
+  "row_sha256": "b4892f4342de90ffd31c1354f64991de761554890b356ae6e9f41a424c648474"
+}

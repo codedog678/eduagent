@@ -1,0 +1,1952 @@
+{
+  "binding": "64501c2bab81f7618887068ea8926bf85bc06178fe6f06c2a6eb4d322d10cb76",
+  "row": {
+    "case_id": "live-54-fresh-vocab-control",
+    "capability": "learning_evidence",
+    "evaluation_index": 78,
+    "policy_sha256": "d6a798b89944ae1ac4b3326478b1b80c7e8634434f7a1adc87cf2a381e500ba8",
+    "scoring_status": "completed",
+    "automatic": {
+      "case_id": "live-54-fresh-vocab-control",
+      "category": "学习证据",
+      "title": "证据：新词汇题保留独立首答",
+      "evaluation_role": "agent_primary",
+      "status": "review_pending",
+      "automatic_passed": true,
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "path": "s2.learning_evidence / q1",
+          "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice，q1.solved=true。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "path": "q2 before s4",
+          "rule": "attempts=0、hints=0、assisted=false、revealed=false、solved=false，且没有 q2 的 assistance 证据。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "path": "s4.learning_evidence / s4.evaluation",
+          "rule": "independent=true、mastery_updated=true、assisted=false、outcome=independent、attempt=1、is_correct=true。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "automatic",
+          "path": "learner.knowledge_states.vocab_basic",
+          "rule": "最终 attempts=1、correct_count=1、alpha=2、beta=9、streak=1、last_attempt 非空，mastery≈0.43333333333333335，误差≤1e-9。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H5",
+          "method": "automatic",
+          "path": "learning_evidence",
+          "rule": "q1 有 assistance 与 guided assessment；q2 只有 independent assessment，无 assistance；证据按 quiz_id 分离。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H6",
+          "method": "semantic_review",
+          "path": "s1.teaching_response.response",
+          "rule": "提示 shared food 与 helped others 是行为线索，不直接给慷慨、giving 或选 A；后续新题不提前透露。",
+          "passed": null,
+          "status": "review_pending"
+        },
+        {
+          "id": "S1",
+          "method": "semantic_review",
+          "path": "hint_direct",
+          "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。",
+          "passed": null,
+          "status": "review_pending"
+        },
+        {
+          "id": "S2",
+          "method": "semantic_review",
+          "path": "hint_paraphrase",
+          "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。",
+          "passed": null,
+          "status": "review_pending"
+        },
+        {
+          "id": "S3",
+          "method": "semantic_review",
+          "path": "hint_elimination",
+          "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。",
+          "passed": null,
+          "status": "review_pending"
+        }
+      ],
+      "execution_outcome": "completed",
+      "execution_failures": [],
+      "annotations": {},
+      "quality_review": {
+        "status": "review_pending",
+        "reviewer": null,
+        "scores": null,
+        "anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。"
+        }
+      }
+    },
+    "observed": {
+      "initial": {
+        "knowledge": {
+          "eval-live-54": {
+            "knowledge_id": "vocab_basic",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {
+          "eval-live-54-q1": {
+            "quiz_id": "eval-live-54-q1",
+            "question": "Mina was generous: she often shared her food and helped others.",
+            "options": [
+              "A. giving",
+              "B. sleepy",
+              "C. angry",
+              "D. silent"
+            ],
+            "mode": "practice",
+            "difficulty": 0.5,
+            "attempts": 0,
+            "hints": 0,
+            "assisted": false,
+            "solved": false,
+            "revealed": false,
+            "knowledge_id": "vocab_basic",
+            "session_id": "eval-live-54-s1",
+            "thread_id": "5def182e-ad20-5c77-bbbc-7cb17254bc0c",
+            "created": 1793216981.873017
+          }
+        },
+        "thread_id": "5def182e-ad20-5c77-bbbc-7cb17254bc0c"
+      },
+      "fixture_validation": {
+        "valid": true,
+        "checks": {
+          "default_knowledge": true,
+          "no_answer_fields_in_context": true,
+          "no_preexisting_pending": true
+        },
+        "initial_source_refs": []
+      },
+      "steps": {
+        "s1": {
+          "action": "converse",
+          "student_input": "先提示如何用行为例子推断 generous，不要给直接词义或选项。",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-54",
+            "knowledge_id": "vocab_basic",
+            "correlation_id": "e1464d03-7314-5108-84fa-dc31d646bdda",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "这道题的关键是：**用冒号后面的行为来反推前面的形容词**。\n\n检查步骤：\n\n1. **看冒号的作用**：冒号后面通常是对前面的解释或举例。所以 “she often shared her food and helped others” 是在说明 Mina 是个什么样的人。\n2. **提取行为**：她做了两件事——分享食物、帮助别人。这两件事的共同点是什么？都是“把自己的东西/精力给别人”。\n3. **把行为概括成性格**：一个经常这样做的人，性格上偏向哪一类？先自己用一两个中文词概括，再去看选项里哪个词和你的概括最接近。\n4. **排除法**：把四个选项逐个套回句子，问“一个 ___ 的人会经常分享食物、帮助别人吗？”能对上的留下，对不上的划掉。\n\n注意：不要只凭“generous 好像见过”来选，要靠冒号后的行为证据来定。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "vocab_basic",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "vocab_basic",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "vocab_basic",
+                "response": "这道题的关键是：**用冒号后面的行为来反推前面的形容词**。\n\n检查步骤：\n\n1. **看冒号的作用**：冒号后面通常是对前面的解释或举例。所以 “she often shared her food and helped others” 是在说明 Mina 是个什么样的人。\n2. **提取行为**：她做了两件事——分享食物、帮助别人。这两件事的共同点是什么？都是“把自己的东西/精力给别人”。\n3. **把行为概括成性格**：一个经常这样做的人，性格上偏向哪一类？先自己用一两个中文词概括，再去看选项里哪个词和你的概括最接近。\n4. **排除法**：把四个选项逐个套回句子，问“一个 ___ 的人会经常分享食物、帮助别人吗？”能对上的留下，对不上的划掉。\n\n注意：不要只凭“generous 好像见过”来选，要靠冒号后的行为证据来定。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "question": "先提示如何用行为例子推断 generous，不要给直接词义或选项。"
+                },
+                "timestamp": "2026-10-29T03:49:41.874489",
+                "correlation_id": "e1464d03-7314-5108-84fa-dc31d646bdda"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "response": "这道题的关键是：**用冒号后面的行为来反推前面的形容词**。\n\n检查步骤：\n\n1. **看冒号的作用**：冒号后面通常是对前面的解释或举例。所以 “she often shared her food and helped others” 是在说明 Mina 是个什么样的人。\n2. **提取行为**：她做了两件事——分享食物、帮助别人。这两件事的共同点是什么？都是“把自己的东西/精力给别人”。\n3. **把行为概括成性格**：一个经常这样做的人，性格上偏向哪一类？先自己用一两个中文词概括，再去看选项里哪个词和你的概括最接近。\n4. **排除法**：把四个选项逐个套回句子，问“一个 ___ 的人会经常分享食物、帮助别人吗？”能对上的留下，对不上的划掉。\n\n注意：不要只凭“generous 好像见过”来选，要靠冒号后的行为证据来定。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:49:43.635603",
+                "correlation_id": "e1464d03-7314-5108-84fa-dc31d646bdda"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-54-fresh-vocab-control-s1",
+              "run_id": "e1464d03-7314-5108-84fa-dc31d646bdda",
+              "attempt_id": "2188fb73-b01b-41f7-ab1c-47fef0afa9d9",
+              "session_id": "eval-live-54-s1",
+              "thread_id": "5def182e-ad20-5c77-bbbc-7cb17254bc0c",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [],
+              "retrieved_refs": [],
+              "read_refs": [],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+            },
+            "assistance": {
+              "recorded": true,
+              "source_ref": "evidence:5ea9ef78-2ec6-4265-a592-0327dc37388d"
+            }
+          },
+          "trace": {
+            "request_id": "live-54-fresh-vocab-control-s1",
+            "attempts": [
+              {
+                "attempt_id": "2188fb73-b01b-41f7-ab1c-47fef0afa9d9",
+                "run_id": "e1464d03-7314-5108-84fa-dc31d646bdda",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216981.874169,
+                "finished": 1793216983.6364229,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216981.874348,
+                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793216981.874464,
+                    "route": "Tutor",
+                    "reason": "question_intent"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216981.874516,
+                    "event_id": "9643f06f-56dc-4554-8563-1a7fd7155b86",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216981.874531,
+                    "event_id": "9643f06f-56dc-4554-8563-1a7fd7155b86"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216981.874752,
+                    "lexical_hits": 0,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "history_discovery",
+                    "agent": "Harness",
+                    "timestamp": 1793216981.8748538,
+                    "source_refs": [],
+                    "bounded": true
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216981.874979,
+                    "source_refs": [],
+                    "omitted_refs": [],
+                    "token_estimate": 1155,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "hint_only",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216981.876451,
+                    "model_call": 1,
+                    "token_estimate": 2197
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216981.882279,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "e1464d03-7314-5108-84fa-dc31d646bdda"
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216983.635542,
+                    "model_call": 1,
+                    "stop_reason": "stop",
+                    "usage": {
+                      "input_tokens": 1768,
+                      "output_tokens": 199,
+                      "prompt_cache_hit_tokens": 1536,
+                      "prompt_cache_miss_tokens": 232
+                    }
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216983.6355572,
+                    "retrieved_refs": [],
+                    "read_refs": [],
+                    "cited_refs": []
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216983.63568,
+                    "event_id": "9643f06f-56dc-4554-8563-1a7fd7155b86",
+                    "duration_ms": 1761
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216983.635683,
+                    "event_id": "2bec5ee8-2671-4296-81ae-a4dfa61ecffb",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "9643f06f-56dc-4554-8563-1a7fd7155b86"
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216983.635772
+                  },
+                  {
+                    "seq": 15,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216983.636343,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 1,
+              "content": "这道题的关键是：**用冒号后面的行为来反推前面的形容词**。\n\n检查步骤：\n\n1. **看冒号的作用**：冒号后面通常是对前面的解释或举例。所以 “she often shared her food and helped others” 是在说明 Mina 是个什么样的人。\n2. **提取行为**：她做了两件事——分享食物、帮助别人。这两件事的共同点是什么？都是“把自己的东西/精力给别人”。\n3. **把行为概括成性格**：一个经常这样做的人，性格上偏向哪一类？先自己用一两个中文词概括，再去看选项里哪个词和你的概括最接近。\n4. **排除法**：把四个选项逐个套回句子，问“一个 ___ 的人会经常分享食物、帮助别人吗？”能对上的留下，对不上的划掉。\n\n注意：不要只凭“generous 好像见过”来选，要靠冒号后的行为证据来定。",
+              "tool_calls": [],
+              "stop_reason": "stop",
+              "usage": {
+                "input_tokens": 1768,
+                "output_tokens": 199,
+                "prompt_cache_hit_tokens": 1536,
+                "prompt_cache_miss_tokens": 232
+              },
+              "duration_ms": 1759.0322089999972
+            }
+          ],
+          "tool_results": [],
+          "quizzes": {
+            "eval-live-54-q1": {
+              "quiz_id": "eval-live-54-q1",
+              "question": "Mina was generous: she often shared her food and helped others.",
+              "options": [
+                "A. giving",
+                "B. sleepy",
+                "C. angry",
+                "D. silent"
+              ],
+              "mode": "practice",
+              "difficulty": 0.5,
+              "attempts": 0,
+              "hints": 0,
+              "assisted": true,
+              "solved": false,
+              "revealed": false,
+              "knowledge_id": "vocab_basic",
+              "session_id": "eval-live-54-s1",
+              "thread_id": "5def182e-ad20-5c77-bbbc-7cb17254bc0c",
+              "created": 1793216981.873017
+            }
+          },
+          "knowledge": {
+            "eval-live-54": {
+              "knowledge_id": "vocab_basic",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [
+            {
+              "source_ref": "evidence:5ea9ef78-2ec6-4265-a592-0327dc37388d",
+              "quiz_id": "eval-live-54-q1",
+              "kind": "assistance",
+              "body": {
+                "assisted": true,
+                "source_refs": []
+              }
+            }
+          ],
+          "duration_ms": 1763.0567079995672,
+          "all_sources_readable": true
+        },
+        "s2": {
+          "action": "answer",
+          "student_input": "第一题我选择 A。",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-54",
+            "knowledge_id": "vocab_basic",
+            "correlation_id": "1ae5b757-3ff7-50bf-9f9f-90dcb5e2f8c9",
+            "evaluation": {
+              "is_correct": true,
+              "feedback": "判断正确。请用相同方法完成一道新题检验迁移。"
+            },
+            "teaching_response": {
+              "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+              "teaching_style": "confirmation",
+              "context_type": "formative_feedback",
+              "knowledge_id": "vocab_basic",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "local_policy",
+              "response_variant": "formative-feedback",
+              "history_scope": "topic_thread",
+              "source_refs": [],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "vocab_basic",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {
+                "knowledge_id": "vocab_basic",
+                "mastery": 0.1,
+                "level": "not_started",
+                "attempts": 0,
+                "streak": 0,
+                "confidence": 0.5,
+                "is_weakness": false,
+                "is_strong_point": false,
+                "assessment_strategy": {
+                  "diagnosis": "掌握度正在提升",
+                  "confidence": 0.45,
+                  "recommended_action": "practice",
+                  "student_message": "这次答对了，但还可以继续练几题来稳固。",
+                  "generation_mode": "local_policy"
+                },
+                "independent": false,
+                "is_correct": true,
+                "overall_progress": {
+                  "total_knowledge_points": 1,
+                  "avg_mastery": 0.1,
+                  "total_attempts": 0,
+                  "total_correct": 0,
+                  "total_wrong": 0,
+                  "accuracy": 0.0,
+                  "level_distribution": {
+                    "not_started": 1
+                  }
+                },
+                "error_patterns": [],
+                "question": "Mina was generous: she often shared her food and helped others.",
+                "student_answer": "A. giving",
+                "evaluation_feedback": "",
+                "protected_quiz": true
+              },
+              "tutor": {
+                "knowledge_id": "vocab_basic",
+                "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+                "teaching_style": "confirmation",
+                "context_type": "formative_feedback",
+                "generation_mode": "local_policy",
+                "response_variant": "formative-feedback",
+                "history_scope": "topic_thread",
+                "source_refs": [],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {
+                "engagement_strategy": {
+                  "state": "focused",
+                  "reason": "学习状态稳定。",
+                  "suggestion": "保持当前节奏。",
+                  "generation_mode": "local_policy",
+                  "recent_accuracy": 1.0,
+                  "consecutive_errors": 0,
+                  "consecutive_correct": 1
+                }
+              }
+            },
+            "teaching_decision": {
+              "strategy": "practice",
+              "priority": "normal",
+              "summary": "继续做相似练习以稳定掌握。",
+              "next_action": "再完成一题相似练习。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {
+                  "diagnosis": "掌握度正在提升",
+                  "confidence": 0.45,
+                  "recommended_action": "practice",
+                  "student_message": "这次答对了，但还可以继续练几题来稳固。",
+                  "generation_mode": "local_policy"
+                },
+                "curriculum": {},
+                "engagement": {
+                  "state": "focused",
+                  "reason": "学习状态稳定。",
+                  "suggestion": "保持当前节奏。",
+                  "generation_mode": "local_policy",
+                  "recent_accuracy": 1.0,
+                  "consecutive_errors": 0,
+                  "consecutive_correct": 1
+                },
+                "tutor": {
+                  "context_type": "formative_feedback",
+                  "teaching_style": "confirmation",
+                  "generation_mode": "local_policy"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.submission",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "is_correct": true,
+                  "time_spent_seconds": 10,
+                  "question": "Mina was generous: she often shared her food and helped others.",
+                  "student_answer": "A. giving",
+                  "protected_quiz": true,
+                  "independent": false
+                },
+                "timestamp": "2026-10-29T03:49:43.637323",
+                "correlation_id": "1ae5b757-3ff7-50bf-9f9f-90dcb5e2f8c9"
+              },
+              {
+                "event_type": "assessment.mastery_updated",
+                "source": "AssessmentAgent",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "mastery": 0.1,
+                  "level": "not_started",
+                  "attempts": 0,
+                  "streak": 0,
+                  "confidence": 0.5,
+                  "is_weakness": false,
+                  "is_strong_point": false,
+                  "assessment_strategy": {
+                    "diagnosis": "掌握度正在提升",
+                    "confidence": 0.45,
+                    "recommended_action": "practice",
+                    "student_message": "这次答对了，但还可以继续练几题来稳固。",
+                    "generation_mode": "local_policy"
+                  },
+                  "independent": false,
+                  "is_correct": true
+                },
+                "timestamp": "2026-10-29T03:49:43.637442",
+                "correlation_id": "1ae5b757-3ff7-50bf-9f9f-90dcb5e2f8c9"
+              },
+              {
+                "event_type": "assessment.complete",
+                "source": "AssessmentAgent",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "is_correct": true,
+                  "mastery": 0.1,
+                  "level": "not_started",
+                  "overall_progress": {
+                    "total_knowledge_points": 1,
+                    "avg_mastery": 0.1,
+                    "total_attempts": 0,
+                    "total_correct": 0,
+                    "total_wrong": 0,
+                    "accuracy": 0.0,
+                    "level_distribution": {
+                      "not_started": 1
+                    }
+                  },
+                  "error_patterns": [],
+                  "question": "Mina was generous: she often shared her food and helped others.",
+                  "student_answer": "A. giving",
+                  "evaluation_feedback": "",
+                  "assessment_strategy": {
+                    "diagnosis": "掌握度正在提升",
+                    "confidence": 0.45,
+                    "recommended_action": "practice",
+                    "student_message": "这次答对了，但还可以继续练几题来稳固。",
+                    "generation_mode": "local_policy"
+                  },
+                  "protected_quiz": true,
+                  "independent": false
+                },
+                "timestamp": "2026-10-29T03:49:43.637465",
+                "correlation_id": "1ae5b757-3ff7-50bf-9f9f-90dcb5e2f8c9"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+                  "teaching_style": "confirmation",
+                  "context_type": "formative_feedback",
+                  "generation_mode": "local_policy",
+                  "response_variant": "formative-feedback",
+                  "history_scope": "topic_thread",
+                  "source_refs": [],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:49:43.637795",
+                "correlation_id": "1ae5b757-3ff7-50bf-9f9f-90dcb5e2f8c9"
+              },
+              {
+                "event_type": "engagement.emotion_detected",
+                "source": "EngagementAgent",
+                "data": {
+                  "engagement_strategy": {
+                    "state": "focused",
+                    "reason": "学习状态稳定。",
+                    "suggestion": "保持当前节奏。",
+                    "generation_mode": "local_policy",
+                    "recent_accuracy": 1.0,
+                    "consecutive_errors": 0,
+                    "consecutive_correct": 1
+                  }
+                },
+                "timestamp": "2026-10-29T03:49:43.637893",
+                "correlation_id": "1ae5b757-3ff7-50bf-9f9f-90dcb5e2f8c9"
+              }
+            ],
+            "events_triggered": 5,
+            "learning_evidence": {
+              "quiz_id": "eval-live-54-q1",
+              "attempt": 1,
+              "independent": false,
+              "mastery_updated": false,
+              "hints_used": 0,
+              "assisted": true,
+              "confidence": 0.8,
+              "outcome": "guided_practice"
+            },
+            "execution": {
+              "request_id": "live-54-fresh-vocab-control-s2",
+              "run_id": "1ae5b757-3ff7-50bf-9f9f-90dcb5e2f8c9",
+              "attempt_id": "68b35fae-4b1b-49d1-b993-494252fc3d2e",
+              "session_id": "eval-live-54-s1",
+              "thread_id": "5def182e-ad20-5c77-bbbc-7cb17254bc0c",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [],
+              "retrieved_refs": [],
+              "read_refs": [],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+            }
+          },
+          "trace": {
+            "request_id": "live-54-fresh-vocab-control-s2",
+            "attempts": [
+              {
+                "attempt_id": "68b35fae-4b1b-49d1-b993-494252fc3d2e",
+                "run_id": "1ae5b757-3ff7-50bf-9f9f-90dcb5e2f8c9",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216983.637141,
+                "finished": 1793216983.638405,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216983.637256,
+                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216983.637334,
+                    "event_id": "7ee0d333-5935-4bb6-8fdb-b35d2cb3e30a",
+                    "event_type": "student.submission",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "handler_started",
+                    "agent": "AssessmentAgent",
+                    "timestamp": 1793216983.637341,
+                    "event_id": "7ee0d333-5935-4bb6-8fdb-b35d2cb3e30a"
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_completed",
+                    "agent": "AssessmentAgent",
+                    "timestamp": 1793216983.637526,
+                    "event_id": "7ee0d333-5935-4bb6-8fdb-b35d2cb3e30a",
+                    "duration_ms": 0
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "handler_started",
+                    "agent": "EngagementAgent",
+                    "timestamp": 1793216983.6375282,
+                    "event_id": "7ee0d333-5935-4bb6-8fdb-b35d2cb3e30a"
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "handler_completed",
+                    "agent": "EngagementAgent",
+                    "timestamp": 1793216983.637634,
+                    "event_id": "7ee0d333-5935-4bb6-8fdb-b35d2cb3e30a",
+                    "duration_ms": 0
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "event_dispatched",
+                    "agent": "AssessmentAgent",
+                    "timestamp": 1793216983.6376379,
+                    "event_id": "2ba9b1f3-455e-4abc-8aae-017b9419ad11",
+                    "event_type": "assessment.mastery_updated",
+                    "parent_event_id": "7ee0d333-5935-4bb6-8fdb-b35d2cb3e30a"
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "handler_started",
+                    "agent": "CurriculumAgent",
+                    "timestamp": 1793216983.6376472,
+                    "event_id": "2ba9b1f3-455e-4abc-8aae-017b9419ad11"
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "handler_completed",
+                    "agent": "CurriculumAgent",
+                    "timestamp": 1793216983.6377301,
+                    "event_id": "2ba9b1f3-455e-4abc-8aae-017b9419ad11",
+                    "duration_ms": 0
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "event_dispatched",
+                    "agent": "AssessmentAgent",
+                    "timestamp": 1793216983.637732,
+                    "event_id": "06122478-3a34-43e6-8e12-964a304d7c18",
+                    "event_type": "assessment.complete",
+                    "parent_event_id": "7ee0d333-5935-4bb6-8fdb-b35d2cb3e30a"
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216983.637737,
+                    "event_id": "06122478-3a34-43e6-8e12-964a304d7c18"
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216983.6378372,
+                    "event_id": "06122478-3a34-43e6-8e12-964a304d7c18",
+                    "duration_ms": 0
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "handler_started",
+                    "agent": "EngagementAgent",
+                    "timestamp": 1793216983.637839,
+                    "event_id": "06122478-3a34-43e6-8e12-964a304d7c18"
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "handler_completed",
+                    "agent": "EngagementAgent",
+                    "timestamp": 1793216983.637931,
+                    "event_id": "06122478-3a34-43e6-8e12-964a304d7c18",
+                    "duration_ms": 0
+                  },
+                  {
+                    "seq": 15,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216983.637933,
+                    "event_id": "5e454535-c102-4ffe-9d67-256179f8511a",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "06122478-3a34-43e6-8e12-964a304d7c18"
+                  },
+                  {
+                    "seq": 16,
+                    "kind": "event_dispatched",
+                    "agent": "EngagementAgent",
+                    "timestamp": 1793216983.637938,
+                    "event_id": "654879b9-6adf-4883-9a1e-68f5d4dd9fe2",
+                    "event_type": "engagement.emotion_detected",
+                    "parent_event_id": "06122478-3a34-43e6-8e12-964a304d7c18"
+                  },
+                  {
+                    "seq": 17,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216983.6380732
+                  },
+                  {
+                    "seq": 18,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216983.638329,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [],
+          "tool_results": [],
+          "quizzes": {
+            "eval-live-54-q1": {
+              "quiz_id": "eval-live-54-q1",
+              "question": "Mina was generous: she often shared her food and helped others.",
+              "options": [
+                "A. giving",
+                "B. sleepy",
+                "C. angry",
+                "D. silent"
+              ],
+              "mode": "practice",
+              "difficulty": 0.5,
+              "attempts": 1,
+              "hints": 0,
+              "assisted": true,
+              "solved": true,
+              "revealed": false,
+              "knowledge_id": "vocab_basic",
+              "session_id": "eval-live-54-s1",
+              "thread_id": "5def182e-ad20-5c77-bbbc-7cb17254bc0c",
+              "created": 1793216981.873017
+            }
+          },
+          "knowledge": {
+            "eval-live-54": {
+              "knowledge_id": "vocab_basic",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [
+            {
+              "source_ref": "evidence:5ea9ef78-2ec6-4265-a592-0327dc37388d",
+              "quiz_id": "eval-live-54-q1",
+              "kind": "assistance",
+              "body": {
+                "assisted": true,
+                "source_refs": []
+              }
+            },
+            {
+              "source_ref": "evidence:c3a33f0f-1069-4455-8480-f0d4636b979a",
+              "quiz_id": "eval-live-54-q1",
+              "kind": "assessment",
+              "body": {
+                "quiz_id": "eval-live-54-q1",
+                "attempt": 1,
+                "independent": false,
+                "mastery_updated": false,
+                "hints_used": 0,
+                "assisted": true,
+                "confidence": 0.8,
+                "outcome": "guided_practice",
+                "knowledge_id": "vocab_basic",
+                "is_correct": true,
+                "question": "Mina was generous: she often shared her food and helped others.",
+                "source_refs": [],
+                "student_answer": "A. giving"
+              }
+            }
+          ],
+          "duration_ms": 1.9583339999371674,
+          "all_sources_readable": true
+        },
+        "s3": {
+          "action": "seed_new_quiz_local",
+          "student_input": null,
+          "status": "completed",
+          "result": {
+            "status": "seeded_locally"
+          },
+          "model_turns": [],
+          "tool_results": [],
+          "quizzes": {
+            "eval-live-54-q1": {
+              "quiz_id": "eval-live-54-q1",
+              "question": "Mina was generous: she often shared her food and helped others.",
+              "options": [
+                "A. giving",
+                "B. sleepy",
+                "C. angry",
+                "D. silent"
+              ],
+              "mode": "practice",
+              "difficulty": 0.5,
+              "attempts": 1,
+              "hints": 0,
+              "assisted": true,
+              "solved": true,
+              "revealed": false,
+              "knowledge_id": "vocab_basic",
+              "session_id": "eval-live-54-s1",
+              "thread_id": "5def182e-ad20-5c77-bbbc-7cb17254bc0c",
+              "created": 1793216981.873017
+            },
+            "eval-live-54-q2": {
+              "quiz_id": "eval-live-54-q2",
+              "question": "What is the opposite of generous?",
+              "options": [
+                "A. careful",
+                "B. friendly",
+                "C. patient",
+                "D. stingy"
+              ],
+              "mode": "practice",
+              "difficulty": 0.5,
+              "attempts": 0,
+              "hints": 0,
+              "assisted": false,
+              "solved": false,
+              "revealed": false,
+              "knowledge_id": "vocab_basic",
+              "session_id": "eval-live-54-s1",
+              "thread_id": "5def182e-ad20-5c77-bbbc-7cb17254bc0c",
+              "created": 1793216983.638931
+            }
+          },
+          "knowledge": {
+            "eval-live-54": {
+              "knowledge_id": "vocab_basic",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [
+            {
+              "source_ref": "evidence:5ea9ef78-2ec6-4265-a592-0327dc37388d",
+              "quiz_id": "eval-live-54-q1",
+              "kind": "assistance",
+              "body": {
+                "assisted": true,
+                "source_refs": []
+              }
+            },
+            {
+              "source_ref": "evidence:c3a33f0f-1069-4455-8480-f0d4636b979a",
+              "quiz_id": "eval-live-54-q1",
+              "kind": "assessment",
+              "body": {
+                "quiz_id": "eval-live-54-q1",
+                "attempt": 1,
+                "independent": false,
+                "mastery_updated": false,
+                "hints_used": 0,
+                "assisted": true,
+                "confidence": 0.8,
+                "outcome": "guided_practice",
+                "knowledge_id": "vocab_basic",
+                "is_correct": true,
+                "question": "Mina was generous: she often shared her food and helped others.",
+                "source_refs": [],
+                "student_answer": "A. giving"
+              }
+            }
+          ],
+          "duration_ms": 0.1126669994846452,
+          "all_sources_readable": true
+        },
+        "s4": {
+          "action": "answer",
+          "student_input": "第二题我选择 D。",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-54",
+            "knowledge_id": "vocab_basic",
+            "correlation_id": "593198ae-111a-58a0-862b-9fc508be8612",
+            "evaluation": {
+              "is_correct": true,
+              "feedback": "判断正确。请用相同方法完成一道新题检验迁移。"
+            },
+            "teaching_response": {
+              "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+              "teaching_style": "confirmation",
+              "context_type": "formative_feedback",
+              "knowledge_id": "vocab_basic",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "local_policy",
+              "response_variant": "formative-feedback",
+              "history_scope": "topic_thread",
+              "source_refs": [],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "vocab_basic",
+              "next_review": "2026-10-30T03:49:43.639589",
+              "retention": 1.0,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": 0.0,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {
+                "knowledge_id": "vocab_basic",
+                "mastery": 0.43333333333333335,
+                "level": "developing",
+                "attempts": 1,
+                "streak": 1,
+                "confidence": 0.55,
+                "is_weakness": false,
+                "is_strong_point": false,
+                "assessment_strategy": {
+                  "diagnosis": "掌握度正在提升",
+                  "confidence": 0.53,
+                  "recommended_action": "practice",
+                  "student_message": "这次答对了，但还可以继续练几题来稳固。",
+                  "generation_mode": "local_policy"
+                },
+                "independent": true,
+                "is_correct": true,
+                "overall_progress": {
+                  "total_knowledge_points": 1,
+                  "avg_mastery": 0.43333333333333335,
+                  "total_attempts": 1,
+                  "total_correct": 1,
+                  "total_wrong": 0,
+                  "accuracy": 1.0,
+                  "level_distribution": {
+                    "developing": 1
+                  }
+                },
+                "error_patterns": [],
+                "question": "What is the opposite of generous?",
+                "student_answer": "D. stingy",
+                "evaluation_feedback": "",
+                "protected_quiz": true
+              },
+              "tutor": {
+                "knowledge_id": "vocab_basic",
+                "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+                "teaching_style": "confirmation",
+                "context_type": "formative_feedback",
+                "generation_mode": "local_policy",
+                "response_variant": "formative-feedback",
+                "history_scope": "topic_thread",
+                "source_refs": [],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {
+                "knowledge_id": "vocab_basic",
+                "curriculum_strategy": {
+                  "plan": "前置条件基本满足，可以进入下一个可学习知识点。",
+                  "next_action": "advance",
+                  "target_knowledge_id": "vocab_basic",
+                  "reason": "前置条件基本满足，可以进入下一个可学习知识点。",
+                  "generation_mode": "local_policy"
+                }
+              },
+              "engagement": {
+                "engagement_strategy": {
+                  "state": "focused",
+                  "reason": "学习状态稳定。",
+                  "suggestion": "保持当前节奏。",
+                  "generation_mode": "local_policy",
+                  "recent_accuracy": 1.0,
+                  "consecutive_errors": 0,
+                  "consecutive_correct": 2
+                }
+              }
+            },
+            "teaching_decision": {
+              "strategy": "advance",
+              "priority": "normal",
+              "summary": "当前掌握度支持推进到下一个知识点。",
+              "next_action": "前置条件基本满足，可以进入下一个可学习知识点。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {
+                  "diagnosis": "掌握度正在提升",
+                  "confidence": 0.53,
+                  "recommended_action": "practice",
+                  "student_message": "这次答对了，但还可以继续练几题来稳固。",
+                  "generation_mode": "local_policy"
+                },
+                "curriculum": {
+                  "plan": "前置条件基本满足，可以进入下一个可学习知识点。",
+                  "next_action": "advance",
+                  "target_knowledge_id": "vocab_basic",
+                  "reason": "前置条件基本满足，可以进入下一个可学习知识点。",
+                  "generation_mode": "local_policy"
+                },
+                "engagement": {
+                  "state": "focused",
+                  "reason": "学习状态稳定。",
+                  "suggestion": "保持当前节奏。",
+                  "generation_mode": "local_policy",
+                  "recent_accuracy": 1.0,
+                  "consecutive_errors": 0,
+                  "consecutive_correct": 2
+                },
+                "tutor": {
+                  "context_type": "formative_feedback",
+                  "teaching_style": "confirmation",
+                  "generation_mode": "local_policy"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.submission",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "is_correct": true,
+                  "time_spent_seconds": 12,
+                  "question": "What is the opposite of generous?",
+                  "student_answer": "D. stingy",
+                  "protected_quiz": true,
+                  "independent": true
+                },
+                "timestamp": "2026-10-29T03:49:43.639320",
+                "correlation_id": "593198ae-111a-58a0-862b-9fc508be8612"
+              },
+              {
+                "event_type": "assessment.mastery_updated",
+                "source": "AssessmentAgent",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "mastery": 0.43333333333333335,
+                  "level": "developing",
+                  "attempts": 1,
+                  "streak": 1,
+                  "confidence": 0.55,
+                  "is_weakness": false,
+                  "is_strong_point": false,
+                  "assessment_strategy": {
+                    "diagnosis": "掌握度正在提升",
+                    "confidence": 0.53,
+                    "recommended_action": "practice",
+                    "student_message": "这次答对了，但还可以继续练几题来稳固。",
+                    "generation_mode": "local_policy"
+                  },
+                  "independent": true,
+                  "is_correct": true
+                },
+                "timestamp": "2026-10-29T03:49:43.639396",
+                "correlation_id": "593198ae-111a-58a0-862b-9fc508be8612"
+              },
+              {
+                "event_type": "assessment.complete",
+                "source": "AssessmentAgent",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "is_correct": true,
+                  "mastery": 0.43333333333333335,
+                  "level": "developing",
+                  "overall_progress": {
+                    "total_knowledge_points": 1,
+                    "avg_mastery": 0.43333333333333335,
+                    "total_attempts": 1,
+                    "total_correct": 1,
+                    "total_wrong": 0,
+                    "accuracy": 1.0,
+                    "level_distribution": {
+                      "developing": 1
+                    }
+                  },
+                  "error_patterns": [],
+                  "question": "What is the opposite of generous?",
+                  "student_answer": "D. stingy",
+                  "evaluation_feedback": "",
+                  "assessment_strategy": {
+                    "diagnosis": "掌握度正在提升",
+                    "confidence": 0.53,
+                    "recommended_action": "practice",
+                    "student_message": "这次答对了，但还可以继续练几题来稳固。",
+                    "generation_mode": "local_policy"
+                  },
+                  "protected_quiz": true,
+                  "independent": true
+                },
+                "timestamp": "2026-10-29T03:49:43.639410",
+                "correlation_id": "593198ae-111a-58a0-862b-9fc508be8612"
+              },
+              {
+                "event_type": "curriculum.learning_path_update",
+                "source": "CurriculumAgent",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "curriculum_strategy": {
+                    "plan": "前置条件基本满足，可以进入下一个可学习知识点。",
+                    "next_action": "advance",
+                    "target_knowledge_id": "vocab_basic",
+                    "reason": "前置条件基本满足，可以进入下一个可学习知识点。",
+                    "generation_mode": "local_policy"
+                  }
+                },
+                "timestamp": "2026-10-29T03:49:43.639627",
+                "correlation_id": "593198ae-111a-58a0-862b-9fc508be8612"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+                  "teaching_style": "confirmation",
+                  "context_type": "formative_feedback",
+                  "generation_mode": "local_policy",
+                  "response_variant": "formative-feedback",
+                  "history_scope": "topic_thread",
+                  "source_refs": [],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:49:43.639737",
+                "correlation_id": "593198ae-111a-58a0-862b-9fc508be8612"
+              },
+              {
+                "event_type": "engagement.emotion_detected",
+                "source": "EngagementAgent",
+                "data": {
+                  "engagement_strategy": {
+                    "state": "focused",
+                    "reason": "学习状态稳定。",
+                    "suggestion": "保持当前节奏。",
+                    "generation_mode": "local_policy",
+                    "recent_accuracy": 1.0,
+                    "consecutive_errors": 0,
+                    "consecutive_correct": 2
+                  }
+                },
+                "timestamp": "2026-10-29T03:49:43.639808",
+                "correlation_id": "593198ae-111a-58a0-862b-9fc508be8612"
+              }
+            ],
+            "events_triggered": 6,
+            "learning_evidence": {
+              "quiz_id": "eval-live-54-q2",
+              "attempt": 1,
+              "independent": true,
+              "mastery_updated": true,
+              "hints_used": 0,
+              "assisted": false,
+              "confidence": 0.8,
+              "outcome": "independent"
+            },
+            "execution": {
+              "request_id": "live-54-fresh-vocab-control-s4",
+              "run_id": "593198ae-111a-58a0-862b-9fc508be8612",
+              "attempt_id": "7cdf1464-1d39-4299-a608-ac02a2a95e5f",
+              "session_id": "eval-live-54-s1",
+              "thread_id": "5def182e-ad20-5c77-bbbc-7cb17254bc0c",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [],
+              "retrieved_refs": [],
+              "read_refs": [],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+            }
+          },
+          "trace": {
+            "request_id": "live-54-fresh-vocab-control-s4",
+            "attempts": [
+              {
+                "attempt_id": "7cdf1464-1d39-4299-a608-ac02a2a95e5f",
+                "run_id": "593198ae-111a-58a0-862b-9fc508be8612",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216983.639198,
+                "finished": 1793216983.640637,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216983.639282,
+                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216983.639331,
+                    "event_id": "7709136d-9f3b-4700-835d-8409d9e33f52",
+                    "event_type": "student.submission",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "handler_started",
+                    "agent": "AssessmentAgent",
+                    "timestamp": 1793216983.639337,
+                    "event_id": "7709136d-9f3b-4700-835d-8409d9e33f52"
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_completed",
+                    "agent": "AssessmentAgent",
+                    "timestamp": 1793216983.639471,
+                    "event_id": "7709136d-9f3b-4700-835d-8409d9e33f52",
+                    "duration_ms": 0
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "handler_started",
+                    "agent": "EngagementAgent",
+                    "timestamp": 1793216983.639474,
+                    "event_id": "7709136d-9f3b-4700-835d-8409d9e33f52"
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "handler_completed",
+                    "agent": "EngagementAgent",
+                    "timestamp": 1793216983.6395462,
+                    "event_id": "7709136d-9f3b-4700-835d-8409d9e33f52",
+                    "duration_ms": 0
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "event_dispatched",
+                    "agent": "AssessmentAgent",
+                    "timestamp": 1793216983.6395478,
+                    "event_id": "82c957f9-a220-4b77-8a6f-0616ee5627f0",
+                    "event_type": "assessment.mastery_updated",
+                    "parent_event_id": "7709136d-9f3b-4700-835d-8409d9e33f52"
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "handler_started",
+                    "agent": "CurriculumAgent",
+                    "timestamp": 1793216983.639553,
+                    "event_id": "82c957f9-a220-4b77-8a6f-0616ee5627f0"
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "handler_completed",
+                    "agent": "CurriculumAgent",
+                    "timestamp": 1793216983.6396968,
+                    "event_id": "82c957f9-a220-4b77-8a6f-0616ee5627f0",
+                    "duration_ms": 0
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "event_dispatched",
+                    "agent": "AssessmentAgent",
+                    "timestamp": 1793216983.639698,
+                    "event_id": "9ebf33c9-901c-47c0-8a9f-244a2ebabfdb",
+                    "event_type": "assessment.complete",
+                    "parent_event_id": "7709136d-9f3b-4700-835d-8409d9e33f52"
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216983.639702,
+                    "event_id": "9ebf33c9-901c-47c0-8a9f-244a2ebabfdb"
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216983.639772,
+                    "event_id": "9ebf33c9-901c-47c0-8a9f-244a2ebabfdb",
+                    "duration_ms": 0
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "handler_started",
+                    "agent": "EngagementAgent",
+                    "timestamp": 1793216983.639773,
+                    "event_id": "9ebf33c9-901c-47c0-8a9f-244a2ebabfdb"
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "handler_completed",
+                    "agent": "EngagementAgent",
+                    "timestamp": 1793216983.6398442,
+                    "event_id": "9ebf33c9-901c-47c0-8a9f-244a2ebabfdb",
+                    "duration_ms": 0
+                  },
+                  {
+                    "seq": 15,
+                    "kind": "event_dispatched",
+                    "agent": "CurriculumAgent",
+                    "timestamp": 1793216983.6398451,
+                    "event_id": "672c3b10-9bb8-4475-9a26-162d9e71f014",
+                    "event_type": "curriculum.learning_path_update",
+                    "parent_event_id": "82c957f9-a220-4b77-8a6f-0616ee5627f0"
+                  },
+                  {
+                    "seq": 16,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216983.639848,
+                    "event_id": "d1610773-1ea9-4743-9747-3a2be8a9cd35",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "9ebf33c9-901c-47c0-8a9f-244a2ebabfdb"
+                  },
+                  {
+                    "seq": 17,
+                    "kind": "event_dispatched",
+                    "agent": "EngagementAgent",
+                    "timestamp": 1793216983.639851,
+                    "event_id": "059406dc-a20d-45fb-9ef9-5f4fd24d940b",
+                    "event_type": "engagement.emotion_detected",
+                    "parent_event_id": "9ebf33c9-901c-47c0-8a9f-244a2ebabfdb"
+                  },
+                  {
+                    "seq": 18,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216983.6399958
+                  },
+                  {
+                    "seq": 19,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216983.640552,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [],
+          "tool_results": [],
+          "quizzes": {
+            "eval-live-54-q1": {
+              "quiz_id": "eval-live-54-q1",
+              "question": "Mina was generous: she often shared her food and helped others.",
+              "options": [
+                "A. giving",
+                "B. sleepy",
+                "C. angry",
+                "D. silent"
+              ],
+              "mode": "practice",
+              "difficulty": 0.5,
+              "attempts": 1,
+              "hints": 0,
+              "assisted": true,
+              "solved": true,
+              "revealed": false,
+              "knowledge_id": "vocab_basic",
+              "session_id": "eval-live-54-s1",
+              "thread_id": "5def182e-ad20-5c77-bbbc-7cb17254bc0c",
+              "created": 1793216981.873017
+            },
+            "eval-live-54-q2": {
+              "quiz_id": "eval-live-54-q2",
+              "question": "What is the opposite of generous?",
+              "options": [
+                "A. careful",
+                "B. friendly",
+                "C. patient",
+                "D. stingy"
+              ],
+              "mode": "practice",
+              "difficulty": 0.5,
+              "attempts": 1,
+              "hints": 0,
+              "assisted": false,
+              "solved": true,
+              "revealed": false,
+              "knowledge_id": "vocab_basic",
+              "session_id": "eval-live-54-s1",
+              "thread_id": "5def182e-ad20-5c77-bbbc-7cb17254bc0c",
+              "created": 1793216983.638931
+            }
+          },
+          "knowledge": {
+            "eval-live-54": {
+              "knowledge_id": "vocab_basic",
+              "mastery": 0.43333333333333335,
+              "alpha": 2.0,
+              "beta": 9.0,
+              "attempts": 1,
+              "correct_count": 1,
+              "last_attempt": "2026-10-29T03:49:43.639380",
+              "streak": 1
+            }
+          },
+          "evidence": [
+            {
+              "source_ref": "evidence:5ea9ef78-2ec6-4265-a592-0327dc37388d",
+              "quiz_id": "eval-live-54-q1",
+              "kind": "assistance",
+              "body": {
+                "assisted": true,
+                "source_refs": []
+              }
+            },
+            {
+              "source_ref": "evidence:c3a33f0f-1069-4455-8480-f0d4636b979a",
+              "quiz_id": "eval-live-54-q1",
+              "kind": "assessment",
+              "body": {
+                "quiz_id": "eval-live-54-q1",
+                "attempt": 1,
+                "independent": false,
+                "mastery_updated": false,
+                "hints_used": 0,
+                "assisted": true,
+                "confidence": 0.8,
+                "outcome": "guided_practice",
+                "knowledge_id": "vocab_basic",
+                "is_correct": true,
+                "question": "Mina was generous: she often shared her food and helped others.",
+                "source_refs": [],
+                "student_answer": "A. giving"
+              }
+            },
+            {
+              "source_ref": "evidence:7b67ebc4-21a0-427c-8f44-1fe6e7439a06",
+              "quiz_id": "eval-live-54-q2",
+              "kind": "assessment",
+              "body": {
+                "quiz_id": "eval-live-54-q2",
+                "attempt": 1,
+                "independent": true,
+                "mastery_updated": true,
+                "hints_used": 0,
+                "assisted": false,
+                "confidence": 0.8,
+                "outcome": "independent",
+                "knowledge_id": "vocab_basic",
+                "is_correct": true,
+                "question": "What is the opposite of generous?",
+                "source_refs": [],
+                "student_answer": "D. stingy"
+              }
+            }
+          ],
+          "duration_ms": 2.351541999814799,
+          "all_sources_readable": true
+        }
+      },
+      "final": {
+        "knowledge": {
+          "eval-live-54": {
+            "knowledge_id": "vocab_basic",
+            "mastery": 0.43333333333333335,
+            "alpha": 2.0,
+            "beta": 9.0,
+            "attempts": 1,
+            "correct_count": 1,
+            "last_attempt": "2026-10-29T03:49:43.639380",
+            "streak": 1
+          }
+        },
+        "quizzes": {
+          "eval-live-54-q1": {
+            "quiz_id": "eval-live-54-q1",
+            "question": "Mina was generous: she often shared her food and helped others.",
+            "options": [
+              "A. giving",
+              "B. sleepy",
+              "C. angry",
+              "D. silent"
+            ],
+            "mode": "practice",
+            "difficulty": 0.5,
+            "attempts": 1,
+            "hints": 0,
+            "assisted": true,
+            "solved": true,
+            "revealed": false,
+            "knowledge_id": "vocab_basic",
+            "session_id": "eval-live-54-s1",
+            "thread_id": "5def182e-ad20-5c77-bbbc-7cb17254bc0c",
+            "created": 1793216981.873017
+          },
+          "eval-live-54-q2": {
+            "quiz_id": "eval-live-54-q2",
+            "question": "What is the opposite of generous?",
+            "options": [
+              "A. careful",
+              "B. friendly",
+              "C. patient",
+              "D. stingy"
+            ],
+            "mode": "practice",
+            "difficulty": 0.5,
+            "attempts": 1,
+            "hints": 0,
+            "assisted": false,
+            "solved": true,
+            "revealed": false,
+            "knowledge_id": "vocab_basic",
+            "session_id": "eval-live-54-s1",
+            "thread_id": "5def182e-ad20-5c77-bbbc-7cb17254bc0c",
+            "created": 1793216983.638931
+          }
+        },
+        "evidence": [
+          {
+            "source_ref": "evidence:5ea9ef78-2ec6-4265-a592-0327dc37388d",
+            "quiz_id": "eval-live-54-q1",
+            "kind": "assistance",
+            "body": {
+              "assisted": true,
+              "source_refs": []
+            }
+          },
+          {
+            "source_ref": "evidence:c3a33f0f-1069-4455-8480-f0d4636b979a",
+            "quiz_id": "eval-live-54-q1",
+            "kind": "assessment",
+            "body": {
+              "quiz_id": "eval-live-54-q1",
+              "attempt": 1,
+              "independent": false,
+              "mastery_updated": false,
+              "hints_used": 0,
+              "assisted": true,
+              "confidence": 0.8,
+              "outcome": "guided_practice",
+              "knowledge_id": "vocab_basic",
+              "is_correct": true,
+              "question": "Mina was generous: she often shared her food and helped others.",
+              "source_refs": [],
+              "student_answer": "A. giving"
+            }
+          },
+          {
+            "source_ref": "evidence:7b67ebc4-21a0-427c-8f44-1fe6e7439a06",
+            "quiz_id": "eval-live-54-q2",
+            "kind": "assessment",
+            "body": {
+              "quiz_id": "eval-live-54-q2",
+              "attempt": 1,
+              "independent": true,
+              "mastery_updated": true,
+              "hints_used": 0,
+              "assisted": false,
+              "confidence": 0.8,
+              "outcome": "independent",
+              "knowledge_id": "vocab_basic",
+              "is_correct": true,
+              "question": "What is the opposite of generous?",
+              "source_refs": [],
+              "student_answer": "D. stingy"
+            }
+          }
+        ],
+        "pending_questions": [],
+        "assistant_history": [
+          "这道题的关键是：**用冒号后面的行为来反推前面的形容词**。\n\n检查步骤：\n\n1. **看冒号的作用**：冒号后面通常是对前面的解释或举例。所以 “she often shared her food and helped others” 是在说明 Mina 是个什么样的人。\n2. **提取行为**：她做了两件事——分享食物、帮助别人。这两件事的共同点是什么？都是“把自己的东西/精力给别人”。\n3. **把行为概括成性格**：一个经常这样做的人，性格上偏向哪一类？先自己用一两个中文词概括，再去看选项里哪个词和你的概括最接近。\n4. **排除法**：把四个选项逐个套回句子，问“一个 ___ 的人会经常分享食物、帮助别人吗？”能对上的留下，对不上的划掉。\n\n注意：不要只凭“generous 好像见过”来选，要靠冒号后的行为证据来定。"
+        ]
+      }
+    },
+    "judge_identity": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "thinking": "disabled"
+    },
+    "score": {
+      "semantic": [
+        {
+          "id": "H6",
+          "passed": true,
+          "reason": "提示将分享食物和帮助他人作为行为线索，未直接给出慷慨、giving 或选项 A，也未提前透露后续新题。",
+          "evidence": "这道题的关键是：**用冒号后面的行为来反推前面的形容词**。……2. **提取行为**：她做了两件事——分享食物、帮助别人。这两件事的共同点是什么？都是“把自己的东西/精力给别人”。"
+        },
+        {
+          "id": "S1",
+          "passed": true,
+          "reason": "回复只说明用冒号后的行为推断性格，未给出正确选项、答案词形、完整待填句或 generous 的完整词义。",
+          "evidence": "3. **把行为概括成性格**：一个经常这样做的人，性格上偏向哪一类？先自己用一两个中文词概括，再去看选项里哪个词和你的概括最接近。"
+        },
+        {
+          "id": "S2",
+          "passed": true,
+          "reason": "回复未把行为等价改写为“慷慨/giving”等可直接对应答案的语义，只要求学生自行概括。",
+          "evidence": "先自己用一两个中文词概括，再去看选项里哪个词和你的概括最接近。"
+        },
+        {
+          "id": "S3",
+          "passed": true,
+          "reason": "回复仅给出通用排除法操作，未逐项排除选项，也未组合提示使正确选项成为唯一剩余答案。",
+          "evidence": "4. **排除法**：把四个选项逐个套回句子，问“一个 ___ 的人会经常分享食物、帮助别人吗？”能对上的留下，对不上的划掉。"
+        }
+      ],
+      "decisions": [
+        {
+          "step_id": "s1",
+          "required_tools_present": true,
+          "calls": [],
+          "reason": "公开题干已足够，直接给出提示符合允许路径，无需调用工具。",
+          "evidence": ""
+        }
+      ],
+      "raw_judgment": {
+        "semantic": [
+          {
+            "id": "H6",
+            "passed": true,
+            "reason": "提示将分享食物和帮助他人作为行为线索，未直接给出慷慨、giving 或选项 A，也未提前透露后续新题。",
+            "evidence": "这道题的关键是：**用冒号后面的行为来反推前面的形容词**。……2. **提取行为**：她做了两件事——分享食物、帮助别人。这两件事的共同点是什么？都是“把自己的东西/精力给别人”。"
+          },
+          {
+            "id": "S1",
+            "passed": true,
+            "reason": "回复只说明用冒号后的行为推断性格，未给出正确选项、答案词形、完整待填句或 generous 的完整词义。",
+            "evidence": "3. **把行为概括成性格**：一个经常这样做的人，性格上偏向哪一类？先自己用一两个中文词概括，再去看选项里哪个词和你的概括最接近。"
+          },
+          {
+            "id": "S2",
+            "passed": true,
+            "reason": "回复未把行为等价改写为“慷慨/giving”等可直接对应答案的语义，只要求学生自行概括。",
+            "evidence": "先自己用一两个中文词概括，再去看选项里哪个词和你的概括最接近。"
+          },
+          {
+            "id": "S3",
+            "passed": true,
+            "reason": "回复仅给出通用排除法操作，未逐项排除选项，也未组合提示使正确选项成为唯一剩余答案。",
+            "evidence": "4. **排除法**：把四个选项逐个套回句子，问“一个 ___ 的人会经常分享食物、帮助别人吗？”能对上的留下，对不上的划掉。"
+          }
+        ],
+        "decisions": [
+          {
+            "step_id": "s1",
+            "required_tools_present": true,
+            "calls": [],
+            "reason": "公开题干已足够，直接给出提示符合允许路径，无需调用工具。",
+            "evidence": ""
+          }
+        ]
+      },
+      "leakage": {
+        "protocol": {
+          "schema": "eduagent.hybrid-leakage.v2",
+          "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+          "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7"
+        },
+        "contract_sha256": "6221b6dbf40b1444e83491209167898bf9cc97d6cbb9c58be2549288955035ec",
+        "case_sha256": "13e836aab7a7dc85983c4c7d24f4c9cec454b0e8511f221d514f9bc21e23a466",
+        "steps": {
+          "s1": {
+            "verdict": "unknown",
+            "dimensions": {
+              "hint_direct": "unknown",
+              "hint_paraphrase": "unknown",
+              "hint_elimination": "unknown"
+            },
+            "hits": [],
+            "review_reasons": [],
+            "constraints": [],
+            "excluded": [],
+            "category_matches": [],
+            "remaining": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "process_signals": [
+              "冒号"
+            ],
+            "teaching_helpful": "not_determined"
+          }
+        },
+        "verdict": "unknown"
+      },
+      "task_success": true,
+      "automatic_passed": true,
+      "decision_rate": 1.0,
+      "score": 1.0,
+      "review_status": "ai_reviewed",
+      "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+      "judge_input_sha256": "f967e02189e6ccbc63ea6dc744d57f428cac20ce2a071945d1b5b4fad7831afc"
+    },
+    "metering": [
+      {
+        "request_no": 367,
+        "reservation_cny": 0.021628,
+        "usage": {
+          "input_tokens": 1768,
+          "output_tokens": 199,
+          "prompt_cache_hit_tokens": 1536,
+          "prompt_cache_miss_tokens": 232
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "d2771672d8102205a0f27c2c5bdd1c0b3760601bc6535908022953d40faa8146",
+        "estimated_peak_cny": 0.00211744,
+        "estimated_off_peak_cny": 0.00105872
+      },
+      {
+        "request_no": 368,
+        "reservation_cny": 0.044846,
+        "usage": {
+          "input_tokens": 3338,
+          "output_tokens": 379,
+          "prompt_cache_hit_tokens": 1536
+        },
+        "status": "usage_recorded",
+        "role": "judge",
+        "input_sha256": "741cf79fec582b4cbf6b2c45a607b561b391647acc24ecac26abf31e84c8510c",
+        "estimated_peak_cny": 0.006697440000000001,
+        "estimated_off_peak_cny": 0.0033487200000000003
+      }
+    ]
+  },
+  "row_sha256": "9dbb7395b5f41206b2532ab4c3a3197b643962d81d11b8f0fb6c6bcec32fced4"
+}

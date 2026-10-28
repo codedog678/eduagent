@@ -1,0 +1,956 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": true,
+    "case_id": "live-28-present-perfect-result",
+    "category": "跨会话记忆",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [],
+    "execution_outcome": "completed",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution",
+        "rule": "status=completed、dialogue_state=answered；thread 与预置 grammar_tenses 主题相同。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution.source_refs",
+        "rule": "与两条预置真实来源至少有一个交集；所有引用均可按当前 learner 读取。",
+        "status": "passed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.grammar_tenses",
+        "rule": "所有 KnowledgeState 字段保持不变。",
+        "status": "passed"
+      },
+      {
+        "id": "H4",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s1.teaching_response.response",
+        "rule": "识别历史中持续动作误解，解释现在影响与丢钥匙动作本身的区别。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+        "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+        "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "review_pending",
+    "title": "历史：结果相关不等于动作持续"
+  },
+  "capability": "grounded_history",
+  "case_id": "live-28-present-perfect-result",
+  "evaluation_index": 91,
+  "judge_identity": {
+    "model": "deepseek-flash",
+    "provider": "deepseek",
+    "thinking": "disabled"
+  },
+  "metering": [
+    {
+      "estimated_off_peak_cny": 0.0006579600000000001,
+      "estimated_peak_cny": 0.0013159200000000002,
+      "input_sha256": "16e6cf5307f7d6b207ddc5f64d90b7c9a7b805c76df4543a80c6896db150fa6e",
+      "request_no": 389,
+      "reservation_cny": 0.026958,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 2389,
+        "output_tokens": 69,
+        "prompt_cache_hit_tokens": 2048,
+        "prompt_cache_miss_tokens": 341
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.00089564,
+      "estimated_peak_cny": 0.00179128,
+      "input_sha256": "4f2569b0e9fe4c0fe1071ebcee06bbb0b060c369e3927d45b17b56cd49b5e29f",
+      "request_no": 390,
+      "reservation_cny": 0.029714,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 2791,
+        "output_tokens": 122,
+        "prompt_cache_hit_tokens": 2432,
+        "prompt_cache_miss_tokens": 359
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.00230704,
+      "estimated_peak_cny": 0.00461408,
+      "input_sha256": "d15acf6e09ddb505ef28a13a71c0b157c85969b9afe97cd09e1fcdce441be923",
+      "request_no": 391,
+      "reservation_cny": 0.027342,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 2300,
+        "output_tokens": 284,
+        "prompt_cache_hit_tokens": 1152,
+        "prompt_cache_miss_tokens": 1148
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.00334704,
+      "estimated_peak_cny": 0.00669408,
+      "input_sha256": "127ff68d24c5d1e6e1d0621ca15baf21c8c5eb106bfca13d28132c0590833128",
+      "request_no": 392,
+      "reservation_cny": 0.046714,
+      "role": "judge",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 3536,
+        "output_tokens": 235,
+        "prompt_cache_hit_tokens": 1152
+      }
+    }
+  ],
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "丢的动作已经发生；现在完成时可突出现在找不到钥匙的结果，不一定表示动作持续。",
+        "上次你指出的是：你把 **“丢”这个动作本身理解成了“一直进行”**，也就是把 *I have lost my keys* 里的 lose 当成一个持续过程。我当时的说明是：丢的动作已经发生；现在完成时可以突出“现在找不到钥匙”的结果，不一定表示动作持续。（来源：message:eval-live-28-old-user、message:eval-live-28-old-tutor）\n\n再用钥匙解释一次：\n\n- **lose（丢）是瞬间动作**：钥匙从“在手里”变成“不在手里”，这个变化一下就完成了，不会像“找钥匙”那样持续半小时。\n- **现在完成时 have lost** 关注的是**现在的结果**：动作发生在过去某个时刻，但说话时钥匙仍然不在你手上，所以你进不了门、得去找备用钥匙。\n- 对比一下：\n  - *I lost my keys yesterday.* —— 只交代过去的事，和现在不一定有联系。\n  - *I have lost my keys.* —— 现在的结果是“我手上没有钥匙”。\n  - *I have been looking for my keys for an hour.* —— 这才是“持续”：找的动作从一小时前一直延续到现在。\n\n所以判断时态不能只看“有没有时间词”，要看**动作本身是瞬间还是持续**，以及**说话人想突出过去的事还是它和现在的联系**。"
+      ],
+      "evidence": [],
+      "knowledge": {
+        "eval-live-28": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "grammar_tenses",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [],
+      "quizzes": {}
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true,
+        "seeded_history_visible": true
+      },
+      "initial_source_refs": [
+        "message:eval-live-28-old-tutor",
+        "message:eval-live-28-old-user"
+      ],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-28": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "grammar_tenses",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {},
+      "thread_id": "1a80c43a-79ea-5a01-9cd5-e09d4f5f5750"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 4119.980290999592,
+        "evidence": [],
+        "knowledge": {
+          "eval-live-28": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "grammar_tenses",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "",
+            "duration_ms": 773.5042080003041,
+            "request_no": 1,
+            "stop_reason": "tool_calls",
+            "tool_calls": [
+              {
+                "arguments": {
+                  "limit": 10,
+                  "query": "I have lost my keys 丢钥匙 持续动作 现在完成时"
+                },
+                "batch_size": 1,
+                "id": "call_00_5qd4FMBmpeWSuujLZwg73895",
+                "name": "search_learning_history"
+              }
+            ],
+            "usage": {
+              "input_tokens": 2389,
+              "output_tokens": 69,
+              "prompt_cache_hit_tokens": 2048,
+              "prompt_cache_miss_tokens": 341
+            }
+          },
+          {
+            "content": "",
+            "duration_ms": 1084.2403750011727,
+            "request_no": 2,
+            "stop_reason": "tool_calls",
+            "tool_calls": [
+              {
+                "arguments": {
+                  "limit": 3000,
+                  "source_ref": "message:eval-live-28-old-tutor"
+                },
+                "batch_size": 2,
+                "id": "call_00_kzCijHdbGVvdrjpE1uvy0933",
+                "name": "read_learning_history"
+              },
+              {
+                "arguments": {
+                  "limit": 3000,
+                  "source_ref": "message:eval-live-28-old-user"
+                },
+                "batch_size": 2,
+                "id": "call_01_Q3gpVBU5WpDHSXFQcTzS1239",
+                "name": "read_learning_history"
+              }
+            ],
+            "usage": {
+              "input_tokens": 2791,
+              "output_tokens": 122,
+              "prompt_cache_hit_tokens": 2432,
+              "prompt_cache_miss_tokens": 359
+            }
+          },
+          {
+            "content": "上次你指出的是：你把 **“丢”这个动作本身理解成了“一直进行”**，也就是把 *I have lost my keys* 里的 lose 当成一个持续过程。我当时的说明是：丢的动作已经发生；现在完成时可以突出“现在找不到钥匙”的结果，不一定表示动作持续。（来源：message:eval-live-28-old-user、message:eval-live-28-old-tutor）\n\n再用钥匙解释一次：\n\n- **lose（丢）是瞬间动作**：钥匙从“在手里”变成“不在手里”，这个变化一下就完成了，不会像“找钥匙”那样持续半小时。\n- **现在完成时 have lost** 关注的是**现在的结果**：动作发生在过去某个时刻，但说话时钥匙仍然不在你手上，所以你进不了门、得去找备用钥匙。\n- 对比一下：\n  - *I lost my keys yesterday.* —— 只交代过去的事，和现在不一定有联系。\n  - *I have lost my keys.* —— 现在的结果是“我手上没有钥匙”。\n  - *I have been looking for my keys for an hour.* —— 这才是“持续”：找的动作从一小时前一直延续到现在。\n\n所以判断时态不能只看“有没有时间词”，要看**动作本身是瞬间还是持续**，以及**说话人想突出过去的事还是它和现在的联系**。",
+            "duration_ms": 2256.221749999895,
+            "request_no": 3,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 2300,
+              "output_tokens": 284,
+              "prompt_cache_hit_tokens": 1152,
+              "prompt_cache_miss_tokens": 1148
+            }
+          }
+        ],
+        "quizzes": {},
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "grammar_tenses",
+              "response": "上次你指出的是：你把 **“丢”这个动作本身理解成了“一直进行”**，也就是把 *I have lost my keys* 里的 lose 当成一个持续过程。我当时的说明是：丢的动作已经发生；现在完成时可以突出“现在找不到钥匙”的结果，不一定表示动作持续。（来源：message:eval-live-28-old-user、message:eval-live-28-old-tutor）\n\n再用钥匙解释一次：\n\n- **lose（丢）是瞬间动作**：钥匙从“在手里”变成“不在手里”，这个变化一下就完成了，不会像“找钥匙”那样持续半小时。\n- **现在完成时 have lost** 关注的是**现在的结果**：动作发生在过去某个时刻，但说话时钥匙仍然不在你手上，所以你进不了门、得去找备用钥匙。\n- 对比一下：\n  - *I lost my keys yesterday.* —— 只交代过去的事，和现在不一定有联系。\n  - *I have lost my keys.* —— 现在的结果是“我手上没有钥匙”。\n  - *I have been looking for my keys for an hour.* —— 这才是“持续”：找的动作从一小时前一直延续到现在。\n\n所以判断时态不能只看“有没有时间词”，要看**动作本身是瞬间还是持续**，以及**说话人想突出过去的事还是它和现在的联系**。",
+              "response_variant": "tool_loop",
+              "source_refs": [
+                "message:eval-live-28-old-tutor",
+                "message:eval-live-28-old-user"
+              ],
+              "teaching_style": "question_answer"
+            }
+          },
+          "correlation_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "9acf625e-eea8-4488-ab3f-cf88cec1bb24",
+            "cited_refs": [
+              "message:eval-live-28-old-user",
+              "message:eval-live-28-old-tutor"
+            ],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "answered",
+            "effective_policy_hash": "b75ca527c2404dd4379ff3e6f461aa264ecebacbe22dcf8fe0646877dd8f6710",
+            "model": "deepseek-flash",
+            "pending_question_id": null,
+            "provider": "deepseek",
+            "read_refs": [
+              "message:eval-live-28-old-tutor",
+              "message:eval-live-28-old-user"
+            ],
+            "request_id": "live-28-present-perfect-result-s1",
+            "retrieved_refs": [
+              "message:eval-live-28-old-tutor",
+              "message:eval-live-28-old-user"
+            ],
+            "run_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+            "session_id": "eval-live-28-new",
+            "source_refs": [
+              "message:eval-live-28-old-tutor",
+              "message:eval-live-28-old-user"
+            ],
+            "status": "completed",
+            "thread_id": "1a80c43a-79ea-5a01-9cd5-e09d4f5f5750",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+              "data": {
+                "knowledge_id": "grammar_tenses",
+                "question": "上次你指出我把什么当成了持续动作？用钥匙再解释一次。"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-29T03:50:23.939619"
+            },
+            {
+              "correlation_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "grammar_tenses",
+                "response": "上次你指出的是：你把 **“丢”这个动作本身理解成了“一直进行”**，也就是把 *I have lost my keys* 里的 lose 当成一个持续过程。我当时的说明是：丢的动作已经发生；现在完成时可以突出“现在找不到钥匙”的结果，不一定表示动作持续。（来源：message:eval-live-28-old-user、message:eval-live-28-old-tutor）\n\n再用钥匙解释一次：\n\n- **lose（丢）是瞬间动作**：钥匙从“在手里”变成“不在手里”，这个变化一下就完成了，不会像“找钥匙”那样持续半小时。\n- **现在完成时 have lost** 关注的是**现在的结果**：动作发生在过去某个时刻，但说话时钥匙仍然不在你手上，所以你进不了门、得去找备用钥匙。\n- 对比一下：\n  - *I lost my keys yesterday.* —— 只交代过去的事，和现在不一定有联系。\n  - *I have lost my keys.* —— 现在的结果是“我手上没有钥匙”。\n  - *I have been looking for my keys for an hour.* —— 这才是“持续”：找的动作从一小时前一直延续到现在。\n\n所以判断时态不能只看“有没有时间词”，要看**动作本身是瞬间还是持续**，以及**说话人想突出过去的事还是它和现在的联系**。",
+                "response_variant": "tool_loop",
+                "source_refs": [
+                  "message:eval-live-28-old-tutor",
+                  "message:eval-live-28-old-user"
+                ],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-29T03:50:28.056880"
+            }
+          ],
+          "knowledge_id": "grammar_tenses",
+          "learner_id": "eval-live-28",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "grammar_tenses",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "grammar_tenses",
+            "response": "上次你指出的是：你把 **“丢”这个动作本身理解成了“一直进行”**，也就是把 *I have lost my keys* 里的 lose 当成一个持续过程。我当时的说明是：丢的动作已经发生；现在完成时可以突出“现在找不到钥匙”的结果，不一定表示动作持续。（来源：message:eval-live-28-old-user、message:eval-live-28-old-tutor）\n\n再用钥匙解释一次：\n\n- **lose（丢）是瞬间动作**：钥匙从“在手里”变成“不在手里”，这个变化一下就完成了，不会像“找钥匙”那样持续半小时。\n- **现在完成时 have lost** 关注的是**现在的结果**：动作发生在过去某个时刻，但说话时钥匙仍然不在你手上，所以你进不了门、得去找备用钥匙。\n- 对比一下：\n  - *I lost my keys yesterday.* —— 只交代过去的事，和现在不一定有联系。\n  - *I have lost my keys.* —— 现在的结果是“我手上没有钥匙”。\n  - *I have been looking for my keys for an hour.* —— 这才是“持续”：找的动作从一小时前一直延续到现在。\n\n所以判断时态不能只看“有没有时间词”，要看**动作本身是瞬间还是持续**，以及**说话人想突出过去的事还是它和现在的联系**。",
+            "response_variant": "tool_loop",
+            "source_refs": [
+              "message:eval-live-28-old-tutor",
+              "message:eval-live-28-old-user"
+            ],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "上次你指出我把什么当成了持续动作？用钥匙再解释一次。",
+        "tool_results": [
+          {
+            "result": {
+              "cached": false,
+              "data": {
+                "items": [
+                  {
+                    "created": 1793217023.9381819,
+                    "excerpt": "丢的动作已经发生；现在完成时可突出现在找不到钥匙的结果，不一定表示动作持续。",
+                    "knowledge_id": "grammar_tenses",
+                    "match_score": 7,
+                    "role": "assistant",
+                    "source_ref": "message:eval-live-28-old-tutor",
+                    "thread_id": "1a80c43a-79ea-5a01-9cd5-e09d4f5f5750",
+                    "version": 1
+                  },
+                  {
+                    "created": 1793217023.9381518,
+                    "excerpt": "我把 I have lost my keys 理解为丢这个动作一直进行。",
+                    "knowledge_id": "grammar_tenses",
+                    "match_score": 6,
+                    "role": "user",
+                    "source_ref": "message:eval-live-28-old-user",
+                    "thread_id": "1a80c43a-79ea-5a01-9cd5-e09d4f5f5750",
+                    "version": 1
+                  }
+                ],
+                "query_expanded": false,
+                "retrieval_mode": "lexical"
+              },
+              "error_code": null,
+              "errors": [],
+              "next_cursor": null,
+              "retryable": false,
+              "source_refs": [
+                "message:eval-live-28-old-tutor",
+                "message:eval-live-28-old-user"
+              ],
+              "status": "ok",
+              "truncated": false
+            },
+            "tool_call_id": "call_00_5qd4FMBmpeWSuujLZwg73895"
+          },
+          {
+            "result": {
+              "cached": false,
+              "data": {
+                "content": "丢的动作已经发生；现在完成时可突出现在找不到钥匙的结果，不一定表示动作持续。",
+                "next_cursor": null,
+                "role": "assistant",
+                "source_ref": "message:eval-live-28-old-tutor",
+                "thread_id": "1a80c43a-79ea-5a01-9cd5-e09d4f5f5750",
+                "truncated": false
+              },
+              "error_code": null,
+              "errors": [],
+              "next_cursor": null,
+              "retryable": false,
+              "source_refs": [
+                "message:eval-live-28-old-tutor"
+              ],
+              "status": "ok",
+              "truncated": false
+            },
+            "tool_call_id": "call_00_kzCijHdbGVvdrjpE1uvy0933"
+          },
+          {
+            "result": {
+              "cached": false,
+              "data": {
+                "content": "我把 I have lost my keys 理解为丢这个动作一直进行。",
+                "next_cursor": null,
+                "role": "user",
+                "source_ref": "message:eval-live-28-old-user",
+                "thread_id": "1a80c43a-79ea-5a01-9cd5-e09d4f5f5750",
+                "truncated": false
+              },
+              "error_code": null,
+              "errors": [],
+              "next_cursor": null,
+              "retryable": false,
+              "source_refs": [
+                "message:eval-live-28-old-user"
+              ],
+              "status": "ok",
+              "truncated": false
+            },
+            "tool_call_id": "call_01_Q3gpVBU5WpDHSXFQcTzS1239"
+          }
+        ],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "9acf625e-eea8-4488-ab3f-cf88cec1bb24",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1793217028.0581949,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+              "started": 1793217023.939326,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "effective_policy_hash": "b75ca527c2404dd4379ff3e6f461aa264ecebacbe22dcf8fe0646877dd8f6710",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1793217023.939522
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "task_routed",
+                  "reason": "question_intent",
+                  "route": "Tutor",
+                  "seq": 2,
+                  "timestamp": 1793217023.9395971
+                },
+                {
+                  "agent": "api",
+                  "event_id": "0884a1bf-ee99-4f2b-8b9d-1882d709d99f",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 3,
+                  "timestamp": 1793217023.9396422
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "0884a1bf-ee99-4f2b-8b9d-1882d709d99f",
+                  "kind": "handler_started",
+                  "seq": 4,
+                  "timestamp": 1793217023.939656
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 2,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 5,
+                  "timestamp": 1793217023.939899,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 6,
+                  "source_refs": [
+                    "message:eval-live-28-old-tutor",
+                    "message:eval-live-28-old-user"
+                  ],
+                  "timestamp": 1793217023.940143,
+                  "token_estimate": 2124,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 7,
+                  "timestamp": 1793217023.9415228,
+                  "token_estimate": 3085
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+                  "resource": "model",
+                  "seq": 8,
+                  "task_id": null,
+                  "timestamp": 1793217023.946941,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 9,
+                  "stop_reason": "tool_calls",
+                  "timestamp": 1793217024.715094,
+                  "usage": {
+                    "input_tokens": 2389,
+                    "output_tokens": 69,
+                    "prompt_cache_hit_tokens": 2048,
+                    "prompt_cache_miss_tokens": 341
+                  }
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+                  "resource": "tool",
+                  "seq": 10,
+                  "task_id": null,
+                  "timestamp": 1793217024.715104,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+                  "seq": 11,
+                  "task_id": null,
+                  "timestamp": 1793217024.7151139,
+                  "tool": "search_learning_history",
+                  "tool_call_id": "call_00_5qd4FMBmpeWSuujLZwg73895"
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 2,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 12,
+                  "timestamp": 1793217024.715355,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 0,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "items",
+                    "query_expanded",
+                    "retrieval_mode"
+                  ],
+                  "seq": 13,
+                  "source_refs": [
+                    "message:eval-live-28-old-tutor",
+                    "message:eval-live-28-old-user"
+                  ],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1793217024.715421,
+                  "tool": "search_learning_history",
+                  "tool_call_id": "call_00_5qd4FMBmpeWSuujLZwg73895"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 2,
+                  "seq": 14,
+                  "timestamp": 1793217024.71553,
+                  "token_estimate": 3545
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+                  "resource": "model",
+                  "seq": 15,
+                  "task_id": null,
+                  "timestamp": 1793217024.720414,
+                  "used": 2
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 2,
+                  "seq": 16,
+                  "stop_reason": "tool_calls",
+                  "timestamp": 1793217025.7998679,
+                  "usage": {
+                    "input_tokens": 2791,
+                    "output_tokens": 122,
+                    "prompt_cache_hit_tokens": 2432,
+                    "prompt_cache_miss_tokens": 359
+                  }
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+                  "resource": "tool",
+                  "seq": 17,
+                  "task_id": null,
+                  "timestamp": 1793217025.799888,
+                  "used": 2
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+                  "seq": 18,
+                  "task_id": null,
+                  "timestamp": 1793217025.799891,
+                  "tool": "read_learning_history",
+                  "tool_call_id": "call_00_kzCijHdbGVvdrjpE1uvy0933"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 0,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "content",
+                    "next_cursor",
+                    "role",
+                    "source_ref",
+                    "thread_id",
+                    "truncated"
+                  ],
+                  "seq": 19,
+                  "source_refs": [
+                    "message:eval-live-28-old-tutor"
+                  ],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1793217025.800134,
+                  "tool": "read_learning_history",
+                  "tool_call_id": "call_00_kzCijHdbGVvdrjpE1uvy0933"
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+                  "resource": "tool",
+                  "seq": 20,
+                  "task_id": null,
+                  "timestamp": 1793217025.8001869,
+                  "used": 3
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+                  "seq": 21,
+                  "task_id": null,
+                  "timestamp": 1793217025.8001878,
+                  "tool": "read_learning_history",
+                  "tool_call_id": "call_01_Q3gpVBU5WpDHSXFQcTzS1239"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 0,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "content",
+                    "next_cursor",
+                    "role",
+                    "source_ref",
+                    "thread_id",
+                    "truncated"
+                  ],
+                  "seq": 22,
+                  "source_refs": [
+                    "message:eval-live-28-old-user"
+                  ],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1793217025.800247,
+                  "tool": "read_learning_history",
+                  "tool_call_id": "call_01_Q3gpVBU5WpDHSXFQcTzS1239"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 3,
+                  "seq": 23,
+                  "timestamp": 1793217025.800354,
+                  "token_estimate": 3149
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "026cc663-825c-5cdd-9c7c-27f346be4d83",
+                  "resource": "model",
+                  "seq": 24,
+                  "task_id": null,
+                  "timestamp": 1793217025.8073962,
+                  "used": 3
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 3,
+                  "seq": 25,
+                  "stop_reason": "stop",
+                  "timestamp": 1793217028.056677,
+                  "usage": {
+                    "input_tokens": 2300,
+                    "output_tokens": 284,
+                    "prompt_cache_hit_tokens": 1152,
+                    "prompt_cache_miss_tokens": 1148
+                  }
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [
+                    "message:eval-live-28-old-user",
+                    "message:eval-live-28-old-tutor"
+                  ],
+                  "kind": "response_sources",
+                  "read_refs": [
+                    "message:eval-live-28-old-tutor",
+                    "message:eval-live-28-old-user"
+                  ],
+                  "retrieved_refs": [
+                    "message:eval-live-28-old-tutor",
+                    "message:eval-live-28-old-user"
+                  ],
+                  "seq": 26,
+                  "timestamp": 1793217028.056778
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 4117,
+                  "event_id": "0884a1bf-ee99-4f2b-8b9d-1882d709d99f",
+                  "kind": "handler_completed",
+                  "seq": 27,
+                  "timestamp": 1793217028.05701
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "e4b1bee1-dc4c-4cb6-85c0-9929614a68a3",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "0884a1bf-ee99-4f2b-8b9d-1882d709d99f",
+                  "seq": 28,
+                  "timestamp": 1793217028.057015
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 29,
+                  "timestamp": 1793217028.057214
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "answered",
+                  "kind": "run_completed",
+                  "seq": 30,
+                  "timestamp": 1793217028.057955
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-28-present-perfect-result-s1"
+        }
+      }
+    }
+  },
+  "policy_sha256": "7a0faf6220ccbe2cd98c07d729bebfaa1f3a592bf5676dfed3a54cc42b36c47e",
+  "score": {
+    "automatic_passed": true,
+    "decision_rate": 1.0,
+    "decisions": [
+      {
+        "calls": [
+          {
+            "arguments_correct": true,
+            "index": 0,
+            "selection_correct": true
+          },
+          {
+            "arguments_correct": true,
+            "index": 1,
+            "selection_correct": true
+          },
+          {
+            "arguments_correct": true,
+            "index": 2,
+            "selection_correct": true
+          }
+        ],
+        "evidence": "",
+        "reason": "历史已在上下文中，直接回答即可；模型额外搜索并读取了当前 learner 的两条真实历史来源，引用与实际事实一致，工具选择与参数语义合理。",
+        "required_tools_present": true,
+        "step_id": "s1"
+      }
+    ],
+    "judge_input_sha256": "ff5b71d0804285ca9bc1674497a23ee48feeddb5f97c1f18bc06565de4ff0f84",
+    "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+    "leakage": {
+      "case_sha256": "c918b14f5005ebaa15193eaf65036c5d85ceb8e22e3bfa379a290f86ba3bc9e7",
+      "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "protocol": {
+        "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+        "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7",
+        "schema": "eduagent.hybrid-leakage.v2"
+      },
+      "steps": {},
+      "verdict": "not_applicable"
+    },
+    "raw_judgment": {
+      "decisions": [
+        {
+          "calls": [
+            {
+              "arguments_correct": true,
+              "index": 0,
+              "selection_correct": true
+            },
+            {
+              "arguments_correct": true,
+              "index": 1,
+              "selection_correct": true
+            },
+            {
+              "arguments_correct": true,
+              "index": 2,
+              "selection_correct": true
+            }
+          ],
+          "evidence": "",
+          "reason": "历史已在上下文中，直接回答即可；模型额外搜索并读取了当前 learner 的两条真实历史来源，引用与实际事实一致，工具选择与参数语义合理。",
+          "required_tools_present": true,
+          "step_id": "s1"
+        }
+      ],
+      "semantic": [
+        {
+          "evidence": "上次你指出的是：你把 **“丢”这个动作本身理解成了“一直进行”**，也就是把 *I have lost my keys* 里的 lose 当成一个持续过程。我当时的说明是：丢的动作已经发生；现在完成时可以突出“现在找不到钥匙”的结果，不一定表示动作持续。",
+          "id": "H4",
+          "passed": true,
+          "reason": "回复明确识别学生把“丢”误解为持续动作，并区分了丢钥匙动作本身与现在完成时强调的现在结果，还给出对比解释。"
+        }
+      ]
+    },
+    "review_status": "ai_reviewed",
+    "score": 1.0,
+    "semantic": [
+      {
+        "evidence": "上次你指出的是：你把 **“丢”这个动作本身理解成了“一直进行”**，也就是把 *I have lost my keys* 里的 lose 当成一个持续过程。我当时的说明是：丢的动作已经发生；现在完成时可以突出“现在找不到钥匙”的结果，不一定表示动作持续。",
+        "id": "H4",
+        "passed": true,
+        "reason": "回复明确识别学生把“丢”误解为持续动作，并区分了丢钥匙动作本身与现在完成时强调的现在结果，还给出对比解释。"
+      }
+    ],
+    "task_success": true
+  },
+  "scoring_status": "completed"
+}

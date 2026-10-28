@@ -1,0 +1,1121 @@
+{
+  "binding": "13f0eb3bf805b4b7e1a52f3fa37fa1c5377fc39e2dffd8c5568fee253a1347ed",
+  "row": {
+    "case_id": "live-38-receiver-checklist",
+    "capability": "full_history_retrieval",
+    "evaluation_index": 36,
+    "policy_sha256": "7a0faf6220ccbe2cd98c07d729bebfaa1f3a592bf5676dfed3a54cc42b36c47e",
+    "scoring_status": "completed",
+    "automatic": {
+      "case_id": "live-38-receiver-checklist",
+      "category": "跨会话记忆",
+      "title": "旧笔记：读取提交物与接收方口令",
+      "evaluation_role": "agent_primary",
+      "status": "review_pending",
+      "automatic_passed": true,
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "fixture_validation",
+          "path": "ContextBuilder 初始消息 / search.excerpt",
+          "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "path": "s1.trace.steps",
+          "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "path": "s1.execution",
+          "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "automatic",
+          "path": "s1.teaching_response.response",
+          "rule": "规范化引号、空白后包含“先圈提交物，再找接收方”。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H5",
+          "method": "automatic",
+          "path": "learner.knowledge_states.vocab_basic",
+          "rule": "所有 KnowledgeState 字段保持不变。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "S1",
+          "method": "semantic_review",
+          "path": "retrieval_source",
+          "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。",
+          "passed": null,
+          "status": "review_pending"
+        },
+        {
+          "id": "S2",
+          "method": "semantic_review",
+          "path": "retrieval_answer",
+          "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。",
+          "passed": null,
+          "status": "review_pending"
+        },
+        {
+          "id": "S3",
+          "method": "semantic_review",
+          "path": "retrieval_consistency",
+          "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。",
+          "passed": null,
+          "status": "review_pending"
+        }
+      ],
+      "execution_outcome": "completed",
+      "execution_failures": [],
+      "annotations": {},
+      "quality_review": {
+        "status": "review_pending",
+        "reviewer": null,
+        "scores": null,
+        "anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "targeting": "2 分：提供 N38 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。"
+        }
+      }
+    },
+    "observed": {
+      "initial": {
+        "knowledge": {
+          "eval-live-38": {
+            "knowledge_id": "vocab_basic",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27"
+      },
+      "fixture_validation": {
+        "valid": true,
+        "checks": {
+          "default_knowledge": true,
+          "no_answer_fields_in_context": true,
+          "no_preexisting_pending": true,
+          "target_not_in_initial": true,
+          "phrase_not_in_initial": true,
+          "target_fits_read": true,
+          "phrase_beyond_excerpt": true,
+          "search_hides_phrase": true,
+          "target_discoverable": true
+        },
+        "initial_source_refs": [
+          "message:eval-live-38-decoy-9",
+          "message:eval-live-38-decoy-8",
+          "message:eval-live-38-decoy-7",
+          "message:eval-live-38-decoy-6",
+          "message:eval-live-38-decoy-5",
+          "message:eval-live-38-decoy-4",
+          "message:eval-live-38-decoy-3",
+          "message:eval-live-38-decoy-2"
+        ]
+      },
+      "steps": {
+        "s1": {
+          "action": "converse",
+          "student_input": "N38 旧笔记的口令原文是什么？请读完再回答。",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-38",
+            "knowledge_id": "vocab_basic",
+            "correlation_id": "4beb325b-e164-502d-8769-fc9a3b05453d",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "我读完了 N38 旧笔记的全文（来源：`message:eval-live-38-target`）。\n\n口令原文在正文**最后一行**，前面是一大段重复的“过程整理备忘记录”占位内容：\n\n> **核对口令原文：先圈提交物，再找接收方。**\n\n另外说明：检索结果里那些“N38 补充 1–9”的条目只是重复提问、标注“无口令正文”的干扰项，不是笔记本身，我没有把它们当作笔记内容。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "vocab_basic",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [
+                "message:eval-live-38-decoy-9",
+                "message:eval-live-38-decoy-8",
+                "message:eval-live-38-decoy-7",
+                "message:eval-live-38-decoy-6",
+                "message:eval-live-38-decoy-5",
+                "message:eval-live-38-decoy-4",
+                "message:eval-live-38-decoy-3",
+                "message:eval-live-38-decoy-2",
+                "message:eval-live-38-decoy-1",
+                "message:eval-live-38-target"
+              ],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "vocab_basic",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "vocab_basic",
+                "response": "我读完了 N38 旧笔记的全文（来源：`message:eval-live-38-target`）。\n\n口令原文在正文**最后一行**，前面是一大段重复的“过程整理备忘记录”占位内容：\n\n> **核对口令原文：先圈提交物，再找接收方。**\n\n另外说明：检索结果里那些“N38 补充 1–9”的条目只是重复提问、标注“无口令正文”的干扰项，不是笔记本身，我没有把它们当作笔记内容。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [
+                  "message:eval-live-38-decoy-9",
+                  "message:eval-live-38-decoy-8",
+                  "message:eval-live-38-decoy-7",
+                  "message:eval-live-38-decoy-6",
+                  "message:eval-live-38-decoy-5",
+                  "message:eval-live-38-decoy-4",
+                  "message:eval-live-38-decoy-3",
+                  "message:eval-live-38-decoy-2",
+                  "message:eval-live-38-decoy-1",
+                  "message:eval-live-38-target"
+                ],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "question": "N38 旧笔记的口令原文是什么？请读完再回答。"
+                },
+                "timestamp": "2026-10-29T03:46:52.210177",
+                "correlation_id": "4beb325b-e164-502d-8769-fc9a3b05453d"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "response": "我读完了 N38 旧笔记的全文（来源：`message:eval-live-38-target`）。\n\n口令原文在正文**最后一行**，前面是一大段重复的“过程整理备忘记录”占位内容：\n\n> **核对口令原文：先圈提交物，再找接收方。**\n\n另外说明：检索结果里那些“N38 补充 1–9”的条目只是重复提问、标注“无口令正文”的干扰项，不是笔记本身，我没有把它们当作笔记内容。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [
+                    "message:eval-live-38-decoy-9",
+                    "message:eval-live-38-decoy-8",
+                    "message:eval-live-38-decoy-7",
+                    "message:eval-live-38-decoy-6",
+                    "message:eval-live-38-decoy-5",
+                    "message:eval-live-38-decoy-4",
+                    "message:eval-live-38-decoy-3",
+                    "message:eval-live-38-decoy-2",
+                    "message:eval-live-38-decoy-1",
+                    "message:eval-live-38-target"
+                  ],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:46:54.820264",
+                "correlation_id": "4beb325b-e164-502d-8769-fc9a3b05453d"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-38-receiver-checklist-s1",
+              "run_id": "4beb325b-e164-502d-8769-fc9a3b05453d",
+              "attempt_id": "1448acc8-fce4-4593-844e-5252085ebb1f",
+              "session_id": "eval-live-38-new",
+              "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [
+                "message:eval-live-38-decoy-9",
+                "message:eval-live-38-decoy-8",
+                "message:eval-live-38-decoy-7",
+                "message:eval-live-38-decoy-6",
+                "message:eval-live-38-decoy-5",
+                "message:eval-live-38-decoy-4",
+                "message:eval-live-38-decoy-3",
+                "message:eval-live-38-decoy-2",
+                "message:eval-live-38-decoy-1",
+                "message:eval-live-38-target"
+              ],
+              "retrieved_refs": [
+                "message:eval-live-38-decoy-9",
+                "message:eval-live-38-decoy-8",
+                "message:eval-live-38-decoy-7",
+                "message:eval-live-38-decoy-6",
+                "message:eval-live-38-decoy-5",
+                "message:eval-live-38-decoy-4",
+                "message:eval-live-38-decoy-3",
+                "message:eval-live-38-decoy-2",
+                "message:eval-live-38-decoy-1",
+                "message:eval-live-38-target"
+              ],
+              "read_refs": [
+                "message:eval-live-38-target"
+              ],
+              "cited_refs": [
+                "message:eval-live-38-target"
+              ],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "b75ca527c2404dd4379ff3e6f461aa264ecebacbe22dcf8fe0646877dd8f6710"
+            }
+          },
+          "trace": {
+            "request_id": "live-38-receiver-checklist-s1",
+            "attempts": [
+              {
+                "attempt_id": "1448acc8-fce4-4593-844e-5252085ebb1f",
+                "run_id": "4beb325b-e164-502d-8769-fc9a3b05453d",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216812.2066,
+                "finished": 1793216814.821669,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216812.2101052,
+                    "effective_policy_hash": "b75ca527c2404dd4379ff3e6f461aa264ecebacbe22dcf8fe0646877dd8f6710"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793216812.210161,
+                    "route": "Tutor",
+                    "reason": "question_intent"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216812.21019,
+                    "event_id": "1f8b9351-3191-4704-8b30-f0f6e0f27de8",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216812.2102,
+                    "event_id": "1f8b9351-3191-4704-8b30-f0f6e0f27de8"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216812.210577,
+                    "lexical_hits": 10,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216812.21088,
+                    "source_refs": [
+                      "message:eval-live-38-decoy-9",
+                      "message:eval-live-38-decoy-8",
+                      "message:eval-live-38-decoy-7",
+                      "message:eval-live-38-decoy-6",
+                      "message:eval-live-38-decoy-5",
+                      "message:eval-live-38-decoy-4",
+                      "message:eval-live-38-decoy-3",
+                      "message:eval-live-38-decoy-2"
+                    ],
+                    "omitted_refs": [],
+                    "token_estimate": 2859,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "explanation",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216812.211634,
+                    "model_call": 1,
+                    "token_estimate": 3820
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216812.21486,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "4beb325b-e164-502d-8769-fc9a3b05453d"
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216812.814272,
+                    "model_call": 1,
+                    "stop_reason": "tool_calls",
+                    "usage": {
+                      "input_tokens": 3093,
+                      "output_tokens": 63,
+                      "prompt_cache_hit_tokens": 1920,
+                      "prompt_cache_miss_tokens": 1173
+                    }
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216812.814283,
+                    "resource": "tool",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "4beb325b-e164-502d-8769-fc9a3b05453d"
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "before_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216812.814284,
+                    "tool": "search_learning_history",
+                    "tool_call_id": "call_00_wrRFzhSEySgyeAwaCCDK9598",
+                    "task_id": null,
+                    "parent_run_id": "4beb325b-e164-502d-8769-fc9a3b05453d"
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216812.814689,
+                    "lexical_hits": 10,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "after_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216812.8148391,
+                    "tool": "search_learning_history",
+                    "tool_call_id": "call_00_wrRFzhSEySgyeAwaCCDK9598",
+                    "task_id": null,
+                    "status": "ok",
+                    "source_refs": [
+                      "message:eval-live-38-decoy-9",
+                      "message:eval-live-38-decoy-8",
+                      "message:eval-live-38-decoy-7",
+                      "message:eval-live-38-decoy-6",
+                      "message:eval-live-38-decoy-5",
+                      "message:eval-live-38-decoy-4",
+                      "message:eval-live-38-decoy-3",
+                      "message:eval-live-38-decoy-2",
+                      "message:eval-live-38-decoy-1",
+                      "message:eval-live-38-target"
+                    ],
+                    "error_code": null,
+                    "cached": false,
+                    "elapsed_ms": 1,
+                    "result_keys": [
+                      "items",
+                      "query_expanded",
+                      "retrieval_mode"
+                    ]
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "context_compacted",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216812.8149812,
+                    "reason": "make_room_for_tool_evidence"
+                  },
+                  {
+                    "seq": 15,
+                    "kind": "context_compacted",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216812.815043,
+                    "reason": "make_room_for_tool_evidence"
+                  },
+                  {
+                    "seq": 16,
+                    "kind": "context_compacted",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216812.8150961,
+                    "reason": "make_room_for_tool_evidence"
+                  },
+                  {
+                    "seq": 17,
+                    "kind": "context_compacted",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216812.815192,
+                    "reason": "make_room_for_tool_evidence"
+                  },
+                  {
+                    "seq": 18,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216812.815259,
+                    "model_call": 2,
+                    "token_estimate": 5142
+                  },
+                  {
+                    "seq": 19,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216812.819436,
+                    "resource": "model",
+                    "used": 2,
+                    "task_id": null,
+                    "parent_run_id": "4beb325b-e164-502d-8769-fc9a3b05453d"
+                  },
+                  {
+                    "seq": 20,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216813.808117,
+                    "model_call": 2,
+                    "stop_reason": "tool_calls",
+                    "usage": {
+                      "input_tokens": 4293,
+                      "output_tokens": 80,
+                      "prompt_cache_hit_tokens": 1920,
+                      "prompt_cache_miss_tokens": 2373
+                    }
+                  },
+                  {
+                    "seq": 21,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216813.808141,
+                    "resource": "tool",
+                    "used": 2,
+                    "task_id": null,
+                    "parent_run_id": "4beb325b-e164-502d-8769-fc9a3b05453d"
+                  },
+                  {
+                    "seq": 22,
+                    "kind": "before_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216813.8081431,
+                    "tool": "read_learning_history",
+                    "tool_call_id": "call_00_7HRuWWIXbZRkahKHPmWd5204",
+                    "task_id": null,
+                    "parent_run_id": "4beb325b-e164-502d-8769-fc9a3b05453d"
+                  },
+                  {
+                    "seq": 23,
+                    "kind": "after_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216813.8084621,
+                    "tool": "read_learning_history",
+                    "tool_call_id": "call_00_7HRuWWIXbZRkahKHPmWd5204",
+                    "task_id": null,
+                    "status": "ok",
+                    "source_refs": [
+                      "message:eval-live-38-target"
+                    ],
+                    "error_code": null,
+                    "cached": false,
+                    "elapsed_ms": 0,
+                    "result_keys": [
+                      "content",
+                      "created",
+                      "knowledge_id",
+                      "next_cursor",
+                      "role",
+                      "source_ref",
+                      "thread_id",
+                      "truncated",
+                      "version"
+                    ]
+                  },
+                  {
+                    "seq": 24,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216813.8086321,
+                    "model_call": 3,
+                    "token_estimate": 5089
+                  },
+                  {
+                    "seq": 25,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216813.814393,
+                    "resource": "model",
+                    "used": 3,
+                    "task_id": null,
+                    "parent_run_id": "4beb325b-e164-502d-8769-fc9a3b05453d"
+                  },
+                  {
+                    "seq": 26,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216814.820065,
+                    "model_call": 3,
+                    "stop_reason": "stop",
+                    "usage": {
+                      "input_tokens": 3949,
+                      "output_tokens": 108,
+                      "prompt_cache_hit_tokens": 1024,
+                      "prompt_cache_miss_tokens": 2925
+                    }
+                  },
+                  {
+                    "seq": 27,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216814.8201542,
+                    "retrieved_refs": [
+                      "message:eval-live-38-decoy-9",
+                      "message:eval-live-38-decoy-8",
+                      "message:eval-live-38-decoy-7",
+                      "message:eval-live-38-decoy-6",
+                      "message:eval-live-38-decoy-5",
+                      "message:eval-live-38-decoy-4",
+                      "message:eval-live-38-decoy-3",
+                      "message:eval-live-38-decoy-2",
+                      "message:eval-live-38-decoy-1",
+                      "message:eval-live-38-target"
+                    ],
+                    "read_refs": [
+                      "message:eval-live-38-target"
+                    ],
+                    "cited_refs": [
+                      "message:eval-live-38-target"
+                    ]
+                  },
+                  {
+                    "seq": 28,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216814.820405,
+                    "event_id": "1f8b9351-3191-4704-8b30-f0f6e0f27de8",
+                    "duration_ms": 2610
+                  },
+                  {
+                    "seq": 29,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216814.8204129,
+                    "event_id": "b421bc18-b6dc-44f0-9be5-aabc084c78b9",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "1f8b9351-3191-4704-8b30-f0f6e0f27de8"
+                  },
+                  {
+                    "seq": 30,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216814.820629
+                  },
+                  {
+                    "seq": 31,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216814.821356,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 1,
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_00_wrRFzhSEySgyeAwaCCDK9598",
+                  "name": "search_learning_history",
+                  "arguments": {
+                    "query": "N38 旧笔记 口令 原文",
+                    "limit": 10
+                  },
+                  "batch_size": 1
+                }
+              ],
+              "stop_reason": "tool_calls",
+              "usage": {
+                "input_tokens": 3093,
+                "output_tokens": 63,
+                "prompt_cache_hit_tokens": 1920,
+                "prompt_cache_miss_tokens": 1173
+              },
+              "duration_ms": 602.5833329986199
+            },
+            {
+              "request_no": 2,
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_00_7HRuWWIXbZRkahKHPmWd5204",
+                  "name": "read_learning_history",
+                  "arguments": {
+                    "source_ref": "message:eval-live-38-target",
+                    "offset": 0,
+                    "limit": 6000
+                  },
+                  "batch_size": 1
+                }
+              ],
+              "stop_reason": "tool_calls",
+              "usage": {
+                "input_tokens": 4293,
+                "output_tokens": 80,
+                "prompt_cache_hit_tokens": 1920,
+                "prompt_cache_miss_tokens": 2373
+              },
+              "duration_ms": 992.7126250004221
+            },
+            {
+              "request_no": 3,
+              "content": "我读完了 N38 旧笔记的全文（来源：`message:eval-live-38-target`）。\n\n口令原文在正文**最后一行**，前面是一大段重复的“过程整理备忘记录”占位内容：\n\n> **核对口令原文：先圈提交物，再找接收方。**\n\n另外说明：检索结果里那些“N38 补充 1–9”的条目只是重复提问、标注“无口令正文”的干扰项，不是笔记本身，我没有把它们当作笔记内容。",
+              "tool_calls": [],
+              "stop_reason": "stop",
+              "usage": {
+                "input_tokens": 3949,
+                "output_tokens": 108,
+                "prompt_cache_hit_tokens": 1024,
+                "prompt_cache_miss_tokens": 2925
+              },
+              "duration_ms": 1011.3057910002681
+            }
+          ],
+          "tool_results": [
+            {
+              "tool_call_id": "call_00_wrRFzhSEySgyeAwaCCDK9598",
+              "result": {
+                "status": "ok",
+                "data": {
+                  "items": [
+                    {
+                      "knowledge_id": "vocab_basic",
+                      "created": 1793216812.202116,
+                      "role": "user",
+                      "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27",
+                      "source_ref": "message:eval-live-38-decoy-9",
+                      "version": 1,
+                      "excerpt": "N38 补充 9。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+                      "match_score": 5
+                    },
+                    {
+                      "knowledge_id": "vocab_basic",
+                      "created": 1793216812.202107,
+                      "role": "user",
+                      "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27",
+                      "source_ref": "message:eval-live-38-decoy-8",
+                      "version": 1,
+                      "excerpt": "N38 补充 8。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+                      "match_score": 5
+                    },
+                    {
+                      "knowledge_id": "vocab_basic",
+                      "created": 1793216812.202098,
+                      "role": "user",
+                      "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27",
+                      "source_ref": "message:eval-live-38-decoy-7",
+                      "version": 1,
+                      "excerpt": "N38 补充 7。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+                      "match_score": 5
+                    },
+                    {
+                      "knowledge_id": "vocab_basic",
+                      "created": 1793216812.202089,
+                      "role": "user",
+                      "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27",
+                      "source_ref": "message:eval-live-38-decoy-6",
+                      "version": 1,
+                      "excerpt": "N38 补充 6。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+                      "match_score": 5
+                    },
+                    {
+                      "knowledge_id": "vocab_basic",
+                      "created": 1793216812.202079,
+                      "role": "user",
+                      "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27",
+                      "source_ref": "message:eval-live-38-decoy-5",
+                      "version": 1,
+                      "excerpt": "N38 补充 5。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+                      "match_score": 5
+                    },
+                    {
+                      "knowledge_id": "vocab_basic",
+                      "created": 1793216812.202069,
+                      "role": "user",
+                      "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27",
+                      "source_ref": "message:eval-live-38-decoy-4",
+                      "version": 1,
+                      "excerpt": "N38 补充 4。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+                      "match_score": 5
+                    },
+                    {
+                      "knowledge_id": "vocab_basic",
+                      "created": 1793216812.202058,
+                      "role": "user",
+                      "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27",
+                      "source_ref": "message:eval-live-38-decoy-3",
+                      "version": 1,
+                      "excerpt": "N38 补充 3。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+                      "match_score": 5
+                    },
+                    {
+                      "knowledge_id": "vocab_basic",
+                      "created": 1793216812.202046,
+                      "role": "user",
+                      "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27",
+                      "source_ref": "message:eval-live-38-decoy-2",
+                      "version": 1,
+                      "excerpt": "N38 补充 2。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+                      "match_score": 5
+                    },
+                    {
+                      "knowledge_id": "vocab_basic",
+                      "created": 1793216812.202032,
+                      "role": "user",
+                      "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27",
+                      "source_ref": "message:eval-live-38-decoy-1",
+                      "version": 1,
+                      "excerpt": "N38 补充 1。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+                      "match_score": 5
+                    },
+                    {
+                      "knowledge_id": "vocab_basic",
+                      "created": 1793216812.202005,
+                      "role": "user",
+                      "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27",
+                      "source_ref": "message:eval-live-38-target",
+                      "version": 1,
+                      "excerpt": "N38 旧笔记。\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理",
+                      "match_score": 5
+                    }
+                  ],
+                  "retrieval_mode": "lexical",
+                  "query_expanded": false
+                },
+                "source_refs": [
+                  "message:eval-live-38-decoy-9",
+                  "message:eval-live-38-decoy-8",
+                  "message:eval-live-38-decoy-7",
+                  "message:eval-live-38-decoy-6",
+                  "message:eval-live-38-decoy-5",
+                  "message:eval-live-38-decoy-4",
+                  "message:eval-live-38-decoy-3",
+                  "message:eval-live-38-decoy-2",
+                  "message:eval-live-38-decoy-1",
+                  "message:eval-live-38-target"
+                ],
+                "error_code": null,
+                "retryable": false,
+                "truncated": false,
+                "next_cursor": null,
+                "cached": false,
+                "errors": []
+              }
+            },
+            {
+              "tool_call_id": "call_00_7HRuWWIXbZRkahKHPmWd5204",
+              "result": {
+                "status": "ok",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "created": 1793216812.202005,
+                  "role": "user",
+                  "thread_id": "6859136a-b2d4-5589-aa8b-4147c7fead27",
+                  "source_ref": "message:eval-live-38-target",
+                  "version": 1,
+                  "content": "N38 旧笔记。\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\n核对口令原文：先圈提交物，再找接收方。",
+                  "truncated": false,
+                  "next_cursor": null
+                },
+                "source_refs": [
+                  "message:eval-live-38-target"
+                ],
+                "error_code": null,
+                "retryable": false,
+                "truncated": false,
+                "next_cursor": null,
+                "cached": false,
+                "errors": []
+              }
+            }
+          ],
+          "quizzes": {},
+          "knowledge": {
+            "eval-live-38": {
+              "knowledge_id": "vocab_basic",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [],
+          "duration_ms": 2616.379291999692,
+          "all_sources_readable": true
+        }
+      },
+      "final": {
+        "knowledge": {
+          "eval-live-38": {
+            "knowledge_id": "vocab_basic",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "evidence": [],
+        "pending_questions": [],
+        "assistant_history": [
+          "我读完了 N38 旧笔记的全文（来源：`message:eval-live-38-target`）。\n\n口令原文在正文**最后一行**，前面是一大段重复的“过程整理备忘记录”占位内容：\n\n> **核对口令原文：先圈提交物，再找接收方。**\n\n另外说明：检索结果里那些“N38 补充 1–9”的条目只是重复提问、标注“无口令正文”的干扰项，不是笔记本身，我没有把它们当作笔记内容。"
+        ]
+      }
+    },
+    "judge_identity": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "thinking": "disabled"
+    },
+    "score": {
+      "semantic": [
+        {
+          "id": "S1",
+          "passed": true,
+          "reason": "模型先搜索到目标 source_ref，再完整读取该来源正文，未以摘要替代读取。",
+          "evidence": "我读完了 N38 旧笔记的全文（来源：`message:eval-live-38-target`）。"
+        },
+        {
+          "id": "S2",
+          "passed": true,
+          "reason": "回答直接给出目标原文中的口令，并说明其位于正文最后一行，符合已读取内容。",
+          "evidence": "口令原文在正文**最后一行**，前面是一大段重复的“过程整理备忘记录”占位内容：\n\n> **核对口令原文：先圈提交物，再找接收方。**"
+        },
+        {
+          "id": "S3",
+          "passed": true,
+          "reason": "回复确认已读取目标笔记并引用其内容，未否认或要求补充。",
+          "evidence": "我读完了 N38 旧笔记的全文（来源：`message:eval-live-38-target`）。"
+        }
+      ],
+      "decisions": [
+        {
+          "step_id": "s1",
+          "required_tools_present": true,
+          "calls": [
+            {
+              "index": 0,
+              "selection_correct": true,
+              "arguments_correct": true
+            },
+            {
+              "index": 1,
+              "selection_correct": true,
+              "arguments_correct": true
+            }
+          ],
+          "reason": "先以 N38 相关查询搜索并发现目标，再按 source_ref 读取完整正文，工具选择与参数语义合理。",
+          "evidence": ""
+        }
+      ],
+      "raw_judgment": {
+        "semantic": [
+          {
+            "id": "S1",
+            "passed": true,
+            "reason": "模型先搜索到目标 source_ref，再完整读取该来源正文，未以摘要替代读取。",
+            "evidence": "我读完了 N38 旧笔记的全文（来源：`message:eval-live-38-target`）。"
+          },
+          {
+            "id": "S2",
+            "passed": true,
+            "reason": "回答直接给出目标原文中的口令，并说明其位于正文最后一行，符合已读取内容。",
+            "evidence": "口令原文在正文**最后一行**，前面是一大段重复的“过程整理备忘记录”占位内容：\n\n> **核对口令原文：先圈提交物，再找接收方。**"
+          },
+          {
+            "id": "S3",
+            "passed": true,
+            "reason": "回复确认已读取目标笔记并引用其内容，未否认或要求补充。",
+            "evidence": "我读完了 N38 旧笔记的全文（来源：`message:eval-live-38-target`）。"
+          }
+        ],
+        "decisions": [
+          {
+            "step_id": "s1",
+            "required_tools_present": true,
+            "calls": [
+              {
+                "index": 0,
+                "selection_correct": true,
+                "arguments_correct": true
+              },
+              {
+                "index": 1,
+                "selection_correct": true,
+                "arguments_correct": true
+              }
+            ],
+            "reason": "先以 N38 相关查询搜索并发现目标，再按 source_ref 读取完整正文，工具选择与参数语义合理。",
+            "evidence": ""
+          }
+        ]
+      },
+      "leakage": {
+        "protocol": {
+          "schema": "eduagent.hybrid-leakage.v2",
+          "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+          "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7"
+        },
+        "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "case_sha256": "a68e558211e17445af7b92669a8deaf45db1d0bdbb352607e1a97301bb51cf4c",
+        "steps": {},
+        "verdict": "not_applicable"
+      },
+      "task_success": true,
+      "automatic_passed": true,
+      "decision_rate": 1.0,
+      "score": 1.0,
+      "review_status": "ai_reviewed",
+      "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+      "judge_input_sha256": "f41fb9ede1eb8fd901145b8b28d7a9ce1eee7be1ab1c81fc23f2c6ac964ae980"
+    },
+    "metering": [
+      {
+        "request_no": 266,
+        "reservation_cny": 0.031368,
+        "usage": {
+          "input_tokens": 3093,
+          "output_tokens": 63,
+          "prompt_cache_hit_tokens": 1920,
+          "prompt_cache_miss_tokens": 1173
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "d98164f2414361017511c5ef980f81aed859449dbc10b2ca5a29c7781ad713f0",
+        "estimated_peak_cny": 0.0029268000000000002,
+        "estimated_off_peak_cny": 0.0014634000000000001
+      },
+      {
+        "request_no": 267,
+        "reservation_cny": 0.039298,
+        "usage": {
+          "input_tokens": 4293,
+          "output_tokens": 80,
+          "prompt_cache_hit_tokens": 1920,
+          "prompt_cache_miss_tokens": 2373
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "6e0f9c49896e83a4c1fc97530bfd2627e327e2f51f0810c7315da4397d68b4ec",
+        "estimated_peak_cny": 0.0054628,
+        "estimated_off_peak_cny": 0.0027314
+      },
+      {
+        "request_no": 268,
+        "reservation_cny": 0.038982,
+        "usage": {
+          "input_tokens": 3949,
+          "output_tokens": 108,
+          "prompt_cache_hit_tokens": 1024,
+          "prompt_cache_miss_tokens": 2925
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "c7dba4bcb138767b233e8a3186aa85c915e697834dc6ce5e5a217f5ee89cdfbe",
+        "estimated_peak_cny": 0.00675496,
+        "estimated_off_peak_cny": 0.00337748
+      },
+      {
+        "request_no": 269,
+        "reservation_cny": 0.055532,
+        "usage": {
+          "input_tokens": 4865,
+          "output_tokens": 296,
+          "prompt_cache_hit_tokens": 1408
+        },
+        "status": "usage_recorded",
+        "role": "judge",
+        "input_sha256": "976ee775c7203b2952b44a521ac2e5509b5a12a51892ebddf43721d9bae990b1",
+        "estimated_peak_cny": 0.009338319999999999,
+        "estimated_off_peak_cny": 0.0046691599999999995
+      }
+    ]
+  },
+  "row_sha256": "6c74b9fa5b78b0f5ea0924fe97405e358ed3fc52fb1ba6262d78f4b40be08d1c"
+}

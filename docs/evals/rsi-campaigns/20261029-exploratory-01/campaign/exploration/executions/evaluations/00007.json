@@ -1,0 +1,710 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": true,
+    "case_id": "live-30-history-correction",
+    "category": "跨会话记忆",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [],
+    "execution_outcome": "completed",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution",
+        "rule": "status=completed、dialogue_state=answered；thread 与预置 vocab_basic 主题相同。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution.source_refs",
+        "rule": "与两条预置真实来源至少有一个交集；所有引用均可按当前 learner 读取。",
+        "status": "passed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.vocab_basic",
+        "rule": "所有 KnowledgeState 字段保持不变。",
+        "status": "passed"
+      },
+      {
+        "id": "H4",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s1.teaching_response.response",
+        "rule": "明确学生后来已区分提交物，仅就接收方讲 to someone，不能持续宣称学生仍把 essays 当接收者。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+        "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+        "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "review_pending",
+    "title": "历史：采用后来纠正的误解记录"
+  },
+  "capability": "grounded_history",
+  "case_id": "live-30-history-correction",
+  "evaluation_index": 7,
+  "judge_identity": {
+    "model": "deepseek-flash",
+    "provider": "deepseek",
+    "thinking": "disabled"
+  },
+  "metering": [
+    {
+      "estimated_off_peak_cny": 0.0005771600000000001,
+      "estimated_peak_cny": 0.0011543200000000001,
+      "input_sha256": "eb989050e752fc0a4dd76ee631dee3e4b1c49462fe5feaa8ef409f8a69287a0a",
+      "request_no": 165,
+      "reservation_cny": 0.02126,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 1785,
+        "output_tokens": 43,
+        "prompt_cache_hit_tokens": 1408,
+        "prompt_cache_miss_tokens": 377
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.0016618400000000001,
+      "estimated_peak_cny": 0.0033236800000000003,
+      "input_sha256": "dd3715d319baede17fb32c6d25d84ee924e8a1dfac5606815b89739a89dbaf17",
+      "request_no": 166,
+      "reservation_cny": 0.024036,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 2174,
+        "output_tokens": 311,
+        "prompt_cache_hit_tokens": 1792,
+        "prompt_cache_miss_tokens": 382
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.0030373600000000002,
+      "estimated_peak_cny": 0.0060747200000000005,
+      "input_sha256": "eacecd663e4963c914846b4d8468016a14be775c761a2177c82adccee5bc05e2",
+      "request_no": 167,
+      "reservation_cny": 0.042918,
+      "role": "judge",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 2926,
+        "output_tokens": 216,
+        "prompt_cache_hit_tokens": 768
+      }
+    }
+  ],
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "采用你后来的澄清：submit the essays 已有宾语；若交给老师，可加 to the teacher 表明接收者。",
+        "你后来补充搞懂的是：**essays 是“提交物”，也就是 submit 的宾语**。所以原来写的 “submit to their essays” 里，to 用错了位置——essays 不该跟在 to 后面当接收者，它本身就是被提交的东西。\n\n剩下的问题：**什么时候写接收者**。\n\n关键看动词的搭配和句子要不要交代“交给谁”：\n\n1. **submit 的常规搭配是 submit + 提交物 (+ to + 接收者)**。接收者不是必需的，只有当你需要说明“交给谁/交给哪个机构”时才加。\n   - 不需要交代对象：*Please submit the essays by Friday.*（重点是截止时间）\n   - 需要交代对象：*Please submit the essays to the teacher.*（重点是交给谁）\n\n2. **判断标准**：如果读者已经知道交给谁（上下文里明确），或者句子重点在时间、方式、要求上，就省略 to 短语；如果“交给谁”是这条信息的关键、不写就不清楚，就补上 to + 接收者。\n\n3. **位置固定**：to 短语放在宾语之后，不能插在动词和宾语之间。所以是 submit the essays **to** the teacher，不是 submit **to** the teacher the essays（虽然语法上双宾语结构存在，但 submit 不这么用）。\n\n一句话记：**先放提交物，需要说明去向时再在后面加 to + 人/机构；不需要就不加。**"
+      ],
+      "evidence": [],
+      "knowledge": {
+        "eval-live-30": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [],
+      "quizzes": {}
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true,
+        "seeded_history_visible": true
+      },
+      "initial_source_refs": [
+        "message:eval-live-30-old-tutor",
+        "message:eval-live-30-old-user"
+      ],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-30": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {},
+      "thread_id": "92e567cb-61e4-56e0-8610-1955a9d6902d"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 3474.1337909999856,
+        "evidence": [],
+        "knowledge": {
+          "eval-live-30": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "vocab_basic",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "",
+            "duration_ms": 911.7812919994321,
+            "request_no": 1,
+            "stop_reason": "tool_calls",
+            "tool_calls": [
+              {
+                "arguments": {
+                  "query": "submit essays 接收者"
+                },
+                "batch_size": 1,
+                "id": "call_00_tbgJ2K6tybK3HunDelOT7656",
+                "name": "search_learning_history"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1785,
+              "output_tokens": 43,
+              "prompt_cache_hit_tokens": 1408,
+              "prompt_cache_miss_tokens": 377
+            }
+          },
+          {
+            "content": "你后来补充搞懂的是：**essays 是“提交物”，也就是 submit 的宾语**。所以原来写的 “submit to their essays” 里，to 用错了位置——essays 不该跟在 to 后面当接收者，它本身就是被提交的东西。\n\n剩下的问题：**什么时候写接收者**。\n\n关键看动词的搭配和句子要不要交代“交给谁”：\n\n1. **submit 的常规搭配是 submit + 提交物 (+ to + 接收者)**。接收者不是必需的，只有当你需要说明“交给谁/交给哪个机构”时才加。\n   - 不需要交代对象：*Please submit the essays by Friday.*（重点是截止时间）\n   - 需要交代对象：*Please submit the essays to the teacher.*（重点是交给谁）\n\n2. **判断标准**：如果读者已经知道交给谁（上下文里明确），或者句子重点在时间、方式、要求上，就省略 to 短语；如果“交给谁”是这条信息的关键、不写就不清楚，就补上 to + 接收者。\n\n3. **位置固定**：to 短语放在宾语之后，不能插在动词和宾语之间。所以是 submit the essays **to** the teacher，不是 submit **to** the teacher the essays（虽然语法上双宾语结构存在，但 submit 不这么用）。\n\n一句话记：**先放提交物，需要说明去向时再在后面加 to + 人/机构；不需要就不加。**",
+            "duration_ms": 2556.858250000005,
+            "request_no": 2,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 2174,
+              "output_tokens": 311,
+              "prompt_cache_hit_tokens": 1792,
+              "prompt_cache_miss_tokens": 382
+            }
+          }
+        ],
+        "quizzes": {},
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "vocab_basic",
+              "response": "你后来补充搞懂的是：**essays 是“提交物”，也就是 submit 的宾语**。所以原来写的 “submit to their essays” 里，to 用错了位置——essays 不该跟在 to 后面当接收者，它本身就是被提交的东西。\n\n剩下的问题：**什么时候写接收者**。\n\n关键看动词的搭配和句子要不要交代“交给谁”：\n\n1. **submit 的常规搭配是 submit + 提交物 (+ to + 接收者)**。接收者不是必需的，只有当你需要说明“交给谁/交给哪个机构”时才加。\n   - 不需要交代对象：*Please submit the essays by Friday.*（重点是截止时间）\n   - 需要交代对象：*Please submit the essays to the teacher.*（重点是交给谁）\n\n2. **判断标准**：如果读者已经知道交给谁（上下文里明确），或者句子重点在时间、方式、要求上，就省略 to 短语；如果“交给谁”是这条信息的关键、不写就不清楚，就补上 to + 接收者。\n\n3. **位置固定**：to 短语放在宾语之后，不能插在动词和宾语之间。所以是 submit the essays **to** the teacher，不是 submit **to** the teacher the essays（虽然语法上双宾语结构存在，但 submit 不这么用）。\n\n一句话记：**先放提交物，需要说明去向时再在后面加 to + 人/机构；不需要就不加。**",
+              "response_variant": "tool_loop",
+              "source_refs": [
+                "message:eval-live-30-old-tutor",
+                "message:eval-live-30-old-user"
+              ],
+              "teaching_style": "question_answer"
+            }
+          },
+          "correlation_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "dc6d5245-2d45-4af9-a964-6c58c542e001",
+            "cited_refs": [],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "answered",
+            "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+            "model": "deepseek-flash",
+            "pending_question_id": null,
+            "provider": "deepseek",
+            "read_refs": [],
+            "request_id": "live-30-history-correction-s1",
+            "retrieved_refs": [
+              "message:eval-live-30-old-user",
+              "message:eval-live-30-old-tutor"
+            ],
+            "run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87",
+            "session_id": "eval-live-30-new",
+            "source_refs": [
+              "message:eval-live-30-old-tutor",
+              "message:eval-live-30-old-user"
+            ],
+            "status": "completed",
+            "thread_id": "92e567cb-61e4-56e0-8610-1955a9d6902d",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87",
+              "data": {
+                "knowledge_id": "vocab_basic",
+                "question": "我后来补充已经搞懂了哪部分？这次只讲我还疑惑的接收者。"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-29T03:44:28.520438"
+            },
+            {
+              "correlation_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "vocab_basic",
+                "response": "你后来补充搞懂的是：**essays 是“提交物”，也就是 submit 的宾语**。所以原来写的 “submit to their essays” 里，to 用错了位置——essays 不该跟在 to 后面当接收者，它本身就是被提交的东西。\n\n剩下的问题：**什么时候写接收者**。\n\n关键看动词的搭配和句子要不要交代“交给谁”：\n\n1. **submit 的常规搭配是 submit + 提交物 (+ to + 接收者)**。接收者不是必需的，只有当你需要说明“交给谁/交给哪个机构”时才加。\n   - 不需要交代对象：*Please submit the essays by Friday.*（重点是截止时间）\n   - 需要交代对象：*Please submit the essays to the teacher.*（重点是交给谁）\n\n2. **判断标准**：如果读者已经知道交给谁（上下文里明确），或者句子重点在时间、方式、要求上，就省略 to 短语；如果“交给谁”是这条信息的关键、不写就不清楚，就补上 to + 接收者。\n\n3. **位置固定**：to 短语放在宾语之后，不能插在动词和宾语之间。所以是 submit the essays **to** the teacher，不是 submit **to** the teacher the essays（虽然语法上双宾语结构存在，但 submit 不这么用）。\n\n一句话记：**先放提交物，需要说明去向时再在后面加 to + 人/机构；不需要就不加。**",
+                "response_variant": "tool_loop",
+                "source_refs": [
+                  "message:eval-live-30-old-tutor",
+                  "message:eval-live-30-old-user"
+                ],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-29T03:44:31.991461"
+            }
+          ],
+          "knowledge_id": "vocab_basic",
+          "learner_id": "eval-live-30",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "vocab_basic",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "vocab_basic",
+            "response": "你后来补充搞懂的是：**essays 是“提交物”，也就是 submit 的宾语**。所以原来写的 “submit to their essays” 里，to 用错了位置——essays 不该跟在 to 后面当接收者，它本身就是被提交的东西。\n\n剩下的问题：**什么时候写接收者**。\n\n关键看动词的搭配和句子要不要交代“交给谁”：\n\n1. **submit 的常规搭配是 submit + 提交物 (+ to + 接收者)**。接收者不是必需的，只有当你需要说明“交给谁/交给哪个机构”时才加。\n   - 不需要交代对象：*Please submit the essays by Friday.*（重点是截止时间）\n   - 需要交代对象：*Please submit the essays to the teacher.*（重点是交给谁）\n\n2. **判断标准**：如果读者已经知道交给谁（上下文里明确），或者句子重点在时间、方式、要求上，就省略 to 短语；如果“交给谁”是这条信息的关键、不写就不清楚，就补上 to + 接收者。\n\n3. **位置固定**：to 短语放在宾语之后，不能插在动词和宾语之间。所以是 submit the essays **to** the teacher，不是 submit **to** the teacher the essays（虽然语法上双宾语结构存在，但 submit 不这么用）。\n\n一句话记：**先放提交物，需要说明去向时再在后面加 to + 人/机构；不需要就不加。**",
+            "response_variant": "tool_loop",
+            "source_refs": [
+              "message:eval-live-30-old-tutor",
+              "message:eval-live-30-old-user"
+            ],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "我后来补充已经搞懂了哪部分？这次只讲我还疑惑的接收者。",
+        "tool_results": [
+          {
+            "result": {
+              "cached": false,
+              "data": {
+                "items": [
+                  {
+                    "created": 1793216668.519136,
+                    "excerpt": "采用你后来的澄清：submit the essays 已有宾语；若交给老师，可加 to the teacher 表明接收者。",
+                    "knowledge_id": "vocab_basic",
+                    "match_score": 4,
+                    "role": "assistant",
+                    "source_ref": "message:eval-live-30-old-tutor",
+                    "thread_id": "92e567cb-61e4-56e0-8610-1955a9d6902d",
+                    "version": 1
+                  },
+                  {
+                    "created": 1793216668.519107,
+                    "excerpt": "起初我写 submit to their essays。现在补充：我已经知道 essays 是提交物，剩下的问题是何时写接收者。",
+                    "knowledge_id": "vocab_basic",
+                    "match_score": 4,
+                    "role": "user",
+                    "source_ref": "message:eval-live-30-old-user",
+                    "thread_id": "92e567cb-61e4-56e0-8610-1955a9d6902d",
+                    "version": 1
+                  }
+                ],
+                "query_expanded": false,
+                "retrieval_mode": "lexical"
+              },
+              "error_code": null,
+              "errors": [],
+              "next_cursor": null,
+              "retryable": false,
+              "source_refs": [
+                "message:eval-live-30-old-tutor",
+                "message:eval-live-30-old-user"
+              ],
+              "status": "ok",
+              "truncated": false
+            },
+            "tool_call_id": "call_00_tbgJ2K6tybK3HunDelOT7656"
+          }
+        ],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "dc6d5245-2d45-4af9-a964-6c58c542e001",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1793216671.9929888,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87",
+              "started": 1793216668.520174,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1793216668.520333
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "task_routed",
+                  "reason": "question_intent",
+                  "route": "Tutor",
+                  "seq": 2,
+                  "timestamp": 1793216668.520415
+                },
+                {
+                  "agent": "api",
+                  "event_id": "47f2b70d-a274-4d09-af00-f23b920f2211",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 3,
+                  "timestamp": 1793216668.520457
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "47f2b70d-a274-4d09-af00-f23b920f2211",
+                  "kind": "handler_started",
+                  "seq": 4,
+                  "timestamp": 1793216668.52047
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 2,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 5,
+                  "timestamp": 1793216668.5207438,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 6,
+                  "source_refs": [
+                    "message:eval-live-30-old-tutor",
+                    "message:eval-live-30-old-user"
+                  ],
+                  "timestamp": 1793216668.520991,
+                  "token_estimate": 1174,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 7,
+                  "timestamp": 1793216668.5222871,
+                  "token_estimate": 2136
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87",
+                  "resource": "model",
+                  "seq": 8,
+                  "task_id": null,
+                  "timestamp": 1793216668.527115,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 9,
+                  "stop_reason": "tool_calls",
+                  "timestamp": 1793216669.43413,
+                  "usage": {
+                    "input_tokens": 1785,
+                    "output_tokens": 43,
+                    "prompt_cache_hit_tokens": 1408,
+                    "prompt_cache_miss_tokens": 377
+                  }
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87",
+                  "resource": "tool",
+                  "seq": 10,
+                  "task_id": null,
+                  "timestamp": 1793216669.434137,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87",
+                  "seq": 11,
+                  "task_id": null,
+                  "timestamp": 1793216669.4341388,
+                  "tool": "search_learning_history",
+                  "tool_call_id": "call_00_tbgJ2K6tybK3HunDelOT7656"
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 2,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 12,
+                  "timestamp": 1793216669.434291,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 0,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "items",
+                    "query_expanded",
+                    "retrieval_mode"
+                  ],
+                  "seq": 13,
+                  "source_refs": [
+                    "message:eval-live-30-old-tutor",
+                    "message:eval-live-30-old-user"
+                  ],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1793216669.434334,
+                  "tool": "search_learning_history",
+                  "tool_call_id": "call_00_tbgJ2K6tybK3HunDelOT7656"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 2,
+                  "seq": 14,
+                  "timestamp": 1793216669.434397,
+                  "token_estimate": 2598
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87",
+                  "resource": "model",
+                  "seq": 15,
+                  "task_id": null,
+                  "timestamp": 1793216669.4366322,
+                  "used": 2
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 2,
+                  "seq": 16,
+                  "stop_reason": "stop",
+                  "timestamp": 1793216671.991306,
+                  "usage": {
+                    "input_tokens": 2174,
+                    "output_tokens": 311,
+                    "prompt_cache_hit_tokens": 1792,
+                    "prompt_cache_miss_tokens": 382
+                  }
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "kind": "response_sources",
+                  "read_refs": [],
+                  "retrieved_refs": [
+                    "message:eval-live-30-old-user",
+                    "message:eval-live-30-old-tutor"
+                  ],
+                  "seq": 17,
+                  "timestamp": 1793216671.991343
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 3471,
+                  "event_id": "47f2b70d-a274-4d09-af00-f23b920f2211",
+                  "kind": "handler_completed",
+                  "seq": 18,
+                  "timestamp": 1793216671.991607
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "31047944-1c5a-4913-9962-f19d53f321bf",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "47f2b70d-a274-4d09-af00-f23b920f2211",
+                  "seq": 19,
+                  "timestamp": 1793216671.991616
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 20,
+                  "timestamp": 1793216671.9918451
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "answered",
+                  "kind": "run_completed",
+                  "seq": 21,
+                  "timestamp": 1793216671.9927628
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-30-history-correction-s1"
+        }
+      }
+    }
+  },
+  "policy_sha256": "d6a798b89944ae1ac4b3326478b1b80c7e8634434f7a1adc87cf2a381e500ba8",
+  "score": {
+    "automatic_passed": true,
+    "decision_rate": 1.0,
+    "decisions": [
+      {
+        "calls": [
+          {
+            "arguments_correct": true,
+            "index": 0,
+            "selection_correct": true
+          }
+        ],
+        "evidence": "",
+        "reason": "历史已注入上下文，直接回答本可通过；实际调用 search_learning_history 检索当前 learner 的相关历史，查询词与 submit/essays/接收者主题语义匹配，返回来源属于当前 learner 且对应实际事实，工具选择与参数合理。",
+        "required_tools_present": true,
+        "step_id": "s1"
+      }
+    ],
+    "judge_input_sha256": "af82fbebd9061e9a27b0f0598b64441f169589e273a6e2e4da2eaf863571d8af",
+    "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+    "leakage": {
+      "case_sha256": "578e7c437f194ac2eaedbf55ff083e26a48af0acb41e8e7c126566ce844b57d7",
+      "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "protocol": {
+        "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+        "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7",
+        "schema": "eduagent.hybrid-leakage.v2"
+      },
+      "steps": {},
+      "verdict": "not_applicable"
+    },
+    "raw_judgment": {
+      "decisions": [
+        {
+          "calls": [
+            {
+              "arguments_correct": true,
+              "index": 0,
+              "selection_correct": true
+            }
+          ],
+          "evidence": "",
+          "reason": "历史已注入上下文，直接回答本可通过；实际调用 search_learning_history 检索当前 learner 的相关历史，查询词与 submit/essays/接收者主题语义匹配，返回来源属于当前 learner 且对应实际事实，工具选择与参数合理。",
+          "required_tools_present": true,
+          "step_id": "s1"
+        }
+      ],
+      "semantic": [
+        {
+          "evidence": "你后来补充搞懂的是：**essays 是“提交物”，也就是 submit 的宾语**。所以原来写的 “submit to their essays” 里，to 用错了位置——essays 不该跟在 to 后面当接收者，它本身就是被提交的东西。",
+          "id": "H4",
+          "passed": true,
+          "reason": "回复明确承认学生后来已区分 essays 是提交物，并仅就接收者讲解 to someone，未持续宣称学生仍把 essays 当接收者。"
+        }
+      ]
+    },
+    "review_status": "ai_reviewed",
+    "score": 1.0,
+    "semantic": [
+      {
+        "evidence": "你后来补充搞懂的是：**essays 是“提交物”，也就是 submit 的宾语**。所以原来写的 “submit to their essays” 里，to 用错了位置——essays 不该跟在 to 后面当接收者，它本身就是被提交的东西。",
+        "id": "H4",
+        "passed": true,
+        "reason": "回复明确承认学生后来已区分 essays 是提交物，并仅就接收者讲解 to someone，未持续宣称学生仍把 essays 当接收者。"
+      }
+    ],
+    "task_success": true
+  },
+  "scoring_status": "completed"
+}

@@ -1,0 +1,938 @@
+{
+  "binding": "5a4ee0bf111563fc3143d1404ee6f34cae7a54b437a35fbe010439444576ae68",
+  "row": {
+    "case_id": "live-13-since-start",
+    "capability": "multi_turn_continuation",
+    "evaluation_index": 39,
+    "policy_sha256": "7a0faf6220ccbe2cd98c07d729bebfaa1f3a592bf5676dfed3a54cc42b36c47e",
+    "scoring_status": "completed",
+    "automatic": {
+      "case_id": "live-13-since-start",
+      "category": "澄清与接续",
+      "title": "时态：补充起点后接续",
+      "evaluation_role": "agent_primary",
+      "status": "review_pending",
+      "automatic_passed": true,
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "path": "s1.execution",
+          "rule": "status=completed、dialogue_state=awaiting_student、pending_question_id 非空；ask_student 为单独调用。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "path": "s2.execution",
+          "rule": "status=completed、dialogue_state=answered，answered_question_id 等于 s1.pending_question_id。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "path": "pending_questions",
+          "rule": "s1 待答记录的 answered_by 非空，场景结束没有未回答的该问题。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "automatic",
+          "path": "learner.knowledge_states.grammar_tenses",
+          "rule": "所有 KnowledgeState 字段保持不变。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H5",
+          "method": "semantic_review",
+          "path": "s1/s2.teaching_response.response",
+          "rule": "s1 只索取缺失原句；s2 说明 March 是起点、工作与现在相连，不再索取原句。",
+          "passed": null,
+          "status": "review_pending"
+        }
+      ],
+      "execution_outcome": "completed",
+      "execution_failures": [],
+      "annotations": {},
+      "quality_review": {
+        "status": "review_pending",
+        "reviewer": null,
+        "scores": null,
+        "anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。"
+        }
+      }
+    },
+    "observed": {
+      "initial": {
+        "knowledge": {
+          "eval-live-13": {
+            "knowledge_id": "grammar_tenses",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "thread_id": "803ced51-0da4-5637-9dcc-44fc82bccb91"
+      },
+      "fixture_validation": {
+        "valid": true,
+        "checks": {
+          "default_knowledge": true,
+          "no_answer_fields_in_context": true,
+          "no_preexisting_pending": true
+        },
+        "initial_source_refs": []
+      },
+      "steps": {
+        "s1": {
+          "action": "converse",
+          "student_input": "我想知道为什么这里用完成时，但我还没把句子贴出来。",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-13",
+            "knowledge_id": "grammar_tenses",
+            "correlation_id": "771858ab-3548-5774-bc44-bb4d6831299b",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "请把你想问的那句原文贴出来（连同上下文一两句更好），我看了才能具体解释为什么用完成时。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "grammar_tenses",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [],
+              "dialogue_state": "awaiting_student"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "grammar_tenses",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "grammar_tenses",
+                "response": "请把你想问的那句原文贴出来（连同上下文一两句更好），我看了才能具体解释为什么用完成时。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [],
+                "dialogue_state": "awaiting_student"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "grammar_tenses",
+                  "question": "我想知道为什么这里用完成时，但我还没把句子贴出来。"
+                },
+                "timestamp": "2026-10-29T03:47:02.491946",
+                "correlation_id": "771858ab-3548-5774-bc44-bb4d6831299b"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "grammar_tenses",
+                  "response": "请把你想问的那句原文贴出来（连同上下文一两句更好），我看了才能具体解释为什么用完成时。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [],
+                  "dialogue_state": "awaiting_student"
+                },
+                "timestamp": "2026-10-29T03:47:03.330363",
+                "correlation_id": "771858ab-3548-5774-bc44-bb4d6831299b"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-13-since-start-s1",
+              "run_id": "771858ab-3548-5774-bc44-bb4d6831299b",
+              "attempt_id": "ad42b6f4-bcb9-4108-94f0-644bb9e20b89",
+              "session_id": "eval-live-13-s1",
+              "thread_id": "803ced51-0da4-5637-9dcc-44fc82bccb91",
+              "status": "completed",
+              "dialogue_state": "awaiting_student",
+              "pending_question_id": "8cc9cf04-ccff-47c9-833a-f4507f35f0f4",
+              "answered_question_id": null,
+              "source_refs": [],
+              "retrieved_refs": [],
+              "read_refs": [],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "b75ca527c2404dd4379ff3e6f461aa264ecebacbe22dcf8fe0646877dd8f6710"
+            }
+          },
+          "trace": {
+            "request_id": "live-13-since-start-s1",
+            "attempts": [
+              {
+                "attempt_id": "ad42b6f4-bcb9-4108-94f0-644bb9e20b89",
+                "run_id": "771858ab-3548-5774-bc44-bb4d6831299b",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216822.491657,
+                "finished": 1793216823.331676,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216822.4918349,
+                    "effective_policy_hash": "b75ca527c2404dd4379ff3e6f461aa264ecebacbe22dcf8fe0646877dd8f6710"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793216822.491924,
+                    "route": "Tutor",
+                    "reason": "question_intent"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216822.491969,
+                    "event_id": "97de0153-307c-4360-bb8c-0dae98d81856",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216822.491984,
+                    "event_id": "97de0153-307c-4360-bb8c-0dae98d81856"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216822.49221,
+                    "lexical_hits": 0,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "history_discovery",
+                    "agent": "Harness",
+                    "timestamp": 1793216822.4923189,
+                    "source_refs": [],
+                    "bounded": true
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216822.492456,
+                    "source_refs": [],
+                    "omitted_refs": [],
+                    "token_estimate": 1864,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "explanation",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216822.493819,
+                    "model_call": 1,
+                    "token_estimate": 2826
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216822.498297,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "771858ab-3548-5774-bc44-bb4d6831299b"
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216823.329996,
+                    "model_call": 1,
+                    "stop_reason": "tool_calls",
+                    "usage": {
+                      "input_tokens": 2163,
+                      "output_tokens": 62,
+                      "prompt_cache_hit_tokens": 1920,
+                      "prompt_cache_miss_tokens": 243
+                    }
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216823.3300211,
+                    "resource": "tool",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "771858ab-3548-5774-bc44-bb4d6831299b"
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "before_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216823.3300228,
+                    "tool": "ask_student",
+                    "tool_call_id": "call_00_BTAcVhSWjgLGofGizuLx4787",
+                    "task_id": null,
+                    "parent_run_id": "771858ab-3548-5774-bc44-bb4d6831299b"
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "after_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216823.330221,
+                    "tool": "ask_student",
+                    "tool_call_id": "call_00_BTAcVhSWjgLGofGizuLx4787",
+                    "task_id": null,
+                    "status": "ok",
+                    "source_refs": [],
+                    "error_code": null,
+                    "cached": false,
+                    "elapsed_ms": 0,
+                    "result_keys": [
+                      "question",
+                      "terminal"
+                    ]
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216823.3302872,
+                    "retrieved_refs": [],
+                    "read_refs": [],
+                    "cited_refs": []
+                  },
+                  {
+                    "seq": 15,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216823.33059,
+                    "event_id": "97de0153-307c-4360-bb8c-0dae98d81856",
+                    "duration_ms": 839
+                  },
+                  {
+                    "seq": 16,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216823.330601,
+                    "event_id": "3d8265d4-bd89-497f-948a-53677bdcda61",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "97de0153-307c-4360-bb8c-0dae98d81856"
+                  },
+                  {
+                    "seq": 17,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216823.3307729
+                  },
+                  {
+                    "seq": 18,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216823.3315241,
+                    "dialogue_state": "awaiting_student"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 1,
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_00_BTAcVhSWjgLGofGizuLx4787",
+                  "name": "ask_student",
+                  "arguments": {
+                    "question": "请把你想问的那句原文贴出来（连同上下文一两句更好），我看了才能具体解释为什么用完成时。"
+                  },
+                  "batch_size": 1
+                }
+              ],
+              "stop_reason": "tool_calls",
+              "usage": {
+                "input_tokens": 2163,
+                "output_tokens": 62,
+                "prompt_cache_hit_tokens": 1920,
+                "prompt_cache_miss_tokens": 243
+              },
+              "duration_ms": 836.0975409996172
+            }
+          ],
+          "tool_results": [],
+          "quizzes": {},
+          "knowledge": {
+            "eval-live-13": {
+              "knowledge_id": "grammar_tenses",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [],
+          "duration_ms": 841.400875000545,
+          "all_sources_readable": true
+        },
+        "s2": {
+          "action": "converse",
+          "student_input": "原句是 They have worked here since March. 他们现在还在这里工作。since March 表示什么？",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-13",
+            "knowledge_id": "grammar_tenses",
+            "correlation_id": "196623f6-6378-5338-84d5-408965521c18",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "现在有了原句，可以具体解释了。\n\n**They have worked here since March.**\n\n**since March 表示什么**\n\nsince + 时间点，意思是“从（那个时间点）起一直到现在”。March 是一个时间点，所以 since March = 从三月起、从三月到现在。它标出的是这段状态的**起点**，终点默认是“现在”。\n\n**为什么用现在完成时**\n\n- 现在完成时 have worked 在这里表示一段**从过去开始、持续到现在**的状态，而不是过去某个时刻发生完就结束的动作。\n- since March 正好提供了这个起点，和“持续到现在”的含义配合，所以用 have + 过去分词。\n- 中文译文“他们现在还在这里工作”就是这层意思：工作状态延续到说话此刻，可能还会继续。\n\n**对比体会**\n\n- They worked here in March. 只说三月那段时间工作过，现在是否还在不清楚。\n- They have worked here since March. 从三月一直到现在都在，强调延续。\n\n**一个自查点**\n\n判断时看两件事：动作或状态是否延续到现在，以及时间表达是“时间点”（since March、since 2020）还是“时间段”（for three years）。since 后面接时间点，for 后面接时间段，两者都常与完成时搭配，但决定时态的核心是“与现在的联系”，不是时间词本身。\n\n另外提醒一句：你的基础词汇这一前置项目前显示还没达标，时态练习暂时不会开放，先把词汇补上会更顺。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "grammar_tenses",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [
+                "message:53d3c58d-9216-4521-baec-3a16653a27e1",
+                "message:90f67626-a9d4-493d-b106-d23963dfa26d"
+              ],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "grammar_tenses",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "grammar_tenses",
+                "response": "现在有了原句，可以具体解释了。\n\n**They have worked here since March.**\n\n**since March 表示什么**\n\nsince + 时间点，意思是“从（那个时间点）起一直到现在”。March 是一个时间点，所以 since March = 从三月起、从三月到现在。它标出的是这段状态的**起点**，终点默认是“现在”。\n\n**为什么用现在完成时**\n\n- 现在完成时 have worked 在这里表示一段**从过去开始、持续到现在**的状态，而不是过去某个时刻发生完就结束的动作。\n- since March 正好提供了这个起点，和“持续到现在”的含义配合，所以用 have + 过去分词。\n- 中文译文“他们现在还在这里工作”就是这层意思：工作状态延续到说话此刻，可能还会继续。\n\n**对比体会**\n\n- They worked here in March. 只说三月那段时间工作过，现在是否还在不清楚。\n- They have worked here since March. 从三月一直到现在都在，强调延续。\n\n**一个自查点**\n\n判断时看两件事：动作或状态是否延续到现在，以及时间表达是“时间点”（since March、since 2020）还是“时间段”（for three years）。since 后面接时间点，for 后面接时间段，两者都常与完成时搭配，但决定时态的核心是“与现在的联系”，不是时间词本身。\n\n另外提醒一句：你的基础词汇这一前置项目前显示还没达标，时态练习暂时不会开放，先把词汇补上会更顺。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [
+                  "message:53d3c58d-9216-4521-baec-3a16653a27e1",
+                  "message:90f67626-a9d4-493d-b106-d23963dfa26d"
+                ],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "grammar_tenses",
+                  "question": "原句是 They have worked here since March. 他们现在还在这里工作。since March 表示什么？"
+                },
+                "timestamp": "2026-10-29T03:47:03.333570",
+                "correlation_id": "196623f6-6378-5338-84d5-408965521c18"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "grammar_tenses",
+                  "response": "现在有了原句，可以具体解释了。\n\n**They have worked here since March.**\n\n**since March 表示什么**\n\nsince + 时间点，意思是“从（那个时间点）起一直到现在”。March 是一个时间点，所以 since March = 从三月起、从三月到现在。它标出的是这段状态的**起点**，终点默认是“现在”。\n\n**为什么用现在完成时**\n\n- 现在完成时 have worked 在这里表示一段**从过去开始、持续到现在**的状态，而不是过去某个时刻发生完就结束的动作。\n- since March 正好提供了这个起点，和“持续到现在”的含义配合，所以用 have + 过去分词。\n- 中文译文“他们现在还在这里工作”就是这层意思：工作状态延续到说话此刻，可能还会继续。\n\n**对比体会**\n\n- They worked here in March. 只说三月那段时间工作过，现在是否还在不清楚。\n- They have worked here since March. 从三月一直到现在都在，强调延续。\n\n**一个自查点**\n\n判断时看两件事：动作或状态是否延续到现在，以及时间表达是“时间点”（since March、since 2020）还是“时间段”（for three years）。since 后面接时间点，for 后面接时间段，两者都常与完成时搭配，但决定时态的核心是“与现在的联系”，不是时间词本身。\n\n另外提醒一句：你的基础词汇这一前置项目前显示还没达标，时态练习暂时不会开放，先把词汇补上会更顺。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [
+                    "message:53d3c58d-9216-4521-baec-3a16653a27e1",
+                    "message:90f67626-a9d4-493d-b106-d23963dfa26d"
+                  ],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:47:06.191883",
+                "correlation_id": "196623f6-6378-5338-84d5-408965521c18"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-13-since-start-s2",
+              "run_id": "196623f6-6378-5338-84d5-408965521c18",
+              "attempt_id": "807dc202-09ce-4bf1-a0cf-27d887d01c5e",
+              "session_id": "eval-live-13-s1",
+              "thread_id": "803ced51-0da4-5637-9dcc-44fc82bccb91",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": "8cc9cf04-ccff-47c9-833a-f4507f35f0f4",
+              "source_refs": [
+                "message:53d3c58d-9216-4521-baec-3a16653a27e1",
+                "message:90f67626-a9d4-493d-b106-d23963dfa26d"
+              ],
+              "retrieved_refs": [
+                "message:90f67626-a9d4-493d-b106-d23963dfa26d",
+                "message:53d3c58d-9216-4521-baec-3a16653a27e1"
+              ],
+              "read_refs": [],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "b75ca527c2404dd4379ff3e6f461aa264ecebacbe22dcf8fe0646877dd8f6710"
+            }
+          },
+          "trace": {
+            "request_id": "live-13-since-start-s2",
+            "attempts": [
+              {
+                "attempt_id": "807dc202-09ce-4bf1-a0cf-27d887d01c5e",
+                "run_id": "196623f6-6378-5338-84d5-408965521c18",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216823.333179,
+                "finished": 1793216826.1930602,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216823.333462,
+                    "effective_policy_hash": "b75ca527c2404dd4379ff3e6f461aa264ecebacbe22dcf8fe0646877dd8f6710"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793216823.3335412,
+                    "route": "Tutor",
+                    "reason": "pending_question"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216823.3335948,
+                    "event_id": "d4908107-994c-4395-9445-f65619e860fa",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216823.3336089,
+                    "event_id": "d4908107-994c-4395-9445-f65619e860fa"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216823.334052,
+                    "lexical_hits": 2,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216823.334365,
+                    "source_refs": [
+                      "message:53d3c58d-9216-4521-baec-3a16653a27e1",
+                      "message:90f67626-a9d4-493d-b106-d23963dfa26d"
+                    ],
+                    "omitted_refs": [],
+                    "token_estimate": 2238,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "explanation",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216823.3358688,
+                    "model_call": 1,
+                    "token_estimate": 3200
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216823.3416781,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "196623f6-6378-5338-84d5-408965521c18"
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216826.19173,
+                    "model_call": 1,
+                    "stop_reason": "stop",
+                    "usage": {
+                      "input_tokens": 2515,
+                      "output_tokens": 316,
+                      "prompt_cache_hit_tokens": 2048,
+                      "prompt_cache_miss_tokens": 467
+                    }
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216826.1917639,
+                    "retrieved_refs": [
+                      "message:90f67626-a9d4-493d-b106-d23963dfa26d",
+                      "message:53d3c58d-9216-4521-baec-3a16653a27e1"
+                    ],
+                    "read_refs": [],
+                    "cited_refs": []
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216826.192048,
+                    "event_id": "d4908107-994c-4395-9445-f65619e860fa",
+                    "duration_ms": 2858
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216826.192054,
+                    "event_id": "b425c032-cd29-426b-9688-efaba1b18fbb",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "d4908107-994c-4395-9445-f65619e860fa"
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216826.192205
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216826.192938,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 2,
+              "content": "现在有了原句，可以具体解释了。\n\n**They have worked here since March.**\n\n**since March 表示什么**\n\nsince + 时间点，意思是“从（那个时间点）起一直到现在”。March 是一个时间点，所以 since March = 从三月起、从三月到现在。它标出的是这段状态的**起点**，终点默认是“现在”。\n\n**为什么用现在完成时**\n\n- 现在完成时 have worked 在这里表示一段**从过去开始、持续到现在**的状态，而不是过去某个时刻发生完就结束的动作。\n- since March 正好提供了这个起点，和“持续到现在”的含义配合，所以用 have + 过去分词。\n- 中文译文“他们现在还在这里工作”就是这层意思：工作状态延续到说话此刻，可能还会继续。\n\n**对比体会**\n\n- They worked here in March. 只说三月那段时间工作过，现在是否还在不清楚。\n- They have worked here since March. 从三月一直到现在都在，强调延续。\n\n**一个自查点**\n\n判断时看两件事：动作或状态是否延续到现在，以及时间表达是“时间点”（since March、since 2020）还是“时间段”（for three years）。since 后面接时间点，for 后面接时间段，两者都常与完成时搭配，但决定时态的核心是“与现在的联系”，不是时间词本身。\n\n另外提醒一句：你的基础词汇这一前置项目前显示还没达标，时态练习暂时不会开放，先把词汇补上会更顺。",
+              "tool_calls": [],
+              "stop_reason": "stop",
+              "usage": {
+                "input_tokens": 2515,
+                "output_tokens": 316,
+                "prompt_cache_hit_tokens": 2048,
+                "prompt_cache_miss_tokens": 467
+              },
+              "duration_ms": 2855.7793329982815
+            }
+          ],
+          "tool_results": [],
+          "quizzes": {},
+          "knowledge": {
+            "eval-live-13": {
+              "knowledge_id": "grammar_tenses",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [],
+          "duration_ms": 2861.1951249986305,
+          "all_sources_readable": true
+        }
+      },
+      "final": {
+        "knowledge": {
+          "eval-live-13": {
+            "knowledge_id": "grammar_tenses",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "evidence": [],
+        "pending_questions": [
+          {
+            "id": "8cc9cf04-ccff-47c9-833a-f4507f35f0f4",
+            "answered_by": "7b4442a5-849c-441c-b51c-7598579f28dd"
+          }
+        ],
+        "assistant_history": [
+          "请把你想问的那句原文贴出来（连同上下文一两句更好），我看了才能具体解释为什么用完成时。",
+          "现在有了原句，可以具体解释了。\n\n**They have worked here since March.**\n\n**since March 表示什么**\n\nsince + 时间点，意思是“从（那个时间点）起一直到现在”。March 是一个时间点，所以 since March = 从三月起、从三月到现在。它标出的是这段状态的**起点**，终点默认是“现在”。\n\n**为什么用现在完成时**\n\n- 现在完成时 have worked 在这里表示一段**从过去开始、持续到现在**的状态，而不是过去某个时刻发生完就结束的动作。\n- since March 正好提供了这个起点，和“持续到现在”的含义配合，所以用 have + 过去分词。\n- 中文译文“他们现在还在这里工作”就是这层意思：工作状态延续到说话此刻，可能还会继续。\n\n**对比体会**\n\n- They worked here in March. 只说三月那段时间工作过，现在是否还在不清楚。\n- They have worked here since March. 从三月一直到现在都在，强调延续。\n\n**一个自查点**\n\n判断时看两件事：动作或状态是否延续到现在，以及时间表达是“时间点”（since March、since 2020）还是“时间段”（for three years）。since 后面接时间点，for 后面接时间段，两者都常与完成时搭配，但决定时态的核心是“与现在的联系”，不是时间词本身。\n\n另外提醒一句：你的基础词汇这一前置项目前显示还没达标，时态练习暂时不会开放，先把词汇补上会更顺。"
+        ]
+      }
+    },
+    "judge_identity": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "thinking": "disabled"
+    },
+    "score": {
+      "semantic": [
+        {
+          "id": "H5",
+          "passed": true,
+          "reason": "s1 仅索取缺失原句；s2 说明 March 是起点、工作延续到现在，未再索取原句。",
+          "evidence": "请把你想问的那句原文贴出来（连同上下文一两句更好），我看了才能具体解释为什么用完成时。……它标出的是这段状态的**起点**，终点默认是“现在”。……现在完成时 have worked 在这里表示一段**从过去开始、持续到现在**的状态"
+        }
+      ],
+      "decisions": [
+        {
+          "step_id": "s1",
+          "required_tools_present": true,
+          "calls": [
+            {
+              "index": 0,
+              "selection_correct": true,
+              "arguments_correct": true
+            }
+          ],
+          "reason": "单独调用 ask_student，问题只针对缺失原句，符合要求。",
+          "evidence": ""
+        },
+        {
+          "step_id": "s2",
+          "required_tools_present": true,
+          "calls": [],
+          "reason": "原句已充分，直接回答即可，无需工具调用，也未再次索取原句。",
+          "evidence": ""
+        }
+      ],
+      "raw_judgment": {
+        "semantic": [
+          {
+            "id": "H5",
+            "passed": true,
+            "reason": "s1 仅索取缺失原句；s2 说明 March 是起点、工作延续到现在，未再索取原句。",
+            "evidence": "请把你想问的那句原文贴出来（连同上下文一两句更好），我看了才能具体解释为什么用完成时。……它标出的是这段状态的**起点**，终点默认是“现在”。……现在完成时 have worked 在这里表示一段**从过去开始、持续到现在**的状态"
+          }
+        ],
+        "decisions": [
+          {
+            "step_id": "s1",
+            "required_tools_present": true,
+            "calls": [
+              {
+                "index": 0,
+                "selection_correct": true,
+                "arguments_correct": true
+              }
+            ],
+            "reason": "单独调用 ask_student，问题只针对缺失原句，符合要求。",
+            "evidence": ""
+          },
+          {
+            "step_id": "s2",
+            "required_tools_present": true,
+            "calls": [],
+            "reason": "原句已充分，直接回答即可，无需工具调用，也未再次索取原句。",
+            "evidence": ""
+          }
+        ]
+      },
+      "leakage": {
+        "protocol": {
+          "schema": "eduagent.hybrid-leakage.v2",
+          "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+          "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7"
+        },
+        "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "case_sha256": "4dbb818e31eb77341868c5f3fce9c0b5d953cae9675768b928f43368213f7553",
+        "steps": {},
+        "verdict": "not_applicable"
+      },
+      "task_success": true,
+      "automatic_passed": true,
+      "decision_rate": 1.0,
+      "score": 1.0,
+      "review_status": "ai_reviewed",
+      "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+      "judge_input_sha256": "cc8437e652a45d586055a17af131c68d20f895e0f8522f9d47b461ac115294ad"
+    },
+    "metering": [
+      {
+        "request_no": 274,
+        "reservation_cny": 0.0254,
+        "usage": {
+          "input_tokens": 2163,
+          "output_tokens": 62,
+          "prompt_cache_hit_tokens": 1920,
+          "prompt_cache_miss_tokens": 243
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "c0da863eb544d72632d7e1a184786ffffb7f3ae38e3d7fe2246f1737dcb7b859",
+        "estimated_peak_cny": 0.0010588,
+        "estimated_off_peak_cny": 0.0005294
+      },
+      {
+        "request_no": 275,
+        "reservation_cny": 0.027646,
+        "usage": {
+          "input_tokens": 2515,
+          "output_tokens": 316,
+          "prompt_cache_hit_tokens": 2048,
+          "prompt_cache_miss_tokens": 467
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "a04be1c8af08009dbf9d8866bf87c802890bb39a8c823b8b2409aaeb1268cab9",
+        "estimated_peak_cny": 0.00354392,
+        "estimated_off_peak_cny": 0.00177196
+      },
+      {
+        "request_no": 276,
+        "reservation_cny": 0.043868,
+        "usage": {
+          "input_tokens": 3109,
+          "output_tokens": 219,
+          "prompt_cache_hit_tokens": 1152
+        },
+        "status": "usage_recorded",
+        "role": "judge",
+        "input_sha256": "f2c99de13feff4d233ff18dfe031d7fa170473f26514a36d7c34f430f28a1e0d",
+        "estimated_peak_cny": 0.00571208,
+        "estimated_off_peak_cny": 0.00285604
+      }
+    ]
+  },
+  "row_sha256": "249136c5f7a3c7e21df67e3ce8498d25b312611b001d94acd1aa17a264d03c7b"
+}

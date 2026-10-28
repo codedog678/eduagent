@@ -1,0 +1,798 @@
+{
+  "binding": "d70845c350bbe367fbc15ef5bf256d924e6a722c9c1955d7da093234b70451c4",
+  "row": {
+    "case_id": "live-29-skim-scan",
+    "capability": "grounded_history",
+    "evaluation_index": 6,
+    "policy_sha256": "d6a798b89944ae1ac4b3326478b1b80c7e8634434f7a1adc87cf2a381e500ba8",
+    "scoring_status": "completed",
+    "automatic": {
+      "case_id": "live-29-skim-scan",
+      "category": "跨会话记忆",
+      "title": "历史：区分略读主旨与扫描细节",
+      "evaluation_role": "agent_primary",
+      "status": "review_pending",
+      "automatic_passed": true,
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "path": "s1.execution",
+          "rule": "status=completed、dialogue_state=answered；thread 与预置 reading_skimming 主题相同。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "path": "s1.execution.source_refs",
+          "rule": "与两条预置真实来源至少有一个交集；所有引用均可按当前 learner 读取。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "path": "learner.knowledge_states.reading_skimming",
+          "rule": "所有 KnowledgeState 字段保持不变。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "semantic_review",
+          "path": "s1.teaching_response.response",
+          "rule": "准确复述两方法混淆，主旨对应略读、日期对应扫描并核对上下文。",
+          "passed": null,
+          "status": "review_pending"
+        }
+      ],
+      "execution_outcome": "completed",
+      "execution_failures": [],
+      "annotations": {},
+      "quality_review": {
+        "status": "review_pending",
+        "reviewer": null,
+        "scores": null,
+        "anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。"
+        }
+      }
+    },
+    "observed": {
+      "initial": {
+        "knowledge": {
+          "eval-live-29": {
+            "knowledge_id": "reading_skimming",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "thread_id": "1a5576d8-0233-548c-afcb-ae4f8631337b"
+      },
+      "fixture_validation": {
+        "valid": true,
+        "checks": {
+          "default_knowledge": true,
+          "no_answer_fields_in_context": true,
+          "no_preexisting_pending": true,
+          "seeded_history_visible": true
+        },
+        "initial_source_refs": [
+          "message:eval-live-29-old-tutor",
+          "message:eval-live-29-old-user"
+        ]
+      },
+      "steps": {
+        "s1": {
+          "action": "converse",
+          "student_input": "回顾上次，我混淆了哪两种方法？找文章中心和找日期各用什么？",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-29",
+            "knowledge_id": "reading_skimming",
+            "correlation_id": "58c4cedc-b31f-5790-9391-a66ba40ed127",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "上次你混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种方法。你当时以为两者都是“找单个日期”。\n\n**找文章中心 → 用 skimming（略读）**\n- 目标是快速抓住主旨和结构，不逐字读。\n- 做法：先看标题、首段、每段首句和末句、结尾段，形成“这篇文章在讲什么、怎么展开”的整体印象。\n- 判断标准：读完能用自己的话说出大意和段落功能，而不是记住某个细节。\n\n**找日期这类具体信息 → 用 scanning（扫读）**\n- 目标是带着明确关键词（如年份、人名、数字）在文本里快速定位。\n- 做法：眼睛快速扫过版面，只捕捉与目标词形相近的信息，跳过无关内容。\n- 关键一步：定位到之后要回读前后一两句核对上下文，确认这个日期确实对应你要问的那件事，避免“找到数字就当成答案”。\n\n一句话区分：skimming 是“先知道文章讲什么”，scanning 是“已知要找什么，去把它捞出来”。你上次的误区在于把 skimming 也当成找单点信息，其实它处理的是整体。\n\n另外说明：按当前学习记录，你的基础词汇和时态这两项前置内容还没有达标记录，所以略读技巧的练习暂时未开放；上面的方法讲解可以先理解并用于实际阅读。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "reading_skimming",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [
+                "message:eval-live-29-old-tutor",
+                "message:eval-live-29-old-user"
+              ],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "reading_skimming",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "reading_skimming",
+                "response": "上次你混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种方法。你当时以为两者都是“找单个日期”。\n\n**找文章中心 → 用 skimming（略读）**\n- 目标是快速抓住主旨和结构，不逐字读。\n- 做法：先看标题、首段、每段首句和末句、结尾段，形成“这篇文章在讲什么、怎么展开”的整体印象。\n- 判断标准：读完能用自己的话说出大意和段落功能，而不是记住某个细节。\n\n**找日期这类具体信息 → 用 scanning（扫读）**\n- 目标是带着明确关键词（如年份、人名、数字）在文本里快速定位。\n- 做法：眼睛快速扫过版面，只捕捉与目标词形相近的信息，跳过无关内容。\n- 关键一步：定位到之后要回读前后一两句核对上下文，确认这个日期确实对应你要问的那件事，避免“找到数字就当成答案”。\n\n一句话区分：skimming 是“先知道文章讲什么”，scanning 是“已知要找什么，去把它捞出来”。你上次的误区在于把 skimming 也当成找单点信息，其实它处理的是整体。\n\n另外说明：按当前学习记录，你的基础词汇和时态这两项前置内容还没有达标记录，所以略读技巧的练习暂时未开放；上面的方法讲解可以先理解并用于实际阅读。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [
+                  "message:eval-live-29-old-tutor",
+                  "message:eval-live-29-old-user"
+                ],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "reading_skimming",
+                  "question": "回顾上次，我混淆了哪两种方法？找文章中心和找日期各用什么？"
+                },
+                "timestamp": "2026-10-29T03:44:23.279944",
+                "correlation_id": "58c4cedc-b31f-5790-9391-a66ba40ed127"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "reading_skimming",
+                  "response": "上次你混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种方法。你当时以为两者都是“找单个日期”。\n\n**找文章中心 → 用 skimming（略读）**\n- 目标是快速抓住主旨和结构，不逐字读。\n- 做法：先看标题、首段、每段首句和末句、结尾段，形成“这篇文章在讲什么、怎么展开”的整体印象。\n- 判断标准：读完能用自己的话说出大意和段落功能，而不是记住某个细节。\n\n**找日期这类具体信息 → 用 scanning（扫读）**\n- 目标是带着明确关键词（如年份、人名、数字）在文本里快速定位。\n- 做法：眼睛快速扫过版面，只捕捉与目标词形相近的信息，跳过无关内容。\n- 关键一步：定位到之后要回读前后一两句核对上下文，确认这个日期确实对应你要问的那件事，避免“找到数字就当成答案”。\n\n一句话区分：skimming 是“先知道文章讲什么”，scanning 是“已知要找什么，去把它捞出来”。你上次的误区在于把 skimming 也当成找单点信息，其实它处理的是整体。\n\n另外说明：按当前学习记录，你的基础词汇和时态这两项前置内容还没有达标记录，所以略读技巧的练习暂时未开放；上面的方法讲解可以先理解并用于实际阅读。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [
+                    "message:eval-live-29-old-tutor",
+                    "message:eval-live-29-old-user"
+                  ],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:44:26.740401",
+                "correlation_id": "58c4cedc-b31f-5790-9391-a66ba40ed127"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-29-skim-scan-s1",
+              "run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127",
+              "attempt_id": "d972e4bf-d925-47af-a630-6e76874ad9e3",
+              "session_id": "eval-live-29-new",
+              "thread_id": "1a5576d8-0233-548c-afcb-ae4f8631337b",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [
+                "message:eval-live-29-old-tutor",
+                "message:eval-live-29-old-user"
+              ],
+              "retrieved_refs": [
+                "message:eval-live-29-old-user"
+              ],
+              "read_refs": [
+                "message:eval-live-29-old-tutor"
+              ],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+            }
+          },
+          "trace": {
+            "request_id": "live-29-skim-scan-s1",
+            "attempts": [
+              {
+                "attempt_id": "d972e4bf-d925-47af-a630-6e76874ad9e3",
+                "run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216663.279781,
+                "finished": 1793216666.741951,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216663.279894,
+                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793216663.279933,
+                    "route": "Tutor",
+                    "reason": "question_intent"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216663.279955,
+                    "event_id": "139d8625-a247-42c1-8087-9aca83916c7b",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216663.2799628,
+                    "event_id": "139d8625-a247-42c1-8087-9aca83916c7b"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216663.2802649,
+                    "lexical_hits": 1,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216663.280441,
+                    "source_refs": [
+                      "message:eval-live-29-old-tutor",
+                      "message:eval-live-29-old-user"
+                    ],
+                    "omitted_refs": [],
+                    "token_estimate": 1282,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "explanation",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216663.281238,
+                    "model_call": 1,
+                    "token_estimate": 2244
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216663.284388,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127"
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216664.0981052,
+                    "model_call": 1,
+                    "stop_reason": "tool_calls",
+                    "usage": {
+                      "input_tokens": 1870,
+                      "output_tokens": 64,
+                      "prompt_cache_hit_tokens": 1152,
+                      "prompt_cache_miss_tokens": 718
+                    }
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216664.0981278,
+                    "resource": "tool",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127"
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "before_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216664.098132,
+                    "tool": "get_knowledge_context",
+                    "tool_call_id": "call_00_MYOBogwbyP1Q7UOZTRZN5971",
+                    "task_id": null,
+                    "parent_run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127"
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "after_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216664.0983949,
+                    "tool": "get_knowledge_context",
+                    "tool_call_id": "call_00_MYOBogwbyP1Q7UOZTRZN5971",
+                    "task_id": null,
+                    "status": "ok",
+                    "source_refs": [],
+                    "error_code": null,
+                    "cached": false,
+                    "elapsed_ms": 0,
+                    "result_keys": [
+                      "context_status",
+                      "knowledge_id",
+                      "mastery_threshold",
+                      "materials",
+                      "materials_status",
+                      "missing_prerequisites",
+                      "name",
+                      "practice_allowed",
+                      "prerequisite_context",
+                      "prerequisite_context_truncated",
+                      "prerequisites"
+                    ]
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216664.098474,
+                    "resource": "tool",
+                    "used": 2,
+                    "task_id": null,
+                    "parent_run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127"
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "before_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216664.098476,
+                    "tool": "read_learning_history",
+                    "tool_call_id": "call_01_Q2BeqguGqYL4Wr3zzBJZ4223",
+                    "task_id": null,
+                    "parent_run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127"
+                  },
+                  {
+                    "seq": 15,
+                    "kind": "after_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216664.0987148,
+                    "tool": "read_learning_history",
+                    "tool_call_id": "call_01_Q2BeqguGqYL4Wr3zzBJZ4223",
+                    "task_id": null,
+                    "status": "ok",
+                    "source_refs": [
+                      "message:eval-live-29-old-tutor"
+                    ],
+                    "error_code": null,
+                    "cached": false,
+                    "elapsed_ms": 0,
+                    "result_keys": [
+                      "content",
+                      "next_cursor",
+                      "role",
+                      "source_ref",
+                      "thread_id",
+                      "truncated"
+                    ]
+                  },
+                  {
+                    "seq": 16,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216664.098853,
+                    "model_call": 2,
+                    "token_estimate": 2899
+                  },
+                  {
+                    "seq": 17,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216664.1037068,
+                    "resource": "model",
+                    "used": 2,
+                    "task_id": null,
+                    "parent_run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127"
+                  },
+                  {
+                    "seq": 18,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216666.740237,
+                    "model_call": 2,
+                    "stop_reason": "stop",
+                    "usage": {
+                      "input_tokens": 2352,
+                      "output_tokens": 304,
+                      "prompt_cache_hit_tokens": 1920,
+                      "prompt_cache_miss_tokens": 432
+                    }
+                  },
+                  {
+                    "seq": 19,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216666.740271,
+                    "retrieved_refs": [
+                      "message:eval-live-29-old-user"
+                    ],
+                    "read_refs": [
+                      "message:eval-live-29-old-tutor"
+                    ],
+                    "cited_refs": []
+                  },
+                  {
+                    "seq": 20,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216666.740542,
+                    "event_id": "139d8625-a247-42c1-8087-9aca83916c7b",
+                    "duration_ms": 3461
+                  },
+                  {
+                    "seq": 21,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216666.740551,
+                    "event_id": "7c3bb49a-1409-4ad2-b387-93e1980e5d13",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "139d8625-a247-42c1-8087-9aca83916c7b"
+                  },
+                  {
+                    "seq": 22,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216666.74077
+                  },
+                  {
+                    "seq": 23,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216666.741726,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 1,
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_00_MYOBogwbyP1Q7UOZTRZN5971",
+                  "name": "get_knowledge_context",
+                  "arguments": {},
+                  "batch_size": 2
+                },
+                {
+                  "id": "call_01_Q2BeqguGqYL4Wr3zzBJZ4223",
+                  "name": "read_learning_history",
+                  "arguments": {
+                    "source_ref": "message:eval-live-29-old-tutor"
+                  },
+                  "batch_size": 2
+                }
+              ],
+              "stop_reason": "tool_calls",
+              "usage": {
+                "input_tokens": 1870,
+                "output_tokens": 64,
+                "prompt_cache_hit_tokens": 1152,
+                "prompt_cache_miss_tokens": 718
+              },
+              "duration_ms": 816.8074999994133
+            },
+            {
+              "request_no": 2,
+              "content": "上次你混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种方法。你当时以为两者都是“找单个日期”。\n\n**找文章中心 → 用 skimming（略读）**\n- 目标是快速抓住主旨和结构，不逐字读。\n- 做法：先看标题、首段、每段首句和末句、结尾段，形成“这篇文章在讲什么、怎么展开”的整体印象。\n- 判断标准：读完能用自己的话说出大意和段落功能，而不是记住某个细节。\n\n**找日期这类具体信息 → 用 scanning（扫读）**\n- 目标是带着明确关键词（如年份、人名、数字）在文本里快速定位。\n- 做法：眼睛快速扫过版面，只捕捉与目标词形相近的信息，跳过无关内容。\n- 关键一步：定位到之后要回读前后一两句核对上下文，确认这个日期确实对应你要问的那件事，避免“找到数字就当成答案”。\n\n一句话区分：skimming 是“先知道文章讲什么”，scanning 是“已知要找什么，去把它捞出来”。你上次的误区在于把 skimming 也当成找单点信息，其实它处理的是整体。\n\n另外说明：按当前学习记录，你的基础词汇和时态这两项前置内容还没有达标记录，所以略读技巧的练习暂时未开放；上面的方法讲解可以先理解并用于实际阅读。",
+              "tool_calls": [],
+              "stop_reason": "stop",
+              "usage": {
+                "input_tokens": 2352,
+                "output_tokens": 304,
+                "prompt_cache_hit_tokens": 1920,
+                "prompt_cache_miss_tokens": 432
+              },
+              "duration_ms": 2641.2560409989965
+            }
+          ],
+          "tool_results": [
+            {
+              "tool_call_id": "call_00_MYOBogwbyP1Q7UOZTRZN5971",
+              "result": {
+                "status": "ok",
+                "data": {
+                  "knowledge_id": "reading_skimming",
+                  "name": "略读技巧",
+                  "prerequisites": [
+                    "vocab_basic",
+                    "grammar_tenses"
+                  ],
+                  "context_status": "available",
+                  "missing_prerequisites": [
+                    "grammar_tenses",
+                    "vocab_basic"
+                  ],
+                  "practice_allowed": false,
+                  "mastery_threshold": 0.6,
+                  "materials": [],
+                  "materials_status": "not_provided",
+                  "prerequisite_context": [
+                    {
+                      "knowledge_id": "grammar_tenses",
+                      "name": "时态",
+                      "prerequisites": [
+                        "vocab_basic"
+                      ],
+                      "missing_prerequisites": [
+                        "vocab_basic"
+                      ],
+                      "practice_allowed": false
+                    },
+                    {
+                      "knowledge_id": "vocab_basic",
+                      "name": "基础词汇",
+                      "prerequisites": [],
+                      "missing_prerequisites": [],
+                      "practice_allowed": true
+                    }
+                  ],
+                  "prerequisite_context_truncated": false
+                },
+                "source_refs": [],
+                "error_code": null,
+                "retryable": false,
+                "truncated": false,
+                "next_cursor": null,
+                "cached": false,
+                "errors": []
+              }
+            },
+            {
+              "tool_call_id": "call_01_Q2BeqguGqYL4Wr3zzBJZ4223",
+              "result": {
+                "status": "ok",
+                "data": {
+                  "source_ref": "message:eval-live-29-old-tutor",
+                  "role": "assistant",
+                  "content": "skimming 快速抓主旨结构；scanning 带着具体关键词找信息，定位后还要核对上下文。",
+                  "thread_id": "1a5576d8-0233-548c-afcb-ae4f8631337b",
+                  "truncated": false,
+                  "next_cursor": null
+                },
+                "source_refs": [
+                  "message:eval-live-29-old-tutor"
+                ],
+                "error_code": null,
+                "retryable": false,
+                "truncated": false,
+                "next_cursor": null,
+                "cached": false,
+                "errors": []
+              }
+            }
+          ],
+          "quizzes": {},
+          "knowledge": {
+            "eval-live-29": {
+              "knowledge_id": "reading_skimming",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [],
+          "duration_ms": 3463.3617079998658,
+          "all_sources_readable": true
+        }
+      },
+      "final": {
+        "knowledge": {
+          "eval-live-29": {
+            "knowledge_id": "reading_skimming",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "evidence": [],
+        "pending_questions": [],
+        "assistant_history": [
+          "skimming 快速抓主旨结构；scanning 带着具体关键词找信息，定位后还要核对上下文。",
+          "上次你混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种方法。你当时以为两者都是“找单个日期”。\n\n**找文章中心 → 用 skimming（略读）**\n- 目标是快速抓住主旨和结构，不逐字读。\n- 做法：先看标题、首段、每段首句和末句、结尾段，形成“这篇文章在讲什么、怎么展开”的整体印象。\n- 判断标准：读完能用自己的话说出大意和段落功能，而不是记住某个细节。\n\n**找日期这类具体信息 → 用 scanning（扫读）**\n- 目标是带着明确关键词（如年份、人名、数字）在文本里快速定位。\n- 做法：眼睛快速扫过版面，只捕捉与目标词形相近的信息，跳过无关内容。\n- 关键一步：定位到之后要回读前后一两句核对上下文，确认这个日期确实对应你要问的那件事，避免“找到数字就当成答案”。\n\n一句话区分：skimming 是“先知道文章讲什么”，scanning 是“已知要找什么，去把它捞出来”。你上次的误区在于把 skimming 也当成找单点信息，其实它处理的是整体。\n\n另外说明：按当前学习记录，你的基础词汇和时态这两项前置内容还没有达标记录，所以略读技巧的练习暂时未开放；上面的方法讲解可以先理解并用于实际阅读。"
+        ]
+      }
+    },
+    "judge_identity": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "thinking": "disabled"
+    },
+    "score": {
+      "semantic": [
+        {
+          "id": "H4",
+          "passed": true,
+          "reason": "回复准确复述了学生混淆 skimming 与 scanning、误以为两者都用于找单个日期，并分别说明主旨对应略读、日期对应扫描且定位后需核对上下文。",
+          "evidence": "上次你混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种方法。你当时以为两者都是“找单个日期”。……**找文章中心 → 用 skimming（略读）**……**找日期这类具体信息 → 用 scanning（扫读）**……关键一步：定位到之后要回读前后一两句核对上下文"
+        }
+      ],
+      "decisions": [
+        {
+          "step_id": "s1",
+          "required_tools_present": true,
+          "calls": [
+            {
+              "index": 0,
+              "selection_correct": true,
+              "arguments_correct": true
+            },
+            {
+              "index": 1,
+              "selection_correct": true,
+              "arguments_correct": true
+            }
+          ],
+          "reason": "历史已在上下文中，直接回答本可通过；实际调用的知识上下文查询与历史读取均属当前学习者真实来源，参数语义合理，未虚构作答经历。",
+          "evidence": ""
+        }
+      ],
+      "raw_judgment": {
+        "semantic": [
+          {
+            "id": "H4",
+            "passed": true,
+            "reason": "回复准确复述了学生混淆 skimming 与 scanning、误以为两者都用于找单个日期，并分别说明主旨对应略读、日期对应扫描且定位后需核对上下文。",
+            "evidence": "上次你混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种方法。你当时以为两者都是“找单个日期”。……**找文章中心 → 用 skimming（略读）**……**找日期这类具体信息 → 用 scanning（扫读）**……关键一步：定位到之后要回读前后一两句核对上下文"
+          }
+        ],
+        "decisions": [
+          {
+            "step_id": "s1",
+            "required_tools_present": true,
+            "calls": [
+              {
+                "index": 0,
+                "selection_correct": true,
+                "arguments_correct": true
+              },
+              {
+                "index": 1,
+                "selection_correct": true,
+                "arguments_correct": true
+              }
+            ],
+            "reason": "历史已在上下文中，直接回答本可通过；实际调用的知识上下文查询与历史读取均属当前学习者真实来源，参数语义合理，未虚构作答经历。",
+            "evidence": ""
+          }
+        ]
+      },
+      "leakage": {
+        "protocol": {
+          "schema": "eduagent.hybrid-leakage.v2",
+          "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+          "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7"
+        },
+        "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "case_sha256": "8ec5e8174bf64d2113c4a5e05d8608b0a62c5cc2a7bcc456f356d9377dbe9ae4",
+        "steps": {},
+        "verdict": "not_applicable"
+      },
+      "task_success": true,
+      "automatic_passed": true,
+      "decision_rate": 1.0,
+      "score": 1.0,
+      "review_status": "ai_reviewed",
+      "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+      "judge_input_sha256": "7235f1834c169255fba8d9fb30d9c29221981be909c206dae40ceb47d4ea5d51"
+    },
+    "metering": [
+      {
+        "request_no": 162,
+        "reservation_cny": 0.02191,
+        "usage": {
+          "input_tokens": 1870,
+          "output_tokens": 64,
+          "prompt_cache_hit_tokens": 1152,
+          "prompt_cache_miss_tokens": 718
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "06b59f8500000907f9812a55b140dfe3dc7c888c7b93584ac7b6311c2c460c04",
+        "estimated_peak_cny": 0.00199408,
+        "estimated_off_peak_cny": 0.00099704
+      },
+      {
+        "request_no": 163,
+        "reservation_cny": 0.025842,
+        "usage": {
+          "input_tokens": 2352,
+          "output_tokens": 304,
+          "prompt_cache_hit_tokens": 1920,
+          "prompt_cache_miss_tokens": 432
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "130e596a9922cf008a69e826fd2d9a62fdb9cfbbd195e6834f86f6e68f273622",
+        "estimated_peak_cny": 0.0033728,
+        "estimated_off_peak_cny": 0.0016864
+      },
+      {
+        "request_no": 164,
+        "reservation_cny": 0.044096,
+        "usage": {
+          "input_tokens": 3083,
+          "output_tokens": 241,
+          "prompt_cache_hit_tokens": 768
+        },
+        "status": "usage_recorded",
+        "role": "judge",
+        "input_sha256": "c0cf28dd272633a0019055763398f67b518b0398adc9b3695afedf17a44900cd",
+        "estimated_peak_cny": 0.00658872,
+        "estimated_off_peak_cny": 0.00329436
+      }
+    ]
+  },
+  "row_sha256": "cac5effe73da01236929fc15295be834f367e1c897dba445f2108527e2734c03"
+}

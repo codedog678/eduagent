@@ -1,0 +1,956 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": true,
+    "case_id": "live-07-grounded-history-continuation",
+    "category": "跨会话记忆",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [],
+    "execution_outcome": "completed",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution",
+        "rule": "status=completed、dialogue_state=answered；thread 与预置 vocab_basic 主题相同。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution.source_refs",
+        "rule": "与两条预置真实来源至少有一个交集；所有引用均可按当前 learner 读取。",
+        "status": "passed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.vocab_basic",
+        "rule": "所有 KnowledgeState 字段保持不变。",
+        "status": "passed"
+      },
+      {
+        "id": "H4",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s1.teaching_response.response",
+        "rule": "对上次误解的描述与历史一致，搭配示例正确，没有编造额外学习经历。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：历史描述和搭配例子正确；1 分：例子正确但旧误解描述不清；0 分：编造历史或搭配错误。",
+        "actionability": "2 分：提供能让学生区分东西和接收者的对照例子；1 分：只有一个孤立例子；0 分：没有可用区分方法。",
+        "targeting": "2 分：回应“我当时为什么加 to”；1 分：只有通用解释；0 分：无视历史。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "review_pending",
+    "title": "根据已有公开证据接续搭配误解"
+  },
+  "capability": "grounded_history",
+  "case_id": "live-07-grounded-history-continuation",
+  "evaluation_index": 13,
+  "judge_identity": {
+    "model": "deepseek-flash",
+    "provider": "deepseek",
+    "thinking": "disabled"
+  },
+  "metering": [
+    {
+      "estimated_off_peak_cny": 0.002491,
+      "estimated_peak_cny": 0.004982,
+      "input_sha256": "d506541e13bccc033ed6b939a292f97ceedb89b329bc5da6ff1fc97546faad60",
+      "request_no": 181,
+      "reservation_cny": 0.025262,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 2195,
+        "output_tokens": 74,
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 2195
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.00096452,
+      "estimated_peak_cny": 0.00192904,
+      "input_sha256": "c1a36a06aca15b6903da20f95a217d0df1133aaaba3e8c9f04eb2b513e6d770b",
+      "request_no": 182,
+      "reservation_cny": 0.028174,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 2609,
+        "output_tokens": 122,
+        "prompt_cache_hit_tokens": 2176,
+        "prompt_cache_miss_tokens": 433
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.00261724,
+      "estimated_peak_cny": 0.00523448,
+      "input_sha256": "7c241e2b35bb0fb5a7c0314e19c355e5b266b52b41f37a8cb9192fb8e384be57",
+      "request_no": 183,
+      "reservation_cny": 0.025904,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 2127,
+        "output_tokens": 248,
+        "prompt_cache_hit_tokens": 512,
+        "prompt_cache_miss_tokens": 1615
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.0036709200000000003,
+      "estimated_peak_cny": 0.0073418400000000005,
+      "input_sha256": "b72ac2552d2ca3900fdf8a2f77fdebea7ada09fe277e524a4cae168978056091",
+      "request_no": 184,
+      "reservation_cny": 0.046412,
+      "role": "judge",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 3533,
+        "output_tokens": 254,
+        "prompt_cache_hit_tokens": 896
+      }
+    }
+  ],
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "先区分提交的东西和接收者。submit something 可以直接接东西；submit something to someone 中 to 引出接收者。",
+        "我查到了上次的记录（来源：message:eval-live-07-old-user、message:eval-live-07-old-tutor）。\n\n**当时多加 to 的原因**\n\n你自己在记录里说明了原因：你以为“提交东西都要带 to”，所以把 submit their essays 写成了 submit to their essays。问题在于你把 to 当成了 submit 的固定搭配，而实际上 to 只用来引出接收者。\n\n**区分“提交的东西”和“接收者”**\n\n- submit + 东西：submit their essays（交论文）——东西直接跟在 submit 后面，不需要 to。\n- submit + 东西 + to + 接收者：submit their essays to the teacher（把论文交给老师）——to 后面才是接收者。\n\n**一个小例子**\n\n- 错：I submitted to my report.\n- 对：I submitted my report.（report 是提交的东西）\n- 对：I submitted my report to the manager.（manager 是接收者，才用 to）\n\n判断方法：先问“交的是什么”，那个名词直接跟在 submit 后面；再问“交给谁”，那个名词前面才加 to。如果句子里没有接收者，就完全不需要 to。"
+      ],
+      "evidence": [],
+      "knowledge": {
+        "eval-live-07": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [],
+      "quizzes": {}
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true,
+        "seeded_history_visible": true
+      },
+      "initial_source_refs": [
+        "message:eval-live-07-old-tutor",
+        "message:eval-live-07-old-user"
+      ],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-07": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {},
+      "thread_id": "17ff6dc0-01c8-5730-b5b0-495d1914bf1c"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 3586.134082999706,
+        "evidence": [],
+        "knowledge": {
+          "eval-live-07": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "vocab_basic",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "我先查一下上次的完整记录。",
+            "duration_ms": 846.1437499991007,
+            "request_no": 1,
+            "stop_reason": "tool_calls",
+            "tool_calls": [
+              {
+                "arguments": {
+                  "limit": 10,
+                  "query": "submit their essays submit to 多加 to 提交 接收者"
+                },
+                "batch_size": 1,
+                "id": "call_00_GP9j1Eg7XLSS7plalPyQ1147",
+                "name": "search_learning_history"
+              }
+            ],
+            "usage": {
+              "input_tokens": 2195,
+              "output_tokens": 74,
+              "prompt_cache_hit_tokens": 0,
+              "prompt_cache_miss_tokens": 2195
+            }
+          },
+          {
+            "content": "",
+            "duration_ms": 929.9262500007899,
+            "request_no": 2,
+            "stop_reason": "tool_calls",
+            "tool_calls": [
+              {
+                "arguments": {
+                  "limit": 3000,
+                  "source_ref": "message:eval-live-07-old-user"
+                },
+                "batch_size": 2,
+                "id": "call_00_MaOUsVDsjCD0N0EyKfCq5936",
+                "name": "read_learning_history"
+              },
+              {
+                "arguments": {
+                  "limit": 3000,
+                  "source_ref": "message:eval-live-07-old-tutor"
+                },
+                "batch_size": 2,
+                "id": "call_01_UtVWHOgQrceqgUD6Mtdi3100",
+                "name": "read_learning_history"
+              }
+            ],
+            "usage": {
+              "input_tokens": 2609,
+              "output_tokens": 122,
+              "prompt_cache_hit_tokens": 2176,
+              "prompt_cache_miss_tokens": 433
+            }
+          },
+          {
+            "content": "我查到了上次的记录（来源：message:eval-live-07-old-user、message:eval-live-07-old-tutor）。\n\n**当时多加 to 的原因**\n\n你自己在记录里说明了原因：你以为“提交东西都要带 to”，所以把 submit their essays 写成了 submit to their essays。问题在于你把 to 当成了 submit 的固定搭配，而实际上 to 只用来引出接收者。\n\n**区分“提交的东西”和“接收者”**\n\n- submit + 东西：submit their essays（交论文）——东西直接跟在 submit 后面，不需要 to。\n- submit + 东西 + to + 接收者：submit their essays to the teacher（把论文交给老师）——to 后面才是接收者。\n\n**一个小例子**\n\n- 错：I submitted to my report.\n- 对：I submitted my report.（report 是提交的东西）\n- 对：I submitted my report to the manager.（manager 是接收者，才用 to）\n\n判断方法：先问“交的是什么”，那个名词直接跟在 submit 后面；再问“交给谁”，那个名词前面才加 to。如果句子里没有接收者，就完全不需要 to。",
+            "duration_ms": 1805.381166999723,
+            "request_no": 3,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 2127,
+              "output_tokens": 248,
+              "prompt_cache_hit_tokens": 512,
+              "prompt_cache_miss_tokens": 1615
+            }
+          }
+        ],
+        "quizzes": {},
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "vocab_basic",
+              "response": "我查到了上次的记录（来源：message:eval-live-07-old-user、message:eval-live-07-old-tutor）。\n\n**当时多加 to 的原因**\n\n你自己在记录里说明了原因：你以为“提交东西都要带 to”，所以把 submit their essays 写成了 submit to their essays。问题在于你把 to 当成了 submit 的固定搭配，而实际上 to 只用来引出接收者。\n\n**区分“提交的东西”和“接收者”**\n\n- submit + 东西：submit their essays（交论文）——东西直接跟在 submit 后面，不需要 to。\n- submit + 东西 + to + 接收者：submit their essays to the teacher（把论文交给老师）——to 后面才是接收者。\n\n**一个小例子**\n\n- 错：I submitted to my report.\n- 对：I submitted my report.（report 是提交的东西）\n- 对：I submitted my report to the manager.（manager 是接收者，才用 to）\n\n判断方法：先问“交的是什么”，那个名词直接跟在 submit 后面；再问“交给谁”，那个名词前面才加 to。如果句子里没有接收者，就完全不需要 to。",
+              "response_variant": "tool_loop",
+              "source_refs": [
+                "message:eval-live-07-old-tutor",
+                "message:eval-live-07-old-user"
+              ],
+              "teaching_style": "question_answer"
+            }
+          },
+          "correlation_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "9fa809ba-cf57-46cf-8bd5-712b70e6f49d",
+            "cited_refs": [
+              "message:eval-live-07-old-user",
+              "message:eval-live-07-old-tutor"
+            ],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "answered",
+            "effective_policy_hash": "0bca65fdef1734532905e86fb02db3c0da008ddab4b2ee8ab01e5152132d9a9d",
+            "model": "deepseek-flash",
+            "pending_question_id": null,
+            "provider": "deepseek",
+            "read_refs": [
+              "message:eval-live-07-old-user",
+              "message:eval-live-07-old-tutor"
+            ],
+            "request_id": "live-07-grounded-history-continuation-s1",
+            "retrieved_refs": [
+              "message:eval-live-07-old-tutor",
+              "message:eval-live-07-old-user"
+            ],
+            "run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+            "session_id": "eval-live-07-new",
+            "source_refs": [
+              "message:eval-live-07-old-tutor",
+              "message:eval-live-07-old-user"
+            ],
+            "status": "completed",
+            "thread_id": "17ff6dc0-01c8-5730-b5b0-495d1914bf1c",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+              "data": {
+                "knowledge_id": "vocab_basic",
+                "question": "接着上次讲，我当时为什么给 submit 多加了一个 to？再给我一个区分提交的东西和接收者的小例子。"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-29T03:44:56.547663"
+            },
+            {
+              "correlation_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "vocab_basic",
+                "response": "我查到了上次的记录（来源：message:eval-live-07-old-user、message:eval-live-07-old-tutor）。\n\n**当时多加 to 的原因**\n\n你自己在记录里说明了原因：你以为“提交东西都要带 to”，所以把 submit their essays 写成了 submit to their essays。问题在于你把 to 当成了 submit 的固定搭配，而实际上 to 只用来引出接收者。\n\n**区分“提交的东西”和“接收者”**\n\n- submit + 东西：submit their essays（交论文）——东西直接跟在 submit 后面，不需要 to。\n- submit + 东西 + to + 接收者：submit their essays to the teacher（把论文交给老师）——to 后面才是接收者。\n\n**一个小例子**\n\n- 错：I submitted to my report.\n- 对：I submitted my report.（report 是提交的东西）\n- 对：I submitted my report to the manager.（manager 是接收者，才用 to）\n\n判断方法：先问“交的是什么”，那个名词直接跟在 submit 后面；再问“交给谁”，那个名词前面才加 to。如果句子里没有接收者，就完全不需要 to。",
+                "response_variant": "tool_loop",
+                "source_refs": [
+                  "message:eval-live-07-old-tutor",
+                  "message:eval-live-07-old-user"
+                ],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-29T03:45:00.131251"
+            }
+          ],
+          "knowledge_id": "vocab_basic",
+          "learner_id": "eval-live-07",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "vocab_basic",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "vocab_basic",
+            "response": "我查到了上次的记录（来源：message:eval-live-07-old-user、message:eval-live-07-old-tutor）。\n\n**当时多加 to 的原因**\n\n你自己在记录里说明了原因：你以为“提交东西都要带 to”，所以把 submit their essays 写成了 submit to their essays。问题在于你把 to 当成了 submit 的固定搭配，而实际上 to 只用来引出接收者。\n\n**区分“提交的东西”和“接收者”**\n\n- submit + 东西：submit their essays（交论文）——东西直接跟在 submit 后面，不需要 to。\n- submit + 东西 + to + 接收者：submit their essays to the teacher（把论文交给老师）——to 后面才是接收者。\n\n**一个小例子**\n\n- 错：I submitted to my report.\n- 对：I submitted my report.（report 是提交的东西）\n- 对：I submitted my report to the manager.（manager 是接收者，才用 to）\n\n判断方法：先问“交的是什么”，那个名词直接跟在 submit 后面；再问“交给谁”，那个名词前面才加 to。如果句子里没有接收者，就完全不需要 to。",
+            "response_variant": "tool_loop",
+            "source_refs": [
+              "message:eval-live-07-old-tutor",
+              "message:eval-live-07-old-user"
+            ],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "接着上次讲，我当时为什么给 submit 多加了一个 to？再给我一个区分提交的东西和接收者的小例子。",
+        "tool_results": [
+          {
+            "result": {
+              "cached": false,
+              "data": {
+                "items": [
+                  {
+                    "created": 1793216696.546777,
+                    "excerpt": "先区分提交的东西和接收者。submit something 可以直接接东西；submit something to someone 中 to 引出接收者。",
+                    "knowledge_id": "vocab_basic",
+                    "match_score": 5,
+                    "role": "assistant",
+                    "source_ref": "message:eval-live-07-old-tutor",
+                    "thread_id": "17ff6dc0-01c8-5730-b5b0-495d1914bf1c",
+                    "version": 1
+                  },
+                  {
+                    "created": 1793216696.546758,
+                    "excerpt": "我把 submit their essays 写成 submit to their essays，因为以为提交东西都要带 to。",
+                    "knowledge_id": "vocab_basic",
+                    "match_score": 5,
+                    "role": "user",
+                    "source_ref": "message:eval-live-07-old-user",
+                    "thread_id": "17ff6dc0-01c8-5730-b5b0-495d1914bf1c",
+                    "version": 1
+                  }
+                ],
+                "query_expanded": false,
+                "retrieval_mode": "lexical"
+              },
+              "error_code": null,
+              "errors": [],
+              "next_cursor": null,
+              "retryable": false,
+              "source_refs": [
+                "message:eval-live-07-old-tutor",
+                "message:eval-live-07-old-user"
+              ],
+              "status": "ok",
+              "truncated": false
+            },
+            "tool_call_id": "call_00_GP9j1Eg7XLSS7plalPyQ1147"
+          },
+          {
+            "result": {
+              "cached": false,
+              "data": {
+                "content": "我把 submit their essays 写成 submit to their essays，因为以为提交东西都要带 to。",
+                "next_cursor": null,
+                "role": "user",
+                "source_ref": "message:eval-live-07-old-user",
+                "thread_id": "17ff6dc0-01c8-5730-b5b0-495d1914bf1c",
+                "truncated": false
+              },
+              "error_code": null,
+              "errors": [],
+              "next_cursor": null,
+              "retryable": false,
+              "source_refs": [
+                "message:eval-live-07-old-user"
+              ],
+              "status": "ok",
+              "truncated": false
+            },
+            "tool_call_id": "call_00_MaOUsVDsjCD0N0EyKfCq5936"
+          },
+          {
+            "result": {
+              "cached": false,
+              "data": {
+                "content": "先区分提交的东西和接收者。submit something 可以直接接东西；submit something to someone 中 to 引出接收者。",
+                "next_cursor": null,
+                "role": "assistant",
+                "source_ref": "message:eval-live-07-old-tutor",
+                "thread_id": "17ff6dc0-01c8-5730-b5b0-495d1914bf1c",
+                "truncated": false
+              },
+              "error_code": null,
+              "errors": [],
+              "next_cursor": null,
+              "retryable": false,
+              "source_refs": [
+                "message:eval-live-07-old-tutor"
+              ],
+              "status": "ok",
+              "truncated": false
+            },
+            "tool_call_id": "call_01_UtVWHOgQrceqgUD6Mtdi3100"
+          }
+        ],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "9fa809ba-cf57-46cf-8bd5-712b70e6f49d",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1793216700.1325572,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+              "started": 1793216696.547467,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "effective_policy_hash": "0bca65fdef1734532905e86fb02db3c0da008ddab4b2ee8ab01e5152132d9a9d",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1793216696.5475898
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "task_routed",
+                  "reason": "question_intent",
+                  "route": "Tutor",
+                  "seq": 2,
+                  "timestamp": 1793216696.547647
+                },
+                {
+                  "agent": "api",
+                  "event_id": "da0c1ebb-a307-4f10-9e91-88fff86ac7d5",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 3,
+                  "timestamp": 1793216696.547675
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "da0c1ebb-a307-4f10-9e91-88fff86ac7d5",
+                  "kind": "handler_started",
+                  "seq": 4,
+                  "timestamp": 1793216696.547683
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 2,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 5,
+                  "timestamp": 1793216696.547866,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 6,
+                  "source_refs": [
+                    "message:eval-live-07-old-tutor",
+                    "message:eval-live-07-old-user"
+                  ],
+                  "timestamp": 1793216696.548013,
+                  "token_estimate": 1841,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 7,
+                  "timestamp": 1793216696.5489368,
+                  "token_estimate": 2803
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+                  "resource": "model",
+                  "seq": 8,
+                  "task_id": null,
+                  "timestamp": 1793216696.551326,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 9,
+                  "stop_reason": "tool_calls",
+                  "timestamp": 1793216697.395126,
+                  "usage": {
+                    "input_tokens": 2195,
+                    "output_tokens": 74,
+                    "prompt_cache_hit_tokens": 0,
+                    "prompt_cache_miss_tokens": 2195
+                  }
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+                  "resource": "tool",
+                  "seq": 10,
+                  "task_id": null,
+                  "timestamp": 1793216697.395133,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+                  "seq": 11,
+                  "task_id": null,
+                  "timestamp": 1793216697.395134,
+                  "tool": "search_learning_history",
+                  "tool_call_id": "call_00_GP9j1Eg7XLSS7plalPyQ1147"
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 2,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 12,
+                  "timestamp": 1793216697.3953128,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 0,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "items",
+                    "query_expanded",
+                    "retrieval_mode"
+                  ],
+                  "seq": 13,
+                  "source_refs": [
+                    "message:eval-live-07-old-tutor",
+                    "message:eval-live-07-old-user"
+                  ],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1793216697.395364,
+                  "tool": "search_learning_history",
+                  "tool_call_id": "call_00_GP9j1Eg7XLSS7plalPyQ1147"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 2,
+                  "seq": 14,
+                  "timestamp": 1793216697.395442,
+                  "token_estimate": 3288
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+                  "resource": "model",
+                  "seq": 15,
+                  "task_id": null,
+                  "timestamp": 1793216697.39822,
+                  "used": 2
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 2,
+                  "seq": 16,
+                  "stop_reason": "tool_calls",
+                  "timestamp": 1793216698.325421,
+                  "usage": {
+                    "input_tokens": 2609,
+                    "output_tokens": 122,
+                    "prompt_cache_hit_tokens": 2176,
+                    "prompt_cache_miss_tokens": 433
+                  }
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+                  "resource": "tool",
+                  "seq": 17,
+                  "task_id": null,
+                  "timestamp": 1793216698.325431,
+                  "used": 2
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+                  "seq": 18,
+                  "task_id": null,
+                  "timestamp": 1793216698.325431,
+                  "tool": "read_learning_history",
+                  "tool_call_id": "call_00_MaOUsVDsjCD0N0EyKfCq5936"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 0,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "content",
+                    "next_cursor",
+                    "role",
+                    "source_ref",
+                    "thread_id",
+                    "truncated"
+                  ],
+                  "seq": 19,
+                  "source_refs": [
+                    "message:eval-live-07-old-user"
+                  ],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1793216698.3255522,
+                  "tool": "read_learning_history",
+                  "tool_call_id": "call_00_MaOUsVDsjCD0N0EyKfCq5936"
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+                  "resource": "tool",
+                  "seq": 20,
+                  "task_id": null,
+                  "timestamp": 1793216698.325577,
+                  "used": 3
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_tool",
+                  "parent_run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+                  "seq": 21,
+                  "task_id": null,
+                  "timestamp": 1793216698.325578,
+                  "tool": "read_learning_history",
+                  "tool_call_id": "call_01_UtVWHOgQrceqgUD6Mtdi3100"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cached": false,
+                  "elapsed_ms": 0,
+                  "error_code": null,
+                  "kind": "after_tool",
+                  "result_keys": [
+                    "content",
+                    "next_cursor",
+                    "role",
+                    "source_ref",
+                    "thread_id",
+                    "truncated"
+                  ],
+                  "seq": 22,
+                  "source_refs": [
+                    "message:eval-live-07-old-tutor"
+                  ],
+                  "status": "ok",
+                  "task_id": null,
+                  "timestamp": 1793216698.325611,
+                  "tool": "read_learning_history",
+                  "tool_call_id": "call_01_UtVWHOgQrceqgUD6Mtdi3100"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 3,
+                  "seq": 23,
+                  "timestamp": 1793216698.325658,
+                  "token_estimate": 2910
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+                  "resource": "model",
+                  "seq": 24,
+                  "task_id": null,
+                  "timestamp": 1793216698.328157,
+                  "used": 3
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 3,
+                  "seq": 25,
+                  "stop_reason": "stop",
+                  "timestamp": 1793216700.1310852,
+                  "usage": {
+                    "input_tokens": 2127,
+                    "output_tokens": 248,
+                    "prompt_cache_hit_tokens": 512,
+                    "prompt_cache_miss_tokens": 1615
+                  }
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [
+                    "message:eval-live-07-old-user",
+                    "message:eval-live-07-old-tutor"
+                  ],
+                  "kind": "response_sources",
+                  "read_refs": [
+                    "message:eval-live-07-old-user",
+                    "message:eval-live-07-old-tutor"
+                  ],
+                  "retrieved_refs": [
+                    "message:eval-live-07-old-tutor",
+                    "message:eval-live-07-old-user"
+                  ],
+                  "seq": 26,
+                  "timestamp": 1793216700.131168
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 3584,
+                  "event_id": "da0c1ebb-a307-4f10-9e91-88fff86ac7d5",
+                  "kind": "handler_completed",
+                  "seq": 27,
+                  "timestamp": 1793216700.131379
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "23f38754-31a4-4072-b21d-6f6b69603d8e",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "da0c1ebb-a307-4f10-9e91-88fff86ac7d5",
+                  "seq": 28,
+                  "timestamp": 1793216700.131386
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 29,
+                  "timestamp": 1793216700.131569
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "answered",
+                  "kind": "run_completed",
+                  "seq": 30,
+                  "timestamp": 1793216700.132312
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-07-grounded-history-continuation-s1"
+        }
+      }
+    }
+  },
+  "policy_sha256": "2583577037340575dc664e66a2785627038f08043ec7ce43ae6d768ea303ef51",
+  "score": {
+    "automatic_passed": true,
+    "decision_rate": 1.0,
+    "decisions": [
+      {
+        "calls": [
+          {
+            "arguments_correct": true,
+            "index": 0,
+            "selection_correct": true
+          },
+          {
+            "arguments_correct": true,
+            "index": 1,
+            "selection_correct": true
+          },
+          {
+            "arguments_correct": true,
+            "index": 2,
+            "selection_correct": true
+          }
+        ],
+        "evidence": "",
+        "reason": "先检索历史再按来源读取两条记录，工具选择与参数语义合理，且回复引用了真实来源。",
+        "required_tools_present": true,
+        "step_id": "s1"
+      }
+    ],
+    "judge_input_sha256": "72964e6634b969ccab3c632f7ab6caa1eea3c95c9ec35f47176d328773fcb5a6",
+    "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+    "leakage": {
+      "case_sha256": "b47321e3ddfe3b9bfaf7371e7abf49ba3855c56c3eadaf7b2f528a750401e618",
+      "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "protocol": {
+        "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+        "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7",
+        "schema": "eduagent.hybrid-leakage.v2"
+      },
+      "steps": {},
+      "verdict": "not_applicable"
+    },
+    "raw_judgment": {
+      "decisions": [
+        {
+          "calls": [
+            {
+              "arguments_correct": true,
+              "index": 0,
+              "selection_correct": true
+            },
+            {
+              "arguments_correct": true,
+              "index": 1,
+              "selection_correct": true
+            },
+            {
+              "arguments_correct": true,
+              "index": 2,
+              "selection_correct": true
+            }
+          ],
+          "evidence": "",
+          "reason": "先检索历史再按来源读取两条记录，工具选择与参数语义合理，且回复引用了真实来源。",
+          "required_tools_present": true,
+          "step_id": "s1"
+        }
+      ],
+      "semantic": [
+        {
+          "evidence": "你自己在记录里说明了原因：你以为“提交东西都要带 to”，所以把 submit their essays 写成了 submit to their essays。……- submit + 东西：submit their essays（交论文）——东西直接跟在 submit 后面，不需要 to。\n- submit + 东西 + to + 接收者：submit their essays to the teacher（把论文交给老师）——to 后面才是接收者。",
+          "id": "H4",
+          "passed": true,
+          "reason": "回复准确复述历史误解（以为提交东西都要带to），给出submit their essays与submit their essays to the teacher的对照，并补充report/manager例子，未编造测验选项或成绩。"
+        }
+      ]
+    },
+    "review_status": "ai_reviewed",
+    "score": 1.0,
+    "semantic": [
+      {
+        "evidence": "你自己在记录里说明了原因：你以为“提交东西都要带 to”，所以把 submit their essays 写成了 submit to their essays。……- submit + 东西：submit their essays（交论文）——东西直接跟在 submit 后面，不需要 to。\n- submit + 东西 + to + 接收者：submit their essays to the teacher（把论文交给老师）——to 后面才是接收者。",
+        "id": "H4",
+        "passed": true,
+        "reason": "回复准确复述历史误解（以为提交东西都要带to），给出submit their essays与submit their essays to the teacher的对照，并补充report/manager例子，未编造测验选项或成绩。"
+      }
+    ],
+    "task_success": true
+  },
+  "scoring_status": "completed"
+}

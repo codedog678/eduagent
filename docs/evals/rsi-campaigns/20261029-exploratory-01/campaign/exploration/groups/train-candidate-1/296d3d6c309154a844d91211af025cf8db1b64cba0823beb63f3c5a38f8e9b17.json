@@ -1,0 +1,489 @@
+{
+  "binding": "264ad2bf57e076dc97bc6065be7df7a2d1ab1f7872875831551c6ffafad179c3",
+  "row": {
+    "case_id": "live-29-skim-scan",
+    "capability": "grounded_history",
+    "evaluation_index": 18,
+    "policy_sha256": "2583577037340575dc664e66a2785627038f08043ec7ce43ae6d768ea303ef51",
+    "scoring_status": "unknown",
+    "automatic": {
+      "case_id": "live-29-skim-scan",
+      "category": "跨会话记忆",
+      "title": "历史：区分略读主旨与扫描细节",
+      "evaluation_role": "agent_primary",
+      "status": "review_pending",
+      "automatic_passed": true,
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "path": "s1.execution",
+          "rule": "status=completed、dialogue_state=answered；thread 与预置 reading_skimming 主题相同。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "path": "s1.execution.source_refs",
+          "rule": "与两条预置真实来源至少有一个交集；所有引用均可按当前 learner 读取。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "path": "learner.knowledge_states.reading_skimming",
+          "rule": "所有 KnowledgeState 字段保持不变。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "semantic_review",
+          "path": "s1.teaching_response.response",
+          "rule": "准确复述两方法混淆，主旨对应略读、日期对应扫描并核对上下文。",
+          "passed": null,
+          "status": "review_pending"
+        }
+      ],
+      "execution_outcome": "completed",
+      "execution_failures": [],
+      "annotations": {},
+      "quality_review": {
+        "status": "review_pending",
+        "reviewer": null,
+        "scores": null,
+        "anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。"
+        }
+      }
+    },
+    "observed": {
+      "initial": {
+        "knowledge": {
+          "eval-live-29": {
+            "knowledge_id": "reading_skimming",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "thread_id": "1a5576d8-0233-548c-afcb-ae4f8631337b"
+      },
+      "fixture_validation": {
+        "valid": true,
+        "checks": {
+          "default_knowledge": true,
+          "no_answer_fields_in_context": true,
+          "no_preexisting_pending": true,
+          "seeded_history_visible": true
+        },
+        "initial_source_refs": [
+          "message:eval-live-29-old-tutor",
+          "message:eval-live-29-old-user"
+        ]
+      },
+      "steps": {
+        "s1": {
+          "action": "converse",
+          "student_input": "回顾上次，我混淆了哪两种方法？找文章中心和找日期各用什么？",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-29",
+            "knowledge_id": "reading_skimming",
+            "correlation_id": "58c4cedc-b31f-5790-9391-a66ba40ed127",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "你上次混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种阅读方法。\n\n- **找文章中心、抓主旨结构** → 用 **skimming**（略读）\n- **找具体日期、关键词这类信息** → 用 **scanning**（扫读），定位到之后还要核对上下文\n\n区别在于：skimming 是快速通览、抓整体主旨；scanning 是带着明确目标词去“搜”某个具体信息，不是通读。\n\n另外提醒一下：你当前“略读技巧”这个知识点还缺基础词汇和时态两个前置项，暂时不能进入练习，先把这两块补上会更顺。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "reading_skimming",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [
+                "message:eval-live-29-old-tutor",
+                "message:eval-live-29-old-user"
+              ],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "reading_skimming",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "reading_skimming",
+                "response": "你上次混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种阅读方法。\n\n- **找文章中心、抓主旨结构** → 用 **skimming**（略读）\n- **找具体日期、关键词这类信息** → 用 **scanning**（扫读），定位到之后还要核对上下文\n\n区别在于：skimming 是快速通览、抓整体主旨；scanning 是带着明确目标词去“搜”某个具体信息，不是通读。\n\n另外提醒一下：你当前“略读技巧”这个知识点还缺基础词汇和时态两个前置项，暂时不能进入练习，先把这两块补上会更顺。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [
+                  "message:eval-live-29-old-tutor",
+                  "message:eval-live-29-old-user"
+                ],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "reading_skimming",
+                  "question": "回顾上次，我混淆了哪两种方法？找文章中心和找日期各用什么？"
+                },
+                "timestamp": "2026-10-29T03:45:17.136182",
+                "correlation_id": "58c4cedc-b31f-5790-9391-a66ba40ed127"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "reading_skimming",
+                  "response": "你上次混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种阅读方法。\n\n- **找文章中心、抓主旨结构** → 用 **skimming**（略读）\n- **找具体日期、关键词这类信息** → 用 **scanning**（扫读），定位到之后还要核对上下文\n\n区别在于：skimming 是快速通览、抓整体主旨；scanning 是带着明确目标词去“搜”某个具体信息，不是通读。\n\n另外提醒一下：你当前“略读技巧”这个知识点还缺基础词汇和时态两个前置项，暂时不能进入练习，先把这两块补上会更顺。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [
+                    "message:eval-live-29-old-tutor",
+                    "message:eval-live-29-old-user"
+                  ],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:45:18.866214",
+                "correlation_id": "58c4cedc-b31f-5790-9391-a66ba40ed127"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-29-skim-scan-s1",
+              "run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127",
+              "attempt_id": "d4866f33-488f-4c77-9c79-8a99de19f64a",
+              "session_id": "eval-live-29-new",
+              "thread_id": "1a5576d8-0233-548c-afcb-ae4f8631337b",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [
+                "message:eval-live-29-old-tutor",
+                "message:eval-live-29-old-user"
+              ],
+              "retrieved_refs": [
+                "message:eval-live-29-old-user"
+              ],
+              "read_refs": [],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "0bca65fdef1734532905e86fb02db3c0da008ddab4b2ee8ab01e5152132d9a9d"
+            }
+          },
+          "trace": {
+            "request_id": "live-29-skim-scan-s1",
+            "attempts": [
+              {
+                "attempt_id": "d4866f33-488f-4c77-9c79-8a99de19f64a",
+                "run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216717.1360168,
+                "finished": 1793216718.866783,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216717.1361248,
+                    "effective_policy_hash": "0bca65fdef1734532905e86fb02db3c0da008ddab4b2ee8ab01e5152132d9a9d"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793216717.136171,
+                    "route": "Tutor",
+                    "reason": "question_intent"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216717.136193,
+                    "event_id": "aa86cab4-32ac-4daa-9d94-4d6ace27d812",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216717.136201,
+                    "event_id": "aa86cab4-32ac-4daa-9d94-4d6ace27d812"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216717.136492,
+                    "lexical_hits": 1,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216717.1366389,
+                    "source_refs": [
+                      "message:eval-live-29-old-tutor",
+                      "message:eval-live-29-old-user"
+                    ],
+                    "omitted_refs": [],
+                    "token_estimate": 1939,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "explanation",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216717.137286,
+                    "model_call": 1,
+                    "token_estimate": 2901
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216717.1466901,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "58c4cedc-b31f-5790-9391-a66ba40ed127"
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216718.866166,
+                    "model_call": 1,
+                    "stop_reason": "stop",
+                    "usage": {
+                      "input_tokens": 2279,
+                      "output_tokens": 148,
+                      "prompt_cache_hit_tokens": 1536,
+                      "prompt_cache_miss_tokens": 743
+                    }
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216718.866177,
+                    "retrieved_refs": [
+                      "message:eval-live-29-old-user"
+                    ],
+                    "read_refs": [],
+                    "cited_refs": []
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216718.866281,
+                    "event_id": "aa86cab4-32ac-4daa-9d94-4d6ace27d812",
+                    "duration_ms": 1730
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216718.866283,
+                    "event_id": "d032cdee-cd6d-427e-8f83-29e60b625949",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "aa86cab4-32ac-4daa-9d94-4d6ace27d812"
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216718.86636
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216718.866709,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 1,
+              "content": "你上次混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种阅读方法。\n\n- **找文章中心、抓主旨结构** → 用 **skimming**（略读）\n- **找具体日期、关键词这类信息** → 用 **scanning**（扫读），定位到之后还要核对上下文\n\n区别在于：skimming 是快速通览、抓整体主旨；scanning 是带着明确目标词去“搜”某个具体信息，不是通读。\n\n另外提醒一下：你当前“略读技巧”这个知识点还缺基础词汇和时态两个前置项，暂时不能进入练习，先把这两块补上会更顺。",
+              "tool_calls": [],
+              "stop_reason": "stop",
+              "usage": {
+                "input_tokens": 2279,
+                "output_tokens": 148,
+                "prompt_cache_hit_tokens": 1536,
+                "prompt_cache_miss_tokens": 743
+              },
+              "duration_ms": 1728.8509579993843
+            }
+          ],
+          "tool_results": [],
+          "quizzes": {},
+          "knowledge": {
+            "eval-live-29": {
+              "knowledge_id": "reading_skimming",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [],
+          "duration_ms": 1731.3140840014967,
+          "all_sources_readable": true
+        }
+      },
+      "final": {
+        "knowledge": {
+          "eval-live-29": {
+            "knowledge_id": "reading_skimming",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "evidence": [],
+        "pending_questions": [],
+        "assistant_history": [
+          "skimming 快速抓主旨结构；scanning 带着具体关键词找信息，定位后还要核对上下文。",
+          "你上次混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种阅读方法。\n\n- **找文章中心、抓主旨结构** → 用 **skimming**（略读）\n- **找具体日期、关键词这类信息** → 用 **scanning**（扫读），定位到之后还要核对上下文\n\n区别在于：skimming 是快速通览、抓整体主旨；scanning 是带着明确目标词去“搜”某个具体信息，不是通读。\n\n另外提醒一下：你当前“略读技巧”这个知识点还缺基础词汇和时态两个前置项，暂时不能进入练习，先把这两块补上会更顺。"
+        ]
+      }
+    },
+    "judge_identity": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "thinking": "disabled"
+    },
+    "scoring_error_type": "OptimizationStopped",
+    "judge_diagnostic": {
+      "raw_response": "{\"semantic\":[{\"id\":\"H4\",\"passed\":true,\"reason\":\"回复准确复述了skimming与scanning的混淆，并分别对应主旨略读、日期扫描且定位后核对上下文。\",\"evidence\":\"你上次混淆的是 **skimming（略读）** 和 **scanning（扫读）** 这两种阅读方法。\\n\\n- **找文章中心、抓主旨结构** → 用 **skimming**（略读）\\n- **找具体日期、关键词这类信息** → 用 **scanning（扫读）**，定位到之后还要核对上下文\"}],\"decisions\":[{\"step_id\":\"s1\",\"required_tools_present\":true,\"calls\":[],\"reason\":\"历史已在上下文中，直接回答即可，无需额外工具调用。\",\"evidence\":\"\"}]}",
+      "validation_error": "semantic evidence is missing or not in observed output"
+    },
+    "score": {
+      "score": null,
+      "task_success": null,
+      "decision_rate": null,
+      "automatic_passed": true,
+      "review_status": "unknown",
+      "semantic": [],
+      "decisions": []
+    },
+    "metering": [
+      {
+        "request_no": 195,
+        "reservation_cny": 0.025852,
+        "usage": {
+          "input_tokens": 2279,
+          "output_tokens": 148,
+          "prompt_cache_hit_tokens": 1536,
+          "prompt_cache_miss_tokens": 743
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "43184037fb2242585dc04b7a0e993c135b5eb3ca814baafeca51520b31c2dcd0",
+        "estimated_peak_cny": 0.00273144,
+        "estimated_off_peak_cny": 0.00136572
+      },
+      {
+        "request_no": 196,
+        "reservation_cny": 0.036496,
+        "usage": {
+          "input_tokens": 2057,
+          "output_tokens": 175,
+          "prompt_cache_hit_tokens": 896
+        },
+        "status": "usage_recorded",
+        "role": "judge",
+        "input_sha256": "e9bbd192845d9c813ffca0ce1a5fbfe030e333780f75c37f4308e35576628850",
+        "estimated_peak_cny": 0.00375784,
+        "estimated_off_peak_cny": 0.00187892
+      }
+    ]
+  },
+  "row_sha256": "f6c545b1b86fda3d062949cd12dc45ec8b95c1b841cb86e130d6a5bdaf33f3b6"
+}

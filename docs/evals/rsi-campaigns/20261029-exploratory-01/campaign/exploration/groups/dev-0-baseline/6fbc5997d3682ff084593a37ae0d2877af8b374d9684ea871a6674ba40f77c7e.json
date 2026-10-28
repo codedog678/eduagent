@@ -1,0 +1,471 @@
+{
+  "binding": "d2fd39549de63bbef43738daf2a53b114fa9965f15ee051410184b192fb4ebdf",
+  "row": {
+    "case_id": "live-14-finished-past",
+    "capability": "multi_turn_continuation",
+    "evaluation_index": 42,
+    "policy_sha256": "d6a798b89944ae1ac4b3326478b1b80c7e8634434f7a1adc87cf2a381e500ba8",
+    "scoring_status": "completed",
+    "automatic": {
+      "case_id": "live-14-finished-past",
+      "category": "澄清与接续",
+      "title": "时态：补充已结束事件后接续",
+      "evaluation_role": "agent_primary",
+      "status": "failed",
+      "automatic_passed": false,
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "path": "s1.execution",
+          "rule": "status=completed、dialogue_state=awaiting_student、pending_question_id 非空；ask_student 为单独调用。",
+          "passed": false,
+          "status": "failed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "path": "s2.execution",
+          "rule": "status=completed、dialogue_state=answered，answered_question_id 等于 s1.pending_question_id。",
+          "passed": false,
+          "status": "failed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "path": "pending_questions",
+          "rule": "s1 待答记录的 answered_by 非空，场景结束没有未回答的该问题。",
+          "passed": false,
+          "status": "failed"
+        },
+        {
+          "id": "H4",
+          "method": "automatic",
+          "path": "learner.knowledge_states.grammar_tenses",
+          "rule": "所有 KnowledgeState 字段保持不变。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H5",
+          "method": "semantic_review",
+          "path": "s1/s2.teaching_response.response",
+          "rule": "s1 索取题干；s2 用 last Sunday 与已结束事件解释一般过去时，不能套用 since 规则。",
+          "passed": null,
+          "status": "review_pending"
+        }
+      ],
+      "execution_outcome": "incomplete",
+      "execution_failures": [
+        {
+          "step_id": "s2",
+          "status": "blocked_by_prior_step",
+          "reason": null
+        }
+      ],
+      "annotations": {},
+      "quality_review": {
+        "status": "review_pending",
+        "reviewer": null,
+        "scores": null,
+        "anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。"
+        }
+      }
+    },
+    "observed": {
+      "initial": {
+        "knowledge": {
+          "eval-live-14": {
+            "knowledge_id": "grammar_tenses",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "thread_id": "b466c67f-ac76-5f5f-be11-8f394515514f"
+      },
+      "fixture_validation": {
+        "valid": true,
+        "checks": {
+          "default_knowledge": true,
+          "no_answer_fields_in_context": true,
+          "no_preexisting_pending": true
+        },
+        "initial_source_refs": []
+      },
+      "steps": {
+        "s1": {
+          "action": "converse",
+          "student_input": "这一题为什么不能用现在完成时？我还没有发题干。",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-14",
+            "knowledge_id": "grammar_tenses",
+            "correlation_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "你还没发题干，我无法判断这道题为什么不能用现在完成时。请把题目原文发给我，包括选项和完整句子（如果有上下文也一并附上）。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "grammar_tenses",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "grammar_tenses",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "grammar_tenses",
+                "response": "你还没发题干，我无法判断这道题为什么不能用现在完成时。请把题目原文发给我，包括选项和完整句子（如果有上下文也一并附上）。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "grammar_tenses",
+                  "question": "这一题为什么不能用现在完成时？我还没有发题干。"
+                },
+                "timestamp": "2026-10-29T03:47:10.064973",
+                "correlation_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "grammar_tenses",
+                  "response": "你还没发题干，我无法判断这道题为什么不能用现在完成时。请把题目原文发给我，包括选项和完整句子（如果有上下文也一并附上）。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:47:10.803906",
+                "correlation_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-14-finished-past-s1",
+              "run_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+              "attempt_id": "9ee52031-8217-4b30-8ba1-7d6bd6226413",
+              "session_id": "eval-live-14-s1",
+              "thread_id": "b466c67f-ac76-5f5f-be11-8f394515514f",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [],
+              "retrieved_refs": [],
+              "read_refs": [],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+            }
+          },
+          "trace": {
+            "request_id": "live-14-finished-past-s1",
+            "attempts": [
+              {
+                "attempt_id": "9ee52031-8217-4b30-8ba1-7d6bd6226413",
+                "run_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216830.0647192,
+                "finished": 1793216830.805022,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216830.0648708,
+                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793216830.064951,
+                    "route": "Tutor",
+                    "reason": "question_intent"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216830.064994,
+                    "event_id": "f40d948c-b541-438a-aca8-5120b273a4cd",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216830.0650089,
+                    "event_id": "f40d948c-b541-438a-aca8-5120b273a4cd"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216830.065221,
+                    "lexical_hits": 0,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "history_discovery",
+                    "agent": "Harness",
+                    "timestamp": 1793216830.06532,
+                    "source_refs": [],
+                    "bounded": true
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216830.065444,
+                    "source_refs": [],
+                    "omitted_refs": [],
+                    "token_estimate": 949,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "explanation",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216830.067285,
+                    "model_call": 1,
+                    "token_estimate": 1911
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216830.071928,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33"
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216830.803778,
+                    "model_call": 1,
+                    "stop_reason": "stop",
+                    "usage": {
+                      "input_tokens": 1588,
+                      "output_tokens": 36,
+                      "prompt_cache_hit_tokens": 1408,
+                      "prompt_cache_miss_tokens": 180
+                    }
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216830.8038049,
+                    "retrieved_refs": [],
+                    "read_refs": [],
+                    "cited_refs": []
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216830.804034,
+                    "event_id": "f40d948c-b541-438a-aca8-5120b273a4cd",
+                    "duration_ms": 739
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216830.80404,
+                    "event_id": "a3d4950f-0b14-4e96-a4ec-92211f1c7874",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "f40d948c-b541-438a-aca8-5120b273a4cd"
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216830.804188
+                  },
+                  {
+                    "seq": 15,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216830.804898,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 1,
+              "content": "你还没发题干，我无法判断这道题为什么不能用现在完成时。请把题目原文发给我，包括选项和完整句子（如果有上下文也一并附上）。",
+              "tool_calls": [],
+              "stop_reason": "stop",
+              "usage": {
+                "input_tokens": 1588,
+                "output_tokens": 36,
+                "prompt_cache_hit_tokens": 1408,
+                "prompt_cache_miss_tokens": 180
+              },
+              "duration_ms": 736.4069169998402
+            }
+          ],
+          "tool_results": [],
+          "quizzes": {},
+          "knowledge": {
+            "eval-live-14": {
+              "knowledge_id": "grammar_tenses",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [],
+          "duration_ms": 741.1966669988033,
+          "all_sources_readable": true
+        },
+        "s2": {
+          "status": "blocked_by_prior_step"
+        }
+      },
+      "final": {
+        "knowledge": {
+          "eval-live-14": {
+            "knowledge_id": "grammar_tenses",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "evidence": [],
+        "pending_questions": [],
+        "assistant_history": [
+          "你还没发题干，我无法判断这道题为什么不能用现在完成时。请把题目原文发给我，包括选项和完整句子（如果有上下文也一并附上）。"
+        ]
+      }
+    },
+    "judge_identity": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "thinking": "disabled"
+    },
+    "score": {
+      "score": 0.0,
+      "task_success": false,
+      "automatic_passed": false,
+      "decision_rate": 0.0,
+      "review_status": "not_observed",
+      "semantic": [],
+      "decisions": []
+    },
+    "metering": [
+      {
+        "request_no": 279,
+        "reservation_cny": 0.01991,
+        "usage": {
+          "input_tokens": 1588,
+          "output_tokens": 36,
+          "prompt_cache_hit_tokens": 1408,
+          "prompt_cache_miss_tokens": 180
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "2624ace8388d4a8f3f776ad9896b6d80c7b47b9c5b39484a842928d0c37f740d",
+        "estimated_peak_cny": 0.0007043199999999999,
+        "estimated_off_peak_cny": 0.00035215999999999996
+      }
+    ]
+  },
+  "row_sha256": "b33a716d54dfde39774540b455ef55e5f2a1b8551884a8233393240263872e76"
+}

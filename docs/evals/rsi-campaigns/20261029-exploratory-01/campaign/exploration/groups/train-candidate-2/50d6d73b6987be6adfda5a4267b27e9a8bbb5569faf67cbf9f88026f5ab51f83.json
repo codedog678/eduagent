@@ -1,0 +1,954 @@
+{
+  "binding": "84589d050b4b69e93c94f95b4da6cf845e8a7a951c7066ea4253dca9725b948c",
+  "row": {
+    "case_id": "live-26-passive-agent",
+    "capability": "grounded_history",
+    "evaluation_index": 28,
+    "policy_sha256": "7a0faf6220ccbe2cd98c07d729bebfaa1f3a592bf5676dfed3a54cc42b36c47e",
+    "scoring_status": "completed",
+    "automatic": {
+      "case_id": "live-26-passive-agent",
+      "category": "跨会话记忆",
+      "title": "历史：被动语态可省略动作发出者",
+      "evaluation_role": "agent_primary",
+      "status": "review_pending",
+      "automatic_passed": true,
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "path": "s1.execution",
+          "rule": "status=completed、dialogue_state=answered；thread 与预置 grammar_passive 主题相同。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "path": "s1.execution.source_refs",
+          "rule": "与两条预置真实来源至少有一个交集；所有引用均可按当前 learner 读取。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "path": "learner.knowledge_states.grammar_passive",
+          "rule": "所有 KnowledgeState 字段保持不变。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "semantic_review",
+          "path": "s1.teaching_response.response",
+          "rule": "准确指出旧误解针对 by 短语，给不含 by 的合法被动句，不能说可以省略 be。",
+          "passed": null,
+          "status": "review_pending"
+        }
+      ],
+      "execution_outcome": "completed",
+      "execution_failures": [],
+      "annotations": {},
+      "quality_review": {
+        "status": "review_pending",
+        "reviewer": null,
+        "scores": null,
+        "anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。"
+        }
+      }
+    },
+    "observed": {
+      "initial": {
+        "knowledge": {
+          "eval-live-26": {
+            "knowledge_id": "grammar_passive",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "thread_id": "f9231118-c1b7-5d09-aa47-3f0d928e6b14"
+      },
+      "fixture_validation": {
+        "valid": true,
+        "checks": {
+          "default_knowledge": true,
+          "no_answer_fields_in_context": true,
+          "no_preexisting_pending": true,
+          "seeded_history_visible": true
+        },
+        "initial_source_refs": [
+          "message:eval-live-26-old-tutor",
+          "message:eval-live-26-old-user"
+        ]
+      },
+      "steps": {
+        "s1": {
+          "action": "converse",
+          "student_input": "上次我以为被动句必须有什么？再给一个省略它的例子。",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-26",
+            "knowledge_id": "grammar_passive",
+            "correlation_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "你上次的原话是：“我以为每个被动句都必须写出 by someone。”也就是说，你当时以为每个被动句都必须带上 by someone。\n\n当时的讲解是：当动作发出者未知、无关或显而易见时，by 短语可以省略，但 be 与过去分词仍构成被动结构。\n\n省略 by 短语的例子：\n\n- My bike was stolen yesterday.（自行车被偷了，不知道是谁偷的，所以不说 by someone）\n- English is spoken in many countries.（谁在说英语显而易见，不必写 by people）\n\n这两句都没有 by 短语，但都是被动语态。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "grammar_passive",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [
+                "message:eval-live-26-old-tutor",
+                "message:eval-live-26-old-user"
+              ],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "grammar_passive",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "grammar_passive",
+                "response": "你上次的原话是：“我以为每个被动句都必须写出 by someone。”也就是说，你当时以为每个被动句都必须带上 by someone。\n\n当时的讲解是：当动作发出者未知、无关或显而易见时，by 短语可以省略，但 be 与过去分词仍构成被动结构。\n\n省略 by 短语的例子：\n\n- My bike was stolen yesterday.（自行车被偷了，不知道是谁偷的，所以不说 by someone）\n- English is spoken in many countries.（谁在说英语显而易见，不必写 by people）\n\n这两句都没有 by 短语，但都是被动语态。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [
+                  "message:eval-live-26-old-tutor",
+                  "message:eval-live-26-old-user"
+                ],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "grammar_passive",
+                  "question": "上次我以为被动句必须有什么？再给一个省略它的例子。"
+                },
+                "timestamp": "2026-10-29T03:46:12.146656",
+                "correlation_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "grammar_passive",
+                  "response": "你上次的原话是：“我以为每个被动句都必须写出 by someone。”也就是说，你当时以为每个被动句都必须带上 by someone。\n\n当时的讲解是：当动作发出者未知、无关或显而易见时，by 短语可以省略，但 be 与过去分词仍构成被动结构。\n\n省略 by 短语的例子：\n\n- My bike was stolen yesterday.（自行车被偷了，不知道是谁偷的，所以不说 by someone）\n- English is spoken in many countries.（谁在说英语显而易见，不必写 by people）\n\n这两句都没有 by 短语，但都是被动语态。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [
+                    "message:eval-live-26-old-tutor",
+                    "message:eval-live-26-old-user"
+                  ],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:46:15.342424",
+                "correlation_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-26-passive-agent-s1",
+              "run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba",
+              "attempt_id": "dd23d43b-034e-4090-a6fd-2643b2cb5178",
+              "session_id": "eval-live-26-new",
+              "thread_id": "f9231118-c1b7-5d09-aa47-3f0d928e6b14",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [
+                "message:eval-live-26-old-tutor",
+                "message:eval-live-26-old-user"
+              ],
+              "retrieved_refs": [
+                "message:eval-live-26-old-user",
+                "message:eval-live-26-old-tutor"
+              ],
+              "read_refs": [
+                "message:eval-live-26-old-user",
+                "message:eval-live-26-old-tutor"
+              ],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "b75ca527c2404dd4379ff3e6f461aa264ecebacbe22dcf8fe0646877dd8f6710"
+            }
+          },
+          "trace": {
+            "request_id": "live-26-passive-agent-s1",
+            "attempts": [
+              {
+                "attempt_id": "dd23d43b-034e-4090-a6fd-2643b2cb5178",
+                "run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216772.1464,
+                "finished": 1793216775.3440619,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216772.1465652,
+                    "effective_policy_hash": "b75ca527c2404dd4379ff3e6f461aa264ecebacbe22dcf8fe0646877dd8f6710"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793216772.146637,
+                    "route": "Tutor",
+                    "reason": "question_intent"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216772.1466749,
+                    "event_id": "703d817e-35fe-4015-a95a-3eb75666a48d",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216772.146689,
+                    "event_id": "703d817e-35fe-4015-a95a-3eb75666a48d"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216772.1469162,
+                    "lexical_hits": 2,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216772.1471639,
+                    "source_refs": [
+                      "message:eval-live-26-old-tutor",
+                      "message:eval-live-26-old-user"
+                    ],
+                    "omitted_refs": [],
+                    "token_estimate": 2183,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "explanation",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216772.148941,
+                    "model_call": 1,
+                    "token_estimate": 3144
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216772.153568,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216772.833266,
+                    "model_call": 1,
+                    "stop_reason": "tool_calls",
+                    "usage": {
+                      "input_tokens": 2430,
+                      "output_tokens": 67,
+                      "prompt_cache_hit_tokens": 1664,
+                      "prompt_cache_miss_tokens": 766
+                    }
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216772.833293,
+                    "resource": "tool",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "before_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216772.8332958,
+                    "tool": "search_learning_history",
+                    "tool_call_id": "call_00_T9r3tSL1nt3SVlt7sqFH1512",
+                    "task_id": null,
+                    "parent_run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216772.8338401,
+                    "lexical_hits": 2,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "after_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216772.833958,
+                    "tool": "search_learning_history",
+                    "tool_call_id": "call_00_T9r3tSL1nt3SVlt7sqFH1512",
+                    "task_id": null,
+                    "status": "ok",
+                    "source_refs": [
+                      "message:eval-live-26-old-user",
+                      "message:eval-live-26-old-tutor"
+                    ],
+                    "error_code": null,
+                    "cached": false,
+                    "elapsed_ms": 1,
+                    "result_keys": [
+                      "items",
+                      "query_expanded",
+                      "retrieval_mode"
+                    ]
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216772.834168,
+                    "model_call": 2,
+                    "token_estimate": 3599
+                  },
+                  {
+                    "seq": 15,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216772.839704,
+                    "resource": "model",
+                    "used": 2,
+                    "task_id": null,
+                    "parent_run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+                  },
+                  {
+                    "seq": 16,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216773.869204,
+                    "model_call": 2,
+                    "stop_reason": "tool_calls",
+                    "usage": {
+                      "input_tokens": 2827,
+                      "output_tokens": 122,
+                      "prompt_cache_hit_tokens": 2432,
+                      "prompt_cache_miss_tokens": 395
+                    }
+                  },
+                  {
+                    "seq": 17,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216773.869225,
+                    "resource": "tool",
+                    "used": 2,
+                    "task_id": null,
+                    "parent_run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+                  },
+                  {
+                    "seq": 18,
+                    "kind": "before_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216773.869227,
+                    "tool": "read_learning_history",
+                    "tool_call_id": "call_00_y4mlH7L96wW9rYH51fQd5088",
+                    "task_id": null,
+                    "parent_run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+                  },
+                  {
+                    "seq": 19,
+                    "kind": "after_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216773.8694541,
+                    "tool": "read_learning_history",
+                    "tool_call_id": "call_00_y4mlH7L96wW9rYH51fQd5088",
+                    "task_id": null,
+                    "status": "ok",
+                    "source_refs": [
+                      "message:eval-live-26-old-user"
+                    ],
+                    "error_code": null,
+                    "cached": false,
+                    "elapsed_ms": 0,
+                    "result_keys": [
+                      "content",
+                      "next_cursor",
+                      "role",
+                      "source_ref",
+                      "thread_id",
+                      "truncated"
+                    ]
+                  },
+                  {
+                    "seq": 20,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216773.869507,
+                    "resource": "tool",
+                    "used": 3,
+                    "task_id": null,
+                    "parent_run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+                  },
+                  {
+                    "seq": 21,
+                    "kind": "before_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216773.869508,
+                    "tool": "read_learning_history",
+                    "tool_call_id": "call_01_KENw46sArEWnURUMyXc76814",
+                    "task_id": null,
+                    "parent_run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+                  },
+                  {
+                    "seq": 22,
+                    "kind": "after_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216773.869575,
+                    "tool": "read_learning_history",
+                    "tool_call_id": "call_01_KENw46sArEWnURUMyXc76814",
+                    "task_id": null,
+                    "status": "ok",
+                    "source_refs": [
+                      "message:eval-live-26-old-tutor"
+                    ],
+                    "error_code": null,
+                    "cached": false,
+                    "elapsed_ms": 0,
+                    "result_keys": [
+                      "content",
+                      "next_cursor",
+                      "role",
+                      "source_ref",
+                      "thread_id",
+                      "truncated"
+                    ]
+                  },
+                  {
+                    "seq": 23,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216773.869677,
+                    "model_call": 3,
+                    "token_estimate": 3201
+                  },
+                  {
+                    "seq": 24,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216773.8741639,
+                    "resource": "model",
+                    "used": 3,
+                    "task_id": null,
+                    "parent_run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+                  },
+                  {
+                    "seq": 25,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216775.342286,
+                    "model_call": 3,
+                    "stop_reason": "stop",
+                    "usage": {
+                      "input_tokens": 2335,
+                      "output_tokens": 120,
+                      "prompt_cache_hit_tokens": 768,
+                      "prompt_cache_miss_tokens": 1567
+                    }
+                  },
+                  {
+                    "seq": 26,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216775.342317,
+                    "retrieved_refs": [
+                      "message:eval-live-26-old-user",
+                      "message:eval-live-26-old-tutor"
+                    ],
+                    "read_refs": [
+                      "message:eval-live-26-old-user",
+                      "message:eval-live-26-old-tutor"
+                    ],
+                    "cited_refs": []
+                  },
+                  {
+                    "seq": 27,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216775.342582,
+                    "event_id": "703d817e-35fe-4015-a95a-3eb75666a48d",
+                    "duration_ms": 3196
+                  },
+                  {
+                    "seq": 28,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216775.342591,
+                    "event_id": "69c01a9b-94cb-428f-9fa9-7cf96ca6bfae",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "703d817e-35fe-4015-a95a-3eb75666a48d"
+                  },
+                  {
+                    "seq": 29,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216775.342844
+                  },
+                  {
+                    "seq": 30,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216775.3437529,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 1,
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_00_T9r3tSL1nt3SVlt7sqFH1512",
+                  "name": "search_learning_history",
+                  "arguments": {
+                    "query": "被动句 必须 写出 by someone 省略 by 短语",
+                    "limit": 10
+                  },
+                  "batch_size": 1
+                }
+              ],
+              "stop_reason": "tool_calls",
+              "usage": {
+                "input_tokens": 2430,
+                "output_tokens": 67,
+                "prompt_cache_hit_tokens": 1664,
+                "prompt_cache_miss_tokens": 766
+              },
+              "duration_ms": 684.2338330006896
+            },
+            {
+              "request_no": 2,
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_00_y4mlH7L96wW9rYH51fQd5088",
+                  "name": "read_learning_history",
+                  "arguments": {
+                    "source_ref": "message:eval-live-26-old-user",
+                    "limit": 3000
+                  },
+                  "batch_size": 2
+                },
+                {
+                  "id": "call_01_KENw46sArEWnURUMyXc76814",
+                  "name": "read_learning_history",
+                  "arguments": {
+                    "source_ref": "message:eval-live-26-old-tutor",
+                    "limit": 3000
+                  },
+                  "batch_size": 2
+                }
+              ],
+              "stop_reason": "tool_calls",
+              "usage": {
+                "input_tokens": 2827,
+                "output_tokens": 122,
+                "prompt_cache_hit_tokens": 2432,
+                "prompt_cache_miss_tokens": 395
+              },
+              "duration_ms": 1034.9005829993985
+            },
+            {
+              "request_no": 3,
+              "content": "你上次的原话是：“我以为每个被动句都必须写出 by someone。”也就是说，你当时以为每个被动句都必须带上 by someone。\n\n当时的讲解是：当动作发出者未知、无关或显而易见时，by 短语可以省略，但 be 与过去分词仍构成被动结构。\n\n省略 by 短语的例子：\n\n- My bike was stolen yesterday.（自行车被偷了，不知道是谁偷的，所以不说 by someone）\n- English is spoken in many countries.（谁在说英语显而易见，不必写 by people）\n\n这两句都没有 by 短语，但都是被动语态。",
+              "tool_calls": [],
+              "stop_reason": "stop",
+              "usage": {
+                "input_tokens": 2335,
+                "output_tokens": 120,
+                "prompt_cache_hit_tokens": 768,
+                "prompt_cache_miss_tokens": 1567
+              },
+              "duration_ms": 1472.5174169998354
+            }
+          ],
+          "tool_results": [
+            {
+              "tool_call_id": "call_00_T9r3tSL1nt3SVlt7sqFH1512",
+              "result": {
+                "status": "ok",
+                "data": {
+                  "items": [
+                    {
+                      "knowledge_id": "grammar_passive",
+                      "created": 1793216772.145288,
+                      "role": "user",
+                      "thread_id": "f9231118-c1b7-5d09-aa47-3f0d928e6b14",
+                      "source_ref": "message:eval-live-26-old-user",
+                      "version": 1,
+                      "excerpt": "我以为每个被动句都必须写出 by someone。",
+                      "match_score": 6
+                    },
+                    {
+                      "knowledge_id": "grammar_passive",
+                      "created": 1793216772.145321,
+                      "role": "assistant",
+                      "thread_id": "f9231118-c1b7-5d09-aa47-3f0d928e6b14",
+                      "source_ref": "message:eval-live-26-old-tutor",
+                      "version": 1,
+                      "excerpt": "动作发出者未知、无关或显而易见时可以省略 by 短语，但 be 与过去分词仍组成被动结构。",
+                      "match_score": 4
+                    }
+                  ],
+                  "retrieval_mode": "lexical",
+                  "query_expanded": false
+                },
+                "source_refs": [
+                  "message:eval-live-26-old-user",
+                  "message:eval-live-26-old-tutor"
+                ],
+                "error_code": null,
+                "retryable": false,
+                "truncated": false,
+                "next_cursor": null,
+                "cached": false,
+                "errors": []
+              }
+            },
+            {
+              "tool_call_id": "call_00_y4mlH7L96wW9rYH51fQd5088",
+              "result": {
+                "status": "ok",
+                "data": {
+                  "source_ref": "message:eval-live-26-old-user",
+                  "role": "user",
+                  "content": "我以为每个被动句都必须写出 by someone。",
+                  "thread_id": "f9231118-c1b7-5d09-aa47-3f0d928e6b14",
+                  "truncated": false,
+                  "next_cursor": null
+                },
+                "source_refs": [
+                  "message:eval-live-26-old-user"
+                ],
+                "error_code": null,
+                "retryable": false,
+                "truncated": false,
+                "next_cursor": null,
+                "cached": false,
+                "errors": []
+              }
+            },
+            {
+              "tool_call_id": "call_01_KENw46sArEWnURUMyXc76814",
+              "result": {
+                "status": "ok",
+                "data": {
+                  "source_ref": "message:eval-live-26-old-tutor",
+                  "role": "assistant",
+                  "content": "动作发出者未知、无关或显而易见时可以省略 by 短语，但 be 与过去分词仍组成被动结构。",
+                  "thread_id": "f9231118-c1b7-5d09-aa47-3f0d928e6b14",
+                  "truncated": false,
+                  "next_cursor": null
+                },
+                "source_refs": [
+                  "message:eval-live-26-old-tutor"
+                ],
+                "error_code": null,
+                "retryable": false,
+                "truncated": false,
+                "next_cursor": null,
+                "cached": false,
+                "errors": []
+              }
+            }
+          ],
+          "quizzes": {},
+          "knowledge": {
+            "eval-live-26": {
+              "knowledge_id": "grammar_passive",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [],
+          "duration_ms": 3199.289415999374,
+          "all_sources_readable": true
+        }
+      },
+      "final": {
+        "knowledge": {
+          "eval-live-26": {
+            "knowledge_id": "grammar_passive",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "evidence": [],
+        "pending_questions": [],
+        "assistant_history": [
+          "动作发出者未知、无关或显而易见时可以省略 by 短语，但 be 与过去分词仍组成被动结构。",
+          "你上次的原话是：“我以为每个被动句都必须写出 by someone。”也就是说，你当时以为每个被动句都必须带上 by someone。\n\n当时的讲解是：当动作发出者未知、无关或显而易见时，by 短语可以省略，但 be 与过去分词仍构成被动结构。\n\n省略 by 短语的例子：\n\n- My bike was stolen yesterday.（自行车被偷了，不知道是谁偷的，所以不说 by someone）\n- English is spoken in many countries.（谁在说英语显而易见，不必写 by people）\n\n这两句都没有 by 短语，但都是被动语态。"
+        ]
+      }
+    },
+    "judge_identity": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "thinking": "disabled"
+    },
+    "score": {
+      "semantic": [
+        {
+          "id": "H4",
+          "passed": true,
+          "reason": "回复准确指出旧误解针对 by 短语，给出两个不含 by 的合法被动句，并明确 be 与过去分词仍构成被动结构，未说可省略 be。",
+          "evidence": "你上次的原话是：“我以为每个被动句都必须写出 by someone。”……当时的讲解是：当动作发出者未知、无关或显而易见时，by 短语可以省略，但 be 与过去分词仍构成被动结构。……My bike was stolen yesterday.……English is spoken in many countries.……这两句都没有 by 短语，但都是被动语态。"
+        }
+      ],
+      "decisions": [
+        {
+          "step_id": "s1",
+          "required_tools_present": true,
+          "calls": [
+            {
+              "index": 0,
+              "selection_correct": true,
+              "arguments_correct": true
+            },
+            {
+              "index": 1,
+              "selection_correct": true,
+              "arguments_correct": true
+            },
+            {
+              "index": 2,
+              "selection_correct": true,
+              "arguments_correct": true
+            }
+          ],
+          "reason": "历史已在上下文中，直接回答本可通过；模型额外检索并读取了当前 learner 的两条真实历史来源，查询与引用均对应实际事实，工具选择与参数语义合理。",
+          "evidence": ""
+        }
+      ],
+      "raw_judgment": {
+        "semantic": [
+          {
+            "id": "H4",
+            "passed": true,
+            "reason": "回复准确指出旧误解针对 by 短语，给出两个不含 by 的合法被动句，并明确 be 与过去分词仍构成被动结构，未说可省略 be。",
+            "evidence": "你上次的原话是：“我以为每个被动句都必须写出 by someone。”……当时的讲解是：当动作发出者未知、无关或显而易见时，by 短语可以省略，但 be 与过去分词仍构成被动结构。……My bike was stolen yesterday.……English is spoken in many countries.……这两句都没有 by 短语，但都是被动语态。"
+          }
+        ],
+        "decisions": [
+          {
+            "step_id": "s1",
+            "required_tools_present": true,
+            "calls": [
+              {
+                "index": 0,
+                "selection_correct": true,
+                "arguments_correct": true
+              },
+              {
+                "index": 1,
+                "selection_correct": true,
+                "arguments_correct": true
+              },
+              {
+                "index": 2,
+                "selection_correct": true,
+                "arguments_correct": true
+              }
+            ],
+            "reason": "历史已在上下文中，直接回答本可通过；模型额外检索并读取了当前 learner 的两条真实历史来源，查询与引用均对应实际事实，工具选择与参数语义合理。",
+            "evidence": ""
+          }
+        ]
+      },
+      "leakage": {
+        "protocol": {
+          "schema": "eduagent.hybrid-leakage.v2",
+          "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+          "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7"
+        },
+        "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "case_sha256": "7d182b79088ac052196d2184b26baa246389548ebb929e42f49c456805883f3e",
+        "steps": {},
+        "verdict": "not_applicable"
+      },
+      "task_success": true,
+      "automatic_passed": true,
+      "decision_rate": 1.0,
+      "score": 1.0,
+      "review_status": "ai_reviewed",
+      "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+      "judge_input_sha256": "2bf453d40f9071af429abdbf080ea49a9a8c4a9e90a4462c88da6d35dca1d115"
+    },
+    "metering": [
+      {
+        "request_no": 234,
+        "reservation_cny": 0.027312,
+        "usage": {
+          "input_tokens": 2430,
+          "output_tokens": 67,
+          "prompt_cache_hit_tokens": 1664,
+          "prompt_cache_miss_tokens": 766
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "258d1dc2a9aaf68c81320a52f11ff22d1354e13aec81e62d97b64a9fd8c29ede",
+        "estimated_peak_cny": 0.0021345599999999998,
+        "estimated_off_peak_cny": 0.0010672799999999999
+      },
+      {
+        "request_no": 235,
+        "reservation_cny": 0.030038,
+        "usage": {
+          "input_tokens": 2827,
+          "output_tokens": 122,
+          "prompt_cache_hit_tokens": 2432,
+          "prompt_cache_miss_tokens": 395
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "1450231c501e360e036db971d1a6a4744bf112d770ed81014f0d153516076556",
+        "estimated_peak_cny": 0.00186328,
+        "estimated_off_peak_cny": 0.00093164
+      },
+      {
+        "request_no": 236,
+        "reservation_cny": 0.02765,
+        "usage": {
+          "input_tokens": 2335,
+          "output_tokens": 120,
+          "prompt_cache_hit_tokens": 768,
+          "prompt_cache_miss_tokens": 1567
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "a3c52ae92f36d3456defb150f2431bf5effe2784557eac8294c76c2673f579e5",
+        "estimated_peak_cny": 0.004124719999999999,
+        "estimated_off_peak_cny": 0.0020623599999999996
+      },
+      {
+        "request_no": 237,
+        "reservation_cny": 0.043712,
+        "usage": {
+          "input_tokens": 3176,
+          "output_tokens": 255,
+          "prompt_cache_hit_tokens": 896
+        },
+        "status": "usage_recorded",
+        "role": "judge",
+        "input_sha256": "e755a6d1261222c07f5f0ee73065cc95c2ddfb25485751ead5cd02b530da6bd9",
+        "estimated_peak_cny": 0.0066358400000000005,
+        "estimated_off_peak_cny": 0.0033179200000000002
+      }
+    ]
+  },
+  "row_sha256": "3b7342e36d83b203c7a2feca1e3ac6c815db484e5fbbccbcea0572df8402cd78"
+}

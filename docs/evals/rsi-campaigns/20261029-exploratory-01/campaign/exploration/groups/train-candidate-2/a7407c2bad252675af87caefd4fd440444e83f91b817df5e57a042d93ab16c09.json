@@ -1,0 +1,954 @@
+{
+  "binding": "7a9ea7964f8ae6b481271b44c96917674b53d71266424352b8fe7a3a763cec21",
+  "row": {
+    "case_id": "live-30-history-correction",
+    "capability": "grounded_history",
+    "evaluation_index": 31,
+    "policy_sha256": "7a0faf6220ccbe2cd98c07d729bebfaa1f3a592bf5676dfed3a54cc42b36c47e",
+    "scoring_status": "completed",
+    "automatic": {
+      "case_id": "live-30-history-correction",
+      "category": "跨会话记忆",
+      "title": "历史：采用后来纠正的误解记录",
+      "evaluation_role": "agent_primary",
+      "status": "review_pending",
+      "automatic_passed": true,
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "path": "s1.execution",
+          "rule": "status=completed、dialogue_state=answered；thread 与预置 vocab_basic 主题相同。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "path": "s1.execution.source_refs",
+          "rule": "与两条预置真实来源至少有一个交集；所有引用均可按当前 learner 读取。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "path": "learner.knowledge_states.vocab_basic",
+          "rule": "所有 KnowledgeState 字段保持不变。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "semantic_review",
+          "path": "s1.teaching_response.response",
+          "rule": "明确学生后来已区分提交物，仅就接收方讲 to someone，不能持续宣称学生仍把 essays 当接收者。",
+          "passed": null,
+          "status": "review_pending"
+        }
+      ],
+      "execution_outcome": "completed",
+      "execution_failures": [],
+      "annotations": {},
+      "quality_review": {
+        "status": "review_pending",
+        "reviewer": null,
+        "scores": null,
+        "anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。"
+        }
+      }
+    },
+    "observed": {
+      "initial": {
+        "knowledge": {
+          "eval-live-30": {
+            "knowledge_id": "vocab_basic",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "thread_id": "92e567cb-61e4-56e0-8610-1955a9d6902d"
+      },
+      "fixture_validation": {
+        "valid": true,
+        "checks": {
+          "default_knowledge": true,
+          "no_answer_fields_in_context": true,
+          "no_preexisting_pending": true,
+          "seeded_history_visible": true
+        },
+        "initial_source_refs": [
+          "message:eval-live-30-old-tutor",
+          "message:eval-live-30-old-user"
+        ]
+      },
+      "steps": {
+        "s1": {
+          "action": "converse",
+          "student_input": "我后来补充已经搞懂了哪部分？这次只讲我还疑惑的接收者。",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-30",
+            "knowledge_id": "vocab_basic",
+            "correlation_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "你后来补充搞懂的是：**essays 是提交物（宾语）**，所以不该写成 submit to their essays，而应是 submit the essays。\n\n剩下“接收者”的用法：\n\n- **submit 的宾语是提交物**：submit the essays。\n- **接收者用 to 引出**，放在宾语后面：submit the essays **to the teacher**。\n- 判断标准：如果句子里已经说清“交什么”，但没交代“交给谁”，而语境需要说明接收者，就加 to + 人/机构；如果接收者不言自明（比如上下文已明确是给任课老师），可以省略。\n\n所以完整形式是：I submitted the essays to the teacher. 而不是 submit to the essays。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "vocab_basic",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [
+                "message:eval-live-30-old-tutor",
+                "message:eval-live-30-old-user"
+              ],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "vocab_basic",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "vocab_basic",
+                "response": "你后来补充搞懂的是：**essays 是提交物（宾语）**，所以不该写成 submit to their essays，而应是 submit the essays。\n\n剩下“接收者”的用法：\n\n- **submit 的宾语是提交物**：submit the essays。\n- **接收者用 to 引出**，放在宾语后面：submit the essays **to the teacher**。\n- 判断标准：如果句子里已经说清“交什么”，但没交代“交给谁”，而语境需要说明接收者，就加 to + 人/机构；如果接收者不言自明（比如上下文已明确是给任课老师），可以省略。\n\n所以完整形式是：I submitted the essays to the teacher. 而不是 submit to the essays。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [
+                  "message:eval-live-30-old-tutor",
+                  "message:eval-live-30-old-user"
+                ],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "question": "我后来补充已经搞懂了哪部分？这次只讲我还疑惑的接收者。"
+                },
+                "timestamp": "2026-10-29T03:46:28.604864",
+                "correlation_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "response": "你后来补充搞懂的是：**essays 是提交物（宾语）**，所以不该写成 submit to their essays，而应是 submit the essays。\n\n剩下“接收者”的用法：\n\n- **submit 的宾语是提交物**：submit the essays。\n- **接收者用 to 引出**，放在宾语后面：submit the essays **to the teacher**。\n- 判断标准：如果句子里已经说清“交什么”，但没交代“交给谁”，而语境需要说明接收者，就加 to + 人/机构；如果接收者不言自明（比如上下文已明确是给任课老师），可以省略。\n\n所以完整形式是：I submitted the essays to the teacher. 而不是 submit to the essays。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [
+                    "message:eval-live-30-old-tutor",
+                    "message:eval-live-30-old-user"
+                  ],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:46:32.197835",
+                "correlation_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-30-history-correction-s1",
+              "run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87",
+              "attempt_id": "cf2eff8e-07a7-4b5e-bf97-70de89fd067f",
+              "session_id": "eval-live-30-new",
+              "thread_id": "92e567cb-61e4-56e0-8610-1955a9d6902d",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [
+                "message:eval-live-30-old-tutor",
+                "message:eval-live-30-old-user"
+              ],
+              "retrieved_refs": [
+                "message:eval-live-30-old-user",
+                "message:eval-live-30-old-tutor"
+              ],
+              "read_refs": [
+                "message:eval-live-30-old-user",
+                "message:eval-live-30-old-tutor"
+              ],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "b75ca527c2404dd4379ff3e6f461aa264ecebacbe22dcf8fe0646877dd8f6710"
+            }
+          },
+          "trace": {
+            "request_id": "live-30-history-correction-s1",
+            "attempts": [
+              {
+                "attempt_id": "cf2eff8e-07a7-4b5e-bf97-70de89fd067f",
+                "run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216788.604597,
+                "finished": 1793216792.198892,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216788.604769,
+                    "effective_policy_hash": "b75ca527c2404dd4379ff3e6f461aa264ecebacbe22dcf8fe0646877dd8f6710"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793216788.604843,
+                    "route": "Tutor",
+                    "reason": "question_intent"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216788.604886,
+                    "event_id": "2eca5820-b0e7-4b4e-a8cc-ae0e9fa87cea",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216788.604901,
+                    "event_id": "2eca5820-b0e7-4b4e-a8cc-ae0e9fa87cea"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216788.60514,
+                    "lexical_hits": 2,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216788.6053429,
+                    "source_refs": [
+                      "message:eval-live-30-old-tutor",
+                      "message:eval-live-30-old-user"
+                    ],
+                    "omitted_refs": [],
+                    "token_estimate": 2087,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "explanation",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216788.606608,
+                    "model_call": 1,
+                    "token_estimate": 3049
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216788.6114502,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87"
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216789.745124,
+                    "model_call": 1,
+                    "stop_reason": "tool_calls",
+                    "usage": {
+                      "input_tokens": 2358,
+                      "output_tokens": 66,
+                      "prompt_cache_hit_tokens": 1920,
+                      "prompt_cache_miss_tokens": 438
+                    }
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216789.745142,
+                    "resource": "tool",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87"
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "before_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216789.7451441,
+                    "tool": "search_learning_history",
+                    "tool_call_id": "call_00_rbBClFMST8txRwpc7ByJ1116",
+                    "task_id": null,
+                    "parent_run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87"
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216789.745568,
+                    "lexical_hits": 2,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "after_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216789.7456691,
+                    "tool": "search_learning_history",
+                    "tool_call_id": "call_00_rbBClFMST8txRwpc7ByJ1116",
+                    "task_id": null,
+                    "status": "ok",
+                    "source_refs": [
+                      "message:eval-live-30-old-user",
+                      "message:eval-live-30-old-tutor"
+                    ],
+                    "error_code": null,
+                    "cached": false,
+                    "elapsed_ms": 1,
+                    "result_keys": [
+                      "items",
+                      "query_expanded",
+                      "retrieval_mode"
+                    ]
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216789.745842,
+                    "model_call": 2,
+                    "token_estimate": 3524
+                  },
+                  {
+                    "seq": 15,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216789.751314,
+                    "resource": "model",
+                    "used": 2,
+                    "task_id": null,
+                    "parent_run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87"
+                  },
+                  {
+                    "seq": 16,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216790.576818,
+                    "model_call": 2,
+                    "stop_reason": "tool_calls",
+                    "usage": {
+                      "input_tokens": 2770,
+                      "output_tokens": 122,
+                      "prompt_cache_hit_tokens": 2304,
+                      "prompt_cache_miss_tokens": 466
+                    }
+                  },
+                  {
+                    "seq": 17,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216790.5768378,
+                    "resource": "tool",
+                    "used": 2,
+                    "task_id": null,
+                    "parent_run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87"
+                  },
+                  {
+                    "seq": 18,
+                    "kind": "before_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216790.5768409,
+                    "tool": "read_learning_history",
+                    "tool_call_id": "call_00_WAyrAciCMIhw9WT2mfcO6203",
+                    "task_id": null,
+                    "parent_run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87"
+                  },
+                  {
+                    "seq": 19,
+                    "kind": "after_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216790.5770931,
+                    "tool": "read_learning_history",
+                    "tool_call_id": "call_00_WAyrAciCMIhw9WT2mfcO6203",
+                    "task_id": null,
+                    "status": "ok",
+                    "source_refs": [
+                      "message:eval-live-30-old-user"
+                    ],
+                    "error_code": null,
+                    "cached": false,
+                    "elapsed_ms": 0,
+                    "result_keys": [
+                      "content",
+                      "next_cursor",
+                      "role",
+                      "source_ref",
+                      "thread_id",
+                      "truncated"
+                    ]
+                  },
+                  {
+                    "seq": 20,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216790.577146,
+                    "resource": "tool",
+                    "used": 3,
+                    "task_id": null,
+                    "parent_run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87"
+                  },
+                  {
+                    "seq": 21,
+                    "kind": "before_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216790.5771468,
+                    "tool": "read_learning_history",
+                    "tool_call_id": "call_01_cuOr3XTOT9PD46oeM1uh2855",
+                    "task_id": null,
+                    "parent_run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87"
+                  },
+                  {
+                    "seq": 22,
+                    "kind": "after_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216790.5771918,
+                    "tool": "read_learning_history",
+                    "tool_call_id": "call_01_cuOr3XTOT9PD46oeM1uh2855",
+                    "task_id": null,
+                    "status": "ok",
+                    "source_refs": [
+                      "message:eval-live-30-old-tutor"
+                    ],
+                    "error_code": null,
+                    "cached": false,
+                    "elapsed_ms": 0,
+                    "result_keys": [
+                      "content",
+                      "next_cursor",
+                      "role",
+                      "source_ref",
+                      "thread_id",
+                      "truncated"
+                    ]
+                  },
+                  {
+                    "seq": 23,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216790.577279,
+                    "model_call": 3,
+                    "token_estimate": 3151
+                  },
+                  {
+                    "seq": 24,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216790.58208,
+                    "resource": "model",
+                    "used": 3,
+                    "task_id": null,
+                    "parent_run_id": "70de22c3-c4cd-5669-aa4b-cfd9a7a12c87"
+                  },
+                  {
+                    "seq": 25,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216792.1977751,
+                    "model_call": 3,
+                    "stop_reason": "stop",
+                    "usage": {
+                      "input_tokens": 2294,
+                      "output_tokens": 157,
+                      "prompt_cache_hit_tokens": 1024,
+                      "prompt_cache_miss_tokens": 1270
+                    }
+                  },
+                  {
+                    "seq": 26,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216792.197789,
+                    "retrieved_refs": [
+                      "message:eval-live-30-old-user",
+                      "message:eval-live-30-old-tutor"
+                    ],
+                    "read_refs": [
+                      "message:eval-live-30-old-user",
+                      "message:eval-live-30-old-tutor"
+                    ],
+                    "cited_refs": []
+                  },
+                  {
+                    "seq": 27,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216792.197945,
+                    "event_id": "2eca5820-b0e7-4b4e-a8cc-ae0e9fa87cea",
+                    "duration_ms": 3593
+                  },
+                  {
+                    "seq": 28,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216792.197952,
+                    "event_id": "6fe2d3af-247d-4432-bd4f-960843d248c3",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "2eca5820-b0e7-4b4e-a8cc-ae0e9fa87cea"
+                  },
+                  {
+                    "seq": 29,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216792.198099
+                  },
+                  {
+                    "seq": 30,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216792.198612,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 1,
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_00_rbBClFMST8txRwpc7ByJ1116",
+                  "name": "search_learning_history",
+                  "arguments": {
+                    "query": "submit to their essays 接收者 补充 搞懂",
+                    "limit": 10
+                  },
+                  "batch_size": 1
+                }
+              ],
+              "stop_reason": "tool_calls",
+              "usage": {
+                "input_tokens": 2358,
+                "output_tokens": 66,
+                "prompt_cache_hit_tokens": 1920,
+                "prompt_cache_miss_tokens": 438
+              },
+              "duration_ms": 1138.4461670004384
+            },
+            {
+              "request_no": 2,
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_00_WAyrAciCMIhw9WT2mfcO6203",
+                  "name": "read_learning_history",
+                  "arguments": {
+                    "source_ref": "message:eval-live-30-old-user",
+                    "limit": 3000
+                  },
+                  "batch_size": 2
+                },
+                {
+                  "id": "call_01_cuOr3XTOT9PD46oeM1uh2855",
+                  "name": "read_learning_history",
+                  "arguments": {
+                    "source_ref": "message:eval-live-30-old-tutor",
+                    "limit": 3000
+                  },
+                  "batch_size": 2
+                }
+              ],
+              "stop_reason": "tool_calls",
+              "usage": {
+                "input_tokens": 2770,
+                "output_tokens": 122,
+                "prompt_cache_hit_tokens": 2304,
+                "prompt_cache_miss_tokens": 466
+              },
+              "duration_ms": 830.84829100153
+            },
+            {
+              "request_no": 3,
+              "content": "你后来补充搞懂的是：**essays 是提交物（宾语）**，所以不该写成 submit to their essays，而应是 submit the essays。\n\n剩下“接收者”的用法：\n\n- **submit 的宾语是提交物**：submit the essays。\n- **接收者用 to 引出**，放在宾语后面：submit the essays **to the teacher**。\n- 判断标准：如果句子里已经说清“交什么”，但没交代“交给谁”，而语境需要说明接收者，就加 to + 人/机构；如果接收者不言自明（比如上下文已明确是给任课老师），可以省略。\n\n所以完整形式是：I submitted the essays to the teacher. 而不是 submit to the essays。",
+              "tool_calls": [],
+              "stop_reason": "stop",
+              "usage": {
+                "input_tokens": 2294,
+                "output_tokens": 157,
+                "prompt_cache_hit_tokens": 1024,
+                "prompt_cache_miss_tokens": 1270
+              },
+              "duration_ms": 1620.429000000513
+            }
+          ],
+          "tool_results": [
+            {
+              "tool_call_id": "call_00_rbBClFMST8txRwpc7ByJ1116",
+              "result": {
+                "status": "ok",
+                "data": {
+                  "items": [
+                    {
+                      "knowledge_id": "vocab_basic",
+                      "created": 1793216788.603588,
+                      "role": "user",
+                      "thread_id": "92e567cb-61e4-56e0-8610-1955a9d6902d",
+                      "source_ref": "message:eval-live-30-old-user",
+                      "version": 1,
+                      "excerpt": "起初我写 submit to their essays。现在补充：我已经知道 essays 是提交物，剩下的问题是何时写接收者。",
+                      "match_score": 7
+                    },
+                    {
+                      "knowledge_id": "vocab_basic",
+                      "created": 1793216788.603615,
+                      "role": "assistant",
+                      "thread_id": "92e567cb-61e4-56e0-8610-1955a9d6902d",
+                      "source_ref": "message:eval-live-30-old-tutor",
+                      "version": 1,
+                      "excerpt": "采用你后来的澄清：submit the essays 已有宾语；若交给老师，可加 to the teacher 表明接收者。",
+                      "match_score": 5
+                    }
+                  ],
+                  "retrieval_mode": "lexical",
+                  "query_expanded": false
+                },
+                "source_refs": [
+                  "message:eval-live-30-old-user",
+                  "message:eval-live-30-old-tutor"
+                ],
+                "error_code": null,
+                "retryable": false,
+                "truncated": false,
+                "next_cursor": null,
+                "cached": false,
+                "errors": []
+              }
+            },
+            {
+              "tool_call_id": "call_00_WAyrAciCMIhw9WT2mfcO6203",
+              "result": {
+                "status": "ok",
+                "data": {
+                  "source_ref": "message:eval-live-30-old-user",
+                  "role": "user",
+                  "content": "起初我写 submit to their essays。现在补充：我已经知道 essays 是提交物，剩下的问题是何时写接收者。",
+                  "thread_id": "92e567cb-61e4-56e0-8610-1955a9d6902d",
+                  "truncated": false,
+                  "next_cursor": null
+                },
+                "source_refs": [
+                  "message:eval-live-30-old-user"
+                ],
+                "error_code": null,
+                "retryable": false,
+                "truncated": false,
+                "next_cursor": null,
+                "cached": false,
+                "errors": []
+              }
+            },
+            {
+              "tool_call_id": "call_01_cuOr3XTOT9PD46oeM1uh2855",
+              "result": {
+                "status": "ok",
+                "data": {
+                  "source_ref": "message:eval-live-30-old-tutor",
+                  "role": "assistant",
+                  "content": "采用你后来的澄清：submit the essays 已有宾语；若交给老师，可加 to the teacher 表明接收者。",
+                  "thread_id": "92e567cb-61e4-56e0-8610-1955a9d6902d",
+                  "truncated": false,
+                  "next_cursor": null
+                },
+                "source_refs": [
+                  "message:eval-live-30-old-tutor"
+                ],
+                "error_code": null,
+                "retryable": false,
+                "truncated": false,
+                "next_cursor": null,
+                "cached": false,
+                "errors": []
+              }
+            }
+          ],
+          "quizzes": {},
+          "knowledge": {
+            "eval-live-30": {
+              "knowledge_id": "vocab_basic",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [],
+          "duration_ms": 3595.240249998824,
+          "all_sources_readable": true
+        }
+      },
+      "final": {
+        "knowledge": {
+          "eval-live-30": {
+            "knowledge_id": "vocab_basic",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "evidence": [],
+        "pending_questions": [],
+        "assistant_history": [
+          "采用你后来的澄清：submit the essays 已有宾语；若交给老师，可加 to the teacher 表明接收者。",
+          "你后来补充搞懂的是：**essays 是提交物（宾语）**，所以不该写成 submit to their essays，而应是 submit the essays。\n\n剩下“接收者”的用法：\n\n- **submit 的宾语是提交物**：submit the essays。\n- **接收者用 to 引出**，放在宾语后面：submit the essays **to the teacher**。\n- 判断标准：如果句子里已经说清“交什么”，但没交代“交给谁”，而语境需要说明接收者，就加 to + 人/机构；如果接收者不言自明（比如上下文已明确是给任课老师），可以省略。\n\n所以完整形式是：I submitted the essays to the teacher. 而不是 submit to the essays。"
+        ]
+      }
+    },
+    "judge_identity": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "thinking": "disabled"
+    },
+    "score": {
+      "semantic": [
+        {
+          "id": "H4",
+          "passed": true,
+          "reason": "回复明确承认学生后来已区分 essays 是提交物（宾语），并仅就接收者讲解 to someone，未持续宣称学生仍把 essays 当接收者。",
+          "evidence": "你后来补充搞懂的是：**essays 是提交物（宾语）**，所以不该写成 submit to their essays，而应是 submit the essays。……**接收者用 to 引出**，放在宾语后面：submit the essays **to the teacher**。"
+        }
+      ],
+      "decisions": [
+        {
+          "step_id": "s1",
+          "required_tools_present": true,
+          "calls": [
+            {
+              "index": 0,
+              "selection_correct": true,
+              "arguments_correct": true
+            },
+            {
+              "index": 1,
+              "selection_correct": true,
+              "arguments_correct": true
+            },
+            {
+              "index": 2,
+              "selection_correct": true,
+              "arguments_correct": true
+            }
+          ],
+          "reason": "历史已在上下文中，直接回答本可通过；实际额外搜索并读取了当前 learner 的两条真实历史来源，工具选择与参数语义均合理，引用内容与实际事实对应。",
+          "evidence": ""
+        }
+      ],
+      "raw_judgment": {
+        "semantic": [
+          {
+            "id": "H4",
+            "passed": true,
+            "reason": "回复明确承认学生后来已区分 essays 是提交物（宾语），并仅就接收者讲解 to someone，未持续宣称学生仍把 essays 当接收者。",
+            "evidence": "你后来补充搞懂的是：**essays 是提交物（宾语）**，所以不该写成 submit to their essays，而应是 submit the essays。……**接收者用 to 引出**，放在宾语后面：submit the essays **to the teacher**。"
+          }
+        ],
+        "decisions": [
+          {
+            "step_id": "s1",
+            "required_tools_present": true,
+            "calls": [
+              {
+                "index": 0,
+                "selection_correct": true,
+                "arguments_correct": true
+              },
+              {
+                "index": 1,
+                "selection_correct": true,
+                "arguments_correct": true
+              },
+              {
+                "index": 2,
+                "selection_correct": true,
+                "arguments_correct": true
+              }
+            ],
+            "reason": "历史已在上下文中，直接回答本可通过；实际额外搜索并读取了当前 learner 的两条真实历史来源，工具选择与参数语义均合理，引用内容与实际事实对应。",
+            "evidence": ""
+          }
+        ]
+      },
+      "leakage": {
+        "protocol": {
+          "schema": "eduagent.hybrid-leakage.v2",
+          "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+          "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7"
+        },
+        "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "case_sha256": "578e7c437f194ac2eaedbf55ff083e26a48af0acb41e8e7c126566ce844b57d7",
+        "steps": {},
+        "verdict": "not_applicable"
+      },
+      "task_success": true,
+      "automatic_passed": true,
+      "decision_rate": 1.0,
+      "score": 1.0,
+      "review_status": "ai_reviewed",
+      "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+      "judge_input_sha256": "f6a8d93a21191066272b04128cb36db890c76178ef5038d3d7733ebb041e8df5"
+    },
+    "metering": [
+      {
+        "request_no": 246,
+        "reservation_cny": 0.026738,
+        "usage": {
+          "input_tokens": 2358,
+          "output_tokens": 66,
+          "prompt_cache_hit_tokens": 1920,
+          "prompt_cache_miss_tokens": 438
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "44fd5c88f13ba84fb20e87b3bf498da0d4959486693231a816b6a3bfbb13241d",
+        "estimated_peak_cny": 0.0014808,
+        "estimated_off_peak_cny": 0.0007404
+      },
+      {
+        "request_no": 247,
+        "reservation_cny": 0.02959,
+        "usage": {
+          "input_tokens": 2770,
+          "output_tokens": 122,
+          "prompt_cache_hit_tokens": 2304,
+          "prompt_cache_miss_tokens": 466
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "606b8333e960925839322443b51e84727a2d4d02d58743ab5afcd35d6673ec3a",
+        "estimated_peak_cny": 0.00200016,
+        "estimated_off_peak_cny": 0.00100008
+      },
+      {
+        "request_no": 248,
+        "reservation_cny": 0.027354,
+        "usage": {
+          "input_tokens": 2294,
+          "output_tokens": 157,
+          "prompt_cache_hit_tokens": 1024,
+          "prompt_cache_miss_tokens": 1270
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "72ec25d484c2b2d1069c571f0dd4d13bc0865cb41216003f7c2bc973c8e90699",
+        "estimated_peak_cny": 0.00383696,
+        "estimated_off_peak_cny": 0.00191848
+      },
+      {
+        "request_no": 249,
+        "reservation_cny": 0.04455,
+        "usage": {
+          "input_tokens": 3303,
+          "output_tokens": 231,
+          "prompt_cache_hit_tokens": 1280
+        },
+        "status": "usage_recorded",
+        "role": "judge",
+        "input_sha256": "4cb67781f04f942346c1343922b4375efe7fe3cd17716f0732d3e0e4b9c9d756",
+        "estimated_peak_cny": 0.0059451999999999994,
+        "estimated_off_peak_cny": 0.0029725999999999997
+      }
+    ]
+  },
+  "row_sha256": "07130364115ef3b6e280076846c25084fef1cdac9b77e807bae2f7668567bccc"
+}

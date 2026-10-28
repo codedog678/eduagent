@@ -1,0 +1,759 @@
+{
+  "binding": "4c1369c5f29ec626e19500632b81155ad1426d4e40dc65270cef9f674fb7da88",
+  "row": {
+    "case_id": "live-42-missing-note",
+    "capability": "tool_and_evidence_decision",
+    "evaluation_index": 61,
+    "policy_sha256": "d6a798b89944ae1ac4b3326478b1b80c7e8634434f7a1adc87cf2a381e500ba8",
+    "scoring_status": "completed",
+    "automatic": {
+      "case_id": "live-42-missing-note",
+      "category": "工具与缺失证据决策",
+      "title": "工具决策：旧笔记不存在时停止猜测",
+      "evaluation_role": "agent_primary",
+      "status": "review_pending",
+      "automatic_passed": true,
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "path": "s1.execution.status",
+          "rule": "等于 completed。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "path": "s1.execution.dialogue_state",
+          "rule": "等于 answered；pending_question_id 为空。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "path": "learner.knowledge_states.grammar_tenses",
+          "rule": "场景前后所有 KnowledgeState 字段相同。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "semantic_review",
+          "path": "s1.teaching_response.response",
+          "rule": "搜索 ABSENT41 后承认没有旧笔记；可给新自查方法，但明确是本次新建议，不伪装成历史原文。",
+          "passed": null,
+          "status": "review_pending"
+        }
+      ],
+      "execution_outcome": "completed",
+      "execution_failures": [],
+      "annotations": {},
+      "quality_review": {
+        "status": "review_pending",
+        "reviewer": null,
+        "scores": null,
+        "anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。"
+        }
+      }
+    },
+    "observed": {
+      "initial": {
+        "knowledge": {
+          "eval-live-42": {
+            "knowledge_id": "grammar_tenses",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "thread_id": "ecf533f4-1f19-5b11-ac6e-99f6ebdf983b"
+      },
+      "fixture_validation": {
+        "valid": true,
+        "checks": {
+          "default_knowledge": true,
+          "no_answer_fields_in_context": true,
+          "no_preexisting_pending": true
+        },
+        "initial_source_refs": []
+      },
+      "steps": {
+        "s1": {
+          "action": "converse",
+          "student_input": "请搜索我名为 ABSENT41 的旧时态笔记。找不到就说未找到，再给一个新写的时态自查方法，并标清是新建议。",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-42",
+            "knowledge_id": "grammar_tenses",
+            "correlation_id": "c92d647c-6b1d-5161-877c-50a89a28e6bf",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "**检索结果：未找到。** 我按“ABSENT41 时态笔记”和“ABSENT41”分别检索了公开学习历史，两次都返回空集，没有可追溯的来源。所以无法确认你是否有过这样一份笔记，也不能凭印象复述它的内容。\n\n以下是**新建议**（我新写的，不是从你的旧笔记里找出来的）：\n\n## 时态自查三步法\n\n**第一步：先找“时间参照点”，而不是先找时间词**\n问自己：这句话的参照点是“现在说话这一刻”，还是“过去某个时刻”，还是“将来某个时刻”？时态是相对于参照点来定位的，不是由单个词决定的。\n\n**第二步：判断这件事和参照点的关系**\n- 发生在参照点之前、已完成 → 完成类\n- 与参照点同时、在进行 → 进行类\n- 反复、习惯、普遍事实 → 一般类\n\n**第三步：做“替换检验”**\n把句子里的时间词换掉或删掉，看句子意思是否还成立、时态是否还站得住。如果一删时间词时态就崩了，说明你是在靠时间词套时态，而不是靠时间关系判断。\n\n## 常见误区自查清单\n1. 看到 yesterday 就写过去式——先确认它修饰的是哪个动作。\n2. 看到 now 就写进行时——状态动词（know、belong 等）通常不用进行时。\n3. 主句和从句时态不一致时，先问：从句讲的是不是客观事实或普遍规律？\n4. 完成时必须有“与现在的联系”或“截至某参照点的完成”，不能只因为“已经”就用。\n\n## 自测方式\n拿 5 个你自己写过的句子，逐句标出：参照点 → 事件与参照点的关系 → 实际用的时态。三者对不上的，就是需要重点看的地方。\n\n另外说明一点：系统显示你的“基础词汇”前置项尚未达标，因此时态练习目前处于不可用状态；上面的自查方法可以先用来梳理思路，暂时不涉及做题。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "grammar_tenses",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "grammar_tenses",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "grammar_tenses",
+                "response": "**检索结果：未找到。** 我按“ABSENT41 时态笔记”和“ABSENT41”分别检索了公开学习历史，两次都返回空集，没有可追溯的来源。所以无法确认你是否有过这样一份笔记，也不能凭印象复述它的内容。\n\n以下是**新建议**（我新写的，不是从你的旧笔记里找出来的）：\n\n## 时态自查三步法\n\n**第一步：先找“时间参照点”，而不是先找时间词**\n问自己：这句话的参照点是“现在说话这一刻”，还是“过去某个时刻”，还是“将来某个时刻”？时态是相对于参照点来定位的，不是由单个词决定的。\n\n**第二步：判断这件事和参照点的关系**\n- 发生在参照点之前、已完成 → 完成类\n- 与参照点同时、在进行 → 进行类\n- 反复、习惯、普遍事实 → 一般类\n\n**第三步：做“替换检验”**\n把句子里的时间词换掉或删掉，看句子意思是否还成立、时态是否还站得住。如果一删时间词时态就崩了，说明你是在靠时间词套时态，而不是靠时间关系判断。\n\n## 常见误区自查清单\n1. 看到 yesterday 就写过去式——先确认它修饰的是哪个动作。\n2. 看到 now 就写进行时——状态动词（know、belong 等）通常不用进行时。\n3. 主句和从句时态不一致时，先问：从句讲的是不是客观事实或普遍规律？\n4. 完成时必须有“与现在的联系”或“截至某参照点的完成”，不能只因为“已经”就用。\n\n## 自测方式\n拿 5 个你自己写过的句子，逐句标出：参照点 → 事件与参照点的关系 → 实际用的时态。三者对不上的，就是需要重点看的地方。\n\n另外说明一点：系统显示你的“基础词汇”前置项尚未达标，因此时态练习目前处于不可用状态；上面的自查方法可以先用来梳理思路，暂时不涉及做题。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "grammar_tenses",
+                  "question": "请搜索我名为 ABSENT41 的旧时态笔记。找不到就说未找到，再给一个新写的时态自查方法，并标清是新建议。"
+                },
+                "timestamp": "2026-10-29T03:48:31.632920",
+                "correlation_id": "c92d647c-6b1d-5161-877c-50a89a28e6bf"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "grammar_tenses",
+                  "response": "**检索结果：未找到。** 我按“ABSENT41 时态笔记”和“ABSENT41”分别检索了公开学习历史，两次都返回空集，没有可追溯的来源。所以无法确认你是否有过这样一份笔记，也不能凭印象复述它的内容。\n\n以下是**新建议**（我新写的，不是从你的旧笔记里找出来的）：\n\n## 时态自查三步法\n\n**第一步：先找“时间参照点”，而不是先找时间词**\n问自己：这句话的参照点是“现在说话这一刻”，还是“过去某个时刻”，还是“将来某个时刻”？时态是相对于参照点来定位的，不是由单个词决定的。\n\n**第二步：判断这件事和参照点的关系**\n- 发生在参照点之前、已完成 → 完成类\n- 与参照点同时、在进行 → 进行类\n- 反复、习惯、普遍事实 → 一般类\n\n**第三步：做“替换检验”**\n把句子里的时间词换掉或删掉，看句子意思是否还成立、时态是否还站得住。如果一删时间词时态就崩了，说明你是在靠时间词套时态，而不是靠时间关系判断。\n\n## 常见误区自查清单\n1. 看到 yesterday 就写过去式——先确认它修饰的是哪个动作。\n2. 看到 now 就写进行时——状态动词（know、belong 等）通常不用进行时。\n3. 主句和从句时态不一致时，先问：从句讲的是不是客观事实或普遍规律？\n4. 完成时必须有“与现在的联系”或“截至某参照点的完成”，不能只因为“已经”就用。\n\n## 自测方式\n拿 5 个你自己写过的句子，逐句标出：参照点 → 事件与参照点的关系 → 实际用的时态。三者对不上的，就是需要重点看的地方。\n\n另外说明一点：系统显示你的“基础词汇”前置项尚未达标，因此时态练习目前处于不可用状态；上面的自查方法可以先用来梳理思路，暂时不涉及做题。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:48:36.279207",
+                "correlation_id": "c92d647c-6b1d-5161-877c-50a89a28e6bf"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-42-missing-note-s1",
+              "run_id": "c92d647c-6b1d-5161-877c-50a89a28e6bf",
+              "attempt_id": "41374dcb-2ddd-43c4-81cb-aed57e5c9ecd",
+              "session_id": "eval-live-42-s1",
+              "thread_id": "ecf533f4-1f19-5b11-ac6e-99f6ebdf983b",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [],
+              "retrieved_refs": [],
+              "read_refs": [],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+            }
+          },
+          "trace": {
+            "request_id": "live-42-missing-note-s1",
+            "attempts": [
+              {
+                "attempt_id": "41374dcb-2ddd-43c4-81cb-aed57e5c9ecd",
+                "run_id": "c92d647c-6b1d-5161-877c-50a89a28e6bf",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216911.632726,
+                "finished": 1793216916.280015,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216911.632859,
+                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793216911.632907,
+                    "route": "Tutor",
+                    "reason": "question_intent"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216911.6329322,
+                    "event_id": "185f8af5-7e26-45f4-87c2-1580a7149206",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216911.632941,
+                    "event_id": "185f8af5-7e26-45f4-87c2-1580a7149206"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216911.633204,
+                    "lexical_hits": 0,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "history_discovery",
+                    "agent": "Harness",
+                    "timestamp": 1793216911.633277,
+                    "source_refs": [],
+                    "bounded": true
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216911.6333702,
+                    "source_refs": [],
+                    "omitted_refs": [],
+                    "token_estimate": 973,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "explanation",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216911.634346,
+                    "model_call": 1,
+                    "token_estimate": 1935
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216911.6384451,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "c92d647c-6b1d-5161-877c-50a89a28e6bf"
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216912.729123,
+                    "model_call": 1,
+                    "stop_reason": "tool_calls",
+                    "usage": {
+                      "input_tokens": 1609,
+                      "output_tokens": 77,
+                      "prompt_cache_hit_tokens": 1408,
+                      "prompt_cache_miss_tokens": 201
+                    }
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216912.7291431,
+                    "resource": "tool",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "c92d647c-6b1d-5161-877c-50a89a28e6bf"
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "before_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216912.7291489,
+                    "tool": "search_learning_history",
+                    "tool_call_id": "call_00_o9CE10zJsA3ZsoOUfirP6888",
+                    "task_id": null,
+                    "parent_run_id": "c92d647c-6b1d-5161-877c-50a89a28e6bf"
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216912.72963,
+                    "lexical_hits": 0,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "after_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216912.7296782,
+                    "tool": "search_learning_history",
+                    "tool_call_id": "call_00_o9CE10zJsA3ZsoOUfirP6888",
+                    "task_id": null,
+                    "status": "empty",
+                    "source_refs": [],
+                    "error_code": null,
+                    "cached": false,
+                    "elapsed_ms": 1,
+                    "result_keys": [
+                      "items",
+                      "query_expanded",
+                      "retrieval_mode"
+                    ]
+                  },
+                  {
+                    "seq": 15,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216912.72972,
+                    "resource": "tool",
+                    "used": 2,
+                    "task_id": null,
+                    "parent_run_id": "c92d647c-6b1d-5161-877c-50a89a28e6bf"
+                  },
+                  {
+                    "seq": 16,
+                    "kind": "before_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216912.729721,
+                    "tool": "search_learning_history",
+                    "tool_call_id": "call_01_KF18CAYXynlLdiISfsnK4258",
+                    "task_id": null,
+                    "parent_run_id": "c92d647c-6b1d-5161-877c-50a89a28e6bf"
+                  },
+                  {
+                    "seq": 17,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216912.7297862,
+                    "lexical_hits": 0,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 18,
+                    "kind": "after_tool",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216912.7298079,
+                    "tool": "search_learning_history",
+                    "tool_call_id": "call_01_KF18CAYXynlLdiISfsnK4258",
+                    "task_id": null,
+                    "status": "empty",
+                    "source_refs": [],
+                    "error_code": null,
+                    "cached": false,
+                    "elapsed_ms": 0,
+                    "result_keys": [
+                      "items",
+                      "query_expanded",
+                      "retrieval_mode"
+                    ]
+                  },
+                  {
+                    "seq": 19,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216912.729898,
+                    "model_call": 2,
+                    "token_estimate": 2288
+                  },
+                  {
+                    "seq": 20,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216912.73566,
+                    "resource": "model",
+                    "used": 2,
+                    "task_id": null,
+                    "parent_run_id": "c92d647c-6b1d-5161-877c-50a89a28e6bf"
+                  },
+                  {
+                    "seq": 21,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216916.279132,
+                    "model_call": 2,
+                    "stop_reason": "stop",
+                    "usage": {
+                      "input_tokens": 1852,
+                      "output_tokens": 446,
+                      "prompt_cache_hit_tokens": 1664,
+                      "prompt_cache_miss_tokens": 188
+                    }
+                  },
+                  {
+                    "seq": 22,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216916.279148,
+                    "retrieved_refs": [],
+                    "read_refs": [],
+                    "cited_refs": []
+                  },
+                  {
+                    "seq": 23,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216916.2792919,
+                    "event_id": "185f8af5-7e26-45f4-87c2-1580a7149206",
+                    "duration_ms": 4646
+                  },
+                  {
+                    "seq": 24,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216916.279295,
+                    "event_id": "b8925fca-8542-4936-8e12-439d92cf6919",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "185f8af5-7e26-45f4-87c2-1580a7149206"
+                  },
+                  {
+                    "seq": 25,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216916.279386
+                  },
+                  {
+                    "seq": 26,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216916.279893,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 1,
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_00_o9CE10zJsA3ZsoOUfirP6888",
+                  "name": "search_learning_history",
+                  "arguments": {
+                    "query": "ABSENT41 时态笔记"
+                  },
+                  "batch_size": 2
+                },
+                {
+                  "id": "call_01_KF18CAYXynlLdiISfsnK4258",
+                  "name": "search_learning_history",
+                  "arguments": {
+                    "query": "ABSENT41"
+                  },
+                  "batch_size": 2
+                }
+              ],
+              "stop_reason": "tool_calls",
+              "usage": {
+                "input_tokens": 1609,
+                "output_tokens": 77,
+                "prompt_cache_hit_tokens": 1408,
+                "prompt_cache_miss_tokens": 201
+              },
+              "duration_ms": 1094.7135840015108
+            },
+            {
+              "request_no": 2,
+              "content": "**检索结果：未找到。** 我按“ABSENT41 时态笔记”和“ABSENT41”分别检索了公开学习历史，两次都返回空集，没有可追溯的来源。所以无法确认你是否有过这样一份笔记，也不能凭印象复述它的内容。\n\n以下是**新建议**（我新写的，不是从你的旧笔记里找出来的）：\n\n## 时态自查三步法\n\n**第一步：先找“时间参照点”，而不是先找时间词**\n问自己：这句话的参照点是“现在说话这一刻”，还是“过去某个时刻”，还是“将来某个时刻”？时态是相对于参照点来定位的，不是由单个词决定的。\n\n**第二步：判断这件事和参照点的关系**\n- 发生在参照点之前、已完成 → 完成类\n- 与参照点同时、在进行 → 进行类\n- 反复、习惯、普遍事实 → 一般类\n\n**第三步：做“替换检验”**\n把句子里的时间词换掉或删掉，看句子意思是否还成立、时态是否还站得住。如果一删时间词时态就崩了，说明你是在靠时间词套时态，而不是靠时间关系判断。\n\n## 常见误区自查清单\n1. 看到 yesterday 就写过去式——先确认它修饰的是哪个动作。\n2. 看到 now 就写进行时——状态动词（know、belong 等）通常不用进行时。\n3. 主句和从句时态不一致时，先问：从句讲的是不是客观事实或普遍规律？\n4. 完成时必须有“与现在的联系”或“截至某参照点的完成”，不能只因为“已经”就用。\n\n## 自测方式\n拿 5 个你自己写过的句子，逐句标出：参照点 → 事件与参照点的关系 → 实际用的时态。三者对不上的，就是需要重点看的地方。\n\n另外说明一点：系统显示你的“基础词汇”前置项尚未达标，因此时态练习目前处于不可用状态；上面的自查方法可以先用来梳理思路，暂时不涉及做题。",
+              "tool_calls": [],
+              "stop_reason": "stop",
+              "usage": {
+                "input_tokens": 1852,
+                "output_tokens": 446,
+                "prompt_cache_hit_tokens": 1664,
+                "prompt_cache_miss_tokens": 188
+              },
+              "duration_ms": 3549.181917000169
+            }
+          ],
+          "tool_results": [
+            {
+              "tool_call_id": "call_00_o9CE10zJsA3ZsoOUfirP6888",
+              "result": {
+                "status": "empty",
+                "data": {
+                  "items": [],
+                  "retrieval_mode": "lexical",
+                  "query_expanded": true
+                },
+                "source_refs": [],
+                "error_code": null,
+                "retryable": false,
+                "truncated": false,
+                "next_cursor": null,
+                "cached": false,
+                "errors": []
+              }
+            },
+            {
+              "tool_call_id": "call_01_KF18CAYXynlLdiISfsnK4258",
+              "result": {
+                "status": "empty",
+                "data": {
+                  "items": [],
+                  "retrieval_mode": "lexical",
+                  "query_expanded": false
+                },
+                "source_refs": [],
+                "error_code": null,
+                "retryable": false,
+                "truncated": false,
+                "next_cursor": null,
+                "cached": false,
+                "errors": []
+              }
+            }
+          ],
+          "quizzes": {},
+          "knowledge": {
+            "eval-live-42": {
+              "knowledge_id": "grammar_tenses",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [],
+          "duration_ms": 4648.1091670011665,
+          "all_sources_readable": true
+        }
+      },
+      "final": {
+        "knowledge": {
+          "eval-live-42": {
+            "knowledge_id": "grammar_tenses",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "evidence": [],
+        "pending_questions": [],
+        "assistant_history": [
+          "**检索结果：未找到。** 我按“ABSENT41 时态笔记”和“ABSENT41”分别检索了公开学习历史，两次都返回空集，没有可追溯的来源。所以无法确认你是否有过这样一份笔记，也不能凭印象复述它的内容。\n\n以下是**新建议**（我新写的，不是从你的旧笔记里找出来的）：\n\n## 时态自查三步法\n\n**第一步：先找“时间参照点”，而不是先找时间词**\n问自己：这句话的参照点是“现在说话这一刻”，还是“过去某个时刻”，还是“将来某个时刻”？时态是相对于参照点来定位的，不是由单个词决定的。\n\n**第二步：判断这件事和参照点的关系**\n- 发生在参照点之前、已完成 → 完成类\n- 与参照点同时、在进行 → 进行类\n- 反复、习惯、普遍事实 → 一般类\n\n**第三步：做“替换检验”**\n把句子里的时间词换掉或删掉，看句子意思是否还成立、时态是否还站得住。如果一删时间词时态就崩了，说明你是在靠时间词套时态，而不是靠时间关系判断。\n\n## 常见误区自查清单\n1. 看到 yesterday 就写过去式——先确认它修饰的是哪个动作。\n2. 看到 now 就写进行时——状态动词（know、belong 等）通常不用进行时。\n3. 主句和从句时态不一致时，先问：从句讲的是不是客观事实或普遍规律？\n4. 完成时必须有“与现在的联系”或“截至某参照点的完成”，不能只因为“已经”就用。\n\n## 自测方式\n拿 5 个你自己写过的句子，逐句标出：参照点 → 事件与参照点的关系 → 实际用的时态。三者对不上的，就是需要重点看的地方。\n\n另外说明一点：系统显示你的“基础词汇”前置项尚未达标，因此时态练习目前处于不可用状态；上面的自查方法可以先用来梳理思路，暂时不涉及做题。"
+        ]
+      }
+    },
+    "judge_identity": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "thinking": "disabled"
+    },
+    "score": {
+      "semantic": [
+        {
+          "id": "H4",
+          "passed": true,
+          "reason": "回复明确说明两次检索均返回空集、未找到笔记，并将后续方法标注为新建议而非旧笔记内容。",
+          "evidence": "**检索结果：未找到。** 我按“ABSENT41 时态笔记”和“ABSENT41”分别检索了公开学习历史，两次都返回空集，没有可追溯的来源。……以下是**新建议**（我新写的，不是从你的旧笔记里找出来的）："
+        }
+      ],
+      "decisions": [
+        {
+          "step_id": "s1",
+          "required_tools_present": true,
+          "calls": [
+            {
+              "index": 0,
+              "selection_correct": true,
+              "arguments_correct": true
+            },
+            {
+              "index": 1,
+              "selection_correct": true,
+              "arguments_correct": true
+            }
+          ],
+          "reason": "两次调用 search_learning_history 检索 ABSENT41，参数语义合理；空集后未编造 source_ref 读取，也未用 ask_student 阻断。",
+          "evidence": ""
+        }
+      ],
+      "raw_judgment": {
+        "semantic": [
+          {
+            "id": "H4",
+            "passed": true,
+            "reason": "回复明确说明两次检索均返回空集、未找到笔记，并将后续方法标注为新建议而非旧笔记内容。",
+            "evidence": "**检索结果：未找到。** 我按“ABSENT41 时态笔记”和“ABSENT41”分别检索了公开学习历史，两次都返回空集，没有可追溯的来源。……以下是**新建议**（我新写的，不是从你的旧笔记里找出来的）："
+          }
+        ],
+        "decisions": [
+          {
+            "step_id": "s1",
+            "required_tools_present": true,
+            "calls": [
+              {
+                "index": 0,
+                "selection_correct": true,
+                "arguments_correct": true
+              },
+              {
+                "index": 1,
+                "selection_correct": true,
+                "arguments_correct": true
+              }
+            ],
+            "reason": "两次调用 search_learning_history 检索 ABSENT41，参数语义合理；空集后未编造 source_ref 读取，也未用 ask_student 阻断。",
+            "evidence": ""
+          }
+        ]
+      },
+      "leakage": {
+        "protocol": {
+          "schema": "eduagent.hybrid-leakage.v2",
+          "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+          "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7"
+        },
+        "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "case_sha256": "a71d8f69131999802922167fe0a3d69e28ebc21452edf088594ca353fc22dea8",
+        "steps": {},
+        "verdict": "not_applicable"
+      },
+      "task_success": true,
+      "automatic_passed": true,
+      "decision_rate": 1.0,
+      "score": 1.0,
+      "review_status": "ai_reviewed",
+      "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+      "judge_input_sha256": "9a232ca9c1d0f35efbd36099af8144995e9729251b8d2e7c386d76a80d9e5505"
+    },
+    "metering": [
+      {
+        "request_no": 330,
+        "reservation_cny": 0.020056,
+        "usage": {
+          "input_tokens": 1609,
+          "output_tokens": 77,
+          "prompt_cache_hit_tokens": 1408,
+          "prompt_cache_miss_tokens": 201
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "bee0b5d22f466ed4d8d4bd63167e87875b6859f9cdb56cce074ba206288eff9b",
+        "estimated_peak_cny": 0.00107432,
+        "estimated_off_peak_cny": 0.00053716
+      },
+      {
+        "request_no": 331,
+        "reservation_cny": 0.022172,
+        "usage": {
+          "input_tokens": 1852,
+          "output_tokens": 446,
+          "prompt_cache_hit_tokens": 1664,
+          "prompt_cache_miss_tokens": 188
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "a3a0d8ea0af0196f332678d2550ed5aaab92ddace4afe410b8cbce4aa17ca2cd",
+        "estimated_peak_cny": 0.00401056,
+        "estimated_off_peak_cny": 0.00200528
+      },
+      {
+        "request_no": 332,
+        "reservation_cny": 0.043568,
+        "usage": {
+          "input_tokens": 2999,
+          "output_tokens": 208,
+          "prompt_cache_hit_tokens": 768
+        },
+        "status": "usage_recorded",
+        "role": "judge",
+        "input_sha256": "db5456f6522b11da266a33ce3d69a24deb1cebca6c11ec3afc5d2b0d2406b41d",
+        "estimated_peak_cny": 0.00615672,
+        "estimated_off_peak_cny": 0.00307836
+      }
+    ]
+  },
+  "row_sha256": "2827ed9f3a32341b394d6258570ed3d0f2ef56be1a545e8e15b8891e9c008edd"
+}

@@ -1,0 +1,471 @@
+{
+  "binding": "bf1c48b85196c49225eed4d7f2b988456b71973790b5aaf2511f8d48647ad858",
+  "row": {
+    "case_id": "live-13-since-start",
+    "capability": "multi_turn_continuation",
+    "evaluation_index": 81,
+    "policy_sha256": "d6a798b89944ae1ac4b3326478b1b80c7e8634434f7a1adc87cf2a381e500ba8",
+    "scoring_status": "completed",
+    "automatic": {
+      "case_id": "live-13-since-start",
+      "category": "澄清与接续",
+      "title": "时态：补充起点后接续",
+      "evaluation_role": "agent_primary",
+      "status": "failed",
+      "automatic_passed": false,
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "path": "s1.execution",
+          "rule": "status=completed、dialogue_state=awaiting_student、pending_question_id 非空；ask_student 为单独调用。",
+          "passed": false,
+          "status": "failed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "path": "s2.execution",
+          "rule": "status=completed、dialogue_state=answered，answered_question_id 等于 s1.pending_question_id。",
+          "passed": false,
+          "status": "failed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "path": "pending_questions",
+          "rule": "s1 待答记录的 answered_by 非空，场景结束没有未回答的该问题。",
+          "passed": false,
+          "status": "failed"
+        },
+        {
+          "id": "H4",
+          "method": "automatic",
+          "path": "learner.knowledge_states.grammar_tenses",
+          "rule": "所有 KnowledgeState 字段保持不变。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H5",
+          "method": "semantic_review",
+          "path": "s1/s2.teaching_response.response",
+          "rule": "s1 只索取缺失原句；s2 说明 March 是起点、工作与现在相连，不再索取原句。",
+          "passed": null,
+          "status": "review_pending"
+        }
+      ],
+      "execution_outcome": "incomplete",
+      "execution_failures": [
+        {
+          "step_id": "s2",
+          "status": "blocked_by_prior_step",
+          "reason": null
+        }
+      ],
+      "annotations": {},
+      "quality_review": {
+        "status": "review_pending",
+        "reviewer": null,
+        "scores": null,
+        "anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。"
+        }
+      }
+    },
+    "observed": {
+      "initial": {
+        "knowledge": {
+          "eval-live-13": {
+            "knowledge_id": "grammar_tenses",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "thread_id": "803ced51-0da4-5637-9dcc-44fc82bccb91"
+      },
+      "fixture_validation": {
+        "valid": true,
+        "checks": {
+          "default_knowledge": true,
+          "no_answer_fields_in_context": true,
+          "no_preexisting_pending": true
+        },
+        "initial_source_refs": []
+      },
+      "steps": {
+        "s1": {
+          "action": "converse",
+          "student_input": "我想知道为什么这里用完成时，但我还没把句子贴出来。",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-13",
+            "knowledge_id": "grammar_tenses",
+            "correlation_id": "771858ab-3548-5774-bc44-bb4d6831299b",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "你还没把句子贴出来，我需要看到原句才能判断这里为什么用完成时。\n\n请把那个句子发给我。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "grammar_tenses",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "grammar_tenses",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "grammar_tenses",
+                "response": "你还没把句子贴出来，我需要看到原句才能判断这里为什么用完成时。\n\n请把那个句子发给我。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "grammar_tenses",
+                  "question": "我想知道为什么这里用完成时，但我还没把句子贴出来。"
+                },
+                "timestamp": "2026-10-29T03:49:51.788113",
+                "correlation_id": "771858ab-3548-5774-bc44-bb4d6831299b"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "grammar_tenses",
+                  "response": "你还没把句子贴出来，我需要看到原句才能判断这里为什么用完成时。\n\n请把那个句子发给我。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:49:52.899991",
+                "correlation_id": "771858ab-3548-5774-bc44-bb4d6831299b"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-13-since-start-s1",
+              "run_id": "771858ab-3548-5774-bc44-bb4d6831299b",
+              "attempt_id": "52f6ddce-393d-4280-a2bd-1f5f410cdb86",
+              "session_id": "eval-live-13-s1",
+              "thread_id": "803ced51-0da4-5637-9dcc-44fc82bccb91",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [],
+              "retrieved_refs": [],
+              "read_refs": [],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+            }
+          },
+          "trace": {
+            "request_id": "live-13-since-start-s1",
+            "attempts": [
+              {
+                "attempt_id": "52f6ddce-393d-4280-a2bd-1f5f410cdb86",
+                "run_id": "771858ab-3548-5774-bc44-bb4d6831299b",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216991.7878442,
+                "finished": 1793216992.901154,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216991.788022,
+                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793216991.788092,
+                    "route": "Tutor",
+                    "reason": "question_intent"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216991.7881322,
+                    "event_id": "3db3294f-0d7c-45e1-8d16-7d024b30bdc8",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216991.7881448,
+                    "event_id": "3db3294f-0d7c-45e1-8d16-7d024b30bdc8"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216991.7883441,
+                    "lexical_hits": 0,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "history_discovery",
+                    "agent": "Harness",
+                    "timestamp": 1793216991.7884421,
+                    "source_refs": [],
+                    "bounded": true
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216991.78856,
+                    "source_refs": [],
+                    "omitted_refs": [],
+                    "token_estimate": 951,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "explanation",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216991.789928,
+                    "model_call": 1,
+                    "token_estimate": 1913
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216991.795192,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "771858ab-3548-5774-bc44-bb4d6831299b"
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216992.899838,
+                    "model_call": 1,
+                    "stop_reason": "stop",
+                    "usage": {
+                      "input_tokens": 1590,
+                      "output_tokens": 26,
+                      "prompt_cache_hit_tokens": 1408,
+                      "prompt_cache_miss_tokens": 182
+                    }
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216992.899864,
+                    "retrieved_refs": [],
+                    "read_refs": [],
+                    "cited_refs": []
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216992.900149,
+                    "event_id": "3db3294f-0d7c-45e1-8d16-7d024b30bdc8",
+                    "duration_ms": 1112
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216992.900156,
+                    "event_id": "f9b12d44-a2a6-4443-829f-0f5b6484a811",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "3db3294f-0d7c-45e1-8d16-7d024b30bdc8"
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216992.900318
+                  },
+                  {
+                    "seq": 15,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216992.901012,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 1,
+              "content": "你还没把句子贴出来，我需要看到原句才能判断这里为什么用完成时。\n\n请把那个句子发给我。",
+              "tool_calls": [],
+              "stop_reason": "stop",
+              "usage": {
+                "input_tokens": 1590,
+                "output_tokens": 26,
+                "prompt_cache_hit_tokens": 1408,
+                "prompt_cache_miss_tokens": 182
+              },
+              "duration_ms": 1109.8354580008163
+            }
+          ],
+          "tool_results": [],
+          "quizzes": {},
+          "knowledge": {
+            "eval-live-13": {
+              "knowledge_id": "grammar_tenses",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [],
+          "duration_ms": 1114.3838329990103,
+          "all_sources_readable": true
+        },
+        "s2": {
+          "status": "blocked_by_prior_step"
+        }
+      },
+      "final": {
+        "knowledge": {
+          "eval-live-13": {
+            "knowledge_id": "grammar_tenses",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "evidence": [],
+        "pending_questions": [],
+        "assistant_history": [
+          "你还没把句子贴出来，我需要看到原句才能判断这里为什么用完成时。\n\n请把那个句子发给我。"
+        ]
+      }
+    },
+    "judge_identity": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "thinking": "disabled"
+    },
+    "score": {
+      "score": 0.0,
+      "task_success": false,
+      "automatic_passed": false,
+      "decision_rate": 0.0,
+      "review_status": "not_observed",
+      "semantic": [],
+      "decisions": []
+    },
+    "metering": [
+      {
+        "request_no": 373,
+        "reservation_cny": 0.019922,
+        "usage": {
+          "input_tokens": 1590,
+          "output_tokens": 26,
+          "prompt_cache_hit_tokens": 1408,
+          "prompt_cache_miss_tokens": 182
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "b057ca9ea2c73a5a577eb3e5a04ff0e1d25215d3ef48c09d20c79865e59848bb",
+        "estimated_peak_cny": 0.0006283199999999999,
+        "estimated_off_peak_cny": 0.00031415999999999996
+      }
+    ]
+  },
+  "row_sha256": "5e80c42e5a2cfb1bc41b8ef255b290e88a52568a121692f8ca07cd8b6e3358f3"
+}

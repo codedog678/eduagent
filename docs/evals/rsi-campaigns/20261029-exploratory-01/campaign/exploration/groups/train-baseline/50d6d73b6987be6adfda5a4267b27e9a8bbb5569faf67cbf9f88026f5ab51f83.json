@@ -1,0 +1,533 @@
+{
+  "binding": "a6cf41ea7dcdbe007331cecf1bf2e3fb3f795a9b40003d90004072c765808b05",
+  "row": {
+    "case_id": "live-26-passive-agent",
+    "capability": "grounded_history",
+    "evaluation_index": 4,
+    "policy_sha256": "d6a798b89944ae1ac4b3326478b1b80c7e8634434f7a1adc87cf2a381e500ba8",
+    "scoring_status": "completed",
+    "automatic": {
+      "case_id": "live-26-passive-agent",
+      "category": "跨会话记忆",
+      "title": "历史：被动语态可省略动作发出者",
+      "evaluation_role": "agent_primary",
+      "status": "review_pending",
+      "automatic_passed": true,
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "path": "s1.execution",
+          "rule": "status=completed、dialogue_state=answered；thread 与预置 grammar_passive 主题相同。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "path": "s1.execution.source_refs",
+          "rule": "与两条预置真实来源至少有一个交集；所有引用均可按当前 learner 读取。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "path": "learner.knowledge_states.grammar_passive",
+          "rule": "所有 KnowledgeState 字段保持不变。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "semantic_review",
+          "path": "s1.teaching_response.response",
+          "rule": "准确指出旧误解针对 by 短语，给不含 by 的合法被动句，不能说可以省略 be。",
+          "passed": null,
+          "status": "review_pending"
+        }
+      ],
+      "execution_outcome": "completed",
+      "execution_failures": [],
+      "annotations": {},
+      "quality_review": {
+        "status": "review_pending",
+        "reviewer": null,
+        "scores": null,
+        "anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。"
+        }
+      }
+    },
+    "observed": {
+      "initial": {
+        "knowledge": {
+          "eval-live-26": {
+            "knowledge_id": "grammar_passive",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "thread_id": "f9231118-c1b7-5d09-aa47-3f0d928e6b14"
+      },
+      "fixture_validation": {
+        "valid": true,
+        "checks": {
+          "default_knowledge": true,
+          "no_answer_fields_in_context": true,
+          "no_preexisting_pending": true,
+          "seeded_history_visible": true
+        },
+        "initial_source_refs": [
+          "message:eval-live-26-old-tutor",
+          "message:eval-live-26-old-user"
+        ]
+      },
+      "steps": {
+        "s1": {
+          "action": "converse",
+          "student_input": "上次我以为被动句必须有什么？再给一个省略它的例子。",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-26",
+            "knowledge_id": "grammar_passive",
+            "correlation_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "你上次说的是：**你以为每个被动句都必须写出 “by someone”**（即必须带 by 短语）。\n\n这个理解不对。当动作发出者未知、不重要或显而易见时，by 短语可以省略，但 be + 过去分词仍构成被动结构。\n\n省略 by 的例子：\n\n- **The bridge was built in 1990.**（桥是 1990 年建成的——谁建的不重要）\n- **My bike was stolen last night.**（自行车昨晚被偷了——不知道是谁偷的）\n- **English is spoken here.**（这里说英语——显而易见，不需要点明“被人们”）\n\n注意：省略的是 by 短语，不是被动结构本身；be 动词和过去分词缺一不可。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "grammar_passive",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [
+                "message:eval-live-26-old-tutor",
+                "message:eval-live-26-old-user"
+              ],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "grammar_passive",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "grammar_passive",
+                "response": "你上次说的是：**你以为每个被动句都必须写出 “by someone”**（即必须带 by 短语）。\n\n这个理解不对。当动作发出者未知、不重要或显而易见时，by 短语可以省略，但 be + 过去分词仍构成被动结构。\n\n省略 by 的例子：\n\n- **The bridge was built in 1990.**（桥是 1990 年建成的——谁建的不重要）\n- **My bike was stolen last night.**（自行车昨晚被偷了——不知道是谁偷的）\n- **English is spoken here.**（这里说英语——显而易见，不需要点明“被人们”）\n\n注意：省略的是 by 短语，不是被动结构本身；be 动词和过去分词缺一不可。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [
+                  "message:eval-live-26-old-tutor",
+                  "message:eval-live-26-old-user"
+                ],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "grammar_passive",
+                  "question": "上次我以为被动句必须有什么？再给一个省略它的例子。"
+                },
+                "timestamp": "2026-10-29T03:44:17.473831",
+                "correlation_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "grammar_passive",
+                  "response": "你上次说的是：**你以为每个被动句都必须写出 “by someone”**（即必须带 by 短语）。\n\n这个理解不对。当动作发出者未知、不重要或显而易见时，by 短语可以省略，但 be + 过去分词仍构成被动结构。\n\n省略 by 的例子：\n\n- **The bridge was built in 1990.**（桥是 1990 年建成的——谁建的不重要）\n- **My bike was stolen last night.**（自行车昨晚被偷了——不知道是谁偷的）\n- **English is spoken here.**（这里说英语——显而易见，不需要点明“被人们”）\n\n注意：省略的是 by 短语，不是被动结构本身；be 动词和过去分词缺一不可。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [
+                    "message:eval-live-26-old-tutor",
+                    "message:eval-live-26-old-user"
+                  ],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:44:18.806788",
+                "correlation_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-26-passive-agent-s1",
+              "run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba",
+              "attempt_id": "4842d83c-e095-4b94-8e06-51785bd48d1d",
+              "session_id": "eval-live-26-new",
+              "thread_id": "f9231118-c1b7-5d09-aa47-3f0d928e6b14",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [
+                "message:eval-live-26-old-tutor",
+                "message:eval-live-26-old-user"
+              ],
+              "retrieved_refs": [
+                "message:eval-live-26-old-user",
+                "message:eval-live-26-old-tutor"
+              ],
+              "read_refs": [],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+            }
+          },
+          "trace": {
+            "request_id": "live-26-passive-agent-s1",
+            "attempts": [
+              {
+                "attempt_id": "4842d83c-e095-4b94-8e06-51785bd48d1d",
+                "run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793216657.4735548,
+                "finished": 1793216658.8075562,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216657.47374,
+                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793216657.473811,
+                    "route": "Tutor",
+                    "reason": "question_intent"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793216657.473846,
+                    "event_id": "cb76be0d-8724-4d41-a4d1-43925548c82c",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216657.473857,
+                    "event_id": "cb76be0d-8724-4d41-a4d1-43925548c82c"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793216657.4740832,
+                    "lexical_hits": 2,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216657.4744499,
+                    "source_refs": [
+                      "message:eval-live-26-old-tutor",
+                      "message:eval-live-26-old-user"
+                    ],
+                    "omitted_refs": [],
+                    "token_estimate": 1270,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "explanation",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216657.47532,
+                    "model_call": 1,
+                    "token_estimate": 2232
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793216657.478546,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "c4670ce4-86a9-58ab-a8b4-e86b170cc7ba"
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216658.8066921,
+                    "model_call": 1,
+                    "stop_reason": "stop",
+                    "usage": {
+                      "input_tokens": 1858,
+                      "output_tokens": 153,
+                      "prompt_cache_hit_tokens": 1152,
+                      "prompt_cache_miss_tokens": 706
+                    }
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216658.806716,
+                    "retrieved_refs": [
+                      "message:eval-live-26-old-user",
+                      "message:eval-live-26-old-tutor"
+                    ],
+                    "read_refs": [],
+                    "cited_refs": []
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216658.806904,
+                    "event_id": "cb76be0d-8724-4d41-a4d1-43925548c82c",
+                    "duration_ms": 1333
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793216658.8069088,
+                    "event_id": "4d7c4c45-912b-4140-9a72-d2eed2d883a3",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "cb76be0d-8724-4d41-a4d1-43925548c82c"
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793216658.807013
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793216658.807471,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 1,
+              "content": "你上次说的是：**你以为每个被动句都必须写出 “by someone”**（即必须带 by 短语）。\n\n这个理解不对。当动作发出者未知、不重要或显而易见时，by 短语可以省略，但 be + 过去分词仍构成被动结构。\n\n省略 by 的例子：\n\n- **The bridge was built in 1990.**（桥是 1990 年建成的——谁建的不重要）\n- **My bike was stolen last night.**（自行车昨晚被偷了——不知道是谁偷的）\n- **English is spoken here.**（这里说英语——显而易见，不需要点明“被人们”）\n\n注意：省略的是 by 短语，不是被动结构本身；be 动词和过去分词缺一不可。",
+              "tool_calls": [],
+              "stop_reason": "stop",
+              "usage": {
+                "input_tokens": 1858,
+                "output_tokens": 153,
+                "prompt_cache_hit_tokens": 1152,
+                "prompt_cache_miss_tokens": 706
+              },
+              "duration_ms": 1331.3174579998304
+            }
+          ],
+          "tool_results": [],
+          "quizzes": {},
+          "knowledge": {
+            "eval-live-26": {
+              "knowledge_id": "grammar_passive",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [],
+          "duration_ms": 1334.8242080010095,
+          "all_sources_readable": true
+        }
+      },
+      "final": {
+        "knowledge": {
+          "eval-live-26": {
+            "knowledge_id": "grammar_passive",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "evidence": [],
+        "pending_questions": [],
+        "assistant_history": [
+          "动作发出者未知、无关或显而易见时可以省略 by 短语，但 be 与过去分词仍组成被动结构。",
+          "你上次说的是：**你以为每个被动句都必须写出 “by someone”**（即必须带 by 短语）。\n\n这个理解不对。当动作发出者未知、不重要或显而易见时，by 短语可以省略，但 be + 过去分词仍构成被动结构。\n\n省略 by 的例子：\n\n- **The bridge was built in 1990.**（桥是 1990 年建成的——谁建的不重要）\n- **My bike was stolen last night.**（自行车昨晚被偷了——不知道是谁偷的）\n- **English is spoken here.**（这里说英语——显而易见，不需要点明“被人们”）\n\n注意：省略的是 by 短语，不是被动结构本身；be 动词和过去分词缺一不可。"
+        ]
+      }
+    },
+    "judge_identity": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "thinking": "disabled"
+    },
+    "score": {
+      "semantic": [
+        {
+          "id": "H4",
+          "passed": true,
+          "reason": "准确指出旧误解针对 by 短语，给出多个不含 by 的合法被动句，并明确省略的是 by 短语而非被动结构，未说可以省略 be。",
+          "evidence": "你上次说的是：**你以为每个被动句都必须写出 “by someone”**（即必须带 by 短语）。……当动作发出者未知、不重要或显而易见时，by 短语可以省略，但 be + 过去分词仍构成被动结构。……注意：省略的是 by 短语，不是被动结构本身；be 动词和过去分词缺一不可。"
+        }
+      ],
+      "decisions": [
+        {
+          "step_id": "s1",
+          "required_tools_present": true,
+          "calls": [],
+          "reason": "历史已进入上下文，直接回答即可，无需额外工具调用；未调用工具不构成漏调。",
+          "evidence": ""
+        }
+      ],
+      "raw_judgment": {
+        "semantic": [
+          {
+            "id": "H4",
+            "passed": true,
+            "reason": "准确指出旧误解针对 by 短语，给出多个不含 by 的合法被动句，并明确省略的是 by 短语而非被动结构，未说可以省略 be。",
+            "evidence": "你上次说的是：**你以为每个被动句都必须写出 “by someone”**（即必须带 by 短语）。……当动作发出者未知、不重要或显而易见时，by 短语可以省略，但 be + 过去分词仍构成被动结构。……注意：省略的是 by 短语，不是被动结构本身；be 动词和过去分词缺一不可。"
+          }
+        ],
+        "decisions": [
+          {
+            "step_id": "s1",
+            "required_tools_present": true,
+            "calls": [],
+            "reason": "历史已进入上下文，直接回答即可，无需额外工具调用；未调用工具不构成漏调。",
+            "evidence": ""
+          }
+        ]
+      },
+      "leakage": {
+        "protocol": {
+          "schema": "eduagent.hybrid-leakage.v2",
+          "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+          "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7"
+        },
+        "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "case_sha256": "7d182b79088ac052196d2184b26baa246389548ebb929e42f49c456805883f3e",
+        "steps": {},
+        "verdict": "not_applicable"
+      },
+      "task_success": true,
+      "automatic_passed": true,
+      "decision_rate": 1.0,
+      "score": 1.0,
+      "review_status": "ai_reviewed",
+      "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+      "judge_input_sha256": "cc5a3c24c663a92f8e93707ef1866b14d1db48e556120730d3cd41930f8903e1"
+    },
+    "metering": [
+      {
+        "request_no": 158,
+        "reservation_cny": 0.021836,
+        "usage": {
+          "input_tokens": 1858,
+          "output_tokens": 153,
+          "prompt_cache_hit_tokens": 1152,
+          "prompt_cache_miss_tokens": 706
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "b70cfa9da11b875b6b2542506030e3236138279ae8354976cdcee81b730cb5f1",
+        "estimated_peak_cny": 0.00268208,
+        "estimated_off_peak_cny": 0.00134104
+      },
+      {
+        "request_no": 159,
+        "reservation_cny": 0.036912,
+        "usage": {
+          "input_tokens": 2089,
+          "output_tokens": 187,
+          "prompt_cache_hit_tokens": 768
+        },
+        "status": "usage_recorded",
+        "role": "judge",
+        "input_sha256": "b9250b78e3002f1a8cc87652dd640e8edd4ebf25087140721a6472d1623fea43",
+        "estimated_peak_cny": 0.004168719999999999,
+        "estimated_off_peak_cny": 0.0020843599999999995
+      }
+    ]
+  },
+  "row_sha256": "174a64563003eeee5532b86906dabaa333297ad932be4f3664bda37493adae94"
+}

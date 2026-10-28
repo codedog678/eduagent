@@ -1,0 +1,529 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": true,
+    "case_id": "live-07-grounded-history-continuation",
+    "category": "跨会话记忆",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [],
+    "execution_outcome": "completed",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution",
+        "rule": "status=completed、dialogue_state=answered；thread 与预置 vocab_basic 主题相同。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.execution.source_refs",
+        "rule": "与两条预置真实来源至少有一个交集；所有引用均可按当前 learner 读取。",
+        "status": "passed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.vocab_basic",
+        "rule": "所有 KnowledgeState 字段保持不变。",
+        "status": "passed"
+      },
+      {
+        "id": "H4",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s1.teaching_response.response",
+        "rule": "对上次误解的描述与历史一致，搭配示例正确，没有编造额外学习经历。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：历史描述和搭配例子正确；1 分：例子正确但旧误解描述不清；0 分：编造历史或搭配错误。",
+        "actionability": "2 分：提供能让学生区分东西和接收者的对照例子；1 分：只有一个孤立例子；0 分：没有可用区分方法。",
+        "targeting": "2 分：回应“我当时为什么加 to”；1 分：只有通用解释；0 分：无视历史。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "review_pending",
+    "title": "根据已有公开证据接续搭配误解"
+  },
+  "capability": "grounded_history",
+  "case_id": "live-07-grounded-history-continuation",
+  "evaluation_index": 1,
+  "judge_identity": {
+    "model": "deepseek-flash",
+    "provider": "deepseek",
+    "thinking": "disabled"
+  },
+  "metering": [
+    {
+      "estimated_off_peak_cny": 0.00134604,
+      "estimated_peak_cny": 0.00269208,
+      "input_sha256": "4cdf9c218a68c0b52389e4401991917bb095f3b1e0c6004b7331a3e60cc94396",
+      "request_no": 150,
+      "reservation_cny": 0.021328,
+      "role": "task",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 1787,
+        "output_tokens": 172,
+        "prompt_cache_hit_tokens": 1152,
+        "prompt_cache_miss_tokens": 635
+      }
+    },
+    {
+      "estimated_off_peak_cny": 0.0023083599999999998,
+      "estimated_peak_cny": 0.0046167199999999995,
+      "input_sha256": "9ee46dec997357d3b70dd0cc6bb1622f0a240d94c5d88ca9226dc00c56fee96c",
+      "request_no": 151,
+      "reservation_cny": 0.037458,
+      "role": "judge",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 2149,
+        "output_tokens": 228,
+        "prompt_cache_hit_tokens": 768
+      }
+    }
+  ],
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "先区分提交的东西和接收者。submit something 可以直接接东西；submit something to someone 中 to 引出接收者。",
+        "你当时多加 to，是因为把“提交”这个动作和“提交给谁”混在一起了。**submit 后面直接接被提交的东西**；只有当你要说明交给谁时，才用 **to** 引出接收者。\n\n- 错误：submit **to** their essays —— 这里 essays 是被提交的东西，不该带 to。\n- 正确：submit their essays —— 提交论文。\n- 正确：submit their essays **to** the professor —— 把论文提交给教授。\n\n小例子：**hand in your homework**（交作业）和 **hand in your homework to the teacher**（把作业交给老师）—— 东西紧跟动词，人放在 to 后面。判断方法：先问“交的是什么”，它直接跟在动词后；再问“交给谁”，那个人才用 to。"
+      ],
+      "evidence": [],
+      "knowledge": {
+        "eval-live-07": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [],
+      "quizzes": {}
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true,
+        "seeded_history_visible": true
+      },
+      "initial_source_refs": [
+        "message:eval-live-07-old-tutor",
+        "message:eval-live-07-old-user"
+      ],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-07": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {},
+      "thread_id": "17ff6dc0-01c8-5730-b5b0-495d1914bf1c"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 2412.726874999862,
+        "evidence": [],
+        "knowledge": {
+          "eval-live-07": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "vocab_basic",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "你当时多加 to，是因为把“提交”这个动作和“提交给谁”混在一起了。**submit 后面直接接被提交的东西**；只有当你要说明交给谁时，才用 **to** 引出接收者。\n\n- 错误：submit **to** their essays —— 这里 essays 是被提交的东西，不该带 to。\n- 正确：submit their essays —— 提交论文。\n- 正确：submit their essays **to** the professor —— 把论文提交给教授。\n\n小例子：**hand in your homework**（交作业）和 **hand in your homework to the teacher**（把作业交给老师）—— 东西紧跟动词，人放在 to 后面。判断方法：先问“交的是什么”，它直接跟在动词后；再问“交给谁”，那个人才用 to。",
+            "duration_ms": 2390.2060000000347,
+            "request_no": 1,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1787,
+              "output_tokens": 172,
+              "prompt_cache_hit_tokens": 1152,
+              "prompt_cache_miss_tokens": 635
+            }
+          }
+        ],
+        "quizzes": {},
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "vocab_basic",
+              "response": "你当时多加 to，是因为把“提交”这个动作和“提交给谁”混在一起了。**submit 后面直接接被提交的东西**；只有当你要说明交给谁时，才用 **to** 引出接收者。\n\n- 错误：submit **to** their essays —— 这里 essays 是被提交的东西，不该带 to。\n- 正确：submit their essays —— 提交论文。\n- 正确：submit their essays **to** the professor —— 把论文提交给教授。\n\n小例子：**hand in your homework**（交作业）和 **hand in your homework to the teacher**（把作业交给老师）—— 东西紧跟动词，人放在 to 后面。判断方法：先问“交的是什么”，它直接跟在动词后；再问“交给谁”，那个人才用 to。",
+              "response_variant": "tool_loop",
+              "source_refs": [
+                "message:eval-live-07-old-tutor",
+                "message:eval-live-07-old-user"
+              ],
+              "teaching_style": "question_answer"
+            }
+          },
+          "correlation_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "5354cf79-0d3e-4f24-864d-2eeb1e64edd2",
+            "cited_refs": [],
+            "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+            "dialogue_state": "answered",
+            "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+            "model": "deepseek-flash",
+            "pending_question_id": null,
+            "provider": "deepseek",
+            "read_refs": [],
+            "request_id": "live-07-grounded-history-continuation-s1",
+            "retrieved_refs": [
+              "message:eval-live-07-old-tutor",
+              "message:eval-live-07-old-user"
+            ],
+            "run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+            "session_id": "eval-live-07-new",
+            "source_refs": [
+              "message:eval-live-07-old-tutor",
+              "message:eval-live-07-old-user"
+            ],
+            "status": "completed",
+            "thread_id": "17ff6dc0-01c8-5730-b5b0-495d1914bf1c",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+              "data": {
+                "knowledge_id": "vocab_basic",
+                "question": "接着上次讲，我当时为什么给 submit 多加了一个 to？再给我一个区分提交的东西和接收者的小例子。"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-10-29T03:44:04.344648"
+            },
+            {
+              "correlation_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "vocab_basic",
+                "response": "你当时多加 to，是因为把“提交”这个动作和“提交给谁”混在一起了。**submit 后面直接接被提交的东西**；只有当你要说明交给谁时，才用 **to** 引出接收者。\n\n- 错误：submit **to** their essays —— 这里 essays 是被提交的东西，不该带 to。\n- 正确：submit their essays —— 提交论文。\n- 正确：submit their essays **to** the professor —— 把论文提交给教授。\n\n小例子：**hand in your homework**（交作业）和 **hand in your homework to the teacher**（把作业交给老师）—— 东西紧跟动词，人放在 to 后面。判断方法：先问“交的是什么”，它直接跟在动词后；再问“交给谁”，那个人才用 to。",
+                "response_variant": "tool_loop",
+                "source_refs": [
+                  "message:eval-live-07-old-tutor",
+                  "message:eval-live-07-old-user"
+                ],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-10-29T03:44:06.737167"
+            }
+          ],
+          "knowledge_id": "vocab_basic",
+          "learner_id": "eval-live-07",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "vocab_basic",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "vocab_basic",
+            "response": "你当时多加 to，是因为把“提交”这个动作和“提交给谁”混在一起了。**submit 后面直接接被提交的东西**；只有当你要说明交给谁时，才用 **to** 引出接收者。\n\n- 错误：submit **to** their essays —— 这里 essays 是被提交的东西，不该带 to。\n- 正确：submit their essays —— 提交论文。\n- 正确：submit their essays **to** the professor —— 把论文提交给教授。\n\n小例子：**hand in your homework**（交作业）和 **hand in your homework to the teacher**（把作业交给老师）—— 东西紧跟动词，人放在 to 后面。判断方法：先问“交的是什么”，它直接跟在动词后；再问“交给谁”，那个人才用 to。",
+            "response_variant": "tool_loop",
+            "source_refs": [
+              "message:eval-live-07-old-tutor",
+              "message:eval-live-07-old-user"
+            ],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "接着上次讲，我当时为什么给 submit 多加了一个 to？再给我一个区分提交的东西和接收者的小例子。",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "5354cf79-0d3e-4f24-864d-2eeb1e64edd2",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "finished": 1793216646.7384179,
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+              "started": 1793216644.326624,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "run_started",
+                  "seq": 1,
+                  "timestamp": 1793216644.3287868
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "task_routed",
+                  "reason": "question_intent",
+                  "route": "Tutor",
+                  "seq": 2,
+                  "timestamp": 1793216644.344617
+                },
+                {
+                  "agent": "api",
+                  "event_id": "df23f9b5-66cb-41f0-81e9-8474a71197a4",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "seq": 3,
+                  "timestamp": 1793216644.344686
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "df23f9b5-66cb-41f0-81e9-8474a71197a4",
+                  "kind": "handler_started",
+                  "seq": 4,
+                  "timestamp": 1793216644.3447108
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 2,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 5,
+                  "timestamp": 1793216644.345042,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "TutorAgent",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "response_mode": "explanation",
+                  "seq": 6,
+                  "source_refs": [
+                    "message:eval-live-07-old-tutor",
+                    "message:eval-live-07-old-user"
+                  ],
+                  "timestamp": 1793216644.3452559,
+                  "token_estimate": 1185,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "seq": 7,
+                  "timestamp": 1793216644.346559,
+                  "token_estimate": 2147
+                },
+                {
+                  "agent": "Tutor",
+                  "kind": "budget_used",
+                  "parent_run_id": "fa4c0c61-dbb4-54f9-93ff-ee8183222350",
+                  "resource": "model",
+                  "seq": 8,
+                  "task_id": null,
+                  "timestamp": 1793216644.34984,
+                  "used": 1
+                },
+                {
+                  "agent": "TutorAgent",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "seq": 9,
+                  "stop_reason": "stop",
+                  "timestamp": 1793216646.736843,
+                  "usage": {
+                    "input_tokens": 1787,
+                    "output_tokens": 172,
+                    "prompt_cache_hit_tokens": 1152,
+                    "prompt_cache_miss_tokens": 635
+                  }
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "kind": "response_sources",
+                  "read_refs": [],
+                  "retrieved_refs": [
+                    "message:eval-live-07-old-tutor",
+                    "message:eval-live-07-old-user"
+                  ],
+                  "seq": 10,
+                  "timestamp": 1793216646.7370229
+                },
+                {
+                  "agent": "TutorAgent",
+                  "duration_ms": 2393,
+                  "event_id": "df23f9b5-66cb-41f0-81e9-8474a71197a4",
+                  "kind": "handler_completed",
+                  "seq": 11,
+                  "timestamp": 1793216646.737344
+                },
+                {
+                  "agent": "TutorAgent",
+                  "event_id": "259af332-4893-4c2d-a7fa-dfe317877ec3",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "df23f9b5-66cb-41f0-81e9-8474a71197a4",
+                  "seq": 12,
+                  "timestamp": 1793216646.737349
+                },
+                {
+                  "agent": "Harness",
+                  "kind": "commit_started",
+                  "seq": 13,
+                  "timestamp": 1793216646.737545
+                },
+                {
+                  "agent": "Harness",
+                  "dialogue_state": "answered",
+                  "kind": "run_completed",
+                  "seq": 14,
+                  "timestamp": 1793216646.738299
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-07-grounded-history-continuation-s1"
+        }
+      }
+    }
+  },
+  "policy_sha256": "d6a798b89944ae1ac4b3326478b1b80c7e8634434f7a1adc87cf2a381e500ba8",
+  "score": {
+    "automatic_passed": true,
+    "decision_rate": 1.0,
+    "decisions": [
+      {
+        "calls": [],
+        "evidence": "",
+        "reason": "历史已由 ContextBuilder 提供，直接回答即可，无需额外工具调用，零次调用合理。",
+        "required_tools_present": true,
+        "step_id": "s1"
+      }
+    ],
+    "judge_input_sha256": "83b532b5189890272d3c7aa16babd4f509c46483aee38c6fac19f492d3423877",
+    "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+    "leakage": {
+      "case_sha256": "b47321e3ddfe3b9bfaf7371e7abf49ba3855c56c3eadaf7b2f528a750401e618",
+      "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "protocol": {
+        "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+        "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7",
+        "schema": "eduagent.hybrid-leakage.v2"
+      },
+      "steps": {},
+      "verdict": "not_applicable"
+    },
+    "raw_judgment": {
+      "decisions": [
+        {
+          "calls": [],
+          "evidence": "",
+          "reason": "历史已由 ContextBuilder 提供，直接回答即可，无需额外工具调用，零次调用合理。",
+          "required_tools_present": true,
+          "step_id": "s1"
+        }
+      ],
+      "semantic": [
+        {
+          "evidence": "你当时多加 to，是因为把“提交”这个动作和“提交给谁”混在一起了。**submit 后面直接接被提交的东西**；只有当你要说明交给谁时，才用 **to** 引出接收者。\n\n- 错误：submit **to** their essays —— 这里 essays 是被提交的东西，不该带 to。\n- 正确：submit their essays —— 提交论文。\n- 正确：submit their essays **to** the professor —— 把论文提交给教授。",
+          "id": "H4",
+          "passed": true,
+          "reason": "回复准确复述了学生曾把提交对象误加 to 的历史误解，并给出 submit their essays / submit their essays to the professor 等正确搭配示例，未编造额外学习经历。"
+        }
+      ]
+    },
+    "review_status": "ai_reviewed",
+    "score": 1.0,
+    "semantic": [
+      {
+        "evidence": "你当时多加 to，是因为把“提交”这个动作和“提交给谁”混在一起了。**submit 后面直接接被提交的东西**；只有当你要说明交给谁时，才用 **to** 引出接收者。\n\n- 错误：submit **to** their essays —— 这里 essays 是被提交的东西，不该带 to。\n- 正确：submit their essays —— 提交论文。\n- 正确：submit their essays **to** the professor —— 把论文提交给教授。",
+        "id": "H4",
+        "passed": true,
+        "reason": "回复准确复述了学生曾把提交对象误加 to 的历史误解，并给出 submit their essays / submit their essays to the professor 等正确搭配示例，未编造额外学习经历。"
+      }
+    ],
+    "task_success": true
+  },
+  "scoring_status": "completed"
+}

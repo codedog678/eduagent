@@ -1,0 +1,515 @@
+{
+  "binding": "741d6e43f8d0fb8ce1c0e577bd69cac00a78d617d825613320ba15af168875a6",
+  "row": {
+    "case_id": "live-43-no-quizzing",
+    "capability": "tool_and_evidence_decision",
+    "evaluation_index": 107,
+    "policy_sha256": "2583577037340575dc664e66a2785627038f08043ec7ce43ae6d768ea303ef51",
+    "scoring_status": "completed",
+    "automatic": {
+      "case_id": "live-43-no-quizzing",
+      "category": "工具与缺失证据决策",
+      "title": "工具决策：公开讲解不能捏造活动测验",
+      "evaluation_role": "agent_primary",
+      "status": "review_pending",
+      "automatic_passed": true,
+      "hard_checks": [
+        {
+          "id": "H1",
+          "method": "automatic",
+          "path": "s1.execution.status",
+          "rule": "等于 completed。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H2",
+          "method": "automatic",
+          "path": "s1.execution.dialogue_state",
+          "rule": "等于 answered；pending_question_id 为空。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H3",
+          "method": "automatic",
+          "path": "learner.knowledge_states.vocab_basic",
+          "rule": "场景前后所有 KnowledgeState 字段相同。",
+          "passed": true,
+          "status": "passed"
+        },
+        {
+          "id": "H4",
+          "method": "semantic_review",
+          "path": "s1.teaching_response.response",
+          "rule": "借入对应 borrow from、借出对应 lend to；没有测验，不能捏造选项、答案或作答结果。",
+          "passed": null,
+          "status": "review_pending"
+        }
+      ],
+      "execution_outcome": "completed",
+      "execution_failures": [],
+      "annotations": {},
+      "quality_review": {
+        "status": "review_pending",
+        "reviewer": null,
+        "scores": null,
+        "anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。"
+        }
+      }
+    },
+    "observed": {
+      "initial": {
+        "knowledge": {
+          "eval-live-43": {
+            "knowledge_id": "vocab_basic",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "thread_id": "639a2242-a46a-50f8-8650-929d96bad527"
+      },
+      "fixture_validation": {
+        "valid": true,
+        "checks": {
+          "default_knowledge": true,
+          "no_answer_fields_in_context": true,
+          "no_preexisting_pending": true
+        },
+        "initial_source_refs": []
+      },
+      "steps": {
+        "s1": {
+          "action": "converse",
+          "student_input": "没有正在做的测验。我只想知道 borrow from 和 lend to 的方向区别，请直接讲解。",
+          "status": "completed",
+          "result": {
+            "learner_id": "eval-live-43",
+            "knowledge_id": "vocab_basic",
+            "correlation_id": "d4ed39e3-50b0-58ab-94f2-6269b1053379",
+            "evaluation": null,
+            "teaching_response": {
+              "response": "**borrow from 和 lend to 的方向区别**\n\n核心是“东西往哪边流”：\n\n- **borrow from sb**：你**拿进来**。主语是得到东西的人。\n  - *I borrowed a book from Tom.* 我从 Tom 那里借来一本书。（书：Tom → 我）\n- **lend sth to sb**：你**给出去**。主语是提供东西的人。\n  - *Tom lent a book to me.* Tom 把一本书借给我。（书：Tom → 我）\n\n同一件事的两种说法，主语换了，动词就得换：\n\n- *I borrowed a book from Tom.* = *Tom lent a book to me.*\n\n记忆抓手：**borrow 后面跟 from（来源），lend 后面跟 to（去向）**。判断时先看主语是“得到方”还是“给出方”：得到方用 borrow，给出方用 lend。\n\n常见错误是 *I borrowed him a book*（想说“我借给他”），应改为 *I lent him a book* 或 *I lent a book to him*。注意 lend 可接双宾语（lend sb sth），borrow 不能。",
+              "teaching_style": "question_answer",
+              "context_type": "question",
+              "knowledge_id": "vocab_basic",
+              "hint_level": null,
+              "hint_count": null,
+              "generation_mode": "native_tools",
+              "response_variant": "tool_loop",
+              "history_scope": "durable_thread",
+              "source_refs": [],
+              "dialogue_state": "answered"
+            },
+            "next_topic_recommendation": null,
+            "review_snapshot": {
+              "knowledge_id": "vocab_basic",
+              "next_review": null,
+              "retention": null,
+              "urgency": "low",
+              "is_due": false,
+              "days_since_review": null,
+              "top_due_items": []
+            },
+            "agent_insights": {
+              "assessment": {},
+              "tutor": {
+                "knowledge_id": "vocab_basic",
+                "response": "**borrow from 和 lend to 的方向区别**\n\n核心是“东西往哪边流”：\n\n- **borrow from sb**：你**拿进来**。主语是得到东西的人。\n  - *I borrowed a book from Tom.* 我从 Tom 那里借来一本书。（书：Tom → 我）\n- **lend sth to sb**：你**给出去**。主语是提供东西的人。\n  - *Tom lent a book to me.* Tom 把一本书借给我。（书：Tom → 我）\n\n同一件事的两种说法，主语换了，动词就得换：\n\n- *I borrowed a book from Tom.* = *Tom lent a book to me.*\n\n记忆抓手：**borrow 后面跟 from（来源），lend 后面跟 to（去向）**。判断时先看主语是“得到方”还是“给出方”：得到方用 borrow，给出方用 lend。\n\n常见错误是 *I borrowed him a book*（想说“我借给他”），应改为 *I lent him a book* 或 *I lent a book to him*。注意 lend 可接双宾语（lend sb sth），borrow 不能。",
+                "teaching_style": "question_answer",
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "response_variant": "tool_loop",
+                "history_scope": "durable_thread",
+                "source_refs": [],
+                "dialogue_state": "answered"
+              },
+              "curriculum": {},
+              "engagement": {}
+            },
+            "teaching_decision": {
+              "strategy": "answer_question",
+              "priority": "normal",
+              "summary": "优先回答学生当前问题，并结合当前知识点上下文。",
+              "next_action": "继续围绕学生追问做针对性解释。",
+              "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+              "generation_mode": "local_policy",
+              "agent_votes": {
+                "assessment": {},
+                "curriculum": {},
+                "engagement": {},
+                "tutor": {
+                  "context_type": "question",
+                  "teaching_style": "question_answer",
+                  "generation_mode": "native_tools"
+                }
+              }
+            },
+            "interaction_events": [
+              {
+                "event_type": "student.question",
+                "source": "api",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "question": "没有正在做的测验。我只想知道 borrow from 和 lend to 的方向区别，请直接讲解。"
+                },
+                "timestamp": "2026-10-29T03:51:37.093039",
+                "correlation_id": "d4ed39e3-50b0-58ab-94f2-6269b1053379"
+              },
+              {
+                "event_type": "tutor.teaching_response",
+                "source": "TutorAgent",
+                "data": {
+                  "knowledge_id": "vocab_basic",
+                  "response": "**borrow from 和 lend to 的方向区别**\n\n核心是“东西往哪边流”：\n\n- **borrow from sb**：你**拿进来**。主语是得到东西的人。\n  - *I borrowed a book from Tom.* 我从 Tom 那里借来一本书。（书：Tom → 我）\n- **lend sth to sb**：你**给出去**。主语是提供东西的人。\n  - *Tom lent a book to me.* Tom 把一本书借给我。（书：Tom → 我）\n\n同一件事的两种说法，主语换了，动词就得换：\n\n- *I borrowed a book from Tom.* = *Tom lent a book to me.*\n\n记忆抓手：**borrow 后面跟 from（来源），lend 后面跟 to（去向）**。判断时先看主语是“得到方”还是“给出方”：得到方用 borrow，给出方用 lend。\n\n常见错误是 *I borrowed him a book*（想说“我借给他”），应改为 *I lent him a book* 或 *I lent a book to him*。注意 lend 可接双宾语（lend sb sth），borrow 不能。",
+                  "teaching_style": "question_answer",
+                  "context_type": "question",
+                  "generation_mode": "native_tools",
+                  "response_variant": "tool_loop",
+                  "history_scope": "durable_thread",
+                  "source_refs": [],
+                  "dialogue_state": "answered"
+                },
+                "timestamp": "2026-10-29T03:51:39.765401",
+                "correlation_id": "d4ed39e3-50b0-58ab-94f2-6269b1053379"
+              }
+            ],
+            "events_triggered": 2,
+            "execution": {
+              "request_id": "live-43-no-quizzing-s1",
+              "run_id": "d4ed39e3-50b0-58ab-94f2-6269b1053379",
+              "attempt_id": "e6b619a4-18da-486d-b6d5-702d4c6d8f23",
+              "session_id": "eval-live-43-s1",
+              "thread_id": "639a2242-a46a-50f8-8650-929d96bad527",
+              "status": "completed",
+              "dialogue_state": "answered",
+              "pending_question_id": null,
+              "answered_question_id": null,
+              "source_refs": [],
+              "retrieved_refs": [],
+              "read_refs": [],
+              "cited_refs": [],
+              "app_version": "0.3.0",
+              "trace_schema_version": 1,
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+              "effective_policy_hash": "0bca65fdef1734532905e86fb02db3c0da008ddab4b2ee8ab01e5152132d9a9d"
+            }
+          },
+          "trace": {
+            "request_id": "live-43-no-quizzing-s1",
+            "attempts": [
+              {
+                "attempt_id": "e6b619a4-18da-486d-b6d5-702d4c6d8f23",
+                "run_id": "d4ed39e3-50b0-58ab-94f2-6269b1053379",
+                "status": "completed",
+                "stop_reason": null,
+                "started": 1793217097.092787,
+                "finished": 1793217099.7660868,
+                "app_version": "0.3.0",
+                "trace_schema_version": 1,
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "config_fingerprint": "7aefef4df1a4d473a706199baf8bc1fee7507101bbf9095a95dd79b4346c7bca",
+                "steps": [
+                  {
+                    "seq": 1,
+                    "kind": "run_started",
+                    "agent": "Harness",
+                    "timestamp": 1793217097.0929458,
+                    "effective_policy_hash": "0bca65fdef1734532905e86fb02db3c0da008ddab4b2ee8ab01e5152132d9a9d"
+                  },
+                  {
+                    "seq": 2,
+                    "kind": "task_routed",
+                    "agent": "Harness",
+                    "timestamp": 1793217097.093017,
+                    "route": "Tutor",
+                    "reason": "question_intent"
+                  },
+                  {
+                    "seq": 3,
+                    "kind": "event_dispatched",
+                    "agent": "api",
+                    "timestamp": 1793217097.093058,
+                    "event_id": "ec8638a8-15c9-439f-a9cd-0898e144430e",
+                    "event_type": "student.question",
+                    "parent_event_id": null
+                  },
+                  {
+                    "seq": 4,
+                    "kind": "handler_started",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793217097.0930738,
+                    "event_id": "ec8638a8-15c9-439f-a9cd-0898e144430e"
+                  },
+                  {
+                    "seq": 5,
+                    "kind": "memory_retrieval",
+                    "agent": "Harness",
+                    "timestamp": 1793217097.093282,
+                    "lexical_hits": 0,
+                    "semantic_hits": 0,
+                    "vectors_searched": 0,
+                    "elapsed_ms": 0,
+                    "degraded_reason": null,
+                    "embedding_usage": {},
+                    "rerank_usage": {},
+                    "rerank_error": null,
+                    "semantic_threshold": 0.55
+                  },
+                  {
+                    "seq": 6,
+                    "kind": "history_discovery",
+                    "agent": "Harness",
+                    "timestamp": 1793217097.093384,
+                    "source_refs": [],
+                    "bounded": true
+                  },
+                  {
+                    "seq": 7,
+                    "kind": "context_built",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793217097.0934951,
+                    "source_refs": [],
+                    "omitted_refs": [],
+                    "token_estimate": 1557,
+                    "tutor_policy_version": "2026-10-25.3",
+                    "response_mode": "explanation",
+                    "estimate_method": "utf8_bytes_div_3"
+                  },
+                  {
+                    "seq": 8,
+                    "kind": "before_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793217097.095006,
+                    "model_call": 1,
+                    "token_estimate": 2518
+                  },
+                  {
+                    "seq": 9,
+                    "kind": "budget_used",
+                    "agent": "Tutor",
+                    "timestamp": 1793217097.101237,
+                    "resource": "model",
+                    "used": 1,
+                    "task_id": null,
+                    "parent_run_id": "d4ed39e3-50b0-58ab-94f2-6269b1053379"
+                  },
+                  {
+                    "seq": 10,
+                    "kind": "after_model",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793217099.7653382,
+                    "model_call": 1,
+                    "stop_reason": "stop",
+                    "usage": {
+                      "input_tokens": 1959,
+                      "output_tokens": 249,
+                      "prompt_cache_hit_tokens": 1792,
+                      "prompt_cache_miss_tokens": 167
+                    }
+                  },
+                  {
+                    "seq": 11,
+                    "kind": "response_sources",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793217099.765353,
+                    "retrieved_refs": [],
+                    "read_refs": [],
+                    "cited_refs": []
+                  },
+                  {
+                    "seq": 12,
+                    "kind": "handler_completed",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793217099.765475,
+                    "event_id": "ec8638a8-15c9-439f-a9cd-0898e144430e",
+                    "duration_ms": 2672
+                  },
+                  {
+                    "seq": 13,
+                    "kind": "event_dispatched",
+                    "agent": "TutorAgent",
+                    "timestamp": 1793217099.7654788,
+                    "event_id": "46c4ee49-34ba-4ed7-8b93-d65b3d553d8f",
+                    "event_type": "tutor.teaching_response",
+                    "parent_event_id": "ec8638a8-15c9-439f-a9cd-0898e144430e"
+                  },
+                  {
+                    "seq": 14,
+                    "kind": "commit_started",
+                    "agent": "Harness",
+                    "timestamp": 1793217099.765558
+                  },
+                  {
+                    "seq": 15,
+                    "kind": "run_completed",
+                    "agent": "Harness",
+                    "timestamp": 1793217099.7660081,
+                    "dialogue_state": "answered"
+                  }
+                ]
+              }
+            ]
+          },
+          "model_turns": [
+            {
+              "request_no": 1,
+              "content": "**borrow from 和 lend to 的方向区别**\n\n核心是“东西往哪边流”：\n\n- **borrow from sb**：你**拿进来**。主语是得到东西的人。\n  - *I borrowed a book from Tom.* 我从 Tom 那里借来一本书。（书：Tom → 我）\n- **lend sth to sb**：你**给出去**。主语是提供东西的人。\n  - *Tom lent a book to me.* Tom 把一本书借给我。（书：Tom → 我）\n\n同一件事的两种说法，主语换了，动词就得换：\n\n- *I borrowed a book from Tom.* = *Tom lent a book to me.*\n\n记忆抓手：**borrow 后面跟 from（来源），lend 后面跟 to（去向）**。判断时先看主语是“得到方”还是“给出方”：得到方用 borrow，给出方用 lend。\n\n常见错误是 *I borrowed him a book*（想说“我借给他”），应改为 *I lent him a book* 或 *I lent a book to him*。注意 lend 可接双宾语（lend sb sth），borrow 不能。",
+              "tool_calls": [],
+              "stop_reason": "stop",
+              "usage": {
+                "input_tokens": 1959,
+                "output_tokens": 249,
+                "prompt_cache_hit_tokens": 1792,
+                "prompt_cache_miss_tokens": 167
+              },
+              "duration_ms": 2670.276874998308
+            }
+          ],
+          "tool_results": [],
+          "quizzes": {},
+          "knowledge": {
+            "eval-live-43": {
+              "knowledge_id": "vocab_basic",
+              "mastery": 0.1,
+              "alpha": 1.0,
+              "beta": 9.0,
+              "attempts": 0,
+              "correct_count": 0,
+              "last_attempt": null,
+              "streak": 0
+            }
+          },
+          "evidence": [],
+          "duration_ms": 2677.410083000723,
+          "all_sources_readable": true
+        }
+      },
+      "final": {
+        "knowledge": {
+          "eval-live-43": {
+            "knowledge_id": "vocab_basic",
+            "mastery": 0.1,
+            "alpha": 1.0,
+            "beta": 9.0,
+            "attempts": 0,
+            "correct_count": 0,
+            "last_attempt": null,
+            "streak": 0
+          }
+        },
+        "quizzes": {},
+        "evidence": [],
+        "pending_questions": [],
+        "assistant_history": [
+          "**borrow from 和 lend to 的方向区别**\n\n核心是“东西往哪边流”：\n\n- **borrow from sb**：你**拿进来**。主语是得到东西的人。\n  - *I borrowed a book from Tom.* 我从 Tom 那里借来一本书。（书：Tom → 我）\n- **lend sth to sb**：你**给出去**。主语是提供东西的人。\n  - *Tom lent a book to me.* Tom 把一本书借给我。（书：Tom → 我）\n\n同一件事的两种说法，主语换了，动词就得换：\n\n- *I borrowed a book from Tom.* = *Tom lent a book to me.*\n\n记忆抓手：**borrow 后面跟 from（来源），lend 后面跟 to（去向）**。判断时先看主语是“得到方”还是“给出方”：得到方用 borrow，给出方用 lend。\n\n常见错误是 *I borrowed him a book*（想说“我借给他”），应改为 *I lent him a book* 或 *I lent a book to him*。注意 lend 可接双宾语（lend sb sth），borrow 不能。"
+        ]
+      }
+    },
+    "judge_identity": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "thinking": "disabled"
+    },
+    "score": {
+      "semantic": [
+        {
+          "id": "H4",
+          "passed": true,
+          "reason": "正确区分 borrow from（借入/来源）与 lend to（借出/去向），未捏造测验、选项或作答结果。",
+          "evidence": "**borrow from sb**：你**拿进来**。主语是得到东西的人。……**lend sth to sb**：你**给出去**。主语是提供东西的人。"
+        }
+      ],
+      "decisions": [
+        {
+          "step_id": "s1",
+          "required_tools_present": true,
+          "calls": [],
+          "reason": "学生明确要求直接讲解且无活动测验，直接回答即可，无需调用工具，也未编造测验内容。",
+          "evidence": ""
+        }
+      ],
+      "raw_judgment": {
+        "semantic": [
+          {
+            "id": "H4",
+            "passed": true,
+            "reason": "正确区分 borrow from（借入/来源）与 lend to（借出/去向），未捏造测验、选项或作答结果。",
+            "evidence": "**borrow from sb**：你**拿进来**。主语是得到东西的人。……**lend sth to sb**：你**给出去**。主语是提供东西的人。"
+          }
+        ],
+        "decisions": [
+          {
+            "step_id": "s1",
+            "required_tools_present": true,
+            "calls": [],
+            "reason": "学生明确要求直接讲解且无活动测验，直接回答即可，无需调用工具，也未编造测验内容。",
+            "evidence": ""
+          }
+        ]
+      },
+      "leakage": {
+        "protocol": {
+          "schema": "eduagent.hybrid-leakage.v2",
+          "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+          "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7"
+        },
+        "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "case_sha256": "88de562a4c8f2d4455dd536cd62faaf727a47f5e8b5e0455dfb0bfe1791ced23",
+        "steps": {},
+        "verdict": "not_applicable"
+      },
+      "task_success": true,
+      "automatic_passed": true,
+      "decision_rate": 1.0,
+      "score": 1.0,
+      "review_status": "ai_reviewed",
+      "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+      "judge_input_sha256": "59b112db5d37e4e96d7331ff62a23f025e329a7fa192ca52462353f7433d3ef5"
+    },
+    "metering": [
+      {
+        "request_no": 439,
+        "reservation_cny": 0.023556,
+        "usage": {
+          "input_tokens": 1959,
+          "output_tokens": 249,
+          "prompt_cache_hit_tokens": 1792,
+          "prompt_cache_miss_tokens": 167
+        },
+        "status": "usage_recorded",
+        "role": "task",
+        "input_sha256": "9b184797416aea993ce6590e9c06ea955d1657d2dad89d350d3de9756b4c238d",
+        "estimated_peak_cny": 0.0023976799999999997,
+        "estimated_off_peak_cny": 0.0011988399999999998
+      },
+      {
+        "request_no": 440,
+        "reservation_cny": 0.036612,
+        "usage": {
+          "input_tokens": 2139,
+          "output_tokens": 145,
+          "prompt_cache_hit_tokens": 1024
+        },
+        "status": "usage_recorded",
+        "role": "judge",
+        "input_sha256": "250186f8e3840efb94e967b3143ce8e6074b2fed004e7f4e6fbfebb33b447e50",
+        "estimated_peak_cny": 0.00343096,
+        "estimated_off_peak_cny": 0.00171548
+      }
+    ]
+  },
+  "row_sha256": "d9b7ff0d5f2b6610cb74e77464168b36341a05fe2d81cb63008713630b9f6691"
+}
