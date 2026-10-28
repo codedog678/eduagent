@@ -10,6 +10,8 @@ import re
 from typing import Any
 
 from pydantic import BaseModel, Field
+from core.concurrency import model_slot
+from core.run_context import RunExhausted
 
 logger = logging.getLogger(__name__)
 
@@ -389,6 +391,11 @@ class LLMService:
             options["temperature"] = temperature
         return options
 
+    async def _request(self, create, **kwargs):
+        """只在远程请求期间占用全局额度，所有 provider 走同一入口。"""
+        async with model_slot("chat"):
+            return await create(**kwargs)
+
     async def tool_turn(self, messages: list[dict], tools: list[dict], max_tokens: int) -> NativeTurn:
         """原生工具协议；失败直接上抛，由运行边界处理，不能伪装成正常回复。"""
         from core.run_context import active_run
@@ -420,7 +427,7 @@ class LLMService:
                     converted.append({"role": "assistant", "content": blocks})
                 else:
                     converted.append(message)
-            response = await client.messages.create(
+            response = await self._request(client.messages.create,
                 model=self.model, max_tokens=max_tokens, temperature=0.3,
                 system="\n".join(m["content"] for m in messages if m["role"] == "system"),
                 messages=converted,
@@ -435,7 +442,7 @@ class LLMService:
                 usage={"input_tokens": response.usage.input_tokens,
                        "output_tokens": response.usage.output_tokens},
             )
-        response = await client.chat.completions.create(
+        response = await self._request(client.chat.completions.create,
             model=self.model, messages=messages, tools=tools, tool_choice="auto",
             max_tokens=max_tokens,
             **self._compatible_request_options(temperature=0.3),
@@ -482,7 +489,7 @@ class LLMService:
             client = self._get_client()
 
             if self.provider == "anthropic":
-                response = await client.messages.create(
+                response = await self._request(client.messages.create,
                     model=self.model,
                     max_tokens=max_tokens,
                     temperature=temperature,
@@ -533,7 +540,7 @@ class LLMService:
                     messages.append({"role": "system", "content": system_prompt})
                 messages.append({"role": "user", "content": prompt})
 
-                response = await client.chat.completions.create(
+                response = await self._request(client.chat.completions.create,
                     model=self.model,
                     messages=messages,
                     max_tokens=max_tokens,
@@ -549,6 +556,9 @@ class LLMService:
                 ctx.record("model_usage", ctx.role, task_id=ctx.task_id, usage=usage,
                            provider=self.provider, model=self.model)
             return LLMResponse(content=content.strip(), model=self.model, usage=usage)
+        except RunExhausted:
+            # 排队/预算耗尽必须中止本轮，不能转成模板回复后提交成功。
+            raise
         except Exception as exc:
             logger.error("LLM generation failed: %s", type(exc).__name__)
             return LLMResponse(content="", model=self.model, usage={})

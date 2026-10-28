@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from core.event_bus import Event, EventBus, EventType
 from core.learner_model import LearnerModel
+from core.concurrency import KeyedLocks
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,8 @@ class BaseAgent(ABC):
         self.description = description
         self.learner_models = learner_models if learner_models is not None else {}
         self.status = AgentStatus()
-        self._lock = None  # 延迟初始化
+        self._learner_locks = KeyedLocks()
+        self._active_tasks: dict[object, str] = {}
 
     @abstractmethod
     async def handle_event(self, event: Event) -> Optional[dict[str, Any]]:
@@ -103,13 +105,9 @@ class BaseAgent(ABC):
 
     async def _safe_handle(self, event: Event) -> None:
         """安全执行事件处理。"""
-        import asyncio
-
-        # 如果没有锁，创建一个
-        if self._lock is None:
-            self._lock = asyncio.Lock()
-
-        async with self._lock:
+        async with self._learner_locks.hold(event.learner_id):
+            task = object()
+            self._active_tasks[task] = f"Processing {event.type.value}"
             self.status.state = AgentState.PROCESSING
             self.status.last_active = datetime.now()
             self.status.current_task = f"Processing {event.type.value}"
@@ -135,8 +133,9 @@ class BaseAgent(ABC):
                 raise
 
             finally:
-                self.status.state = AgentState.IDLE
-                self.status.current_task = ""
+                del self._active_tasks[task]
+                self.status.state = (AgentState.PROCESSING if self._active_tasks else AgentState.IDLE)
+                self.status.current_task = next(iter(self._active_tasks.values()), "")
 
     async def _publish_result_event(
         self,
@@ -189,5 +188,6 @@ class BaseAgent(ABC):
             "total_processed": self.status.total_processed,
             "total_errors": self.status.total_errors,
             "current_task": self.status.current_task,
+            "active_tasks": len(self._active_tasks),
             "subscribed_events": [e.value for e in self.get_subscribed_events()],
         }

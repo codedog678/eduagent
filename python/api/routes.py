@@ -84,6 +84,7 @@ def _with_status(result: dict, status: str = "processed") -> dict:
 @router.get("/health")
 async def health_check(request: Request):
     from core.llm_service import get_llm_service
+    from core.concurrency import get_model_limiter
 
     llm_info = get_llm_service().runtime_info()
     return {
@@ -96,6 +97,8 @@ async def health_check(request: Request):
         "config_source": llm_info["config_source"],
         "api_port": settings.api_port,
         "coordinator_enabled": settings.enable_coordinator,
+        "model_concurrency": get_model_limiter().snapshot(),
+        "harness_queue_timeout_seconds": settings.harness_queue_timeout_seconds,
         "memory": (request.app.state.orchestrator.harness.history.retrieval.health()
                    if getattr(request.app.state.orchestrator, "harness", None) else None),
     }

@@ -10,6 +10,7 @@ import re
 import sqlite3
 import time
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import HTTPException
@@ -24,6 +25,7 @@ from core.run_context import RunContext, RunExhausted, active_run
 from core.spaced_repetition import ReviewItem
 from core.versions import runtime_metadata
 from core.agent_errors import AgentExecutionError
+from core.concurrency import KeyedLocks, QueueTimeout
 from core.output_safety import guard_public, register_untrusted
 from core.policy_store import BUILTIN_HASH, PolicyRegistry, effective_hash
 from core.tutor_policy import current_retrieval_rules, use_retrieval_rules
@@ -39,11 +41,13 @@ class IssuedQuestion(BaseModel):
 
 class LearningHarness:
     def __init__(self, orchestrator, path: str, timeout: float = 45,
-                 quiz_ttl: float = 86400):
+                 quiz_ttl: float = 86400, queue_timeout: float | None = None):
         self.orch = orchestrator
         self.timeout = timeout
         self.quiz_ttl = quiz_ttl
-        self.lock = asyncio.Lock()
+        self.learner_locks = KeyedLocks()
+        self.queue_timeout = (settings.harness_queue_timeout_seconds
+                              if queue_timeout is None else queue_timeout)
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         # 拒绝多个 worker 使用同一检查点，避免进程间缓存覆盖。
         self._owner = open(path + ".lock", "a")
@@ -169,7 +173,7 @@ class LearningHarness:
             for name in ("_student_attempts", "_hint_history"):
                 table = getattr(agent, name, {})
                 for key in list(table):
-                    if key.startswith(learner + ":"):
+                    if key[0] == learner:
                         del table[key]
             agent_state = state.get("agents", {}).get(agent.name, {})
             if agent_state:
@@ -184,9 +188,18 @@ class LearningHarness:
             if row:
                 self.restore(learner, json.loads(row[0]))
 
+    @asynccontextmanager
+    async def _admit(self, learner):
+        try:
+            async with self.learner_locks.hold(learner, self.queue_timeout) as wait_ms:
+                yield wait_ms
+        except QueueTimeout as exc:
+            raise HTTPException(503, f"{exc}: 服务繁忙，请使用相同请求 ID 重试",
+                                headers={"Retry-After": "1"}) from exc
+
     async def run(self, learner, request_id, payload, operation):
         fingerprint = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
-        async with self.lock:
+        async with self._admit(learner) as wait_ms:
             row = self.db.execute(
                 "SELECT fingerprint,status,result FROM runs WHERE learner=? AND request=?",
                 (learner, request_id)).fetchone()
@@ -202,7 +215,6 @@ class LearningHarness:
                 else:
                     self.orch.get_learner_model_sync(learner)
             before = json.loads(json.dumps(self.capture(learner)))
-            previous_events = {event.id for event in self.orch.event_bus.get_history(limit=1000)}
             quiz_row = self.db.execute("SELECT body FROM quizzes WHERE id=? AND learner=?",
                                       (payload.get("quiz", payload.get("quiz_id", "")), learner)).fetchone()
             scoped_quiz = json.loads(quiz_row[0]) if quiz_row else {}
@@ -241,7 +253,8 @@ class LearningHarness:
                      metadata["config_fingerprint"]))
             token = active_run.set(ctx)
             register_untrusted(ctx, ctx.input_text)
-            ctx.record("run_started", effective_policy_hash=ctx.effective_policy_hash)
+            ctx.record("run_started", effective_policy_hash=ctx.effective_policy_hash,
+                       learner_queue_wait_ms=wait_ms)
             try:
                 with use_retrieval_rules(policy["components"]["retrieval_rules"]):
                     async with asyncio.timeout(self.timeout):
@@ -306,9 +319,7 @@ class LearningHarness:
                 self.restore(learner, before)
                 if ctx.steps and ctx.steps[-1]["kind"] == "run_completed":
                     ctx.steps.pop()
-                trace = [event.model_dump(mode="json") for event in
-                         self.orch.event_bus.get_history(learner_id=learner, limit=64)
-                         if event.id not in previous_events]
+                trace = [event.model_dump(mode="json") for event in ctx.events[-64:]]
                 status = ("cancelled" if isinstance(exc, asyncio.CancelledError) else
                           "exhausted" if isinstance(exc, (RunExhausted, TimeoutError)) else "failed")
                 reason = (str(exc) if isinstance(exc, RunExhausted) else
@@ -328,6 +339,8 @@ class LearningHarness:
                 if isinstance(exc, HTTPException):
                     raise
                 if isinstance(exc, asyncio.CancelledError):
+                    raise
+                if isinstance(exc, QueueTimeout):
                     raise
                 raise HTTPException(503, "本次执行未完成，学习状态已回滚，请重试") from exc
             finally:

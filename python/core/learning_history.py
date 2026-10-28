@@ -38,6 +38,8 @@ class LearningHistory:
         return session, thread
 
     def open_scope(self, ctx):
+        # 不同学习者可能同时通过初次检查；提交时必须再次核验归属。
+        self.bind(ctx.learner, ctx.session_id, ctx.thread_id, ctx.knowledge_id)
         self.db.execute(
             "INSERT OR IGNORE INTO learning_sessions (id,learner,created) VALUES (?,?,?)",
                         (ctx.session_id, ctx.learner, time.time()))

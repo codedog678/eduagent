@@ -66,8 +66,11 @@ class Settings(BaseSettings):
     enable_db_logging: bool = True
     enable_agent_llm_decisions: bool = False
     llm_timeout_seconds: float = 12.0
+    llm_max_concurrency: int = Field(default=4, ge=1, le=256)
+    llm_queue_timeout_seconds: float = Field(default=10.0, gt=0, allow_inf_nan=False)
     harness_store_path: str = str(PROJECT_ROOT / "data" / "harness.sqlite3")
     harness_timeout_seconds: float = Field(default=45.0, gt=0)
+    harness_queue_timeout_seconds: float = Field(default=10.0, gt=0, allow_inf_nan=False)
     harness_max_steps: int = Field(default=64, gt=0, le=1000)
     quiz_ttl_seconds: float = Field(default=86400, gt=0)
     enable_tutor_tools: bool = True

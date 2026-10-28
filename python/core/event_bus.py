@@ -134,6 +134,8 @@ class EventBus:
         # 子事件只入队；当前 handler 退出并释放 Agent 锁后才执行。
         run = active_run.get()
         if run:
+            if event.learner_id != run.learner:
+                raise ExecutionError("cross-learner event rejected")
             event.correlation_id = run.run_id
             event.parent_event_id = run.parent_event_id
         active = _active_queue.get()
@@ -168,6 +170,7 @@ class EventBus:
         """
         run = active_run.get()
         if run:
+            run.events.append(event)
             run.record("event_dispatched", event.source, event_id=event.id,
                        event_type=event.type.value, parent_event_id=event.parent_event_id)
         # 加锁保护事件历史；handler 按订阅顺序执行。

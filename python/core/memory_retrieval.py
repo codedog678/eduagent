@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from config.settings import settings
 from core.memory_store import MemoryStore, digest
+from core.concurrency import QueueTimeout, model_slot
 
 
 class SiliconFlowEmbedding:
@@ -24,8 +25,9 @@ class SiliconFlowEmbedding:
         if not self.key:
             raise ValueError("missing_embedding_key")
         # BGE 不支持 dimensions 参数；保持用户指定模型，不自动切换 Pro。
-        async with httpx.AsyncClient(timeout=self.config.memory_embedding_timeout_seconds,
-                                     transport=self.transport) as client:
+        async with model_slot("embedding"), httpx.AsyncClient(
+                timeout=self.config.memory_embedding_timeout_seconds,
+                transport=self.transport) as client:
             response = await client.post(
                 self.config.memory_embedding_base_url.rstrip("/") + "/embeddings",
                 headers={"Authorization": "Bearer " + self.key},
@@ -166,7 +168,8 @@ class MemoryRetrieval:
         key = self.config.memory_rerank_api_key or self.provider.key
         if not key:
             raise ValueError("missing_rerank_key")
-        async with httpx.AsyncClient(timeout=self.config.memory_embedding_timeout_seconds) as client:
+        async with model_slot("rerank"), httpx.AsyncClient(
+                timeout=self.config.memory_embedding_timeout_seconds) as client:
             response = await client.post(
                 self.config.memory_rerank_base_url.rstrip("/") + "/rerank",
                 headers={"Authorization": "Bearer " + key},
@@ -275,7 +278,8 @@ class MemoryWorker:
                         db.execute("UPDATE memory_jobs SET status='completed',last_error=NULL,"
                                    "usage=?,elapsed_ms=? WHERE id=?",
                                    (json.dumps(usage), (time.monotonic()-started)*1000, identifier))
-                except (httpx.HTTPError, ValueError, KeyError, sqlite3.Error, TypeError, TimeoutError) as exc:
+                except (httpx.HTTPError, ValueError, KeyError, sqlite3.Error,
+                        TypeError, TimeoutError, QueueTimeout) as exc:
                     db.rollback()
                     with db:
                         db.execute("UPDATE memory_jobs SET attempts=attempts+1,next_retry_at=?,last_error=? "

@@ -227,6 +227,9 @@ class AgentOrchestrator:
         correlation_id: str,
         limit: int = 30,
     ) -> list[Event]:
+        ctx = active_run.get()
+        if ctx and ctx.learner == learner_id and ctx.run_id == correlation_id:
+            return ctx.events[-limit:]
         return self.event_bus.get_history(
             learner_id=learner_id,
             correlation_id=correlation_id,

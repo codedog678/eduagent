@@ -61,8 +61,9 @@ class TutorAgent(BaseAgent):
             learner_models=learner_models,
         )
         self.llm_service = llm_service
-        self._student_attempts: dict[str, int] = {}
-        self._hint_history: dict[str, int] = {}
+        # 学习者 ID 与题目后缀独立存储，避免冒号前缀导致跨学习者混入。
+        self._student_attempts: dict[tuple[str, str], int] = {}
+        self._hint_history: dict[tuple[str, str], int] = {}
         self._conversation_history: dict[str, list[dict[str, Any]]] = {}
         self._topic_history: dict[str, dict[str, list[dict[str, Any]]]] = {}
         self._recent_submissions: dict[str, dict[str, dict[str, str]]] = {}
@@ -316,7 +317,7 @@ class TutorAgent(BaseAgent):
         self,
         learner_id: str,
         knowledge_id: str,
-        attempt_key: str,
+        attempt_key: tuple[str, str],
         attempts: int,
     ) -> tuple[TeachingReply, int, int]:
         hint_count = self._hint_history.get(attempt_key, 0) + 1
@@ -489,10 +490,10 @@ class TutorAgent(BaseAgent):
         knowledge_id: str,
         question: str,
         correct_answer: str,
-    ) -> str:
+    ) -> tuple[str, str]:
         normalized_question = _normalize_text(question or knowledge_id)
         normalized_answer = _normalize_text(correct_answer)
-        return f"{learner_id}:{knowledge_id}:{normalized_question}:{normalized_answer}"
+        return learner_id, f"{knowledge_id}:{normalized_question}:{normalized_answer}"
 
     def _add_to_history(
         self,
@@ -558,19 +559,18 @@ class TutorAgent(BaseAgent):
         return responses[-limit:]
 
     def get_hint_usage(self, learner_id: str) -> int:
-        prefix = f"{learner_id}:"
-        return sum(count for key, count in self._hint_history.items() if key.startswith(prefix))
+        return sum(count for (owner, _), count in self._hint_history.items() if owner == learner_id)
 
     def get_state_for_save(self, learner_id: str) -> dict[str, Any] | None:
         attempts_data = {
-            key[len(f"{learner_id}:") :]: count
-            for key, count in self._student_attempts.items()
-            if key.startswith(f"{learner_id}:") and count
+            suffix: count
+            for (owner, suffix), count in self._student_attempts.items()
+            if owner == learner_id and count
         }
         hint_data = {
-            key[len(f"{learner_id}:") :]: count
-            for key, count in self._hint_history.items()
-            if key.startswith(f"{learner_id}:") and count
+            suffix: count
+            for (owner, suffix), count in self._hint_history.items()
+            if owner == learner_id and count
         }
 
         state: dict[str, Any] = {}
@@ -588,6 +588,6 @@ class TutorAgent(BaseAgent):
         self._topic_history[learner_id] = state_data.get("topic_history", {})
         self._recent_submissions[learner_id] = state_data.get("recent_submissions", {})
         for suffix, count in state_data.get("student_attempts", {}).items():
-            self._student_attempts[f"{learner_id}:{suffix}"] = count
+            self._student_attempts[learner_id, suffix] = count
         for suffix, count in state_data.get("hint_history", {}).items():
-            self._hint_history[f"{learner_id}:{suffix}"] = count
+            self._hint_history[learner_id, suffix] = count

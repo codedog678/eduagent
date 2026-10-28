@@ -26,6 +26,7 @@ class RunContext:
     knowledge_graph: Any = None
     model_state: dict = field(default_factory=dict)
     steps: list[dict] = field(default_factory=list)
+    events: list[Any] = field(default_factory=list)
     source_refs: list[str] = field(default_factory=list)
     retrieved_refs: list[str] = field(default_factory=list)
     read_refs: list[str] = field(default_factory=list)

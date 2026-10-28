@@ -7,6 +7,7 @@ OpenAI LLM 适配器。
 import logging
 
 from llm.base import BaseLLM, LLMResponse, Message
+from core.concurrency import model_slot
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ class OpenAILLM(BaseLLM):
         payload.update(kwargs)
 
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with model_slot("chat"), httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
                     f"{self.base_url}/chat/completions",
                     headers=headers,
