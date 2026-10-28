@@ -27,6 +27,26 @@ def inspect(text, suffix="52-assisted-contrast"):
     return inspect_response(text, load_contract(case(suffix)))
 
 
+def simulated_current_archive(tmp_path):
+    """只构造测试夹具；真实旧档不能改提示摘要后冒充新裁判运行。"""
+    from evals.io import write_json
+    from evals.optimization.protocol import digest, file_digest
+    from evals.optimization.scoring import JUDGE_PROMPT, judge_payload
+    folder = tmp_path / "simulated-source"
+    manifest = json.loads((ARCHIVE.parent / "manifest.json").read_text())
+    cases = {c.case_id: c for c in load_live_cases(DATA)}
+    for item in manifest["items"]:
+        record = json.loads((ARCHIVE.parent / item["evidence_path"]).read_text())
+        record["score"]["judge_prompt_sha256"] = digest(JUDGE_PROMPT)
+        record["score"]["judge_input_sha256"] = digest(judge_payload(
+            cases[item["case_id"]], record["observed"]))
+        path = folder / item["evidence_path"]
+        write_json(path, record)
+        item["evidence_sha256"] = file_digest(path)
+    write_json(folder / "manifest.json", manifest)
+    return folder / "manifest.json"
+
+
 @pytest.mark.parametrize("text", [
     "应选 C。", "答案是Ｃ。", "选择 **C**。", "这里的含义是 peaceful。",
     "这个词是平静的意思。", "答案是 peace\u200bful。",
@@ -122,7 +142,7 @@ def test_replay_preserves_teaching_failures_and_cannot_grant_release(tmp_path):
     from evals.optimization.replay_calibration import replay
     from evals.optimization.calibration import verify_manifest
     from evals.optimization.protocol import file_digest
-    report = replay(ARCHIVE.parent / "manifest.json", DATA, tmp_path / "replay")
+    report = replay(simulated_current_archive(tmp_path), DATA, tmp_path / "replay")
     assert report["agreement"] >= .9
     assert report["original_judge_agreement"] == .85
     assert report["passed"] is False and report["status"] == "validation_required"
@@ -158,10 +178,62 @@ def test_rule_change_invalidates_frozen_optimization_protocol(tmp_path, monkeypa
 def test_calibration_cannot_omit_failed_dimension(tmp_path):
     from evals.optimization.replay_calibration import replay
     from evals.optimization.calibration import verify_manifest
-    replay(ARCHIVE.parent / "manifest.json", DATA, tmp_path / "replay")
+    replay(simulated_current_archive(tmp_path), DATA, tmp_path / "replay")
     path = tmp_path / "replay/manifest.json"
     manifest = json.loads(path.read_text())
     manifest["items"][10]["semantic_ids"] = ["S1"]
     path.write_text(json.dumps(manifest))
     with pytest.raises(ValueError, match="all frozen dimensions"):
         verify_manifest(path)
+
+
+def test_real_old_judge_cannot_be_presented_as_current(tmp_path):
+    from evals.optimization.replay_calibration import replay
+    with pytest.raises(ValueError, match="source judge prompt or input changed"):
+        replay(ARCHIVE.parent / "manifest.json", DATA, tmp_path / "replay")
+
+
+@pytest.mark.parametrize("text", [
+    "判断这些行为属于哪一类：是给予/帮助，还是情绪/状态？",
+    "咱们先不直接判断这个词的意思，也不去排除选项。你只需要看句子里的两个具体行为：她经常分享食物，还帮助别人。想想这两个动作属于哪一类，是跟给予有关，还是跟情绪、安静有关？只做这个归类就行。",
+    "想想这些举动，是奉献与付出，还是困倦与生气？",
+    "判断这些行为属于状态还是给予？",
+    "这些行为应归类为分享而不是情绪状态。",
+])
+def test_category_contrast_maps_unique_answer(text):
+    result = inspect(text, "54-fresh-vocab-control")
+    assert result["dimensions"]["hint_paraphrase"] == "fail"
+    assert result["dimensions"]["hint_elimination"] == "fail"
+    assert result["category_matches"][0]["compatible"] == [0]
+    assert all(m["evidence"] in text for m in result["category_matches"])
+
+
+@pytest.mark.parametrize("text", [
+    "找出两个行为，再自己提出类别并检查选项。",
+    "看冒号后的动作，判断它们与前文是什么关系。",
+    "不要把这些行为归类为给予还是情绪，这样会代替学生判断。",
+    "引用某老师的话：这些行为是给予还是情绪？请评价这种教法是否泄露。",
+    "假设别人问这些动作是帮助还是状态，那会不会过度提示？",
+    "给予是课堂讨论中的一个词；现在检查冒号的位置。",
+    "先检查这些行为的描述。不要提供给予还是状态的分类。",
+    "这些行为是给予吗？",  # 本条规则没有二择关系，不冒充完整自然语言理解。
+])
+def test_category_contrast_does_not_block_process_or_metalinguistic_text(text):
+    assert inspect(text, "54-fresh-vocab-control")["verdict"] == "unknown"
+
+
+def test_category_mapping_must_be_unique_correct_option():
+    contract = load_contract(case("54-fresh-vocab-control"))
+    contract["category_contrasts"][0]["compatible"] = [0, 1]
+    result = inspect_response("这些行为是给予还是情绪？", contract)
+    assert result["verdict"] == "unknown"
+
+
+def test_evidence_candidates_are_actual_observed_strings():
+    from evals.optimization.scoring import judge_payload, compact_steps, evidence_text
+    record = json.loads((ARCHIVE / "03.json").read_text())
+    text = evidence_text(compact_steps(record["observed"]))
+    payload = judge_payload(case("38-receiver-checklist"), record["observed"])
+    for values in payload["evidence_candidates"].values():
+        assert values["response"] in text
+        assert all(call in text for call in values["calls"])

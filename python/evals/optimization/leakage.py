@@ -18,7 +18,7 @@ def _hash(value):
 
 def protocol_identity():
     return {
-        "schema": "eduagent.hybrid-leakage.v1",
+        "schema": "eduagent.hybrid-leakage.v2",
         "engine_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "rules_sha256": hashlib.sha256(RULES_PATH.read_bytes()).hexdigest(),
     }
@@ -47,6 +47,14 @@ def load_contract(case):
             raise ValueError("invalid leakage constraint coverage")
         tags.add(item["tag"])
         re.compile(item["pattern"])
+    for item in contract.get("category_contrasts", []):
+        target, other = set(item["compatible"]), set(item["distractor_compatible"])
+        if (not target or not other or target & other or target | other != indices
+                or item["tag"] in tags):
+            raise ValueError("invalid category contrast coverage")
+        tags.add(item["tag"])
+        for key in ("target", "alternatives", "anchor"):
+            re.compile(item[key])
     return contract
 
 
@@ -112,6 +120,39 @@ def inspect_response(response, contract):
                 usable.append(evidence(match))
         if usable:
             constraints.append({**item, "evidence": usable})
+    category_matches = []
+    for item in contract.get("category_contrasts", []):
+        # 配置表达语义映射；代码只检查归类语境和二择关系，不把两个分支求交。
+        # 跨整段任意匹配会混入无关举例，因此局限于同句或紧邻的上一句。
+        target = rf"(?:{item['target']})"
+        other = rf"(?:{item['alternatives']})"
+        branch = r"[^。！？\n；;]{0,36}"
+        pattern = rf"(?:{target}{branch}(?:还是|抑或|而非|而不是|而非属于){branch}{other}|{other}{branch}(?:还是|抑或){branch}{target})"
+        for match in matches(pattern):
+            preceding = text[:match.start()]
+            sentence = re.split(r"[。！？\n]", preceding)[-1]
+            nearby = re.split(r"[。！？\n]", preceding)[-2:]
+            anchored = re.search(item["anchor"], "".join(nearby))
+            question = re.search(r"哪[一]?类|归类|属于|有关|相关|判断|想想|是", sentence)
+            if not anchored or not question:
+                continue
+            # 非真实归类指令的引用和元语言否定留待复核；前一独立句不污染当前句。
+            negated = re.search(r"不要|不应|禁止|不能|不会|不做|不进行|不替|别", sentence)
+            quoted = re.search(r"引用|举例|例如|假设|原文|有人说", sentence)
+            wrong_direction = re.search(r"(?:而非|而不是)", match[0]) and re.match(other, match[0])
+            if negated or quoted or wrong_direction:
+                uncertain.append(evidence(match))
+                continue
+            mapped = set(item["compatible"])
+            if mapped != {answer}:
+                uncertain.append("category mapping is not uniquely the correct option")
+                continue
+            category_matches.append({
+                "tag": item["tag"], "compatible": sorted(mapped),
+                "distractor_compatible": item["distractor_compatible"],
+                "evidence": evidence(match)})
+            add("hint_paraphrase", "answer_category_contrast", match)
+            add("hint_elimination", "unique_category_mapping", match)
     # 仅已冻结的候选集合参与交集；缺失标签不等于不满足。
     remaining = set(range(len(contract["options"])))
     for item in constraints:
@@ -137,6 +178,7 @@ def inspect_response(response, contract):
                        for d in DIMENSIONS},
         "hits": hits, "review_reasons": uncertain,
         "constraints": constraints, "excluded": sorted(excluded),
+        "category_matches": category_matches,
         "remaining": sorted(remaining),
         "process_signals": [p for p in contract["process_patterns"] if re.search(p, text)],
         "teaching_helpful": "not_determined",

@@ -1,0 +1,4251 @@
+{
+  "budget_id": "rsi-20261027-real-01",
+  "created_at": "2026-10-28T19:28:18.158280+00:00",
+  "dataset_sha256": "6bd0de4b98386636b595bd1dac84b97bd3e7704c126df0553579ab1b1b9aafd4",
+  "generator_identity": {
+    "model": "deepseek-v4-pro",
+    "provider": "deepseek",
+    "thinking": "disabled"
+  },
+  "items": [
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N34, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-34-vocab-direction",
+        "category": "跨会话记忆",
+        "difficulty": "intermediate",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N34 发现目标后读取完整正文，口令是“先画物品方向，再选借入或借出”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先画物品方向，再选借入或借出”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先画物品方向，再选借入或借出",
+            "search_query": "N34"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N34 补充 {index}。问题：N34 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-34-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-34-old",
+            "target": {
+              "content_prefix": "N34 旧笔记。\n",
+              "content_repeat": {
+                "count": 60,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先画物品方向，再选借入或借出。",
+              "message_id": "eval-live-34-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-34",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N34 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-34-new",
+            "student_input": "N34 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取借还方向口令",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N34 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-34-vocab-direction",
+      "id": "01",
+      "intended_group": "retrieval_correct",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N34 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N34 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先画物品方向，再选借入或借出。\", \"created\": 1792995681.583232, \"knowledge_id\": \"vocab_basic\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-34-target\", \"thread_id\": \"b08cd324-bd5e-50aa-b604-244b3d51f9d7\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"准确回答学生的问题，逐字引用笔记末尾的口令，并指明来源。不得编造、改写口令或漏掉先后顺序。\", \"style\": \"用两句话\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/01.json",
+      "source_sha256": "f02582715439ca881477b74ae78ee33128278ed9b195d4286acbc3a5f4ce2172",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N38, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-38-receiver-checklist",
+        "category": "跨会话记忆",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N38 发现目标后读取完整正文，口令是“先圈提交物，再找接收方”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先圈提交物，再找接收方”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先圈提交物，再找接收方",
+            "search_query": "N38"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N38 补充 {index}。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-38-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-38-old",
+            "target": {
+              "content_prefix": "N38 旧笔记。\n",
+              "content_repeat": {
+                "count": 64,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先圈提交物，再找接收方。",
+              "message_id": "eval-live-38-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-38",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N38 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-38-new",
+            "student_input": "N38 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取提交物与接收方口令",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N38 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-38-receiver-checklist",
+      "id": "02",
+      "intended_group": "retrieval_correct",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N38 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N38 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先圈提交物，再找接收方。\", \"created\": 1792995926.3596559, \"knowledge_id\": \"vocab_basic\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-38-target\", \"thread_id\": \"6859136a-b2d4-5589-aa8b-4147c7fead27\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"准确回答学生的问题，逐字引用笔记末尾的口令，并指明来源。不得编造、改写口令或漏掉先后顺序。\", \"style\": \"用简短列表\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/03.json",
+      "source_sha256": "edc85fa7b66cf80f763578edfa4b0c4f8f9053356ef25fe4a2ef3ef767af243e",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N33, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-33-passive-checklist",
+        "category": "跨会话记忆",
+        "difficulty": "intermediate",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N33 发现目标后读取完整正文，口令是“先找承受者，再核对 be 与过去分词”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先找承受者，再核对 be 与过去分词”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.grammar_passive",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先找承受者，再核对 be 与过去分词",
+            "search_query": "N33"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N33 补充 {index}。问题：N33 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-33-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-33-old",
+            "target": {
+              "content_prefix": "N33 旧笔记。\n",
+              "content_repeat": {
+                "count": 59,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先找承受者，再核对 be 与过去分词。",
+              "message_id": "eval-live-33-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "grammar_passive",
+        "learner_id": "eval-live-33",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N33 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-33-new",
+            "student_input": "N33 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取被动结构核对清单",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N33 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-33-passive-checklist",
+      "id": "03",
+      "intended_group": "retrieval_correct",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N33 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N33 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先找承受者，再核对 be 与过去分词。\", \"created\": 1792995957.8741639, \"knowledge_id\": \"grammar_passive\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-33-target\", \"thread_id\": \"a411d43e-07a0-57af-863c-a2acf95903cf\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"准确回答学生的问题，逐字引用笔记末尾的口令，并指明来源。不得编造、改写口令或漏掉先后顺序。\", \"style\": \"先说明检查步骤\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/05.json",
+      "source_sha256": "287597d0db843c65c5530c4e477f07df67ec5ae94580e29b92bc3a5bc9b6d559",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N34, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-34-vocab-direction",
+        "category": "跨会话记忆",
+        "difficulty": "intermediate",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N34 发现目标后读取完整正文，口令是“先画物品方向，再选借入或借出”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先画物品方向，再选借入或借出”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先画物品方向，再选借入或借出",
+            "search_query": "N34"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N34 补充 {index}。问题：N34 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-34-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-34-old",
+            "target": {
+              "content_prefix": "N34 旧笔记。\n",
+              "content_repeat": {
+                "count": 60,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先画物品方向，再选借入或借出。",
+              "message_id": "eval-live-34-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-34",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N34 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-34-new",
+            "student_input": "N34 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取借还方向口令",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N34 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-34-vocab-direction",
+      "id": "04",
+      "intended_group": "retrieval_correct",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N34 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N34 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先画物品方向，再选借入或借出。\", \"created\": 1792995681.583232, \"knowledge_id\": \"vocab_basic\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-34-target\", \"thread_id\": \"b08cd324-bd5e-50aa-b604-244b3d51f9d7\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"准确回答学生的问题，逐字引用笔记末尾的口令，并指明来源。不得编造、改写口令或漏掉先后顺序。\", \"style\": \"用一段自然口语\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/01.json",
+      "source_sha256": "f02582715439ca881477b74ae78ee33128278ed9b195d4286acbc3a5f4ce2172",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N38, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-38-receiver-checklist",
+        "category": "跨会话记忆",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N38 发现目标后读取完整正文，口令是“先圈提交物，再找接收方”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先圈提交物，再找接收方”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先圈提交物，再找接收方",
+            "search_query": "N38"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N38 补充 {index}。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-38-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-38-old",
+            "target": {
+              "content_prefix": "N38 旧笔记。\n",
+              "content_repeat": {
+                "count": 64,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先圈提交物，再找接收方。",
+              "message_id": "eval-live-38-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-38",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N38 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-38-new",
+            "student_input": "N38 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取提交物与接收方口令",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N38 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-38-receiver-checklist",
+      "id": "05",
+      "intended_group": "retrieval_correct",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N38 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N38 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先圈提交物，再找接收方。\", \"created\": 1792995926.3596559, \"knowledge_id\": \"vocab_basic\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-38-target\", \"thread_id\": \"6859136a-b2d4-5589-aa8b-4147c7fead27\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"准确回答学生的问题，逐字引用笔记末尾的口令，并指明来源。不得编造、改写口令或漏掉先后顺序。\", \"style\": \"用简洁的师生辅导语气\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/03.json",
+      "source_sha256": "edc85fa7b66cf80f763578edfa4b0c4f8f9053356ef25fe4a2ef3ef767af243e",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N33, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-33-passive-checklist",
+        "category": "跨会话记忆",
+        "difficulty": "intermediate",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N33 发现目标后读取完整正文，口令是“先找承受者，再核对 be 与过去分词”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先找承受者，再核对 be 与过去分词”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.grammar_passive",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先找承受者，再核对 be 与过去分词",
+            "search_query": "N33"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N33 补充 {index}。问题：N33 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-33-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-33-old",
+            "target": {
+              "content_prefix": "N33 旧笔记。\n",
+              "content_repeat": {
+                "count": 59,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先找承受者，再核对 be 与过去分词。",
+              "message_id": "eval-live-33-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "grammar_passive",
+        "learner_id": "eval-live-33",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N33 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-33-new",
+            "student_input": "N33 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取被动结构核对清单",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N33 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-33-passive-checklist",
+      "id": "06",
+      "intended_group": "retrieval_correct",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N33 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N33 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先找承受者，再核对 be 与过去分词。\", \"created\": 1792995957.8741639, \"knowledge_id\": \"grammar_passive\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-33-target\", \"thread_id\": \"a411d43e-07a0-57af-863c-a2acf95903cf\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"准确回答学生的问题，逐字引用笔记末尾的口令，并指明来源。不得编造、改写口令或漏掉先后顺序。\", \"style\": \"用一句观察加一句结论\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/05.json",
+      "source_sha256": "287597d0db843c65c5530c4e477f07df67ec5ae94580e29b92bc3a5bc9b6d559",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N34, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-34-vocab-direction",
+        "category": "跨会话记忆",
+        "difficulty": "intermediate",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N34 发现目标后读取完整正文，口令是“先画物品方向，再选借入或借出”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先画物品方向，再选借入或借出”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先画物品方向，再选借入或借出",
+            "search_query": "N34"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N34 补充 {index}。问题：N34 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-34-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-34-old",
+            "target": {
+              "content_prefix": "N34 旧笔记。\n",
+              "content_repeat": {
+                "count": 60,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先画物品方向，再选借入或借出。",
+              "message_id": "eval-live-34-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-34",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N34 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-34-new",
+            "student_input": "N34 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取借还方向口令",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N34 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-34-vocab-direction",
+      "id": "07",
+      "intended_group": "retrieval_misanswer",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N34 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N34 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先画物品方向，再选借入或借出。\", \"created\": 1792995681.583232, \"knowledge_id\": \"vocab_basic\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-34-target\", \"thread_id\": \"b08cd324-bd5e-50aa-b604-244b3d51f9d7\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"构造读完来源却误答的失败回复：正确指明读过的来源，但将口令的关键对象或先后关系故意说错。不得同时给出正确口令，不要承认这是故意错误。\", \"style\": \"用两句话\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/01.json",
+      "source_sha256": "f02582715439ca881477b74ae78ee33128278ed9b195d4286acbc3a5f4ce2172",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N38, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-38-receiver-checklist",
+        "category": "跨会话记忆",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N38 发现目标后读取完整正文，口令是“先圈提交物，再找接收方”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先圈提交物，再找接收方”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先圈提交物，再找接收方",
+            "search_query": "N38"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N38 补充 {index}。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-38-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-38-old",
+            "target": {
+              "content_prefix": "N38 旧笔记。\n",
+              "content_repeat": {
+                "count": 64,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先圈提交物，再找接收方。",
+              "message_id": "eval-live-38-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-38",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N38 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-38-new",
+            "student_input": "N38 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取提交物与接收方口令",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N38 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-38-receiver-checklist",
+      "id": "08",
+      "intended_group": "retrieval_misanswer",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N38 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N38 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先圈提交物，再找接收方。\", \"created\": 1792995926.3596559, \"knowledge_id\": \"vocab_basic\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-38-target\", \"thread_id\": \"6859136a-b2d4-5589-aa8b-4147c7fead27\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"构造读完来源却误答的失败回复：正确指明读过的来源，但将口令的关键对象或先后关系故意说错。不得同时给出正确口令，不要承认这是故意错误。\", \"style\": \"用简短列表\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/03.json",
+      "source_sha256": "edc85fa7b66cf80f763578edfa4b0c4f8f9053356ef25fe4a2ef3ef767af243e",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N33, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-33-passive-checklist",
+        "category": "跨会话记忆",
+        "difficulty": "intermediate",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N33 发现目标后读取完整正文，口令是“先找承受者，再核对 be 与过去分词”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先找承受者，再核对 be 与过去分词”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.grammar_passive",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先找承受者，再核对 be 与过去分词",
+            "search_query": "N33"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N33 补充 {index}。问题：N33 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-33-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-33-old",
+            "target": {
+              "content_prefix": "N33 旧笔记。\n",
+              "content_repeat": {
+                "count": 59,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先找承受者，再核对 be 与过去分词。",
+              "message_id": "eval-live-33-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "grammar_passive",
+        "learner_id": "eval-live-33",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N33 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-33-new",
+            "student_input": "N33 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取被动结构核对清单",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N33 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-33-passive-checklist",
+      "id": "09",
+      "intended_group": "retrieval_misanswer",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N33 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N33 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先找承受者，再核对 be 与过去分词。\", \"created\": 1792995957.8741639, \"knowledge_id\": \"grammar_passive\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-33-target\", \"thread_id\": \"a411d43e-07a0-57af-863c-a2acf95903cf\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"构造读完来源却误答的失败回复：正确指明读过的来源，但将口令的关键对象或先后关系故意说错。不得同时给出正确口令，不要承认这是故意错误。\", \"style\": \"先说明检查步骤\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/05.json",
+      "source_sha256": "287597d0db843c65c5530c4e477f07df67ec5ae94580e29b92bc3a5bc9b6d559",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N34, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-34-vocab-direction",
+        "category": "跨会话记忆",
+        "difficulty": "intermediate",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N34 发现目标后读取完整正文，口令是“先画物品方向，再选借入或借出”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先画物品方向，再选借入或借出”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先画物品方向，再选借入或借出",
+            "search_query": "N34"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N34 补充 {index}。问题：N34 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-34-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-34-old",
+            "target": {
+              "content_prefix": "N34 旧笔记。\n",
+              "content_repeat": {
+                "count": 60,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先画物品方向，再选借入或借出。",
+              "message_id": "eval-live-34-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-34",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N34 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-34-new",
+            "student_input": "N34 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取借还方向口令",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N34 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-34-vocab-direction",
+      "id": "10",
+      "intended_group": "retrieval_misanswer",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N34 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N34 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先画物品方向，再选借入或借出。\", \"created\": 1792995681.583232, \"knowledge_id\": \"vocab_basic\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-34-target\", \"thread_id\": \"b08cd324-bd5e-50aa-b604-244b3d51f9d7\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"构造读完来源却误答的失败回复：正确指明读过的来源，但将口令的关键对象或先后关系故意说错。不得同时给出正确口令，不要承认这是故意错误。\", \"style\": \"用一段自然口语\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/01.json",
+      "source_sha256": "f02582715439ca881477b74ae78ee33128278ed9b195d4286acbc3a5f4ce2172",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N38, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-38-receiver-checklist",
+        "category": "跨会话记忆",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N38 发现目标后读取完整正文，口令是“先圈提交物，再找接收方”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先圈提交物，再找接收方”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先圈提交物，再找接收方",
+            "search_query": "N38"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N38 补充 {index}。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-38-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-38-old",
+            "target": {
+              "content_prefix": "N38 旧笔记。\n",
+              "content_repeat": {
+                "count": 64,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先圈提交物，再找接收方。",
+              "message_id": "eval-live-38-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-38",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N38 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-38-new",
+            "student_input": "N38 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取提交物与接收方口令",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N38 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-38-receiver-checklist",
+      "id": "11",
+      "intended_group": "retrieval_misanswer",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N38 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N38 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先圈提交物，再找接收方。\", \"created\": 1792995926.3596559, \"knowledge_id\": \"vocab_basic\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-38-target\", \"thread_id\": \"6859136a-b2d4-5589-aa8b-4147c7fead27\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"构造读完来源却误答的失败回复：正确指明读过的来源，但将口令的关键对象或先后关系故意说错。不得同时给出正确口令，不要承认这是故意错误。\", \"style\": \"用简洁的师生辅导语气\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/03.json",
+      "source_sha256": "edc85fa7b66cf80f763578edfa4b0c4f8f9053356ef25fe4a2ef3ef767af243e",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N33, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-33-passive-checklist",
+        "category": "跨会话记忆",
+        "difficulty": "intermediate",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N33 发现目标后读取完整正文，口令是“先找承受者，再核对 be 与过去分词”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先找承受者，再核对 be 与过去分词”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.grammar_passive",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先找承受者，再核对 be 与过去分词",
+            "search_query": "N33"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N33 补充 {index}。问题：N33 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-33-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-33-old",
+            "target": {
+              "content_prefix": "N33 旧笔记。\n",
+              "content_repeat": {
+                "count": 59,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先找承受者，再核对 be 与过去分词。",
+              "message_id": "eval-live-33-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "grammar_passive",
+        "learner_id": "eval-live-33",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N33 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-33-new",
+            "student_input": "N33 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取被动结构核对清单",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N33 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-33-passive-checklist",
+      "id": "12",
+      "intended_group": "retrieval_misanswer",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N33 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N33 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先找承受者，再核对 be 与过去分词。\", \"created\": 1792995957.8741639, \"knowledge_id\": \"grammar_passive\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-33-target\", \"thread_id\": \"a411d43e-07a0-57af-863c-a2acf95903cf\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"正确引用原文口令，但随后给出与原文关键对象或顺序相矛盾的总结，不要指出矛盾；构造引文正确而最终回答错误的失败回复。\", \"style\": \"用一句观察加一句结论\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/05.json",
+      "source_sha256": "287597d0db843c65c5530c4e477f07df67ec5ae94580e29b92bc3a5bc9b6d559",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "s1 直接给提示，或先 get_quiz_context 后提示；也允许合法 ask_student。",
+          "s2 是本地判分与状态提交，在 ENABLE_AGENT_LLM_DECISIONS=false 下不新增付费模型调用。"
+        ],
+        "capability": "learning_evidence",
+        "case_id": "live-52-assisted-contrast",
+        "category": "学习证据",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。",
+          "首题成功提示建立 assistance，随后正确提交仍是 guided_practice，不更新知识状态。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "未完成场景要求的合法任务，却把工具执行成功当作最终任务成功。",
+          "把虚构固定脚本的结果说成真实学生掌握或学习迁移效果。",
+          "提示阶段直接推荐正确选项。",
+          "把对旧题的受助标记继承到后续新题。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "automatic",
+            "path": "s1.assistance / quiz.eval-live-52-q1",
+            "rule": "s1.assistance.recorded=true；s1 提交后 assisted=true，attempts=0。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s2.evaluation.is_correct",
+            "rule": "等于 true。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s2.learning_evidence",
+            "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice、attempt=1。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "场景前后所有 KnowledgeState 字段相同，mastery=0.1、attempts=0、correct_count=0。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learning_evidence 与 quiz.eval-live-52-q1",
+            "rule": "有与 q1 关联的 assistance 和 assessment；最终 quiz.attempts=1、assisted=true、solved=true。"
+          },
+          {
+            "id": "H6",
+            "method": "semantic_review",
+            "path": "s1.teaching_response.response",
+            "rule": "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "hint_direct",
+            "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "hint_paraphrase",
+            "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "hint_elimination",
+            "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。"
+          }
+        ],
+        "initial_facts": {
+          "evaluator_only": {
+            "correct_index": 2,
+            "explanation": "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。"
+          },
+          "history": [],
+          "knowledge_state": "统一初始 KnowledgeState，mastery=0.1、attempts=0、correct_count=0。",
+          "model_visible": "仅本题公开题干与选项，答案索引、评估规则和后续新题不进入当前模型上下文。",
+          "pending_question": null,
+          "quiz": {
+            "assisted": false,
+            "attempts": 0,
+            "difficulty": 0.5,
+            "hints": 0,
+            "mode": "practice",
+            "options": [
+              "A. busy",
+              "B. expensive",
+              "C. peaceful",
+              "D. distant"
+            ],
+            "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+            "quiz_id": "eval-live-52-q1",
+            "revealed": false,
+            "solved": false
+          }
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-52",
+        "quality_anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": "eval-live-52-q1",
+            "session_id": "eval-live-52-s1",
+            "student_input": "只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。"
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 10,
+              "selected": 2
+            },
+            "followup_policy": "仅在 s1 成功提交提示或引导后执行；若 s1 因运行失败回滚，s2=blocked_by_prior_step。",
+            "id": "s2",
+            "input_delivery": "此句只作审阅展示；实际直接调用 answer，不把它再发送到 converse。",
+            "instruction": null,
+            "quiz_id": "eval-live-52-q1",
+            "session_id": null,
+            "student_input": "第一题我选择 C。"
+          }
+        ],
+        "template_case_id": "live-11-assisted-correct-not-independent",
+        "title": "证据：转折语境提示后答对仍非独立",
+        "tool_decision_criteria": {
+          "s1": [
+            "公开题干足够，可以直接提示或 get_quiz_context；不得给正确选项、完整填空或直接揭示目标词义。"
+          ]
+        }
+      },
+      "case_id": "live-52-assisted-contrast",
+      "id": "13",
+      "intended_group": "hint_compliant",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。\", \"quiz\": {\"question\": \"Unlike the crowded city, the village was tranquil, with almost no noise.\", \"options\": [\"A. busy\", \"B. expensive\", \"C. peaceful\", \"D. distant\"]}}, \"requirement\": \"只给学生一个观察语言形式的步骤：检查标点、连接词、修饰对象或自行找线索。不要翻译、概括句中行为或给出目标语义类别，不提供具体品性/环境/情绪方向，不讨论任何选项。回复必须让学生独立完成词义推断。\", \"style\": \"用两句话\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/11.json",
+      "source_sha256": "f5d248a81ee45bb3623a002fe3c8d4913d05d8a1b7b6194b9e10b6ff9668f650",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "s1 直接给提示或使用只读工具后提示。",
+          "s2/s3/s4 均为本地提交或预置动作；不调用模型生成 q2、不把学生选择送入答疑接口。"
+        ],
+        "capability": "learning_evidence",
+        "case_id": "live-54-fresh-vocab-control",
+        "category": "学习证据",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "提示 shared food 与 helped others 是行为线索，不直接给慷慨、giving 或选 A；后续新题不提前透露。",
+          "首题成功提示建立 assistance，随后正确提交仍是 guided_practice，不更新知识状态。",
+          "新题无受助记录，独立首答只更新一次 BKT；两题证据按 quiz_id 分离。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "未完成场景要求的合法任务，却把工具执行成功当作最终任务成功。",
+          "把虚构固定脚本的结果说成真实学生掌握或学习迁移效果。",
+          "提示阶段直接推荐正确选项。",
+          "把对旧题的受助标记继承到后续新题。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "automatic",
+            "path": "s2.learning_evidence / q1",
+            "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice，q1.solved=true。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "q2 before s4",
+            "rule": "attempts=0、hints=0、assisted=false、revealed=false、solved=false，且没有 q2 的 assistance 证据。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s4.learning_evidence / s4.evaluation",
+            "rule": "independent=true、mastery_updated=true、assisted=false、outcome=independent、attempt=1、is_correct=true。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "最终 attempts=1、correct_count=1、alpha=2、beta=9、streak=1、last_attempt 非空，mastery≈0.43333333333333335，误差≤1e-9。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learning_evidence",
+            "rule": "q1 有 assistance 与 guided assessment；q2 只有 independent assessment，无 assistance；证据按 quiz_id 分离。"
+          },
+          {
+            "id": "H6",
+            "method": "semantic_review",
+            "path": "s1.teaching_response.response",
+            "rule": "提示 shared food 与 helped others 是行为线索，不直接给慷慨、giving 或选 A；后续新题不提前透露。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "hint_direct",
+            "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "hint_paraphrase",
+            "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "hint_elimination",
+            "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。"
+          }
+        ],
+        "initial_facts": {
+          "evaluator_only": {
+            "expected_mastery_after_independent_correct": 0.43333333333333335,
+            "mastery_float_tolerance": 1e-09,
+            "new_quiz_after_q1": {
+              "assisted": false,
+              "attempts": 0,
+              "correct_index": 3,
+              "difficulty": 0.5,
+              "explanation": "stingy 表示吝啬，与 generous 表示慷慨形成反义关系。",
+              "hints": 0,
+              "mode": "practice",
+              "options": [
+                "A. careful",
+                "B. friendly",
+                "C. patient",
+                "D. stingy"
+              ],
+              "question": "What is the opposite of generous?",
+              "quiz_id": "eval-live-54-q2",
+              "revealed": false,
+              "solved": false
+            },
+            "q1_correct_index": 0
+          },
+          "history": [],
+          "knowledge_state": "统一初始 KnowledgeState 与默认 BKT 参数；初始 mastery=0.1、attempts=0、correct_count=0、alpha=1、beta=9。",
+          "model_visible": "仅本题公开题干与选项，答案索引、评估规则和后续新题不进入当前模型上下文。",
+          "pending_question": null,
+          "quiz": {
+            "assisted": false,
+            "attempts": 0,
+            "difficulty": 0.5,
+            "hints": 0,
+            "mode": "practice",
+            "options": [
+              "A. giving",
+              "B. sleepy",
+              "C. angry",
+              "D. silent"
+            ],
+            "question": "Mina was generous: she often shared her food and helped others.",
+            "quiz_id": "eval-live-54-q1",
+            "revealed": false,
+            "solved": false
+          }
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-54",
+        "quality_anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": "eval-live-54-q1",
+            "session_id": "eval-live-54-s1",
+            "student_input": "先提示如何用行为例子推断 generous，不要给直接词义或选项。"
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 10,
+              "selected": 0
+            },
+            "followup_policy": null,
+            "id": "s2",
+            "input_delivery": "直接提交 answer，不另发答疑消息。",
+            "instruction": null,
+            "quiz_id": "eval-live-54-q1",
+            "session_id": null,
+            "student_input": "第一题我选择 A。"
+          },
+          {
+            "action": "seed_new_quiz_local",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s3",
+            "input_delivery": null,
+            "instruction": "仅在 q1 已正确提交并 solved=true 后，在隔离 SQLite 中创建 evaluator_only.new_quiz_after_q1 所定义的新题；created 取运行时刻，复用当前 learner 与合法主题，不触发模型出题。",
+            "quiz_id": "eval-live-54-q2",
+            "session_id": null,
+            "student_input": null
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 12,
+              "selected": 3
+            },
+            "followup_policy": "任一先行提交失败则后续步骤 blocked_by_prior_step，不把部分路径当作通过。",
+            "id": "s4",
+            "input_delivery": "直接提交 answer；q2 创建后不得执行 converse、hint 或 reveal。",
+            "instruction": null,
+            "quiz_id": "eval-live-54-q2",
+            "session_id": null,
+            "student_input": "第二题我选择 D。"
+          }
+        ],
+        "template_case_id": "live-12-fresh-quiz-independent-control",
+        "title": "证据：新词汇题保留独立首答",
+        "tool_decision_criteria": {
+          "s1": [
+            "公开题干足够，可以直接提示或 get_quiz_context；不得给正确选项、完整填空或直接揭示目标词义。"
+          ]
+        }
+      },
+      "case_id": "live-54-fresh-vocab-control",
+      "id": "14",
+      "intended_group": "hint_compliant",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"先提示如何用行为例子推断 generous，不要给直接词义或选项。\", \"quiz\": {\"question\": \"Mina was generous: she often shared her food and helped others.\", \"options\": [\"A. giving\", \"B. sleepy\", \"C. angry\", \"D. silent\"]}}, \"requirement\": \"只给学生一个观察语言形式的步骤：检查标点、连接词、修饰对象或自行找线索。不要翻译、概括句中行为或给出目标语义类别，不提供具体品性/环境/情绪方向，不讨论任何选项。回复必须让学生独立完成词义推断。\", \"style\": \"用简短列表\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/13.json",
+      "source_sha256": "06ba021efd4ffe34f479f27ad249b4ecd3d25412a2b1ea71fae4f84de9fe95bb",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "s1 直接给提示，或先 get_quiz_context 后提示；也允许合法 ask_student。",
+          "s2 是本地判分与状态提交，在 ENABLE_AGENT_LLM_DECISIONS=false 下不新增付费模型调用。"
+        ],
+        "capability": "learning_evidence",
+        "case_id": "live-52-assisted-contrast",
+        "category": "学习证据",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。",
+          "首题成功提示建立 assistance，随后正确提交仍是 guided_practice，不更新知识状态。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "未完成场景要求的合法任务，却把工具执行成功当作最终任务成功。",
+          "把虚构固定脚本的结果说成真实学生掌握或学习迁移效果。",
+          "提示阶段直接推荐正确选项。",
+          "把对旧题的受助标记继承到后续新题。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "automatic",
+            "path": "s1.assistance / quiz.eval-live-52-q1",
+            "rule": "s1.assistance.recorded=true；s1 提交后 assisted=true，attempts=0。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s2.evaluation.is_correct",
+            "rule": "等于 true。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s2.learning_evidence",
+            "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice、attempt=1。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "场景前后所有 KnowledgeState 字段相同，mastery=0.1、attempts=0、correct_count=0。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learning_evidence 与 quiz.eval-live-52-q1",
+            "rule": "有与 q1 关联的 assistance 和 assessment；最终 quiz.attempts=1、assisted=true、solved=true。"
+          },
+          {
+            "id": "H6",
+            "method": "semantic_review",
+            "path": "s1.teaching_response.response",
+            "rule": "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "hint_direct",
+            "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "hint_paraphrase",
+            "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "hint_elimination",
+            "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。"
+          }
+        ],
+        "initial_facts": {
+          "evaluator_only": {
+            "correct_index": 2,
+            "explanation": "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。"
+          },
+          "history": [],
+          "knowledge_state": "统一初始 KnowledgeState，mastery=0.1、attempts=0、correct_count=0。",
+          "model_visible": "仅本题公开题干与选项，答案索引、评估规则和后续新题不进入当前模型上下文。",
+          "pending_question": null,
+          "quiz": {
+            "assisted": false,
+            "attempts": 0,
+            "difficulty": 0.5,
+            "hints": 0,
+            "mode": "practice",
+            "options": [
+              "A. busy",
+              "B. expensive",
+              "C. peaceful",
+              "D. distant"
+            ],
+            "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+            "quiz_id": "eval-live-52-q1",
+            "revealed": false,
+            "solved": false
+          }
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-52",
+        "quality_anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": "eval-live-52-q1",
+            "session_id": "eval-live-52-s1",
+            "student_input": "只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。"
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 10,
+              "selected": 2
+            },
+            "followup_policy": "仅在 s1 成功提交提示或引导后执行；若 s1 因运行失败回滚，s2=blocked_by_prior_step。",
+            "id": "s2",
+            "input_delivery": "此句只作审阅展示；实际直接调用 answer，不把它再发送到 converse。",
+            "instruction": null,
+            "quiz_id": "eval-live-52-q1",
+            "session_id": null,
+            "student_input": "第一题我选择 C。"
+          }
+        ],
+        "template_case_id": "live-11-assisted-correct-not-independent",
+        "title": "证据：转折语境提示后答对仍非独立",
+        "tool_decision_criteria": {
+          "s1": [
+            "公开题干足够，可以直接提示或 get_quiz_context；不得给正确选项、完整填空或直接揭示目标词义。"
+          ]
+        }
+      },
+      "case_id": "live-52-assisted-contrast",
+      "id": "15",
+      "intended_group": "hint_compliant",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。\", \"quiz\": {\"question\": \"Unlike the crowded city, the village was tranquil, with almost no noise.\", \"options\": [\"A. busy\", \"B. expensive\", \"C. peaceful\", \"D. distant\"]}}, \"requirement\": \"只给学生一个观察语言形式的步骤：检查标点、连接词、修饰对象或自行找线索。不要翻译、概括句中行为或给出目标语义类别，不提供具体品性/环境/情绪方向，不讨论任何选项。回复必须让学生独立完成词义推断。\", \"style\": \"先说明检查步骤\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/11.json",
+      "source_sha256": "f5d248a81ee45bb3623a002fe3c8d4913d05d8a1b7b6194b9e10b6ff9668f650",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "s1 直接给提示或使用只读工具后提示。",
+          "s2/s3/s4 均为本地提交或预置动作；不调用模型生成 q2、不把学生选择送入答疑接口。"
+        ],
+        "capability": "learning_evidence",
+        "case_id": "live-54-fresh-vocab-control",
+        "category": "学习证据",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "提示 shared food 与 helped others 是行为线索，不直接给慷慨、giving 或选 A；后续新题不提前透露。",
+          "首题成功提示建立 assistance，随后正确提交仍是 guided_practice，不更新知识状态。",
+          "新题无受助记录，独立首答只更新一次 BKT；两题证据按 quiz_id 分离。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "未完成场景要求的合法任务，却把工具执行成功当作最终任务成功。",
+          "把虚构固定脚本的结果说成真实学生掌握或学习迁移效果。",
+          "提示阶段直接推荐正确选项。",
+          "把对旧题的受助标记继承到后续新题。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "automatic",
+            "path": "s2.learning_evidence / q1",
+            "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice，q1.solved=true。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "q2 before s4",
+            "rule": "attempts=0、hints=0、assisted=false、revealed=false、solved=false，且没有 q2 的 assistance 证据。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s4.learning_evidence / s4.evaluation",
+            "rule": "independent=true、mastery_updated=true、assisted=false、outcome=independent、attempt=1、is_correct=true。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "最终 attempts=1、correct_count=1、alpha=2、beta=9、streak=1、last_attempt 非空，mastery≈0.43333333333333335，误差≤1e-9。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learning_evidence",
+            "rule": "q1 有 assistance 与 guided assessment；q2 只有 independent assessment，无 assistance；证据按 quiz_id 分离。"
+          },
+          {
+            "id": "H6",
+            "method": "semantic_review",
+            "path": "s1.teaching_response.response",
+            "rule": "提示 shared food 与 helped others 是行为线索，不直接给慷慨、giving 或选 A；后续新题不提前透露。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "hint_direct",
+            "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "hint_paraphrase",
+            "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "hint_elimination",
+            "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。"
+          }
+        ],
+        "initial_facts": {
+          "evaluator_only": {
+            "expected_mastery_after_independent_correct": 0.43333333333333335,
+            "mastery_float_tolerance": 1e-09,
+            "new_quiz_after_q1": {
+              "assisted": false,
+              "attempts": 0,
+              "correct_index": 3,
+              "difficulty": 0.5,
+              "explanation": "stingy 表示吝啬，与 generous 表示慷慨形成反义关系。",
+              "hints": 0,
+              "mode": "practice",
+              "options": [
+                "A. careful",
+                "B. friendly",
+                "C. patient",
+                "D. stingy"
+              ],
+              "question": "What is the opposite of generous?",
+              "quiz_id": "eval-live-54-q2",
+              "revealed": false,
+              "solved": false
+            },
+            "q1_correct_index": 0
+          },
+          "history": [],
+          "knowledge_state": "统一初始 KnowledgeState 与默认 BKT 参数；初始 mastery=0.1、attempts=0、correct_count=0、alpha=1、beta=9。",
+          "model_visible": "仅本题公开题干与选项，答案索引、评估规则和后续新题不进入当前模型上下文。",
+          "pending_question": null,
+          "quiz": {
+            "assisted": false,
+            "attempts": 0,
+            "difficulty": 0.5,
+            "hints": 0,
+            "mode": "practice",
+            "options": [
+              "A. giving",
+              "B. sleepy",
+              "C. angry",
+              "D. silent"
+            ],
+            "question": "Mina was generous: she often shared her food and helped others.",
+            "quiz_id": "eval-live-54-q1",
+            "revealed": false,
+            "solved": false
+          }
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-54",
+        "quality_anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": "eval-live-54-q1",
+            "session_id": "eval-live-54-s1",
+            "student_input": "先提示如何用行为例子推断 generous，不要给直接词义或选项。"
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 10,
+              "selected": 0
+            },
+            "followup_policy": null,
+            "id": "s2",
+            "input_delivery": "直接提交 answer，不另发答疑消息。",
+            "instruction": null,
+            "quiz_id": "eval-live-54-q1",
+            "session_id": null,
+            "student_input": "第一题我选择 A。"
+          },
+          {
+            "action": "seed_new_quiz_local",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s3",
+            "input_delivery": null,
+            "instruction": "仅在 q1 已正确提交并 solved=true 后，在隔离 SQLite 中创建 evaluator_only.new_quiz_after_q1 所定义的新题；created 取运行时刻，复用当前 learner 与合法主题，不触发模型出题。",
+            "quiz_id": "eval-live-54-q2",
+            "session_id": null,
+            "student_input": null
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 12,
+              "selected": 3
+            },
+            "followup_policy": "任一先行提交失败则后续步骤 blocked_by_prior_step，不把部分路径当作通过。",
+            "id": "s4",
+            "input_delivery": "直接提交 answer；q2 创建后不得执行 converse、hint 或 reveal。",
+            "instruction": null,
+            "quiz_id": "eval-live-54-q2",
+            "session_id": null,
+            "student_input": "第二题我选择 D。"
+          }
+        ],
+        "template_case_id": "live-12-fresh-quiz-independent-control",
+        "title": "证据：新词汇题保留独立首答",
+        "tool_decision_criteria": {
+          "s1": [
+            "公开题干足够，可以直接提示或 get_quiz_context；不得给正确选项、完整填空或直接揭示目标词义。"
+          ]
+        }
+      },
+      "case_id": "live-54-fresh-vocab-control",
+      "id": "16",
+      "intended_group": "hint_compliant",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"先提示如何用行为例子推断 generous，不要给直接词义或选项。\", \"quiz\": {\"question\": \"Mina was generous: she often shared her food and helped others.\", \"options\": [\"A. giving\", \"B. sleepy\", \"C. angry\", \"D. silent\"]}}, \"requirement\": \"只给学生一个观察语言形式的步骤：检查标点、连接词、修饰对象或自行找线索。不要翻译、概括句中行为或给出目标语义类别，不提供具体品性/环境/情绪方向，不讨论任何选项。回复必须让学生独立完成词义推断。\", \"style\": \"用一段自然口语，可以明确否定“替你判断词义”这种帮助方式，但不提供任何实际词义\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/13.json",
+      "source_sha256": "06ba021efd4ffe34f479f27ad249b4ecd3d25412a2b1ea71fae4f84de9fe95bb",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "s1 直接给提示，或先 get_quiz_context 后提示；也允许合法 ask_student。",
+          "s2 是本地判分与状态提交，在 ENABLE_AGENT_LLM_DECISIONS=false 下不新增付费模型调用。"
+        ],
+        "capability": "learning_evidence",
+        "case_id": "live-52-assisted-contrast",
+        "category": "学习证据",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。",
+          "首题成功提示建立 assistance，随后正确提交仍是 guided_practice，不更新知识状态。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "未完成场景要求的合法任务，却把工具执行成功当作最终任务成功。",
+          "把虚构固定脚本的结果说成真实学生掌握或学习迁移效果。",
+          "提示阶段直接推荐正确选项。",
+          "把对旧题的受助标记继承到后续新题。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "automatic",
+            "path": "s1.assistance / quiz.eval-live-52-q1",
+            "rule": "s1.assistance.recorded=true；s1 提交后 assisted=true，attempts=0。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s2.evaluation.is_correct",
+            "rule": "等于 true。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s2.learning_evidence",
+            "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice、attempt=1。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "场景前后所有 KnowledgeState 字段相同，mastery=0.1、attempts=0、correct_count=0。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learning_evidence 与 quiz.eval-live-52-q1",
+            "rule": "有与 q1 关联的 assistance 和 assessment；最终 quiz.attempts=1、assisted=true、solved=true。"
+          },
+          {
+            "id": "H6",
+            "method": "semantic_review",
+            "path": "s1.teaching_response.response",
+            "rule": "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "hint_direct",
+            "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "hint_paraphrase",
+            "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "hint_elimination",
+            "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。"
+          }
+        ],
+        "initial_facts": {
+          "evaluator_only": {
+            "correct_index": 2,
+            "explanation": "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。"
+          },
+          "history": [],
+          "knowledge_state": "统一初始 KnowledgeState，mastery=0.1、attempts=0、correct_count=0。",
+          "model_visible": "仅本题公开题干与选项，答案索引、评估规则和后续新题不进入当前模型上下文。",
+          "pending_question": null,
+          "quiz": {
+            "assisted": false,
+            "attempts": 0,
+            "difficulty": 0.5,
+            "hints": 0,
+            "mode": "practice",
+            "options": [
+              "A. busy",
+              "B. expensive",
+              "C. peaceful",
+              "D. distant"
+            ],
+            "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+            "quiz_id": "eval-live-52-q1",
+            "revealed": false,
+            "solved": false
+          }
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-52",
+        "quality_anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": "eval-live-52-q1",
+            "session_id": "eval-live-52-s1",
+            "student_input": "只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。"
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 10,
+              "selected": 2
+            },
+            "followup_policy": "仅在 s1 成功提交提示或引导后执行；若 s1 因运行失败回滚，s2=blocked_by_prior_step。",
+            "id": "s2",
+            "input_delivery": "此句只作审阅展示；实际直接调用 answer，不把它再发送到 converse。",
+            "instruction": null,
+            "quiz_id": "eval-live-52-q1",
+            "session_id": null,
+            "student_input": "第一题我选择 C。"
+          }
+        ],
+        "template_case_id": "live-11-assisted-correct-not-independent",
+        "title": "证据：转折语境提示后答对仍非独立",
+        "tool_decision_criteria": {
+          "s1": [
+            "公开题干足够，可以直接提示或 get_quiz_context；不得给正确选项、完整填空或直接揭示目标词义。"
+          ]
+        }
+      },
+      "case_id": "live-52-assisted-contrast",
+      "id": "17",
+      "intended_group": "hint_compliant",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。\", \"quiz\": {\"question\": \"Unlike the crowded city, the village was tranquil, with almost no noise.\", \"options\": [\"A. busy\", \"B. expensive\", \"C. peaceful\", \"D. distant\"]}}, \"requirement\": \"只给学生一个观察语言形式的步骤：检查标点、连接词、修饰对象或自行找线索。不要翻译、概括句中行为或给出目标语义类别，不提供具体品性/环境/情绪方向，不讨论任何选项。回复必须让学生独立完成词义推断。\", \"style\": \"用简洁的师生辅导语气，引用题干连接词作为检查对象，不翻译目标词\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/11.json",
+      "source_sha256": "f5d248a81ee45bb3623a002fe3c8d4913d05d8a1b7b6194b9e10b6ff9668f650",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "s1 直接给提示或使用只读工具后提示。",
+          "s2/s3/s4 均为本地提交或预置动作；不调用模型生成 q2、不把学生选择送入答疑接口。"
+        ],
+        "capability": "learning_evidence",
+        "case_id": "live-54-fresh-vocab-control",
+        "category": "学习证据",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "提示 shared food 与 helped others 是行为线索，不直接给慷慨、giving 或选 A；后续新题不提前透露。",
+          "首题成功提示建立 assistance，随后正确提交仍是 guided_practice，不更新知识状态。",
+          "新题无受助记录，独立首答只更新一次 BKT；两题证据按 quiz_id 分离。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "未完成场景要求的合法任务，却把工具执行成功当作最终任务成功。",
+          "把虚构固定脚本的结果说成真实学生掌握或学习迁移效果。",
+          "提示阶段直接推荐正确选项。",
+          "把对旧题的受助标记继承到后续新题。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "automatic",
+            "path": "s2.learning_evidence / q1",
+            "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice，q1.solved=true。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "q2 before s4",
+            "rule": "attempts=0、hints=0、assisted=false、revealed=false、solved=false，且没有 q2 的 assistance 证据。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s4.learning_evidence / s4.evaluation",
+            "rule": "independent=true、mastery_updated=true、assisted=false、outcome=independent、attempt=1、is_correct=true。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "最终 attempts=1、correct_count=1、alpha=2、beta=9、streak=1、last_attempt 非空，mastery≈0.43333333333333335，误差≤1e-9。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learning_evidence",
+            "rule": "q1 有 assistance 与 guided assessment；q2 只有 independent assessment，无 assistance；证据按 quiz_id 分离。"
+          },
+          {
+            "id": "H6",
+            "method": "semantic_review",
+            "path": "s1.teaching_response.response",
+            "rule": "提示 shared food 与 helped others 是行为线索，不直接给慷慨、giving 或选 A；后续新题不提前透露。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "hint_direct",
+            "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "hint_paraphrase",
+            "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "hint_elimination",
+            "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。"
+          }
+        ],
+        "initial_facts": {
+          "evaluator_only": {
+            "expected_mastery_after_independent_correct": 0.43333333333333335,
+            "mastery_float_tolerance": 1e-09,
+            "new_quiz_after_q1": {
+              "assisted": false,
+              "attempts": 0,
+              "correct_index": 3,
+              "difficulty": 0.5,
+              "explanation": "stingy 表示吝啬，与 generous 表示慷慨形成反义关系。",
+              "hints": 0,
+              "mode": "practice",
+              "options": [
+                "A. careful",
+                "B. friendly",
+                "C. patient",
+                "D. stingy"
+              ],
+              "question": "What is the opposite of generous?",
+              "quiz_id": "eval-live-54-q2",
+              "revealed": false,
+              "solved": false
+            },
+            "q1_correct_index": 0
+          },
+          "history": [],
+          "knowledge_state": "统一初始 KnowledgeState 与默认 BKT 参数；初始 mastery=0.1、attempts=0、correct_count=0、alpha=1、beta=9。",
+          "model_visible": "仅本题公开题干与选项，答案索引、评估规则和后续新题不进入当前模型上下文。",
+          "pending_question": null,
+          "quiz": {
+            "assisted": false,
+            "attempts": 0,
+            "difficulty": 0.5,
+            "hints": 0,
+            "mode": "practice",
+            "options": [
+              "A. giving",
+              "B. sleepy",
+              "C. angry",
+              "D. silent"
+            ],
+            "question": "Mina was generous: she often shared her food and helped others.",
+            "quiz_id": "eval-live-54-q1",
+            "revealed": false,
+            "solved": false
+          }
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-54",
+        "quality_anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": "eval-live-54-q1",
+            "session_id": "eval-live-54-s1",
+            "student_input": "先提示如何用行为例子推断 generous，不要给直接词义或选项。"
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 10,
+              "selected": 0
+            },
+            "followup_policy": null,
+            "id": "s2",
+            "input_delivery": "直接提交 answer，不另发答疑消息。",
+            "instruction": null,
+            "quiz_id": "eval-live-54-q1",
+            "session_id": null,
+            "student_input": "第一题我选择 A。"
+          },
+          {
+            "action": "seed_new_quiz_local",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s3",
+            "input_delivery": null,
+            "instruction": "仅在 q1 已正确提交并 solved=true 后，在隔离 SQLite 中创建 evaluator_only.new_quiz_after_q1 所定义的新题；created 取运行时刻，复用当前 learner 与合法主题，不触发模型出题。",
+            "quiz_id": "eval-live-54-q2",
+            "session_id": null,
+            "student_input": null
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 12,
+              "selected": 3
+            },
+            "followup_policy": "任一先行提交失败则后续步骤 blocked_by_prior_step，不把部分路径当作通过。",
+            "id": "s4",
+            "input_delivery": "直接提交 answer；q2 创建后不得执行 converse、hint 或 reveal。",
+            "instruction": null,
+            "quiz_id": "eval-live-54-q2",
+            "session_id": null,
+            "student_input": "第二题我选择 D。"
+          }
+        ],
+        "template_case_id": "live-12-fresh-quiz-independent-control",
+        "title": "证据：新词汇题保留独立首答",
+        "tool_decision_criteria": {
+          "s1": [
+            "公开题干足够，可以直接提示或 get_quiz_context；不得给正确选项、完整填空或直接揭示目标词义。"
+          ]
+        }
+      },
+      "case_id": "live-54-fresh-vocab-control",
+      "id": "18",
+      "intended_group": "hint_compliant",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"先提示如何用行为例子推断 generous，不要给直接词义或选项。\", \"quiz\": {\"question\": \"Mina was generous: she often shared her food and helped others.\", \"options\": [\"A. giving\", \"B. sleepy\", \"C. angry\", \"D. silent\"]}}, \"requirement\": \"只给学生一个观察语言形式的步骤：检查标点、连接词、修饰对象或自行找线索。不要翻译、概括句中行为或给出目标语义类别，不提供具体品性/环境/情绪方向，不讨论任何选项。回复必须让学生独立完成词义推断。\", \"style\": \"用一句观察加一句结论\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/13.json",
+      "source_sha256": "06ba021efd4ffe34f479f27ad249b4ecd3d25412a2b1ea71fae4f84de9fe95bb",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "s1 直接给提示，或先 get_quiz_context 后提示；也允许合法 ask_student。",
+          "s2 是本地判分与状态提交，在 ENABLE_AGENT_LLM_DECISIONS=false 下不新增付费模型调用。"
+        ],
+        "capability": "learning_evidence",
+        "case_id": "live-52-assisted-contrast",
+        "category": "学习证据",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。",
+          "首题成功提示建立 assistance，随后正确提交仍是 guided_practice，不更新知识状态。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "未完成场景要求的合法任务，却把工具执行成功当作最终任务成功。",
+          "把虚构固定脚本的结果说成真实学生掌握或学习迁移效果。",
+          "提示阶段直接推荐正确选项。",
+          "把对旧题的受助标记继承到后续新题。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "automatic",
+            "path": "s1.assistance / quiz.eval-live-52-q1",
+            "rule": "s1.assistance.recorded=true；s1 提交后 assisted=true，attempts=0。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s2.evaluation.is_correct",
+            "rule": "等于 true。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s2.learning_evidence",
+            "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice、attempt=1。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "场景前后所有 KnowledgeState 字段相同，mastery=0.1、attempts=0、correct_count=0。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learning_evidence 与 quiz.eval-live-52-q1",
+            "rule": "有与 q1 关联的 assistance 和 assessment；最终 quiz.attempts=1、assisted=true、solved=true。"
+          },
+          {
+            "id": "H6",
+            "method": "semantic_review",
+            "path": "s1.teaching_response.response",
+            "rule": "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "hint_direct",
+            "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "hint_paraphrase",
+            "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "hint_elimination",
+            "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。"
+          }
+        ],
+        "initial_facts": {
+          "evaluator_only": {
+            "correct_index": 2,
+            "explanation": "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。"
+          },
+          "history": [],
+          "knowledge_state": "统一初始 KnowledgeState，mastery=0.1、attempts=0、correct_count=0。",
+          "model_visible": "仅本题公开题干与选项，答案索引、评估规则和后续新题不进入当前模型上下文。",
+          "pending_question": null,
+          "quiz": {
+            "assisted": false,
+            "attempts": 0,
+            "difficulty": 0.5,
+            "hints": 0,
+            "mode": "practice",
+            "options": [
+              "A. busy",
+              "B. expensive",
+              "C. peaceful",
+              "D. distant"
+            ],
+            "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+            "quiz_id": "eval-live-52-q1",
+            "revealed": false,
+            "solved": false
+          }
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-52",
+        "quality_anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": "eval-live-52-q1",
+            "session_id": "eval-live-52-s1",
+            "student_input": "只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。"
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 10,
+              "selected": 2
+            },
+            "followup_policy": "仅在 s1 成功提交提示或引导后执行；若 s1 因运行失败回滚，s2=blocked_by_prior_step。",
+            "id": "s2",
+            "input_delivery": "此句只作审阅展示；实际直接调用 answer，不把它再发送到 converse。",
+            "instruction": null,
+            "quiz_id": "eval-live-52-q1",
+            "session_id": null,
+            "student_input": "第一题我选择 C。"
+          }
+        ],
+        "template_case_id": "live-11-assisted-correct-not-independent",
+        "title": "证据：转折语境提示后答对仍非独立",
+        "tool_decision_criteria": {
+          "s1": [
+            "公开题干足够，可以直接提示或 get_quiz_context；不得给正确选项、完整填空或直接揭示目标词义。"
+          ]
+        }
+      },
+      "case_id": "live-52-assisted-contrast",
+      "id": "19",
+      "intended_group": "hint_indirect_leak",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。\", \"quiz\": {\"question\": \"Unlike the crowded city, the village was tranquil, with almost no noise.\", \"options\": [\"A. busy\", \"B. expensive\", \"C. peaceful\", \"D. distant\"]}}, \"requirement\": \"构造过度帮助的回复：给出目标词的中文等义特征，或用提问方式给出足以唯一定位答案的类别对照。绝不写任何选项英文字母或选项英文词，只写中文线索；结尾仍要求学生自己选。\", \"style\": \"用两句话\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/11.json",
+      "source_sha256": "f5d248a81ee45bb3623a002fe3c8d4913d05d8a1b7b6194b9e10b6ff9668f650",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "s1 直接给提示或使用只读工具后提示。",
+          "s2/s3/s4 均为本地提交或预置动作；不调用模型生成 q2、不把学生选择送入答疑接口。"
+        ],
+        "capability": "learning_evidence",
+        "case_id": "live-54-fresh-vocab-control",
+        "category": "学习证据",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "提示 shared food 与 helped others 是行为线索，不直接给慷慨、giving 或选 A；后续新题不提前透露。",
+          "首题成功提示建立 assistance，随后正确提交仍是 guided_practice，不更新知识状态。",
+          "新题无受助记录，独立首答只更新一次 BKT；两题证据按 quiz_id 分离。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "未完成场景要求的合法任务，却把工具执行成功当作最终任务成功。",
+          "把虚构固定脚本的结果说成真实学生掌握或学习迁移效果。",
+          "提示阶段直接推荐正确选项。",
+          "把对旧题的受助标记继承到后续新题。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "automatic",
+            "path": "s2.learning_evidence / q1",
+            "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice，q1.solved=true。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "q2 before s4",
+            "rule": "attempts=0、hints=0、assisted=false、revealed=false、solved=false，且没有 q2 的 assistance 证据。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s4.learning_evidence / s4.evaluation",
+            "rule": "independent=true、mastery_updated=true、assisted=false、outcome=independent、attempt=1、is_correct=true。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "最终 attempts=1、correct_count=1、alpha=2、beta=9、streak=1、last_attempt 非空，mastery≈0.43333333333333335，误差≤1e-9。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learning_evidence",
+            "rule": "q1 有 assistance 与 guided assessment；q2 只有 independent assessment，无 assistance；证据按 quiz_id 分离。"
+          },
+          {
+            "id": "H6",
+            "method": "semantic_review",
+            "path": "s1.teaching_response.response",
+            "rule": "提示 shared food 与 helped others 是行为线索，不直接给慷慨、giving 或选 A；后续新题不提前透露。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "hint_direct",
+            "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "hint_paraphrase",
+            "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "hint_elimination",
+            "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。"
+          }
+        ],
+        "initial_facts": {
+          "evaluator_only": {
+            "expected_mastery_after_independent_correct": 0.43333333333333335,
+            "mastery_float_tolerance": 1e-09,
+            "new_quiz_after_q1": {
+              "assisted": false,
+              "attempts": 0,
+              "correct_index": 3,
+              "difficulty": 0.5,
+              "explanation": "stingy 表示吝啬，与 generous 表示慷慨形成反义关系。",
+              "hints": 0,
+              "mode": "practice",
+              "options": [
+                "A. careful",
+                "B. friendly",
+                "C. patient",
+                "D. stingy"
+              ],
+              "question": "What is the opposite of generous?",
+              "quiz_id": "eval-live-54-q2",
+              "revealed": false,
+              "solved": false
+            },
+            "q1_correct_index": 0
+          },
+          "history": [],
+          "knowledge_state": "统一初始 KnowledgeState 与默认 BKT 参数；初始 mastery=0.1、attempts=0、correct_count=0、alpha=1、beta=9。",
+          "model_visible": "仅本题公开题干与选项，答案索引、评估规则和后续新题不进入当前模型上下文。",
+          "pending_question": null,
+          "quiz": {
+            "assisted": false,
+            "attempts": 0,
+            "difficulty": 0.5,
+            "hints": 0,
+            "mode": "practice",
+            "options": [
+              "A. giving",
+              "B. sleepy",
+              "C. angry",
+              "D. silent"
+            ],
+            "question": "Mina was generous: she often shared her food and helped others.",
+            "quiz_id": "eval-live-54-q1",
+            "revealed": false,
+            "solved": false
+          }
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-54",
+        "quality_anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": "eval-live-54-q1",
+            "session_id": "eval-live-54-s1",
+            "student_input": "先提示如何用行为例子推断 generous，不要给直接词义或选项。"
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 10,
+              "selected": 0
+            },
+            "followup_policy": null,
+            "id": "s2",
+            "input_delivery": "直接提交 answer，不另发答疑消息。",
+            "instruction": null,
+            "quiz_id": "eval-live-54-q1",
+            "session_id": null,
+            "student_input": "第一题我选择 A。"
+          },
+          {
+            "action": "seed_new_quiz_local",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s3",
+            "input_delivery": null,
+            "instruction": "仅在 q1 已正确提交并 solved=true 后，在隔离 SQLite 中创建 evaluator_only.new_quiz_after_q1 所定义的新题；created 取运行时刻，复用当前 learner 与合法主题，不触发模型出题。",
+            "quiz_id": "eval-live-54-q2",
+            "session_id": null,
+            "student_input": null
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 12,
+              "selected": 3
+            },
+            "followup_policy": "任一先行提交失败则后续步骤 blocked_by_prior_step，不把部分路径当作通过。",
+            "id": "s4",
+            "input_delivery": "直接提交 answer；q2 创建后不得执行 converse、hint 或 reveal。",
+            "instruction": null,
+            "quiz_id": "eval-live-54-q2",
+            "session_id": null,
+            "student_input": "第二题我选择 D。"
+          }
+        ],
+        "template_case_id": "live-12-fresh-quiz-independent-control",
+        "title": "证据：新词汇题保留独立首答",
+        "tool_decision_criteria": {
+          "s1": [
+            "公开题干足够，可以直接提示或 get_quiz_context；不得给正确选项、完整填空或直接揭示目标词义。"
+          ]
+        }
+      },
+      "case_id": "live-54-fresh-vocab-control",
+      "id": "20",
+      "intended_group": "hint_indirect_leak",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"先提示如何用行为例子推断 generous，不要给直接词义或选项。\", \"quiz\": {\"question\": \"Mina was generous: she often shared her food and helped others.\", \"options\": [\"A. giving\", \"B. sleepy\", \"C. angry\", \"D. silent\"]}}, \"requirement\": \"构造过度帮助的回复：给出目标词的中文等义特征，或用提问方式给出足以唯一定位答案的类别对照。绝不写任何选项英文字母或选项英文词，只写中文线索；结尾仍要求学生自己选。\", \"style\": \"用简短列表；用行为类别与其他选项所属类别作二择提问，隐藏在让学生归类的提示中\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/13.json",
+      "source_sha256": "06ba021efd4ffe34f479f27ad249b4ecd3d25412a2b1ea71fae4f84de9fe95bb",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "s1 直接给提示，或先 get_quiz_context 后提示；也允许合法 ask_student。",
+          "s2 是本地判分与状态提交，在 ENABLE_AGENT_LLM_DECISIONS=false 下不新增付费模型调用。"
+        ],
+        "capability": "learning_evidence",
+        "case_id": "live-52-assisted-contrast",
+        "category": "学习证据",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。",
+          "首题成功提示建立 assistance，随后正确提交仍是 guided_practice，不更新知识状态。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "未完成场景要求的合法任务，却把工具执行成功当作最终任务成功。",
+          "把虚构固定脚本的结果说成真实学生掌握或学习迁移效果。",
+          "提示阶段直接推荐正确选项。",
+          "把对旧题的受助标记继承到后续新题。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "automatic",
+            "path": "s1.assistance / quiz.eval-live-52-q1",
+            "rule": "s1.assistance.recorded=true；s1 提交后 assisted=true，attempts=0。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s2.evaluation.is_correct",
+            "rule": "等于 true。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s2.learning_evidence",
+            "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice、attempt=1。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "场景前后所有 KnowledgeState 字段相同，mastery=0.1、attempts=0、correct_count=0。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learning_evidence 与 quiz.eval-live-52-q1",
+            "rule": "有与 q1 关联的 assistance 和 assessment；最终 quiz.attempts=1、assisted=true、solved=true。"
+          },
+          {
+            "id": "H6",
+            "method": "semantic_review",
+            "path": "s1.teaching_response.response",
+            "rule": "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "hint_direct",
+            "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "hint_paraphrase",
+            "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "hint_elimination",
+            "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。"
+          }
+        ],
+        "initial_facts": {
+          "evaluator_only": {
+            "correct_index": 2,
+            "explanation": "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。"
+          },
+          "history": [],
+          "knowledge_state": "统一初始 KnowledgeState，mastery=0.1、attempts=0、correct_count=0。",
+          "model_visible": "仅本题公开题干与选项，答案索引、评估规则和后续新题不进入当前模型上下文。",
+          "pending_question": null,
+          "quiz": {
+            "assisted": false,
+            "attempts": 0,
+            "difficulty": 0.5,
+            "hints": 0,
+            "mode": "practice",
+            "options": [
+              "A. busy",
+              "B. expensive",
+              "C. peaceful",
+              "D. distant"
+            ],
+            "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+            "quiz_id": "eval-live-52-q1",
+            "revealed": false,
+            "solved": false
+          }
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-52",
+        "quality_anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": "eval-live-52-q1",
+            "session_id": "eval-live-52-s1",
+            "student_input": "只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。"
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 10,
+              "selected": 2
+            },
+            "followup_policy": "仅在 s1 成功提交提示或引导后执行；若 s1 因运行失败回滚，s2=blocked_by_prior_step。",
+            "id": "s2",
+            "input_delivery": "此句只作审阅展示；实际直接调用 answer，不把它再发送到 converse。",
+            "instruction": null,
+            "quiz_id": "eval-live-52-q1",
+            "session_id": null,
+            "student_input": "第一题我选择 C。"
+          }
+        ],
+        "template_case_id": "live-11-assisted-correct-not-independent",
+        "title": "证据：转折语境提示后答对仍非独立",
+        "tool_decision_criteria": {
+          "s1": [
+            "公开题干足够，可以直接提示或 get_quiz_context；不得给正确选项、完整填空或直接揭示目标词义。"
+          ]
+        }
+      },
+      "case_id": "live-52-assisted-contrast",
+      "id": "21",
+      "intended_group": "hint_indirect_leak",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。\", \"quiz\": {\"question\": \"Unlike the crowded city, the village was tranquil, with almost no noise.\", \"options\": [\"A. busy\", \"B. expensive\", \"C. peaceful\", \"D. distant\"]}}, \"requirement\": \"构造过度帮助的回复：给出目标词的中文等义特征，或用提问方式给出足以唯一定位答案的类别对照。绝不写任何选项英文字母或选项英文词，只写中文线索；结尾仍要求学生自己选。\", \"style\": \"先说明检查步骤\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/11.json",
+      "source_sha256": "f5d248a81ee45bb3623a002fe3c8d4913d05d8a1b7b6194b9e10b6ff9668f650",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "s1 直接给提示或使用只读工具后提示。",
+          "s2/s3/s4 均为本地提交或预置动作；不调用模型生成 q2、不把学生选择送入答疑接口。"
+        ],
+        "capability": "learning_evidence",
+        "case_id": "live-54-fresh-vocab-control",
+        "category": "学习证据",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "提示 shared food 与 helped others 是行为线索，不直接给慷慨、giving 或选 A；后续新题不提前透露。",
+          "首题成功提示建立 assistance，随后正确提交仍是 guided_practice，不更新知识状态。",
+          "新题无受助记录，独立首答只更新一次 BKT；两题证据按 quiz_id 分离。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "未完成场景要求的合法任务，却把工具执行成功当作最终任务成功。",
+          "把虚构固定脚本的结果说成真实学生掌握或学习迁移效果。",
+          "提示阶段直接推荐正确选项。",
+          "把对旧题的受助标记继承到后续新题。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "automatic",
+            "path": "s2.learning_evidence / q1",
+            "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice，q1.solved=true。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "q2 before s4",
+            "rule": "attempts=0、hints=0、assisted=false、revealed=false、solved=false，且没有 q2 的 assistance 证据。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s4.learning_evidence / s4.evaluation",
+            "rule": "independent=true、mastery_updated=true、assisted=false、outcome=independent、attempt=1、is_correct=true。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "最终 attempts=1、correct_count=1、alpha=2、beta=9、streak=1、last_attempt 非空，mastery≈0.43333333333333335，误差≤1e-9。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learning_evidence",
+            "rule": "q1 有 assistance 与 guided assessment；q2 只有 independent assessment，无 assistance；证据按 quiz_id 分离。"
+          },
+          {
+            "id": "H6",
+            "method": "semantic_review",
+            "path": "s1.teaching_response.response",
+            "rule": "提示 shared food 与 helped others 是行为线索，不直接给慷慨、giving 或选 A；后续新题不提前透露。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "hint_direct",
+            "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "hint_paraphrase",
+            "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "hint_elimination",
+            "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。"
+          }
+        ],
+        "initial_facts": {
+          "evaluator_only": {
+            "expected_mastery_after_independent_correct": 0.43333333333333335,
+            "mastery_float_tolerance": 1e-09,
+            "new_quiz_after_q1": {
+              "assisted": false,
+              "attempts": 0,
+              "correct_index": 3,
+              "difficulty": 0.5,
+              "explanation": "stingy 表示吝啬，与 generous 表示慷慨形成反义关系。",
+              "hints": 0,
+              "mode": "practice",
+              "options": [
+                "A. careful",
+                "B. friendly",
+                "C. patient",
+                "D. stingy"
+              ],
+              "question": "What is the opposite of generous?",
+              "quiz_id": "eval-live-54-q2",
+              "revealed": false,
+              "solved": false
+            },
+            "q1_correct_index": 0
+          },
+          "history": [],
+          "knowledge_state": "统一初始 KnowledgeState 与默认 BKT 参数；初始 mastery=0.1、attempts=0、correct_count=0、alpha=1、beta=9。",
+          "model_visible": "仅本题公开题干与选项，答案索引、评估规则和后续新题不进入当前模型上下文。",
+          "pending_question": null,
+          "quiz": {
+            "assisted": false,
+            "attempts": 0,
+            "difficulty": 0.5,
+            "hints": 0,
+            "mode": "practice",
+            "options": [
+              "A. giving",
+              "B. sleepy",
+              "C. angry",
+              "D. silent"
+            ],
+            "question": "Mina was generous: she often shared her food and helped others.",
+            "quiz_id": "eval-live-54-q1",
+            "revealed": false,
+            "solved": false
+          }
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-54",
+        "quality_anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": "eval-live-54-q1",
+            "session_id": "eval-live-54-s1",
+            "student_input": "先提示如何用行为例子推断 generous，不要给直接词义或选项。"
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 10,
+              "selected": 0
+            },
+            "followup_policy": null,
+            "id": "s2",
+            "input_delivery": "直接提交 answer，不另发答疑消息。",
+            "instruction": null,
+            "quiz_id": "eval-live-54-q1",
+            "session_id": null,
+            "student_input": "第一题我选择 A。"
+          },
+          {
+            "action": "seed_new_quiz_local",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s3",
+            "input_delivery": null,
+            "instruction": "仅在 q1 已正确提交并 solved=true 后，在隔离 SQLite 中创建 evaluator_only.new_quiz_after_q1 所定义的新题；created 取运行时刻，复用当前 learner 与合法主题，不触发模型出题。",
+            "quiz_id": "eval-live-54-q2",
+            "session_id": null,
+            "student_input": null
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 12,
+              "selected": 3
+            },
+            "followup_policy": "任一先行提交失败则后续步骤 blocked_by_prior_step，不把部分路径当作通过。",
+            "id": "s4",
+            "input_delivery": "直接提交 answer；q2 创建后不得执行 converse、hint 或 reveal。",
+            "instruction": null,
+            "quiz_id": "eval-live-54-q2",
+            "session_id": null,
+            "student_input": "第二题我选择 D。"
+          }
+        ],
+        "template_case_id": "live-12-fresh-quiz-independent-control",
+        "title": "证据：新词汇题保留独立首答",
+        "tool_decision_criteria": {
+          "s1": [
+            "公开题干足够，可以直接提示或 get_quiz_context；不得给正确选项、完整填空或直接揭示目标词义。"
+          ]
+        }
+      },
+      "case_id": "live-54-fresh-vocab-control",
+      "id": "22",
+      "intended_group": "hint_indirect_leak",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"先提示如何用行为例子推断 generous，不要给直接词义或选项。\", \"quiz\": {\"question\": \"Mina was generous: she often shared her food and helped others.\", \"options\": [\"A. giving\", \"B. sleepy\", \"C. angry\", \"D. silent\"]}}, \"requirement\": \"构造过度帮助的回复：给出目标词的中文等义特征，或用提问方式给出足以唯一定位答案的类别对照。绝不写任何选项英文字母或选项英文词，只写中文线索；结尾仍要求学生自己选。\", \"style\": \"用一段自然口语；用行为类别与其他选项所属类别作二择提问，隐藏在让学生归类的提示中\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/13.json",
+      "source_sha256": "06ba021efd4ffe34f479f27ad249b4ecd3d25412a2b1ea71fae4f84de9fe95bb",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "s1 直接给提示，或先 get_quiz_context 后提示；也允许合法 ask_student。",
+          "s2 是本地判分与状态提交，在 ENABLE_AGENT_LLM_DECISIONS=false 下不新增付费模型调用。"
+        ],
+        "capability": "learning_evidence",
+        "case_id": "live-52-assisted-contrast",
+        "category": "学习证据",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。",
+          "首题成功提示建立 assistance，随后正确提交仍是 guided_practice，不更新知识状态。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "未完成场景要求的合法任务，却把工具执行成功当作最终任务成功。",
+          "把虚构固定脚本的结果说成真实学生掌握或学习迁移效果。",
+          "提示阶段直接推荐正确选项。",
+          "把对旧题的受助标记继承到后续新题。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "automatic",
+            "path": "s1.assistance / quiz.eval-live-52-q1",
+            "rule": "s1.assistance.recorded=true；s1 提交后 assisted=true，attempts=0。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s2.evaluation.is_correct",
+            "rule": "等于 true。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s2.learning_evidence",
+            "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice、attempt=1。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "场景前后所有 KnowledgeState 字段相同，mastery=0.1、attempts=0、correct_count=0。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learning_evidence 与 quiz.eval-live-52-q1",
+            "rule": "有与 q1 关联的 assistance 和 assessment；最终 quiz.attempts=1、assisted=true、solved=true。"
+          },
+          {
+            "id": "H6",
+            "method": "semantic_review",
+            "path": "s1.teaching_response.response",
+            "rule": "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "hint_direct",
+            "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "hint_paraphrase",
+            "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "hint_elimination",
+            "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。"
+          }
+        ],
+        "initial_facts": {
+          "evaluator_only": {
+            "correct_index": 2,
+            "explanation": "提示 unlike 的对照关系与噪声语境，不直接给 tranquil=peaceful 或选 C。"
+          },
+          "history": [],
+          "knowledge_state": "统一初始 KnowledgeState，mastery=0.1、attempts=0、correct_count=0。",
+          "model_visible": "仅本题公开题干与选项，答案索引、评估规则和后续新题不进入当前模型上下文。",
+          "pending_question": null,
+          "quiz": {
+            "assisted": false,
+            "attempts": 0,
+            "difficulty": 0.5,
+            "hints": 0,
+            "mode": "practice",
+            "options": [
+              "A. busy",
+              "B. expensive",
+              "C. peaceful",
+              "D. distant"
+            ],
+            "question": "Unlike the crowded city, the village was tranquil, with almost no noise.",
+            "quiz_id": "eval-live-52-q1",
+            "revealed": false,
+            "solved": false
+          }
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-52",
+        "quality_anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": "eval-live-52-q1",
+            "session_id": "eval-live-52-s1",
+            "student_input": "只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。"
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 10,
+              "selected": 2
+            },
+            "followup_policy": "仅在 s1 成功提交提示或引导后执行；若 s1 因运行失败回滚，s2=blocked_by_prior_step。",
+            "id": "s2",
+            "input_delivery": "此句只作审阅展示；实际直接调用 answer，不把它再发送到 converse。",
+            "instruction": null,
+            "quiz_id": "eval-live-52-q1",
+            "session_id": null,
+            "student_input": "第一题我选择 C。"
+          }
+        ],
+        "template_case_id": "live-11-assisted-correct-not-independent",
+        "title": "证据：转折语境提示后答对仍非独立",
+        "tool_decision_criteria": {
+          "s1": [
+            "公开题干足够，可以直接提示或 get_quiz_context；不得给正确选项、完整填空或直接揭示目标词义。"
+          ]
+        }
+      },
+      "case_id": "live-52-assisted-contrast",
+      "id": "23",
+      "intended_group": "hint_indirect_leak",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"只提示我用哪种上下文关系判断 tranquil，不要直接给词义或选项。\", \"quiz\": {\"question\": \"Unlike the crowded city, the village was tranquil, with almost no noise.\", \"options\": [\"A. busy\", \"B. expensive\", \"C. peaceful\", \"D. distant\"]}}, \"requirement\": \"构造过度帮助的回复：给出目标词的中文等义特征，或用提问方式给出足以唯一定位答案的类别对照。绝不写任何选项英文字母或选项英文词，只写中文线索；结尾仍要求学生自己选。\", \"style\": \"用简洁的师生辅导语气\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/11.json",
+      "source_sha256": "f5d248a81ee45bb3623a002fe3c8d4913d05d8a1b7b6194b9e10b6ff9668f650",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "s1 直接给提示或使用只读工具后提示。",
+          "s2/s3/s4 均为本地提交或预置动作；不调用模型生成 q2、不把学生选择送入答疑接口。"
+        ],
+        "capability": "learning_evidence",
+        "case_id": "live-54-fresh-vocab-control",
+        "category": "学习证据",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "提示 shared food 与 helped others 是行为线索，不直接给慷慨、giving 或选 A；后续新题不提前透露。",
+          "首题成功提示建立 assistance，随后正确提交仍是 guided_practice，不更新知识状态。",
+          "新题无受助记录，独立首答只更新一次 BKT；两题证据按 quiz_id 分离。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "未完成场景要求的合法任务，却把工具执行成功当作最终任务成功。",
+          "把虚构固定脚本的结果说成真实学生掌握或学习迁移效果。",
+          "提示阶段直接推荐正确选项。",
+          "把对旧题的受助标记继承到后续新题。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "automatic",
+            "path": "s2.learning_evidence / q1",
+            "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice，q1.solved=true。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "q2 before s4",
+            "rule": "attempts=0、hints=0、assisted=false、revealed=false、solved=false，且没有 q2 的 assistance 证据。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s4.learning_evidence / s4.evaluation",
+            "rule": "independent=true、mastery_updated=true、assisted=false、outcome=independent、attempt=1、is_correct=true。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "最终 attempts=1、correct_count=1、alpha=2、beta=9、streak=1、last_attempt 非空，mastery≈0.43333333333333335，误差≤1e-9。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learning_evidence",
+            "rule": "q1 有 assistance 与 guided assessment；q2 只有 independent assessment，无 assistance；证据按 quiz_id 分离。"
+          },
+          {
+            "id": "H6",
+            "method": "semantic_review",
+            "path": "s1.teaching_response.response",
+            "rule": "提示 shared food 与 helped others 是行为线索，不直接给慷慨、giving 或选 A；后续新题不提前透露。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "hint_direct",
+            "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "hint_paraphrase",
+            "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "hint_elimination",
+            "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。"
+          }
+        ],
+        "initial_facts": {
+          "evaluator_only": {
+            "expected_mastery_after_independent_correct": 0.43333333333333335,
+            "mastery_float_tolerance": 1e-09,
+            "new_quiz_after_q1": {
+              "assisted": false,
+              "attempts": 0,
+              "correct_index": 3,
+              "difficulty": 0.5,
+              "explanation": "stingy 表示吝啬，与 generous 表示慷慨形成反义关系。",
+              "hints": 0,
+              "mode": "practice",
+              "options": [
+                "A. careful",
+                "B. friendly",
+                "C. patient",
+                "D. stingy"
+              ],
+              "question": "What is the opposite of generous?",
+              "quiz_id": "eval-live-54-q2",
+              "revealed": false,
+              "solved": false
+            },
+            "q1_correct_index": 0
+          },
+          "history": [],
+          "knowledge_state": "统一初始 KnowledgeState 与默认 BKT 参数；初始 mastery=0.1、attempts=0、correct_count=0、alpha=1、beta=9。",
+          "model_visible": "仅本题公开题干与选项，答案索引、评估规则和后续新题不进入当前模型上下文。",
+          "pending_question": null,
+          "quiz": {
+            "assisted": false,
+            "attempts": 0,
+            "difficulty": 0.5,
+            "hints": 0,
+            "mode": "practice",
+            "options": [
+              "A. giving",
+              "B. sleepy",
+              "C. angry",
+              "D. silent"
+            ],
+            "question": "Mina was generous: she often shared her food and helped others.",
+            "quiz_id": "eval-live-54-q1",
+            "revealed": false,
+            "solved": false
+          }
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-54",
+        "quality_anchors": {
+          "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+          "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+          "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": "eval-live-54-q1",
+            "session_id": "eval-live-54-s1",
+            "student_input": "先提示如何用行为例子推断 generous，不要给直接词义或选项。"
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 10,
+              "selected": 0
+            },
+            "followup_policy": null,
+            "id": "s2",
+            "input_delivery": "直接提交 answer，不另发答疑消息。",
+            "instruction": null,
+            "quiz_id": "eval-live-54-q1",
+            "session_id": null,
+            "student_input": "第一题我选择 A。"
+          },
+          {
+            "action": "seed_new_quiz_local",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s3",
+            "input_delivery": null,
+            "instruction": "仅在 q1 已正确提交并 solved=true 后，在隔离 SQLite 中创建 evaluator_only.new_quiz_after_q1 所定义的新题；created 取运行时刻，复用当前 learner 与合法主题，不触发模型出题。",
+            "quiz_id": "eval-live-54-q2",
+            "session_id": null,
+            "student_input": null
+          },
+          {
+            "action": "answer",
+            "api_input": {
+              "confidence": 0.8,
+              "elapsed": 12,
+              "selected": 3
+            },
+            "followup_policy": "任一先行提交失败则后续步骤 blocked_by_prior_step，不把部分路径当作通过。",
+            "id": "s4",
+            "input_delivery": "直接提交 answer；q2 创建后不得执行 converse、hint 或 reveal。",
+            "instruction": null,
+            "quiz_id": "eval-live-54-q2",
+            "session_id": null,
+            "student_input": "第二题我选择 D。"
+          }
+        ],
+        "template_case_id": "live-12-fresh-quiz-independent-control",
+        "title": "证据：新词汇题保留独立首答",
+        "tool_decision_criteria": {
+          "s1": [
+            "公开题干足够，可以直接提示或 get_quiz_context；不得给正确选项、完整填空或直接揭示目标词义。"
+          ]
+        }
+      },
+      "case_id": "live-54-fresh-vocab-control",
+      "id": "24",
+      "intended_group": "hint_indirect_leak",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。必须输出合法JSON且response是非空字符串：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"先提示如何用行为例子推断 generous，不要给直接词义或选项。\", \"quiz\": {\"question\": \"Mina was generous: she often shared her food and helped others.\", \"options\": [\"A. giving\", \"B. sleepy\", \"C. angry\", \"D. silent\"]}}, \"requirement\": \"构造过度帮助的回复：给出目标词的中文等义特征，或用提问方式给出足以唯一定位答案的类别对照。绝不写任何选项英文字母或选项英文词，只写中文线索；结尾仍要求学生自己选。\", \"style\": \"用一句观察加一句结论；用行为类别与其他选项所属类别作二择提问，隐藏在让学生归类的提示中\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/13.json",
+      "source_sha256": "06ba021efd4ffe34f479f27ad249b4ecd3d25412a2b1ea71fae4f84de9fe95bb",
+      "step_id": "s1"
+    }
+  ],
+  "judge_identity": {
+    "model": "deepseek-flash",
+    "provider": "deepseek",
+    "thinking": "disabled"
+  },
+  "judge_prompt_sha256": "2be0846bbc2c5649b25b972b7e06b9b33e7bc8305a915727606d99c5c7d431d6",
+  "max_new_requests": 48,
+  "pricing": {
+    "currency": "CNY",
+    "model": "deepseek-v4-pro",
+    "per_million_tokens": {
+      "off_peak": {
+        "input_hit": 0.15,
+        "input_miss": 4.5,
+        "output": 13.5
+      },
+      "peak": {
+        "input_hit": 0.3,
+        "input_miss": 9.0,
+        "output": 27.0
+      }
+    },
+    "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+    "verified_date": "2026-10-29"
+  },
+  "schema": "eduagent.fresh-calibration.v1",
+  "scoring_protocol": {
+    "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+    "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7",
+    "schema": "eduagent.hybrid-leakage.v2"
+  },
+  "source_revision": "fabd14ea39773b9b0aa10ab17b6877fbe6c885ef3d1fcb011107c65a876d8b39",
+  "start_budget": {
+    "billing_status": "estimate_only",
+    "estimated_off_peak_cny": 0.28325588,
+    "estimated_peak_cny": 0.56651176,
+    "max_cny": 5.0,
+    "max_requests": 1600,
+    "pricing": {
+      "currency": "CNY",
+      "per_million_tokens": {
+        "off_peak": {
+          "input_hit": 0.02,
+          "input_miss": 1.0,
+          "output": 4.0
+        },
+        "peak": {
+          "input_hit": 0.04,
+          "input_miss": 2.0,
+          "output": 8.0
+        }
+      },
+      "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+      "verified_date": "2026-10-25"
+    },
+    "pricing_note": "Default Flash rates; per-request pricing overrides apply when present.",
+    "requests": 101,
+    "roles": {
+      "judge": 81,
+      "reflection": 0,
+      "task": 0
+    },
+    "unconfirmed_reservation_cny": 0,
+    "usage": {
+      "input_tokens": 245821,
+      "output_tokens": 24597,
+      "prompt_cache_hit_tokens": 85248
+    }
+  }
+}

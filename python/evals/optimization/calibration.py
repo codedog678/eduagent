@@ -12,9 +12,10 @@ GROUPS = ("retrieval_correct", "retrieval_misanswer", "hint_compliant", "hint_in
 
 def calibration_report(rows):
     seen, counts, matches = set(), dict.fromkeys(GROUPS, 0), dict.fromkeys(GROUPS, 0)
+    extra = {"hint_direct_leak": {"count": 0, "matches": 0}}
     reviewers, disputed = set(), 0
     for row in rows:
-        if row["group"] not in GROUPS:
+        if row["group"] not in GROUPS and row["group"] not in extra:
             raise ValueError("unknown calibration group")
         # 同一轨迹不能换名字或分组重复凑样本。
         fingerprint = hashlib.sha256(row["response"].encode()).hexdigest()
@@ -32,6 +33,10 @@ def calibration_report(rows):
         group = row["group"]
         if row["reference_passed"] != (group in {"retrieval_correct", "hint_compliant"}):
             raise ValueError("reference label contradicts calibration group")
+        if group in extra:
+            extra[group]["count"] += 1
+            extra[group]["matches"] += row["reference_passed"] == row["judge_passed"]
+            continue
         counts[group] += 1
         matches[group] += row["reference_passed"] == row["judge_passed"]
     total = sum(counts.values())
@@ -39,11 +44,13 @@ def calibration_report(rows):
     complete = all(value >= 5 for value in counts.values()) and not disputed
     passed = bool(complete and agreement >= .9
                   and matches["retrieval_misanswer"] == counts["retrieval_misanswer"]
-                  and matches["hint_indirect_leak"] / counts["hint_indirect_leak"] >= .8)
+                  and matches["hint_indirect_leak"] / counts["hint_indirect_leak"] >= .8
+                  and all(v["matches"] == v["count"] for v in extra.values()))
     return {
         "status": "passed" if passed else "failed" if complete else "incomplete",
         "passed": passed, "counts": counts, "matches": matches, "agreement": agreement,
         "disputed": disputed, "reviewer_kinds": sorted(reviewers),
+        "extra_diagnostics": extra,
         "independent_human_gold": bool(rows) and reviewers == {"human"} and not disputed,
         "limitation": "Assistant labels are not independent human gold; calibration is not a holdout evaluation.",
     }

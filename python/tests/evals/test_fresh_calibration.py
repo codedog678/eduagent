@@ -96,3 +96,58 @@ def test_development_cannot_become_independent_by_role_flag(tmp_path):
     write_json(tmp_path / "manifest.json", {"items": [], "data_role": "independent_calibration"})
     with pytest.raises(KeyError, match="fresh_provenance"):
         verify_manifest(tmp_path / "manifest.json")
+
+
+@pytest.mark.asyncio
+async def test_invalid_generation_keeps_slot_and_continues_without_retry(tmp_path, monkeypatch):
+    from pathlib import Path
+    from types import SimpleNamespace
+    from evals.optimization import calibrate_fresh as fresh
+    from evals.optimization.leakage import protocol_identity
+    from evals.optimization.scoring import JUDGE_PROMPT
+    source = Path(__file__).resolve().parents[3] / "docs/evals/rsi-campaigns/20261029-pro-validation/spec.json"
+    spec = json.loads(source.read_text())
+    spec.update(source_revision="frozen", scoring_protocol=protocol_identity(),
+                judge_prompt_sha256=digest(JUDGE_PROMPT), items=spec["items"][:2],
+                start_budget={"requests": 0}, max_new_requests=2)
+    write_json(tmp_path / "spec.json", spec)
+    monkeypatch.setattr(fresh, "code_revision", lambda: {"python_source_sha256": "frozen"})
+    monkeypatch.setattr(fresh, "get_llm_service", lambda: SimpleNamespace(
+        **JUDGE, api_key="test", base_url="local"))
+    budget = DurableBudget(SharedLedger(tmp_path / "ledger.sqlite"), "test",
+                           max_requests=1600, max_cny=5)
+    monkeypatch.setattr(fresh, "SharedLedger", lambda: budget.store)
+    monkeypatch.setattr(fresh, "DurableBudget", lambda *args, **kwargs: budget)
+    outputs = iter(["   ", '{"response":"valid response"}'])
+    calls = []
+
+    class Fake:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def complete(self, messages, **kwargs):
+            calls.append(messages)
+            index = budget.reserve_for("calibration_generator", messages, [], 900)
+            budget.settle(index, {"input_tokens": 100, "output_tokens": 10})
+            return next(outputs)
+
+    monkeypatch.setattr(fresh, "TextModel", Fake)
+    assert await fresh.run(tmp_path, "generate") == 0
+    assert json.loads((tmp_path / "generated/01.json").read_text())["status"] == "generation_invalid"
+    assert json.loads((tmp_path / "generated/02.json").read_text())["response"] == "valid response"
+    assert await fresh.run(tmp_path, "generate") == 0
+    assert len(calls) == 2 and budget.summary()["requests"] == 2
+
+
+def test_direct_leaks_cannot_fill_indirect_coverage_or_hide_misses():
+    from evals.optimization.calibration import GROUPS, calibration_report
+    rows = [{"group": group, "response": f"{group}:{i}", "reviewer_kind": "assistant",
+             "reviewer": "test", "reference_passed": group in ("retrieval_correct", "hint_compliant"),
+             "judge_passed": group in ("retrieval_correct", "hint_compliant")}
+            for group in GROUPS for i in range(5)]
+    extra = {"group": "hint_direct_leak", "response": "direct", "reference_passed": False,
+             "judge_passed": True, "reviewer_kind": "assistant", "reviewer": "test"}
+    assert not calibration_report(rows + [extra])["passed"]
+    extra["judge_passed"] = False
+    report = calibration_report(rows[:-1] + [extra])
+    assert report["counts"]["hint_indirect_leak"] == 4 and not report["passed"]

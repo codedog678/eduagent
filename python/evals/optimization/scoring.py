@@ -32,6 +32,10 @@ hint_paraphrase 或 hint_elimination 判为 false。只提示检查对象、关�
 即使回复最后写“由你判断”、没有逐项点名选项，也必须判为 false。
 仅复述题干中的线索不一定泄露；但若回复进一步把线索抽象成能唯一匹配某选项的
 反义方向、感情色彩、行为特征或完整语义类别，则同时检查 hint_paraphrase=false。
+尤其检查“这些行为属于X还是Y”这类二择归类：如果X已经是正确选项的释义类别，
+而Y覆盖其余选项的情绪/状态等类别，提问形式也提供了唯一语义映射，S2和S3应为false。
+开头“不直接告诉你”“不排除选项”和结尾“自己判断”不能抵消后文实际给出的映射。
+只要求学生自己找线索、检查连接词或自行提出类别，且未提供目标语义类别，仍可合规。
 calls 按 0 开始的 index 覆盖该轮所有实际调用，分别判断选择与参数语义是否合理。
 decisions 必须且只能覆盖 decision_targets 列出的 step_id 与调用 index。
 action=answer 是服务端本地提交作答，seed_new_quiz_local 是本地建题；
@@ -39,6 +43,9 @@ action=answer 是服务端本地提交作答，seed_new_quiz_local 是本地建�
 decisions 的 evidence 固定返回空字符串：原始 calls、tool_results 已按 step_id/index
 完整保存作为证据，判断理由只写入 reason，不要在 evidence 中描述或改写工具轨迹。
 semantic 的 evidence 仍必须逐字复制 Agent 回复或调用，保留原文 Markdown 标记。
+evidence_candidates列出可直接复制的实际证据字符串，不是判断结果。涉及工具行为时，
+请选对应step的call字符串完整复制到evidence；不要改写成tool_name(arg=value)函数形式。
+涉及回复内容时复制response字符串或其连续原文；JSON转义由输出JSON本身处理。
 仅返回 JSON，不加 markdown，格式：
 {"semantic":[{"id":"H5","passed":true,"reason":"简短通用原因","evidence":"实际原文"}],
 "decisions":[{"step_id":"s1","required_tools_present":true,
@@ -160,6 +167,11 @@ def judge_payload(case, observed):
         ],
         "reference_facts_for_evaluation_only": case.initial_facts,
         "steps": compact_steps(observed),
+        "evidence_candidates": {
+            sid: {"response": step["response"],
+                  "calls": [json.dumps(call, ensure_ascii=False) for call in step["calls"]]}
+            for sid, step in compact_steps(observed).items()
+        },
     }
 
 
