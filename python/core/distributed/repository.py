@@ -65,6 +65,13 @@ class DistributedRunRepository:
         self.max_attempts = max_attempts
 
     async def accept(self, spec: DistributedRunRequest) -> DistributedRun:
+        run, _ = await self.accept_with_replay(spec)
+        return run
+
+    async def accept_with_replay(
+        self,
+        spec: DistributedRunRequest,
+    ) -> tuple[DistributedRun, bool]:
         run_id = new_id()
         trace_id = uuid4().hex
         async with self.session_factory() as session, session.begin():
@@ -100,7 +107,7 @@ class DistributedRunRepository:
                     raise RequestConflict(
                         "request_id is already bound to different input"
                     )
-                return existing
+                return existing, True
 
             run = await self._locked_run(session, run_id)
             session.add(
@@ -120,7 +127,7 @@ class DistributedRunRepository:
                     now,
                 )
             )
-            return run
+            return run, False
 
     async def get(self, run_id: str) -> DistributedRun | None:
         async with self.session_factory() as session:
@@ -423,11 +430,18 @@ class DistributedRunRepository:
             return run
 
     async def cancel(self, run_id: str) -> DistributedRun:
+        run, _ = await self.cancel_with_transition(run_id)
+        return run
+
+    async def cancel_with_transition(
+        self,
+        run_id: str,
+    ) -> tuple[DistributedRun, bool]:
         async with self.session_factory() as session, session.begin():
             now = await self._db_now(session)
             run, lease = await self._locked_run_and_lease(session, run_id)
             if RunStatus(run.status).terminal:
-                return run
+                return run, False
             run.status = RunStatus.CANCELLED
             run.updated_at = now
             if lease.owner is not None:
@@ -450,7 +464,7 @@ class DistributedRunRepository:
                     now,
                 )
             )
-            return run
+            return run, True
 
     async def pending_outbox(
         self,
