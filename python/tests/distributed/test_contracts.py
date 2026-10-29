@@ -112,3 +112,11 @@ def test_learning_task_payload_is_strict_and_bounded():
 
     with pytest.raises(ValidationError, match="string_pattern_mismatch"):
         request(request_id="contains spaces")
+
+
+def test_cli_subcommands_parse():
+    from core.distributed.cli import parser
+
+    assert parser().parse_args(["dispatcher"]).command == "dispatcher"
+    assert parser().parse_args(["worker"]).command == "worker"
+    assert parser().parse_args(["reaper"]).command == "reaper"

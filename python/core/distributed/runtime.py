@@ -74,12 +74,18 @@ class DistributedRuntime:
             self.repository,
             self.broker,
             self.settings.distributed_outbox_batch_size,
+            tracer=self.tracer,
+            metrics=self.metrics,
         )
 
     def reaper(self) -> LeaseReaper:
         from .reaper import LeaseReaper
 
-        return LeaseReaper(self.repository)
+        return LeaseReaper(
+            self.repository,
+            tracer=self.tracer,
+            metrics=self.metrics,
+        )
 
     def worker(self, worker_id, executor) -> RunWorker:
         from .worker import RunWorker
@@ -95,6 +101,8 @@ class DistributedRuntime:
             pause_before_commit_seconds=(
                 self.settings.distributed_demo_pause_before_commit_seconds
             ),
+            tracer=self.tracer,
+            metrics=self.metrics,
         )
 
 

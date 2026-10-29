@@ -18,6 +18,20 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    profiles: ["distributed"]
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
   # Python API 后端
   python-api:
     build:
@@ -57,6 +71,89 @@ services:
     depends_on:
       - python-api
 
+  distributed-api:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command:
+      - uvicorn
+      - api.distributed_main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8890"
+    ports:
+      - "8890:8890"
+    environment: &distributed-env
+      DISTRIBUTED_ENABLED: "true"
+      DISTRIBUTED_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/edu_agent
+      DISTRIBUTED_REDIS_URL: redis://redis:6379/1
+      HARNESS_STORE_PATH: /app/data/distributed-harness.sqlite3
+      LLM_PROVIDER: template
+      MEMORY_RETRIEVAL_MODE: lexical
+      MEMORY_WORKER_ENABLED: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  run-dispatcher:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "dispatcher"]
+    environment: *distributed-env
+    depends_on:
+      distributed-api:
+        condition: service_started
+
+  run-reaper:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "reaper"]
+    environment: *distributed-env
+    depends_on:
+      distributed-api:
+        condition: service_started
+
+  run-worker-a:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "worker"]
+    environment:
+      <<: *distributed-env
+      DISTRIBUTED_WORKER_ID: worker-a
+      DISTRIBUTED_DEMO_PAUSE_BEFORE_COMMIT_SECONDS: ${DISTRIBUTED_DEMO_PAUSE_BEFORE_COMMIT_SECONDS:-0}
+    volumes:
+      - distributed_harnessdata:/app/data
+    depends_on:
+      distributed-api:
+        condition: service_started
+
+  run-worker-b:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "worker"]
+    environment:
+      <<: *distributed-env
+      DISTRIBUTED_WORKER_ID: worker-b
+    volumes:
+      - distributed_harnessdata:/app/data
+    depends_on:
+      distributed-api:
+        condition: service_started
+
 volumes:
   pgdata:
   harnessdata:
+  redisdata:
+  distributed_harnessdata:

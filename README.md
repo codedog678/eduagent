@@ -160,6 +160,27 @@ REST `/question` 与 `/message` 通过 `converse` 接入长期证据和 TutorRun
 
 `HARNESS_QUEUE_TIMEOUT_SECONDS` 默认 10 秒，控制等待同一学习者执行权的时间；超时返回 HTTP 503 与 `Retry-After: 1`，不创建执行记录、不修改学习状态，可复用原请求 ID 重试。`LLM_MAX_CONCURRENCY` 默认 4，聊天、embedding、rerank 及后台摘录在同一服务事件循环内共用额度。`LLM_QUEUE_TIMEOUT_SECONDS` 默认 10 秒；前台模型排队同时受本轮 deadline 和已有 handler/工具超时约束，超时未发送请求，运行回滚并记录失败。取消和请求异常均释放额度。配置变更需重启；`GET /api/health` 的 `model_concurrency` 展示上限、执行数、等待数与排队超时数。详见[并发边界与验证](docs/engineering/harness-concurrency-20261029.md)。
 
+### 分布式 Run Plane（M1）
+
+启用 distributed profile 后，PostgreSQL 保存 Run、Attempt、Step、Lease、
+Outbox 和 Trace，Redis Streams 只负责投递。两个 Worker 通过租约与 fencing
+token 竞争执行；旧 Worker 的租约过期后，即使继续运行也不能提交 Run 结果。
+
+现有教学状态在 M1 仍由共享 SQLite 单写。Worker 按单次执行打开并关闭
+`LearningHarness`，文件锁保证同一时刻只有一个进程持有业务存储；崩溃接管
+使用相同 `request_id` 重放。该实现验证覆盖场景中的恢复与业务提交幂等，
+但不宣称 PostgreSQL/SQLite 跨库原子提交、网络副作用 exactly-once，或教学
+状态已经支持水平多写。取消同样是 best-effort。
+
+```bash
+docker compose --profile distributed up --build -d
+curl --fail http://localhost:8890/api/health
+python tools/demo_distributed_recovery.py
+```
+
+完整状态机、故障矩阵、测试与指标入口见
+[Distributed Run Plane](docs/engineering/distributed-run-plane.md)。
+
 ### 队列与存储
 
 事件队列使用 Python 标准库 `heapq`，保存在当前交互的内存中，不依赖数据库或外部消息服务。Agent 发布后续事件时只入队，当前处理器退出并释放本学习者的锁后再执行后续事件。默认每次事件链最多入队 64 个事件，普通处理器超时为 15 秒，REST 答疑的 Tutor 处理器超时为 40 秒，整次业务执行超时为 45 秒。Tutor 模型调用共用本轮剩余 deadline；上下文预算采用 UTF-8 字节估计，模型实际 usage 单独记录。等待同一学习者执行锁的时间使用独立排队超时，不计入业务执行超时。
