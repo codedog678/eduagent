@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from contextlib import suppress
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import HTTPException
 
@@ -28,6 +28,8 @@ class RunWorker:
         max_attempts: int,
         pause_before_commit_seconds: float = 0,
         pending_idle_ms: int | None = None,
+        tracer=None,
+        metrics=None,
     ) -> None:
         if lease_seconds <= 0:
             raise ValueError("lease_seconds must be positive")
@@ -47,10 +49,57 @@ class RunWorker:
         self.heartbeat_seconds = heartbeat_seconds
         self.max_attempts = max_attempts
         self.pause_before_commit_seconds = pause_before_commit_seconds
+        self.tracer = tracer
+        self.metrics = metrics
         self.pending_idle_ms = (
             max(1, int(lease_seconds * 1000))
             if pending_idle_ms is None
             else pending_idle_ms
+        )
+
+    @asynccontextmanager
+    async def _span(
+        self,
+        run_id: str,
+        trace_id: str,
+        name: str,
+        *,
+        parent_span_id: str | None = None,
+        attributes: dict | None = None,
+    ):
+        if self.tracer is None:
+            yield None
+            return
+        async with self.tracer.span(
+            run_id,
+            trace_id,
+            name,
+            parent_span_id=parent_span_id,
+            attributes=attributes or {},
+        ) as span:
+            yield span
+
+    def _increment_metric(
+        self,
+        name: str,
+        *,
+        labels: dict | None = None,
+    ) -> None:
+        if self.metrics is None:
+            return
+        metric = getattr(self.metrics, name, None)
+        if metric is None:
+            return
+        with suppress(Exception):
+            if labels:
+                metric = metric.labels(**labels)
+            metric.inc()
+
+    def _count_status(self, status) -> None:
+        outcome = getattr(status, "value", status)
+        self._increment_metric(
+            "runs",
+            labels={"outcome": str(outcome)},
         )
 
     async def _heartbeat(
@@ -151,14 +200,14 @@ class RunWorker:
         retryable: bool,
         lease_lost: asyncio.Event,
         heartbeat: asyncio.Task | None,
-    ) -> None:
+    ):
         await self._renew_or_raise(
             run_id,
             token,
             lease_lost,
             heartbeat,
         )
-        await self.repository.fail(
+        return await self.repository.fail(
             run_id,
             token,
             code,
@@ -185,81 +234,119 @@ class RunWorker:
         execution: asyncio.Task | None = None
         heartbeat: asyncio.Task | None = None
         try:
-            await self._renew_or_raise(
+            async with self._span(
                 run_id,
-                claim.fencing_token,
-                lease_lost,
-                heartbeat,
-            )
-            request = claim.to_request()
-            step = await self.repository.start_step(
-                run_id,
-                "business-execution",
-                request.input_hash,
-                claim.fencing_token,
-            )
-            if step.status == RunStatus.COMPLETED:
-                if step.result is None:
-                    raise RuntimeError("completed step has no result")
-                result = step.result
-            else:
-                execution = asyncio.create_task(
-                    self.executor.execute(request)
+                claim.trace_id,
+                "run.attempt",
+                attributes={
+                    "worker.id": self.worker_id,
+                    "run.attempt": claim.attempt_count,
+                    "run.fencing_token": claim.fencing_token,
+                },
+            ) as attempt_span:
+                parent_span_id = getattr(
+                    attempt_span,
+                    "span_id",
+                    None,
                 )
-                heartbeat = asyncio.create_task(
-                    self._heartbeat(
+                await self._renew_or_raise(
+                    run_id,
+                    claim.fencing_token,
+                    lease_lost,
+                    heartbeat,
+                )
+                request = claim.to_request()
+                step = await self.repository.start_step(
+                    run_id,
+                    "business-execution",
+                    request.input_hash,
+                    claim.fencing_token,
+                )
+                async with self._span(
+                    run_id,
+                    claim.trace_id,
+                    "business.execute",
+                    parent_span_id=parent_span_id,
+                    attributes={"run.operation": request.operation},
+                ):
+                    if step.status == RunStatus.COMPLETED:
+                        if step.result is None:
+                            raise RuntimeError(
+                                "completed step has no result"
+                            )
+                        result = step.result
+                        self._increment_metric(
+                            "idempotency_hits",
+                            labels={"scope": "step"},
+                        )
+                    else:
+                        execution = asyncio.create_task(
+                            self.executor.execute(request)
+                        )
+                        heartbeat = asyncio.create_task(
+                            self._heartbeat(
+                                run_id,
+                                claim.fencing_token,
+                                lease_lost,
+                            )
+                        )
+                        result = await self._await_execution(
+                            execution,
+                            heartbeat,
+                        )
+
+                async with self._span(
+                    run_id,
+                    claim.trace_id,
+                    "run.commit",
+                    parent_span_id=parent_span_id,
+                    attributes={
+                        "run.fencing_token": claim.fencing_token
+                    },
+                ):
+                    await self._renew_or_raise(
                         run_id,
                         claim.fencing_token,
                         lease_lost,
+                        heartbeat,
                     )
-                )
-                result = await self._await_execution(
-                    execution,
-                    heartbeat,
-                )
-
-            await self._renew_or_raise(
-                run_id,
-                claim.fencing_token,
-                lease_lost,
-                heartbeat,
-            )
-            await self.repository.complete_step(
-                run_id,
-                "business-execution",
-                request.input_hash,
-                claim.fencing_token,
-                result,
-            )
-            await self._renew_or_raise(
-                run_id,
-                claim.fencing_token,
-                lease_lost,
-                heartbeat,
-            )
-            await self.repository.transition_committing(
-                run_id,
-                claim.fencing_token,
-            )
-            if self.pause_before_commit_seconds:
-                await asyncio.sleep(
-                    self.pause_before_commit_seconds
-                )
-            await self._renew_or_raise(
-                run_id,
-                claim.fencing_token,
-                lease_lost,
-                heartbeat,
-            )
-            await self.repository.complete(
-                run_id,
-                claim.fencing_token,
-                result,
-            )
+                    await self.repository.complete_step(
+                        run_id,
+                        "business-execution",
+                        request.input_hash,
+                        claim.fencing_token,
+                        result,
+                    )
+                    await self._renew_or_raise(
+                        run_id,
+                        claim.fencing_token,
+                        lease_lost,
+                        heartbeat,
+                    )
+                    await self.repository.transition_committing(
+                        run_id,
+                        claim.fencing_token,
+                    )
+                    if self.pause_before_commit_seconds:
+                        await asyncio.sleep(
+                            self.pause_before_commit_seconds
+                        )
+                    await self._renew_or_raise(
+                        run_id,
+                        claim.fencing_token,
+                        lease_lost,
+                        heartbeat,
+                    )
+                    completed = await self.repository.complete(
+                        run_id,
+                        claim.fencing_token,
+                        result,
+                    )
+                    self._count_status(completed.status)
             await self.broker.ack(message.redis_id)
         except BusinessStoreBusy:
             try:
-                await self._fail(
+                failed = await self._fail(
                     run_id,
                     claim.fencing_token,
                     "business_store_busy",
@@ -267,16 +354,23 @@ class RunWorker:
                     lease_lost,
                     heartbeat,
                 )
-            except (FencingViolation, LeaseLost):
+            except FencingViolation:
+                self._increment_metric("fencing_rejections")
                 return
+            except LeaseLost:
+                return
+            self._count_status(failed.status)
             await self.broker.ack(message.redis_id)
-        except (FencingViolation, LeaseLost):
+        except FencingViolation:
+            self._increment_metric("fencing_rejections")
+            return
+        except LeaseLost:
             return
         except asyncio.CancelledError:
             raise
         except Exception as exc:
             try:
-                await self._fail(
+                failed = await self._fail(
                     run_id,
                     claim.fencing_token,
                     type(exc).__name__,
@@ -287,8 +381,12 @@ class RunWorker:
                     lease_lost,
                     heartbeat,
                 )
-            except (FencingViolation, LeaseLost):
+            except FencingViolation:
+                self._increment_metric("fencing_rejections")
                 return
+            except LeaseLost:
+                return
+            self._count_status(failed.status)
             await self.broker.ack(message.redis_id)
         finally:
             if execution is not None and not execution.done():
