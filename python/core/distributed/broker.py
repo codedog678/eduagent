@@ -21,6 +21,9 @@ class RedisRunBroker:
         self.stream = stream
         self.group = group
 
+    async def ping(self) -> bool:
+        return bool(await self.redis.ping())
+
     async def ensure_group(self) -> None:
         try:
             await self.redis.xgroup_create(
@@ -96,6 +99,16 @@ class RedisRunBroker:
                 redis_id,
             )
         )
+
+    async def pending_count(self) -> int:
+        await self.ensure_group()
+        summary = await self.redis.xpending(
+            self.stream,
+            self.group,
+        )
+        if isinstance(summary, dict):
+            return int(summary.get("pending", 0))
+        return int(summary[0])
 
     async def reset_for_tests(self) -> None:
         await self.redis.delete(self.stream)

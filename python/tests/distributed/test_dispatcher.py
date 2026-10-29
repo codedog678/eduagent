@@ -8,6 +8,10 @@ from tests.distributed.helpers import spec
 pytestmark = pytest.mark.distributed_integration
 
 
+async def test_broker_health_check(broker):
+    assert await broker.ping()
+
+
 async def test_dispatch_marks_outbox_and_publishes_once(repo, broker):
     run = await repo.accept(spec())
     dispatcher = OutboxDispatcher(repo, broker, batch_size=10)

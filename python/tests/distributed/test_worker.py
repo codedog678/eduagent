@@ -57,6 +57,15 @@ async def dispatch(repo, broker, request_id="worker"):
     return run
 
 
+async def wait_for_status(repo, run_id, status):
+    async with asyncio.timeout(2):
+        while True:
+            run = await repo.get(run_id)
+            if run is not None and run.status == status:
+                return run
+            await asyncio.sleep(0.01)
+
+
 async def test_worker_renews_lease_while_executor_runs(repo, broker):
     run = await dispatch(repo, broker)
     executor = BlockingExecutor()
@@ -151,6 +160,30 @@ async def test_heartbeat_lease_loss_cancels_execution_and_blocks_commit(
     await repo.cancel(run.id)
     assert await asyncio.wait_for(task, timeout=2)
     await asyncio.wait_for(executor.cancelled.wait(), timeout=2)
+
+    cancelled = await repo.get(run.id)
+    assert cancelled is not None
+    assert cancelled.status == RunStatus.CANCELLED
+    assert cancelled.result is None
+
+
+async def test_lease_loss_after_execution_blocks_final_commit(repo, broker):
+    run = await dispatch(repo, broker, request_id="cancel-commit")
+    worker = RunWorker(
+        "worker-a",
+        repo,
+        broker,
+        ImmediateExecutor(),
+        lease_seconds=2,
+        heartbeat_seconds=0.05,
+        max_attempts=3,
+        pause_before_commit_seconds=0.25,
+    )
+
+    task = asyncio.create_task(worker.run_once())
+    await wait_for_status(repo, run.id, RunStatus.COMMITTING)
+    await repo.cancel(run.id)
+    assert await asyncio.wait_for(task, timeout=2)
 
     cancelled = await repo.get(run.id)
     assert cancelled is not None
