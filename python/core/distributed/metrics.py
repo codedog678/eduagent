@@ -24,6 +24,12 @@ class DistributedMetrics:
             ("outcome",),
             registry=self.registry,
         )
+        self.run_states = Gauge(
+            "eduagent_distributed_runs_by_status",
+            "Authoritative PostgreSQL run count by current status",
+            ("status",),
+            registry=self.registry,
+        )
         self.lease_takeovers = Counter(
             "eduagent_distributed_lease_takeovers_total",
             "Expired lease takeovers",
@@ -60,3 +66,11 @@ class DistributedMetrics:
 
     def render(self) -> bytes:
         return generate_latest(self.registry)
+
+    def observe_status_counts(self, counts: dict[str, int]) -> None:
+        from .contracts import RunStatus
+
+        for status in RunStatus:
+            self.run_states.labels(status=status.value).set(
+                counts.get(status.value, 0)
+            )

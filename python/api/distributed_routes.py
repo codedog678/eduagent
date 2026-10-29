@@ -75,7 +75,11 @@ async def health(request: Request):
 
 @metrics_router.get("/metrics", include_in_schema=False)
 async def metrics(request: Request):
+    runtime = request.app.state.distributed
+    runtime.metrics.observe_status_counts(
+        await runtime.repository.status_counts()
+    )
     return Response(
-        request.app.state.distributed.metrics.render(),
+        runtime.metrics.render(),
         media_type=CONTENT_TYPE_LATEST,
     )

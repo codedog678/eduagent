@@ -135,6 +135,10 @@ async def test_cancel_is_idempotent_and_metrics_are_exposed(
         'eduagent_distributed_runs_total{outcome="cancelled"} 1.0'
         in metrics.text
     )
+    assert (
+        'eduagent_distributed_runs_by_status{status="cancelled"} 1.0'
+        in metrics.text
+    )
 
 
 async def test_missing_run_resources_return_404(distributed_client):

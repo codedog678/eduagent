@@ -84,6 +84,7 @@ def test_distributed_settings_require_safe_heartbeat_and_database_url():
         Settings(
             _env_file=None,
             database_url="sqlite+aiosqlite:///local.db",
+            distributed_database_url="",
             distributed_enabled=True,
         )
 

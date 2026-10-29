@@ -109,6 +109,10 @@ POST http://localhost:8890/api/distributed/runs/{run_id}/cancel
 GET  http://localhost:8890/metrics
 ```
 
+`eduagent_distributed_runs_by_status` 每次抓取时从 PostgreSQL 聚合，因此在
+API、Dispatcher、Reaper 和 Worker 分属不同进程时仍表示权威当前状态。
+各进程内 counter 只用于该进程的事件诊断，不作为跨进程累计真相。
+
 ## 验收证据
 
 验收必须同时保留：

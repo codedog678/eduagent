@@ -683,6 +683,19 @@ class DistributedRunRepository:
             )
             return list(rows)
 
+    async def status_counts(self) -> dict[str, int]:
+        async with self.session_factory() as session:
+            rows = await session.execute(
+                select(
+                    DistributedRun.status,
+                    func.count(DistributedRun.id),
+                ).group_by(DistributedRun.status)
+            )
+            return {
+                str(status): int(count)
+                for status, count in rows
+            }
+
     async def _locked_run(
         self,
         session: AsyncSession,
