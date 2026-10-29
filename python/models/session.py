@@ -107,6 +107,11 @@ async def close_db() -> None:
         logger.info("Database connections closed")
 
 
+async def reset_db_for_tests() -> None:
+    """Dispose cached global engine/factory; tests only."""
+    await close_db()
+
+
 def async_session() -> AsyncSession:
     """
     获取数据库会话（非依赖注入方式）。

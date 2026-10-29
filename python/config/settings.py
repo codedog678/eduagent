@@ -60,6 +60,22 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/edu_agent"
     redis_url: str = "redis://localhost:6379/0"
 
+    distributed_enabled: bool = False
+    distributed_database_url: str = ""
+    distributed_redis_url: str = "redis://localhost:6379/1"
+    distributed_stream: str = "eduagent:runs"
+    distributed_consumer_group: str = "eduagent-run-workers"
+    distributed_worker_id: str = ""
+    distributed_lease_seconds: float = Field(default=15, ge=3, le=300)
+    distributed_heartbeat_seconds: float = Field(default=3, ge=.5, le=60)
+    distributed_poll_block_ms: int = Field(default=1000, ge=10, le=60000)
+    distributed_max_attempts: int = Field(default=3, ge=1, le=20)
+    distributed_outbox_batch_size: int = Field(default=50, ge=1, le=500)
+    distributed_demo_pause_before_commit_seconds: float = Field(
+        default=0, ge=0, le=300
+    )
+    otel_exporter_otlp_endpoint: str = ""
+
     api_port: int = 8888
     log_level: str = "INFO"
 
@@ -129,9 +145,28 @@ class Settings(BaseSettings):
         if self.llm_provider not in {"auto", "template"}:
             if not getattr(self, f"{self.llm_provider}_api_key").strip():
                 raise ValueError(f"{self.llm_provider.upper()}_API_KEY is required for LLM_PROVIDER")
+        if self.distributed_enabled:
+            database_url = self.effective_distributed_database_url
+            if not database_url:
+                raise ValueError("distributed database URL is required")
+            if not database_url.startswith("postgresql+asyncpg://"):
+                raise ValueError(
+                    "distributed database URL must use postgresql+asyncpg"
+                )
+            if (
+                self.distributed_heartbeat_seconds
+                >= self.distributed_lease_seconds / 2
+            ):
+                raise ValueError(
+                    "DISTRIBUTED_HEARTBEAT_SECONDS must be less than half the lease"
+                )
         return self
 
-    @field_validator("database_url", mode="before")
+    @field_validator(
+        "database_url",
+        "distributed_database_url",
+        mode="before",
+    )
     @classmethod
     def normalize_database_url(cls, value: str) -> str:
         if not isinstance(value, str):
@@ -143,6 +178,10 @@ class Settings(BaseSettings):
         if value.startswith("postgres://"):
             return value.replace("postgres://", "postgresql+asyncpg://", 1)
         return value
+
+    @property
+    def effective_distributed_database_url(self) -> str:
+        return self.distributed_database_url or self.database_url
 
     @property
     def llm_config_source(self) -> str:

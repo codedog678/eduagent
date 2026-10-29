@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a PostgreSQL-authoritative, Redis Streams-delivered Run Plane that executes the existing learning task through two competing worker processes, survives worker death through leases and fencing, exposes durable traces and Prometheus metrics, and proves zero duplicate business effects.
+**Goal:** Build a PostgreSQL-authoritative, Redis Streams-delivered Run Plane that executes the existing learning task through two competing worker processes, survives worker death through leases and fencing, exposes durable traces and Prometheus metrics, and verifies idempotent business effects under the tested crash/replay scenarios.
 
 **Architecture:** A dedicated distributed FastAPI control plane accepts immutable run requests and transactionally writes a run plus outbox record to PostgreSQL. Dispatchers publish outbox records to Redis Streams; workers claim runs with monotonic fencing tokens, execute the existing `LearningHarness` using a shared single-writer SQLite store, and conditionally commit results to PostgreSQL. M1 intentionally keeps SQLite business state single-writer while moving run truth, delivery, recovery, and observability to PostgreSQL/Redis; M2 will distribute side-effect-free expert work.
 
@@ -857,7 +857,9 @@ class OutboxDispatcher:
         return published
 ```
 
-Do not deduplicate in Redis. Duplicate delivery is intentional and is resolved by inbox/run state in PostgreSQL.
+Do not deduplicate in Redis. Duplicate delivery is intentional. Run claim/state
+transitions in PostgreSQL are the correctness boundary; inbox rows are durable
+delivery observations, not permission to skip an otherwise claimable run.
 
 - [ ] **Step 4: Run tests**
 
@@ -1123,13 +1125,17 @@ class RunWorker:
             )
 
     async def handle(self, message):
-        if not await self.repository.record_inbox(self.worker_id, message.redis_id):
+        run_id = message.payload["run_id"]
+        await self.repository.record_inbox(self.worker_id, message.event_key)
+        try:
+            claim = await self.repository.claim(
+                run_id, self.worker_id, self.lease_seconds
+            )
+        except FencingViolation:
+            # A terminal/active run makes this delivery obsolete. The durable
+            # run state, rather than inbox insertion order, decides that.
             await self.broker.ack(message.redis_id)
             return
-        run_id = message.payload["run_id"]
-        claim = await self.repository.claim(
-            run_id, self.worker_id, self.lease_seconds
-        )
         heartbeat = asyncio.create_task(
             self._heartbeat(run_id, claim.fencing_token)
         )
@@ -2137,7 +2143,7 @@ Expected:
 - all distributed tests pass;
 - frontend build succeeds;
 - Compose config validates;
-- demo reports `completed`, two attempts, one takeover, and zero duplicate business effects.
+- demo reports `completed`, two attempts, one takeover, and one committed SQLite business effect for the replayed request.
 
 - [ ] **Step 6: Verify archive-safe evidence**
 
@@ -2167,11 +2173,11 @@ Before declaring M1 complete, inspect current evidence for every item:
 | Requirement | Authoritative evidence |
 | --- | --- |
 | PostgreSQL is Run truth | rows and transition tests for all seven tables |
-| Redis duplicate delivery is safe | dispatcher duplicate test plus inbox/run idempotency |
+| Redis duplicate delivery is safe | dispatcher duplicate test plus run claim/state idempotency; inbox is observational |
 | Worker crash is recovered | real-process failover test and demo Trace |
 | Stale Worker cannot commit | fencing integration test |
 | Existing business runs in profile | completed learning-task result from worker executor |
-| No duplicate business effect | SQLite evidence count after replay equals one |
+| Idempotent tested business effect | SQLite evidence count after the tested crash/replay scenario equals one |
 | Trace crosses processes | durable span tree contains both worker IDs and takeover |
 | Metrics are available | `/metrics` assertions and demo URL |
 | Local mode still works | complete existing backend suite |

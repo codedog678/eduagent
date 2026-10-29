@@ -13,9 +13,11 @@ from .database import (
     EventLog,
 )
 from .session import async_session, get_db, init_db, close_db
+from core.distributed.models import DistributedBase
 
 __all__ = [
     "Base",
+    "DistributedBase",
     "Learner",
     "KnowledgeState",
     "LearningRecord",

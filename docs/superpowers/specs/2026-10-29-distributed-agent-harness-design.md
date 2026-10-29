@@ -294,7 +294,7 @@ active -> rolled_back
 | API 提交后 Dispatcher 崩溃 | Outbox 对账后重新发布 |
 | Run Worker 执行中强杀 | 租约到期，另一 Worker 接管 |
 | Redis 短暂不可用 | PostgreSQL 状态不丢失，恢复后补发 |
-| 同一 Run 重复投递 | 幂等命中，不重复副作用 |
+| 同一 Run 重复投递 | Run 状态机拒绝重复执行；测试场景中的 SQLite 请求幂等使业务提交仅一次 |
 | 专家重复或迟到结果 | 合并或拒绝，记录原因 |
 | 两 Worker 同时提交 | 仅当前 fencing token 成功 |
 | 模型调用超时但可能计费 | 不提交结果，账本保留未知/预留费用 |
@@ -331,7 +331,9 @@ active -> rolled_back
 - 内部 span、OTLP 可选导出和 Prometheus 指标；
 - 两 Worker 强杀接管演示。
 
-完成标志：现有业务在 distributed profile 下可运行，重复副作用为 0，Worker 崩溃后自动恢复。
+完成标志：现有业务在 distributed profile 下可运行，Worker 崩溃后自动恢复；
+在覆盖的崩溃/重放测试中，同一 `request_id` 的 SQLite 业务提交仅一次。M1
+不宣称 PostgreSQL 与 SQLite 跨库原子提交，也不宣称网络调用 exactly-once。
 
 ### M2：Bounded Expert Plane
 
