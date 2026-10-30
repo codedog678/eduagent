@@ -62,6 +62,7 @@ class RunContext:
     task_id: str | None = None
     execution_authority: RunExecutionAuthority | None = None
     expert_gateway: Any = None
+    expert_deadlines: dict[str, Any] = field(default_factory=dict)
 
     def consume(self, resource):
         self.remaining()

@@ -112,7 +112,7 @@ class HistoryRecord(FrozenContract):
     source_ref: SourceRef
     role: str = Field(min_length=1, max_length=32)
     recorded_at: UtcDateTime
-    knowledge_id: Identifier | None = None
+    knowledge_id: Identifier | Literal["*"] | None = None
     content: str = Field(max_length=16000)
 
 

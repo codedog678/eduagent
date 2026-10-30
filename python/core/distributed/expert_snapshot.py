@@ -88,17 +88,18 @@ class ExpertSnapshotBuilder:
             ToolExecutor(ctx).knowledge_context(ctx.knowledge_id)
         )
         records = self._history_records(ctx)
-        verified = set(getattr(ctx, "source_refs", ()))
+        verified = {
+            item.get("source_ref")
+            for item in getattr(ctx, "read_evidence", {}).values()
+            if isinstance(item, dict)
+            and isinstance(item.get("source_ref"), str)
+        }
         verified.update(
             item["source_ref"]
             for item in stable_memories
             if isinstance(item, dict) and isinstance(item.get("source_ref"), str)
         )
-        verified.update(
-            item.get("source_ref")
-            for item in getattr(ctx, "read_evidence", {}).values()
-            if isinstance(item, dict) and isinstance(item.get("source_ref"), str)
-        )
+        verified.update(self._ancestor_source_refs(step, plan))
         included_refs = {record.source_ref for record in records}
         stable_refs = {
             item["source_ref"]
@@ -106,6 +107,12 @@ class ExpertSnapshotBuilder:
             if isinstance(item, dict) and isinstance(item.get("source_ref"), str)
         }
 
+        frozen_practice_policy = {
+            **practice_policy(ctx, plan),
+            "practice_already_prepared": bool(
+                plan.practice_quiz_id or ctx.prepared_quiz
+            ),
+        }
         values = public_value({
             "learner_id": ctx.learner,
             "knowledge_id": ctx.knowledge_id,
@@ -114,7 +121,7 @@ class ExpertSnapshotBuilder:
             "goal": plan.goal,
             "constraints": list(plan.constraints),
             "effective_policy_hash": ctx.effective_policy_hash,
-            "practice_policy": practice_policy(ctx, plan),
+            "practice_policy": frozen_practice_policy,
             "knowledge_state": ctx.model_state,
             "learner_profile": ctx.profile_state,
             "review_queue": ctx.review_queue,
@@ -151,6 +158,27 @@ class ExpertSnapshotBuilder:
         # Role conversion above rejects unsupported expert roles before work is queued.
         _ = role
         return snapshot
+
+    @staticmethod
+    def _ancestor_source_refs(step, plan) -> set[str]:
+        by_id = {
+            item.step_id: item
+            for item in getattr(plan, "steps", ())
+        }
+        ancestor_ids: set[str] = set()
+        queue = list(getattr(step, "depends_on", ()))
+        while queue:
+            step_id = queue.pop()
+            if step_id in ancestor_ids or step_id not in by_id:
+                continue
+            ancestor_ids.add(step_id)
+            queue.extend(by_id[step_id].depends_on)
+        return {
+            source_ref
+            for step_id, result in getattr(plan, "results", {}).items()
+            if step_id in ancestor_ids and result.status == "completed"
+            for source_ref in result.source_refs
+        }
 
     @staticmethod
     def _quiz_context(quiz: Any) -> dict[str, Any] | None:

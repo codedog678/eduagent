@@ -1,14 +1,18 @@
 """协调闭环的行为验证；模拟模型计入真实父预算，不访问供应商。"""
 
 import json
+from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 import pytest
 
 from config.settings import settings
+from core.agent_errors import AgentExecutionError
 from core.coordination_models import AgentResult, LearningPlan, PlanStep
 from core.coordinator import Coordinator
 from core.llm_service import LLMResponse, NativeTurn, get_llm_service
 from core.run_context import active_run
+from core.distributed.expert_contracts import RunExecutionAuthority
 from core.specialist_runtime import SpecialistRuntime
 from tests.test_memory_coordination import call, context, harness, remote_plan, seed
 
@@ -75,7 +79,11 @@ async def test_specialist_selects_search_then_raw_read_and_restores_parent(harne
             return NativeTurn(stop_reason="tool_calls", tool_calls=[
                 call("search_learning_history", query="mistake")])
         if len(observed) == 2:
-            assert ref in json.loads(messages[-1]["content"])["source_refs"]
+            search = json.loads(messages[-1]["content"])
+            assert ref in {
+                item["source_ref"] for item in search["data"]["items"]
+            }
+            assert search["source_refs"] == []
             return NativeTurn(stop_reason="tool_calls", tool_calls=[
                 call("read_learning_history", source_ref=ref)])
         assert "原始记录" in json.loads(messages[-1]["content"])["data"]["content"]
@@ -85,6 +93,83 @@ async def test_specialist_selects_search_then_raw_read_and_restores_parent(harne
     assert (ctx.role, ctx.task_id, ctx.max_model_calls, ctx.max_tool_calls) == ("Coordinator", "parent", 8, 16)
     assert ctx.model_calls == 3 and ctx.tool_calls == 2
     assert ctx.read_refs == [ref]
+
+
+@pytest.mark.asyncio
+async def test_inline_engine_usage_is_charged_exactly_once(harness):
+    ctx = context(harness)
+    plan = LearningPlan(goal="review", steps=plan_steps())
+    result = await SpecialistRuntime(
+        ctx,
+        Model(lambda *_: final("a"), ctx),
+    ).run(plan.steps[0], plan)
+
+    assert result.status == "completed"
+    assert ctx.model_calls == 1
+    charged = [
+        event
+        for event in ctx.steps
+        if event["kind"] == "expert_usage_charged"
+    ]
+    assert len(charged) == 1
+    assert charged[0]["model_calls"] == 1
+
+
+def test_distributed_request_hash_is_stable_within_parent_epoch(harness):
+    ctx = context(harness)
+    ctx.effective_policy_hash = "b" * 64
+    parent_deadline = datetime.now(UTC) + timedelta(seconds=120)
+    ctx.execution_authority = RunExecutionAuthority(
+        distributed_run_id=uuid4(),
+        run_fencing_token=7,
+        trace_id="a" * 32,
+        attempt_number=2,
+        worker_id="run-worker",
+        parent_deadline_at=parent_deadline,
+    )
+    plan = LearningPlan(goal="review", steps=plan_steps())
+    runtime = SpecialistRuntime(ctx, Model(lambda *_: final("a"), ctx))
+
+    first = runtime._request(plan.steps[0], plan)
+    second = runtime._request(plan.steps[0], plan)
+
+    assert first.input_hash == second.input_hash
+    assert first.budget.deadline_at == second.budget.deadline_at
+
+
+def test_late_distributed_delegation_gets_fresh_bounded_deadline(
+    harness,
+    monkeypatch,
+):
+    ctx = context(harness)
+    ctx.deadline = __import__("time").monotonic() + 300
+    ctx.effective_policy_hash = "b" * 64
+    parent_deadline = datetime.now(UTC) + timedelta(seconds=300)
+    ctx.execution_authority = RunExecutionAuthority(
+        distributed_run_id=uuid4(),
+        run_fencing_token=7,
+        trace_id="a" * 32,
+        attempt_number=2,
+        worker_id="run-worker",
+        parent_deadline_at=parent_deadline,
+    )
+    monkeypatch.setattr(
+        settings,
+        "distributed_attempt_timeout_seconds",
+        300,
+    )
+    monkeypatch.setattr(settings, "expert_max_job_seconds", 120)
+    plan = LearningPlan(goal="review", steps=plan_steps())
+
+    frozen = SpecialistRuntime(
+        ctx,
+        Model(lambda *_: final("a"), ctx),
+    )._request(plan.steps[0], plan)
+
+    remaining = (
+        frozen.budget.deadline_at - datetime.now(UTC)
+    ).total_seconds()
+    assert 115 <= remaining <= 120
 
 
 @pytest.mark.asyncio
@@ -113,12 +198,17 @@ async def test_curriculum_write_attempt_is_denied_even_when_not_advertised(harne
     def handler(messages, tools):
         nonlocal count
         count += 1
-        if count == 1:
-            return NativeTurn(stop_reason="tool_calls", tool_calls=[
-                call("prepare_practice", knowledge_id="vocab_basic")])
-        assert json.loads(messages[-1]["content"])["status"] == "denied"
-        return final("c")
-    await SpecialistRuntime(ctx, Model(handler, ctx)).run(plan.steps[1], plan)
+        return NativeTurn(stop_reason="tool_calls", tool_calls=[
+            call("prepare_practice", knowledge_id="vocab_basic")])
+    with pytest.raises(
+        AgentExecutionError,
+        match="expert_action_not_allowed",
+    ):
+        await SpecialistRuntime(ctx, Model(handler, ctx)).run(
+            plan.steps[1],
+            plan,
+        )
+    assert count == 1
     assert touched == []
 
 

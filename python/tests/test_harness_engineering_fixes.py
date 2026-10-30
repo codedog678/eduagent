@@ -7,6 +7,7 @@ import pytest
 from fastapi import HTTPException
 
 from config.settings import settings
+from core.agent_errors import AgentExecutionError
 from core.coordination_models import LearningPlan
 from core.coordinator import Coordinator
 from core.llm_service import LLMResponse, NativeTurn, get_llm_service
@@ -63,8 +64,8 @@ async def test_tool_overflow_returns_budget_feedback_without_execution(harness):
                 call("get_knowledge_context"),
                 call("get_learner_profile"),
                 call("search_learning_history", query="unknown"),
-                call("read_learning_history", source_ref="message:unknown"),
                 call("get_knowledge_context"),
+                call("get_learner_profile"),
             ]
             for index, item in enumerate(calls):
                 item.id = f"read-{index}"
@@ -292,15 +293,13 @@ async def test_invalid_tool_arguments_identified_when_expert_cannot_recover(harn
     def handler(messages, tools):
         nonlocal count
         count += 1
-        if count == 1:
-            return NativeTurn(stop_reason="tool_calls", tool_calls=[
-                call("search_learning_history", limit="five")])
-        assert json.loads(messages[-1]["content"])["status"] == "invalid_arguments"
-        return final("a", status="failed")
+        return NativeTurn(stop_reason="tool_calls", tool_calls=[
+            call("search_learning_history", limit="five")])
 
     Model(handler).install(monkeypatch)
     result = await harness.converse("a", "invalid-tool", "vocab_basic", "诊断后安排复习")
     assert result["learning_plan"]["results"]["a"]["error_code"] == "tool_argument_invalid"
+    assert count == 1
 
 
 def test_practice_reservation_uses_original_input_when_planner_omits_it(harness):
@@ -359,14 +358,16 @@ async def test_read_retry_cannot_spend_final_tool_budget(harness, monkeypatch):
 
     def handler(messages, tools):
         turns.append(messages)
-        if len(turns) == 1:
-            return NativeTurn(stop_reason="tool_calls", tool_calls=[
-                call("read_learning_history", source_ref=ref)])
-        assert tools == []
-        assert json.loads(messages[-1]["content"])["error_code"] == "budget_exhausted"
-        return final("a", status="failed")
+        return NativeTurn(stop_reason="tool_calls", tool_calls=[
+            call("read_learning_history", source_ref=ref)])
 
-    result = await SpecialistRuntime(ctx, Model(handler, ctx)).run(plan.steps[0], plan)
-    assert result.error_code == "budget_exhausted"
+    with pytest.raises(
+        AgentExecutionError,
+        match="source_unavailable",
+    ):
+        await SpecialistRuntime(ctx, Model(handler, ctx)).run(
+            plan.steps[0],
+            plan,
+        )
     assert ctx.tool_calls == 1 and len(reads) == 1
-    assert ctx.model_calls == 2
+    assert ctx.model_calls == 1

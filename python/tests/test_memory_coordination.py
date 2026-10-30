@@ -245,7 +245,7 @@ def test_plan_rejects_cycles_roles_and_duplicate_ids():
 async def test_local_coordinator_selects_roles_and_replays(harness):
     result = await harness.converse("a", "plan", "vocab_basic", "结合上次错误安排十分钟复习")
     assert [s["agent"] for s in result["learning_plan"]["steps"]] == ["Assessment", "Curriculum", "Tutor"]
-    assert "暂无匹配" in result["agent_insights"]["specialists"][0]["findings"][0]
+    assert "未形成可引用" in result["agent_insights"]["specialists"][0]["findings"][0]
     assert await harness.converse("a", "plan", "vocab_basic", "结合上次错误安排十分钟复习") == result
     assert harness.db.execute("SELECT count(*) FROM learning_plans").fetchone()[0] == 1
     assert harness.orch.get_learner_model_sync("a").get_state("vocab_basic").mastery == .1

@@ -140,6 +140,34 @@ def test_freeze_builds_bounded_redacted_copy_without_parent_objects():
     assert "prepare_practice" not in encoded.decode()
 
 
+def test_history_record_accepts_global_memory_scope():
+    record = HistoryRecord(
+        source_ref="memory:global",
+        role="memory",
+        recorded_at=NOW,
+        knowledge_id="*",
+        content="全局学习偏好",
+    )
+
+    assert record.knowledge_id == "*"
+
+
+def test_search_candidate_in_parent_source_refs_is_not_preverified():
+    ctx = context()
+    ctx.source_refs = ["message:a-own"]
+    snapshot = ExpertSnapshotBuilder(
+        max_snapshot_bytes=8_000,
+        max_history_bytes=1_000,
+    ).freeze(
+        ctx,
+        SimpleNamespace(agent="Assessment", depends_on=[]),
+        plan(),
+        SimpleNamespace(),
+    )
+
+    assert "message:a-own" not in snapshot.verified_source_refs
+
+
 def snapshot():
     return ExpertSnapshot(
         learner_id="alice",
