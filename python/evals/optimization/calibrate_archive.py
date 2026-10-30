@@ -17,9 +17,22 @@ from evals.live_scorers import score_live_case
 from evals.optimization.budget import TextModel
 from evals.optimization.calibration import verify_manifest
 from evals.optimization.ledger import DurableBudget, SharedLedger
-from evals.optimization.protocol import digest
-from evals.optimization.scoring import JUDGE_PROMPT, judge_observed, judge_payload, validate_judgment
+from evals.optimization.judge_v3 import Verdict, normalize_result
+from evals.optimization.scoring import (
+    judge_metadata, judge_observed, judge_payload, verify_judge_metadata,
+)
 from evals.optimization.leakage import combine_judgment, protocol_identity, load_contract
+
+
+def validate_cached_score(score, case, observed):
+    payload = judge_payload(case, observed)
+    raw_v3 = verify_judge_metadata(score, payload)
+    if raw_v3.verdict == Verdict.UNKNOWN:
+        raise ValueError("cached calibration judgment is unknown")
+    expected = combine_judgment(case, observed, normalize_result(raw_v3, payload))
+    if any(score.get(key) != expected[key] for key in expected):
+        raise ValueError("cached hybrid calibration mismatch")
+    return expected
 
 
 async def run(args):
@@ -50,13 +63,8 @@ async def run(args):
             cached = json.loads(evidence.read_text())
             score = cached.get("score", {})
             if (score.get("review_status") == "ai_reviewed"
-                    and score.get("judge_prompt_sha256") == digest(JUDGE_PROMPT)
-                    and score.get("judge_input_sha256") == digest(judge_payload(case, observed))
                     and score.get("leakage", {}).get("protocol") == protocol_identity()):
-                raw = validate_judgment(json.dumps(score["raw_judgment"]), case, observed)
-                expected = combine_judgment(case, observed, raw.model_dump())
-                if any(score.get(key) != expected[key] for key in expected):
-                    raise ValueError("cached hybrid calibration mismatch")
+                validate_cached_score(score, case, observed)
                 output_items.append({
                     **{key: value for key, value in item.items()
                        if key not in {"source_path", "response_override"}},
@@ -70,9 +78,13 @@ async def run(args):
         try:
             judged, payload = await judge_observed(case, observed, text_model)
             score = {
-                **combine_judgment(case, observed, judged.model_dump()), "review_status": "ai_reviewed",
-                "judge_prompt_sha256": digest(JUDGE_PROMPT),
-                "judge_input_sha256": digest(payload),
+                **combine_judgment(
+                    case, observed, normalize_result(judged.result, payload)),
+                "review_status": (
+                    "unknown" if judged.result.verdict == Verdict.UNKNOWN else "ai_reviewed"),
+                **judge_metadata(
+                    judged, payload,
+                    call_count=2 if judged.repair_response is not None else 1),
             }
         except BaseException as exc:
             interrupted = {

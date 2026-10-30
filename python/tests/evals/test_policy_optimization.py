@@ -19,7 +19,7 @@ from evals.optimization.budget import OptimizationBudget, OptimizationStopped
 from evals.optimization.cli import acceptance, run_search
 from evals.optimization.protocol import (
     assert_holdout_disjoint, load_policy, load_protocol, policy_artifact,
-    prepare_protocol, private_literals, seed_candidate, validate_candidate,
+    prepare_protocol, private_literals, scorer_digest, seed_candidate, validate_candidate,
 )
 from evals.optimization.scoring import evidence_matches, score_with_judge, validate_judgment
 
@@ -45,12 +45,36 @@ def test_protocol_freezes_all_50_and_keeps_legacy_on_train(tmp_path):
     assert all(c.case_id in train for c in cases if c.template_case_id is None)
     assert all(group["train"] and group["dev_validation"] for group in protocol["counts"].values())
     assert len(protocol["reflection_train_ids"]) == 12
+    assert protocol["scorer_sha256"] == scorer_digest()
+    assert protocol["judge_protocol_sha256"]
     assert set(protocol["reflection_train_ids"]) <= train
     path = tmp_path / "protocol.json"
     path.write_text(json.dumps(protocol))
     assert load_protocol(path, DATASET)[0] == protocol
     protocol["dev_validation_ids"].append(protocol["train_ids"][0])
     path.write_text(json.dumps(protocol))
+    with pytest.raises(ValueError, match="protocol mismatch"):
+        load_protocol(path, DATASET)
+
+
+@pytest.mark.parametrize("component", ["main_prompt", "repair_prompt", "judge_module"])
+def test_any_judge_v3_protocol_change_invalidates_frozen_protocol(
+        tmp_path, monkeypatch, component):
+    from evals.optimization import scoring
+    protocol = prepare_protocol(DATASET)
+    path = tmp_path / "protocol.json"
+    path.write_text(json.dumps(protocol))
+    if component == "main_prompt":
+        monkeypatch.setattr(scoring, "JUDGE_V3_PROMPT", scoring.JUDGE_V3_PROMPT + " changed")
+    elif component == "repair_prompt":
+        monkeypatch.setattr(
+            scoring, "JUDGE_V3_REPAIR_PROMPT", scoring.JUDGE_V3_REPAIR_PROMPT + " changed")
+    else:
+        original = scoring.file_digest
+        monkeypatch.setattr(
+            scoring, "file_digest",
+            lambda value: "changed" if str(value).endswith("judge_v3.py") else original(value),
+        )
     with pytest.raises(ValueError, match="protocol mismatch"):
         load_protocol(path, DATASET)
 
@@ -161,12 +185,12 @@ class MockTextModel:
                 "verdict": "pass" if passed else "fail",
                 "evidence_refs": (
                     [response_ref] if criterion_id.startswith("semantic:") and response_ref
-                    else [
+                    else ([
                         key for key in payload["evidence_refs"]
                         if key.startswith(
                             "call:" + criterion_id.removeprefix("decision:") + ":"
                         )
-                    ]
+                    ] or ["no_calls:" + criterion_id.removeprefix("decision:")])
                 ),
                 "rationale": "模拟判定，仅用于测试",
             } for criterion_id in payload["criterion_ids"]],
@@ -247,7 +271,9 @@ def test_invalid_judge_coverage_evidence_and_boolean_rejected(tmp_path):
 
 def test_no_partial_batch_scoring_when_budget_is_insufficient(tmp_path):
     case = load_live_cases(DATASET)[0]
-    budget = OptimizationBudget(max_requests=1, max_cny=1)
+    # 任务上限 + 1 只够旧的一次 Judge 公式；v3 必须为 repair 再预留一次。
+    budget = OptimizationBudget(
+        max_requests=case.expected_model_requests_max + 1, max_cny=1)
     previous = settings.enable_coordinator
     with TutorGEPAAdapter([case], [case.case_id], budget, tmp_path,
                           service=LLMService(), service_factory=mocked_service) as adapter:
@@ -255,6 +281,14 @@ def test_no_partial_batch_scoring_when_budget_is_insufficient(tmp_path):
             adapter.evaluate_rows([case], seed_candidate())
         assert not adapter.rows and budget.requests == 0
     assert settings.enable_coordinator == previous
+
+
+def test_standalone_cli_reserves_two_judge_calls_per_metric():
+    from evals.optimization.cli import comparison_request_reserve, metric_request_reserve
+    cases = load_live_cases(DATASET)[:2]
+    assert metric_request_reserve(cases[0]) == cases[0].expected_model_requests_max + 2
+    assert comparison_request_reserve(cases, 3) == 6 * sum(
+        case.expected_model_requests_max + 2 for case in cases)
 
 
 def test_acceptance_keeps_baseline_on_hard_or_capability_regression():
@@ -353,11 +387,36 @@ def test_evidence_excerpts_allow_omission_but_not_fabrication_or_reordering():
 @pytest.mark.asyncio
 async def test_candidate_context_exhaustion_is_failure_but_timeout_stops():
     case = load_live_cases(DATASET)[0]
-    observed = {"fixture_validation": {"valid": True}}
+    observed = {"fixture_validation": {"valid": True}, "steps": {}}
     automatic = {"execution_outcome": "incomplete",
-                 "execution_failures": [{"reason": "context_budget"}]}
+                 "execution_failures": [{"reason": "context_budget"}],
+                 "automatic_passed": False}
     scored = await score_with_judge(case, observed, automatic, None)
     assert scored["score"] == 0 and scored["task_success"] is False
+    assert scored["judge_protocol_version"] == 3
+    assert scored["judge_call_count"] == 0
+    assert scored["judge_verdict"] == "unknown"
+    assert scored["judge_diagnostics"]["raw_response"] is None
     automatic["execution_failures"][0]["reason"] = "handler_timeout"
     with pytest.raises(OptimizationStopped, match="timeout"):
         await score_with_judge(case, observed, automatic, None)
+
+
+@pytest.mark.asyncio
+async def test_unfinished_row_is_v3_verified_then_rejected_as_unknown(monkeypatch):
+    from evals.optimization.gates import verify_raw_row
+    case = load_live_cases(DATASET)[0]
+    observed = {"fixture_validation": {"valid": True}, "steps": {}}
+    automatic = {
+        "execution_outcome": "incomplete",
+        "execution_failures": [{"reason": "context_budget"}],
+        "automatic_passed": False,
+    }
+    score = await score_with_judge(case, observed, automatic, None)
+    monkeypatch.setattr("evals.live_scorers.score_live_case", lambda *args: automatic)
+    row = {"observed": observed, "automatic": automatic, "score": score}
+    with pytest.raises(ValueError, match="unknown judge result"):
+        verify_raw_row(row, case)
+    del score["judge_protocol_version"]
+    with pytest.raises(ValueError, match="protocol version"):
+        verify_raw_row(row, case)

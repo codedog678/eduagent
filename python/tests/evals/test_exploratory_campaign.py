@@ -110,7 +110,7 @@ def test_unknown_cannot_enter_scalar_gepa_or_reflection(tmp_path):
                                            ["retrieval_rules"])
 
 
-def test_real_adapter_preserves_judge_failure_as_unknown_only_when_enabled(tmp_path):
+def test_real_adapter_persists_replayable_unknown_but_excludes_it_from_gepa(tmp_path):
     from core.llm_service import LLMService
     from evals.live_cases import load_live_cases
     from evals.optimization.adapter import TutorGEPAAdapter
@@ -127,16 +127,15 @@ def test_real_adapter_preserves_judge_failure_as_unknown_only_when_enabled(tmp_p
 
     with TutorGEPAAdapter([case], [], budget, tmp_path / "strict", service=LLMService(),
                           text_model=InvalidJudge(), service_factory=mocked_service) as adapter:
-        with pytest.raises(OptimizationStopped):
-            adapter.evaluate_rows([case], builtin_components())
-    with TutorGEPAAdapter([case], [], budget, tmp_path / "explore", service=LLMService(),
-                          text_model=InvalidJudge(), service_factory=mocked_service) as adapter:
-        adapter.tolerate_judge_failure = True
-        adapter.reuse_completed = True
         result = adapter.evaluate_rows([case], builtin_components())[0]
-        assert result["scoring_status"] == "unknown" and result["score"]["score"] is None
-        assert result["score"]["task_success"] is None
-        assert result["judge_diagnostic"]["raw_response"] == '{"semantic": [], "decisions": []}'
+        assert result["scoring_status"] == "completed"
+        assert result["score"]["review_status"] == "unknown"
+        assert result["score"]["judge_call_count"] == 2
+        assert result["score"]["score"] == 0
+        assert result["score"]["judge_diagnostics"]["raw_response"] == (
+            '{"semantic": [], "decisions": []}')
+        adapter.reuse_completed = True
         requests = budget.requests
-        assert adapter.evaluate_rows([case], builtin_components())[0] == result
+        with pytest.raises(OptimizationStopped, match="unknown"):
+            adapter.evaluate([case], builtin_components())
         assert budget.requests == requests

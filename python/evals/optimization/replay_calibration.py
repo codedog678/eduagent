@@ -8,8 +8,9 @@ from evals.io import write_json
 from evals.live_cases import load_live_cases
 from evals.optimization.calibration import verify_manifest
 from evals.optimization.leakage import combine_judgment, protocol_identity
-from evals.optimization.protocol import digest, file_digest
-from evals.optimization.scoring import JUDGE_PROMPT, judge_payload, validate_judgment
+from evals.optimization.protocol import file_digest
+from evals.optimization.judge_v3 import Verdict, normalize_result
+from evals.optimization.scoring import judge_payload, verify_judge_metadata
 
 
 def replay(manifest_path, dataset_path, output):
@@ -25,11 +26,11 @@ def replay(manifest_path, dataset_path, output):
         record = json.loads(source.read_text())
         case = cases[item["case_id"]]
         score = record["score"]
-        if (score["judge_prompt_sha256"] != digest(JUDGE_PROMPT)
-                or score["judge_input_sha256"] != digest(judge_payload(case, record["observed"]))):
-            raise ValueError("source judge prompt or input changed")
-        raw = {key: score[key] for key in ("semantic", "decisions")}
-        validate_judgment(json.dumps(raw), case, record["observed"])
+        payload = judge_payload(case, record["observed"])
+        raw_v3 = verify_judge_metadata(score, payload)
+        if raw_v3.verdict == Verdict.UNKNOWN:
+            raise ValueError("source judge result is unknown")
+        raw = normalize_result(raw_v3, payload)
         combined = combine_judgment(case, record["observed"], raw)
         record = {**record, "case": case.model_dump(by_alias=True),
                   "source_evidence_sha256": item["evidence_sha256"],

@@ -34,6 +34,14 @@ def file_digest(path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def scorer_digest() -> str:
+    root = Path(__file__).parent
+    return digest({
+        "scoring.py": file_digest(root / "scoring.py"),
+        "judge_v3.py": file_digest(root / "judge_v3.py"),
+    })
+
+
 def seed_candidate() -> dict:
     return {"retrieval_rules": RETRIEVAL_RULES}
 
@@ -87,6 +95,7 @@ def private_literals(cases) -> tuple[str, ...]:
 
 def prepare_protocol(path: Path, seed: int = 42) -> dict:
     from evals.optimization.leakage import load_contract, protocol_identity
+    from evals.optimization.scoring import judge_protocol_digest
     cases = load_live_cases(path)
     for case in cases:
         require_rsi_contract(case)
@@ -118,7 +127,8 @@ def prepare_protocol(path: Path, seed: int = 42) -> dict:
         "holdout": "must be supplied separately after development",
         "seed_policy": policy_artifact(seed_candidate()),
         "runtime": RUNTIME, "gepa_version": GEPA_VERSION,
-        "scorer_sha256": file_digest(Path(__file__).with_name("scoring.py")),
+        "scorer_sha256": scorer_digest(),
+        "judge_protocol_sha256": judge_protocol_digest(),
         "leakage_protocol": protocol_identity(),
         "semantic_contract_sha256": file_digest(
             Path(__file__).parents[1] / "semantic_contract.py"),

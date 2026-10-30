@@ -350,6 +350,7 @@ def test_registry_registration_parent_inheritance_and_artifact_binding(tmp_path,
 
 def test_real_manifest_rejects_missing_or_mixed_model_identity(tmp_path):
     from evals.optimization.calibration import verify_manifest
+    from evals.optimization.leakage import protocol_identity
     from evals.optimization.protocol import file_digest
     from evals.optimization.scoring import JUDGE_PROMPT
     evidence = tmp_path / "row.json"
@@ -362,7 +363,8 @@ def test_real_manifest_rejects_missing_or_mixed_model_identity(tmp_path):
     }
     atomic_json(evidence, record)
     manifest = tmp_path / "manifest.json"
-    atomic_json(manifest, {"items": [{"evidence_path": "row.json",
+    atomic_json(manifest, {"scoring_protocol": protocol_identity(),
+                           "items": [{"evidence_path": "row.json",
                                      "evidence_sha256": file_digest(evidence),
                                      "step_id": "s1", "check_id": "S1"}]})
     with pytest.raises(ValueError, match="identity"):

@@ -8,17 +8,28 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
 from evals.live_scorers import calls
 from evals.optimization.budget import OptimizationStopped
 from evals.optimization.judge_v3 import (
+    JUDGE_V3_REPAIR_PROMPT,
     JUDGE_V3_PROMPT,
     Verdict,
     judge_once,
+    not_observed_outcome,
     normalize_result,
+    replay_outcome,
 )
-from evals.optimization.protocol import digest
+from evals.optimization.protocol import digest, file_digest
 from evals.semantic_contract import require_rsi_contract
 from evals.optimization.leakage import combine_judgment, load_contract
 
 
 JUDGE_PROMPT = JUDGE_V3_PROMPT
+
+
+def judge_protocol_digest() -> str:
+    return digest({
+        "judge_v3_sha256": file_digest(__file__.replace("scoring.py", "judge_v3.py")),
+        "main_prompt": JUDGE_V3_PROMPT,
+        "repair_prompt": JUDGE_V3_REPAIR_PROMPT,
+    })
 
 
 class StrictModel(BaseModel):
@@ -137,9 +148,31 @@ def judge_payload(case, observed):
             evidence_refs[f"response:{step_id}"] = step["response"]
         for index, call in enumerate(step["calls"]):
             evidence_refs[f"call:{step_id}:{index}"] = json.dumps(call, ensure_ascii=False)
+        if step["action"] == "converse" and step["status"] == "completed" and not step["calls"]:
+            evidence_refs[f"no_calls:{step_id}"] = json.dumps(
+                {"step_id": step_id, "call_count": 0}, separators=(",", ":"))
+    response_refs = [ref for ref in evidence_refs if ref.startswith("response:")]
+    criterion_evidence = {}
+    for criterion_id in criterion_ids:
+        if criterion_id.startswith("semantic:"):
+            criterion_evidence[criterion_id] = {
+                "allowed_refs": response_refs,
+                "required_refs": [],
+            }
+        else:
+            step_id = criterion_id.removeprefix("decision:")
+            call_refs = [
+                ref for ref in evidence_refs if ref.startswith(f"call:{step_id}:")
+            ]
+            required = call_refs or [f"no_calls:{step_id}"]
+            criterion_evidence[criterion_id] = {
+                "allowed_refs": required,
+                "required_refs": required,
+            }
     return {
         "criterion_ids": criterion_ids,
         "evidence_refs": evidence_refs,
+        "criterion_evidence": criterion_evidence,
         "semantic_checks": [c.model_dump() for c in case.hard_checks
                             if c.method == "semantic_review"],
         "expected_behavior": case.expected_behavior,
@@ -152,6 +185,15 @@ def judge_payload(case, observed):
         ],
         "reference_facts_for_evaluation_only": case.initial_facts,
         "steps": steps,
+        "evidence_candidates": {
+            step_id: {
+                "response": step["response"],
+                "calls": [
+                    json.dumps(call, ensure_ascii=False) for call in step["calls"]
+                ],
+            }
+            for step_id, step in steps.items()
+        },
     }
 
 
@@ -159,6 +201,50 @@ async def judge_observed(case, observed, text_model):
     """执行冻结裁判并校验证据；供正式评分与独立校准共用。"""
     payload = judge_payload(case, observed)
     return await judge_once(payload, text_model), payload
+
+
+def judge_metadata(outcome, payload, *, call_count: int) -> dict:
+    """Serialize the complete replayable Judge v3 protocol record."""
+    return {
+        "judge_protocol_version": 3,
+        "judge_protocol_sha256": judge_protocol_digest(),
+        "judge_verdict": outcome.result.verdict,
+        "judge_reason_codes": outcome.result.reason_codes,
+        "raw_judgment_v3": outcome.result.model_dump(mode="json"),
+        "judge_diagnostics": {
+            "raw_response": outcome.raw_response,
+            "repair_response": outcome.repair_response,
+            "validation_errors": outcome.validation_errors,
+            "repaired": outcome.repaired,
+        },
+        "judge_call_count": call_count,
+        "judge_prompt_sha256": digest(JUDGE_PROMPT),
+        "judge_input_sha256": digest(payload),
+    }
+
+
+def verify_judge_metadata(score: dict, payload: dict):
+    """Fail closed unless all frozen identity and replay fields are present and coherent."""
+    if score.get("judge_protocol_version") != 3:
+        raise ValueError("judge protocol version changed")
+    if (score.get("judge_prompt_sha256") != digest(JUDGE_PROMPT)
+            or score.get("judge_protocol_sha256") != judge_protocol_digest()):
+        raise ValueError("judge protocol changed")
+    if score.get("judge_input_sha256") != digest(payload):
+        raise ValueError("judge input binding changed")
+    try:
+        result = replay_outcome(
+            payload,
+            diagnostics=score["judge_diagnostics"],
+            judge_call_count=score["judge_call_count"],
+            raw_judgment_v3=score["raw_judgment_v3"],
+        )
+    except KeyError as exc:
+        raise ValueError("incomplete judge v3 provenance") from exc
+    if (score.get("judge_verdict") != result.verdict
+            or score.get("judge_reason_codes") != result.reason_codes):
+        raise ValueError("judge v3 result metadata mismatch")
+    return result
 
 
 async def score_with_judge(case, observed, automatic, text_model):
@@ -172,9 +258,13 @@ async def score_with_judge(case, observed, automatic, text_model):
         # 全局请求/费用预算已由 Adapter 判停，不能把所有含 budget 的原因一概当基础设施故障。
         if any(reason and "timeout" in reason for reason in reasons):
             raise OptimizationStopped("execution timeout; incomplete infrastructure run")
-        return {"score": 0.0, "task_success": False, "automatic_passed": False,
+        payload = judge_payload(case, observed)
+        outcome = not_observed_outcome(payload)
+        return {"score": 0.0, "task_success": False,
+                "automatic_passed": automatic["automatic_passed"],
                 "decision_rate": 0.0, "review_status": "not_observed",
-                "semantic": [], "decisions": []}
+                "semantic": [], "decisions": [],
+                **judge_metadata(outcome, payload, call_count=0)}
     outcome, payload = await judge_observed(case, observed, text_model)
     normalized = normalize_result(outcome.result, payload)
     combined = combine_judgment(case, observed, normalized)
@@ -198,19 +288,8 @@ async def score_with_judge(case, observed, automatic, text_model):
         # 有任何任务硬失败时得 0；工具决策只在完成任务后影响排序。
         "score": .8 + .2 * rate if task_success else 0.0,
         "review_status": "unknown" if unknown else "ai_reviewed",
-        "judge_protocol_version": 3,
-        "judge_verdict": outcome.result.verdict,
-        "judge_reason_codes": outcome.result.reason_codes,
-        "raw_judgment_v3": outcome.result.model_dump(mode="json"),
-        "judge_diagnostics": {
-            "raw_response": outcome.raw_response,
-            "repair_response": outcome.repair_response,
-            "validation_errors": outcome.validation_errors,
-            "repaired": outcome.repaired,
-        },
-        "judge_call_count": 2 if outcome.repair_response is not None else 1,
-        "judge_prompt_sha256": digest(JUDGE_PROMPT),
-        "judge_input_sha256": digest(payload),
+        **judge_metadata(
+            outcome, payload, call_count=2 if outcome.repair_response is not None else 1),
     }
 
 

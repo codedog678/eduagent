@@ -1,5 +1,6 @@
 import copy
 import json
+from pathlib import Path
 
 import pytest
 
@@ -98,17 +99,32 @@ def test_development_cannot_become_independent_by_role_flag(tmp_path):
         verify_manifest(tmp_path / "manifest.json")
 
 
+def test_fresh_and_archive_cache_reject_old_v2():
+    from evals.live_cases import load_live_cases
+    from evals.optimization.calibrate_archive import validate_cached_score as archive_cache
+    from evals.optimization.calibrate_fresh import validate_cached_score as fresh_cache
+    root = Path(__file__).resolve().parents[2]
+    case = load_live_cases(root / "evals/datasets/tutor_agent50_rsi_v2.jsonl")[0]
+    observed = {"fixture_validation": {"valid": True}, "steps": {}}
+    old = {"review_status": "ai_reviewed", "semantic": [], "decisions": []}
+    with pytest.raises(ValueError, match="protocol version"):
+        archive_cache(old, case, observed)
+    with pytest.raises(ValueError, match="protocol version"):
+        fresh_cache({"score": old, "observed": observed}, case)
+
+
 @pytest.mark.asyncio
 async def test_invalid_generation_keeps_slot_and_continues_without_retry(tmp_path, monkeypatch):
     from pathlib import Path
     from types import SimpleNamespace
     from evals.optimization import calibrate_fresh as fresh
     from evals.optimization.leakage import protocol_identity
-    from evals.optimization.scoring import JUDGE_PROMPT
+    from evals.optimization.scoring import JUDGE_PROMPT, judge_protocol_digest
     source = Path(__file__).resolve().parents[3] / "docs/evals/rsi-campaigns/20261029-pro-validation/spec.json"
     spec = json.loads(source.read_text())
     spec.update(source_revision="frozen", scoring_protocol=protocol_identity(),
-                judge_prompt_sha256=digest(JUDGE_PROMPT), items=spec["items"][:2],
+                judge_prompt_sha256=digest(JUDGE_PROMPT),
+                judge_protocol_sha256=judge_protocol_digest(), items=spec["items"][:2],
                 start_budget={"requests": 0}, max_new_requests=2)
     write_json(tmp_path / "spec.json", spec)
     monkeypatch.setattr(fresh, "code_revision", lambda: {"python_source_sha256": "frozen"})

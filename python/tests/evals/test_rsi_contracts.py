@@ -69,12 +69,23 @@ async def test_false_positive_cannot_pass_when_semantic_dimension_fails(number, 
     class FrozenJudge:
         async def complete(self, messages, *, role):
             payload = json.loads(messages[-1]["content"])
+            failed = next(
+                "semantic:" + c["id"] for c in payload["semantic_checks"]
+                if c["path"] == failed_dimension
+            )
             return json.dumps({
-                "semantic": [{"id": c["id"], "passed": c["path"] != failed_dimension,
-                              "reason": "测试标注，不代表真实裁判质量", "evidence": response}
-                             for c in payload["semantic_checks"]],
-                "decisions": [{"step_id": "s1", "required_tools_present": True,
-                               "calls": [], "reason": "测试", "evidence": ""}],
+                "schema_version": 3,
+                "verdict": "fail",
+                "reason_codes": ["criterion_failed"],
+                "criterion_results": [{
+                    "criterion_id": criterion_id,
+                    "verdict": "fail" if criterion_id == failed else "pass",
+                    "evidence_refs": (
+                        ["response:s1"] if criterion_id.startswith("semantic:")
+                        else ["no_calls:s1"]
+                    ),
+                    "rationale": "测试标注，不代表真实裁判质量",
+                } for criterion_id in payload["criterion_ids"]],
             })
     scored = await score_with_judge(case, observed, {
         "execution_outcome": "completed", "automatic_passed": True,
@@ -149,7 +160,7 @@ def test_calibration_requires_actual_distinct_cases_and_discloses_assistant_labe
     assert calibration_report(rows)["status"] == "incomplete"
 
 
-def test_calibration_positive_requires_all_semantic_dimensions(tmp_path):
+def test_old_v2_calibration_cannot_bypass_v3_provenance(tmp_path):
     from evals.io import write_json
     from evals.optimization.protocol import digest, file_digest
     record = {
@@ -174,8 +185,8 @@ def test_calibration_positive_requires_all_semantic_dimensions(tmp_path):
         "group": "hint_compliant", "reference_passed": True,
         "reviewer_kind": "assistant", "reviewer": "test",
     }]})
-    report = verify_manifest(tmp_path / "manifest.json")
-    assert report["matches"]["hint_compliant"] == 0
+    with pytest.raises(ValueError, match="protocol"):
+        verify_manifest(tmp_path / "manifest.json")
 
 
 def test_judge_prompt_requires_option_aware_indirect_leak_review():

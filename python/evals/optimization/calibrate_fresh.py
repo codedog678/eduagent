@@ -18,7 +18,11 @@ from evals.optimization.budget import TextModel
 from evals.optimization.leakage import combine_judgment, protocol_identity
 from evals.optimization.ledger import DurableBudget, SharedLedger
 from evals.optimization.protocol import file_digest
-from evals.optimization.scoring import JUDGE_PROMPT, judge_observed
+from evals.optimization.judge_v3 import Verdict, normalize_result
+from evals.optimization.scoring import (
+    JUDGE_PROMPT, judge_metadata, judge_observed, judge_protocol_digest,
+    verify_judge_metadata,
+)
 
 GENERATOR = {"provider": "deepseek", "model": "deepseek-v4-pro", "thinking": "disabled"}
 JUDGE = {"provider": "deepseek", "model": "deepseek-flash", "thinking": "disabled"}
@@ -102,6 +106,7 @@ def prepare(root, dataset):
     spec = {"schema": "eduagent.fresh-calibration.v1", "created_at": now(),
             "generator_identity": GENERATOR, "judge_identity": JUDGE,
             "scoring_protocol": protocol_identity(), "judge_prompt_sha256": digest(JUDGE_PROMPT),
+            "judge_protocol_sha256": judge_protocol_digest(),
             "source_revision": code_revision()["python_source_sha256"],
             "dataset_sha256": file_digest(dataset), "pricing": PRO_PRICING,
             "budget_id": budget.budget_id, "start_budget": budget.summary(),
@@ -112,7 +117,8 @@ def prepare(root, dataset):
 def verify_spec(spec):
     if (spec["generator_identity"] != GENERATOR or spec["judge_identity"] != JUDGE
             or spec["scoring_protocol"] != protocol_identity()
-            or spec["judge_prompt_sha256"] != digest(JUDGE_PROMPT)):
+            or spec["judge_prompt_sha256"] != digest(JUDGE_PROMPT)
+            or spec.get("judge_protocol_sha256") != judge_protocol_digest()):
         raise ValueError("frozen model/scoring configuration changed")
 
 
@@ -153,6 +159,11 @@ def verify_fresh_manifest(root, manifest):
                 or record["judge_identity"] != JUDGE
                 or item["semantic_ids"] != frozen["semantic_ids"]):
             raise ValueError("fresh case/response binding mismatch")
+
+
+def validate_cached_score(record, case):
+    from evals.optimization.scoring import judge_payload
+    return verify_judge_metadata(record["score"], judge_payload(case, record["observed"]))
 
 
 async def run(root, stage):
@@ -229,7 +240,12 @@ async def run(root, stage):
                     slots.append({"id": item["id"], "status": "generation_invalid"})
                     continue
                 evidence = root / "evidence" / f"{item['id']}.json"
-                if not evidence.exists():
+                if evidence.exists():
+                    cached = read(evidence)
+                    from evals.live_cases import LiveCase
+                    cached_case = LiveCase.model_validate(item["case"])
+                    validate_cached_score(cached, cached_case)
+                else:
                     if budget.summary()["requests"] - baseline >= spec["max_new_requests"]:
                         raise ValueError("fresh calibration call cap reached")
                     source = Path(item["source_path"])
@@ -246,9 +262,14 @@ async def run(root, stage):
                     try:
                         judged, payload = await judge_observed(case, observed, model)
                         record.update(status="scored", score={
-                            **combine_judgment(case, observed, judged.model_dump()),
-                            "review_status": "ai_reviewed", "judge_prompt_sha256": digest(JUDGE_PROMPT),
-                            "judge_input_sha256": digest(payload)})
+                            **combine_judgment(
+                                case, observed, normalize_result(judged.result, payload)),
+                            "review_status": (
+                                "unknown" if judged.result.verdict == Verdict.UNKNOWN
+                                else "ai_reviewed"),
+                            **judge_metadata(
+                                judged, payload,
+                                call_count=2 if judged.repair_response is not None else 1)})
                     except Exception as exc:
                         if not getattr(exc, "judge_diagnostic", None):
                             raise

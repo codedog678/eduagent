@@ -4,34 +4,21 @@ from evals.optimization.scoring import summarize
 
 
 def verify_raw_row(row, case):
-    import json
     from evals.live_scorers import score_live_case
-    from evals.optimization.judge_v3 import Verdict, normalize_result, validate_result
-    from evals.optimization.scoring import JUDGE_PROMPT, judge_payload
-    from evals.optimization.protocol import digest
+    from evals.optimization.judge_v3 import Verdict, normalize_result
+    from evals.optimization.scoring import judge_payload, verify_judge_metadata
     automatic = score_live_case(case, row["observed"])
     if automatic != row["automatic"]:
         raise ValueError("automatic score does not match raw evidence")
     score = row["score"]
-    if automatic["execution_outcome"] != "completed":
-        if score["task_success"] or score["score"] != 0 or score["automatic_passed"]:
-            raise ValueError("incomplete execution cannot pass")
-        return
-    if score["judge_prompt_sha256"] != digest(JUDGE_PROMPT):
-        raise ValueError("judge protocol changed")
-    if score.get("judge_protocol_version") != 3:
-        raise ValueError("judge protocol version changed")
     payload = judge_payload(case, row["observed"])
-    if score.get("judge_input_sha256") != digest(payload):
-        raise ValueError("judge input binding changed")
-    raw_v3 = validate_result(
-        json.dumps(score["raw_judgment_v3"]),
-        expected_criterion_ids=payload["criterion_ids"],
-        allowed_evidence_refs=set(payload["evidence_refs"]),
-    )
-    if (score.get("judge_verdict") != raw_v3.verdict
-            or score.get("judge_reason_codes") != raw_v3.reason_codes):
-        raise ValueError("judge v3 result metadata mismatch")
+    raw_v3 = verify_judge_metadata(score, payload)
+    if automatic["execution_outcome"] != "completed":
+        if (score["task_success"] or score["score"] != 0
+                or score["automatic_passed"] != automatic["automatic_passed"]
+                or score.get("review_status") != "not_observed"
+                or score.get("judge_call_count") != 0):
+            raise ValueError("incomplete execution has invalid not-observed score")
     if raw_v3.verdict == Verdict.UNKNOWN or score.get("review_status") == "unknown":
         raise ValueError("unknown judge result cannot qualify")
     from evals.optimization.leakage import combine_judgment

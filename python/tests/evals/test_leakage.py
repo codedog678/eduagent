@@ -28,21 +28,73 @@ def inspect(text, suffix="52-assisted-contrast"):
 
 
 def simulated_current_archive(tmp_path):
-    """只构造测试夹具；真实旧档不能改提示摘要后冒充新裁判运行。"""
+    """把旧标注转换成完整可重放 v3 测试夹具；不冒充真实新裁判运行。"""
     from evals.io import write_json
-    from evals.optimization.protocol import digest, file_digest
-    from evals.optimization.scoring import JUDGE_PROMPT, judge_payload
+    from evals.optimization.judge_v3 import JudgeOutcome, validate_result
+    from evals.optimization.leakage import protocol_identity
+    from evals.optimization.protocol import file_digest
+    from evals.optimization.scoring import judge_metadata, judge_payload
     folder = tmp_path / "simulated-source"
     manifest = json.loads((ARCHIVE.parent / "manifest.json").read_text())
     cases = {c.case_id: c for c in load_live_cases(DATA)}
     for item in manifest["items"]:
         record = json.loads((ARCHIVE.parent / item["evidence_path"]).read_text())
-        record["score"]["judge_prompt_sha256"] = digest(JUDGE_PROMPT)
-        record["score"]["judge_input_sha256"] = digest(judge_payload(
-            cases[item["case_id"]], record["observed"]))
+        c = cases[item["case_id"]]
+        payload = judge_payload(c, record["observed"])
+        old = record["score"]
+        semantic = {f"semantic:{check['id']}": check for check in old["semantic"]}
+        decisions = {f"decision:{check['step_id']}": check for check in old["decisions"]}
+        criterion_results = []
+        for criterion_id in payload["criterion_ids"]:
+            if criterion_id.startswith("semantic:"):
+                passed = semantic[criterion_id]["passed"]
+                refs = payload["criterion_evidence"][criterion_id]["allowed_refs"][:1]
+            else:
+                decision = decisions[criterion_id]
+                passed = (
+                    decision["required_tools_present"]
+                    and all(call["selection_correct"] and call["arguments_correct"]
+                            for call in decision["calls"])
+                )
+                refs = payload["criterion_evidence"][criterion_id]["required_refs"]
+            criterion_results.append({
+                "criterion_id": criterion_id,
+                "verdict": "pass" if passed else "fail",
+                "evidence_refs": refs,
+                "rationale": "Converted archived annotation for offline regression.",
+            })
+        verdict = "fail" if any(
+            result["verdict"] == "fail" for result in criterion_results) else "pass"
+        raw = json.dumps({
+            "schema_version": 3,
+            "verdict": verdict,
+            "reason_codes": [
+                "criterion_failed" if verdict == "fail" else "all_criteria_passed"],
+            "criterion_results": criterion_results,
+        })
+        result = validate_result(
+            raw,
+            expected_criterion_ids=payload["criterion_ids"],
+            allowed_evidence_refs=set(payload["evidence_refs"]),
+            criterion_evidence=payload["criterion_evidence"],
+        )
+        outcome = JudgeOutcome(
+            result=result, raw_response=raw, repair_response=None,
+            validation_errors=[], repaired=False,
+        )
+        normalized = __import__(
+            "evals.optimization.judge_v3", fromlist=["normalize_result"]
+        ).normalize_result(result, payload)
+        record["case"] = c.model_dump(by_alias=True)
+        record["score"] = {
+            **combine_judgment(c, record["observed"], normalized),
+            "review_status": "ai_reviewed",
+            **judge_metadata(outcome, payload, call_count=1),
+        }
         path = folder / item["evidence_path"]
         write_json(path, record)
         item["evidence_sha256"] = file_digest(path)
+    manifest["scoring_protocol"] = protocol_identity()
     write_json(folder / "manifest.json", manifest)
     return folder / "manifest.json"
 
@@ -125,14 +177,33 @@ async def test_formal_score_cannot_override_rule_and_raw_verifier_rejects_tamper
     raw = {k: record["score"][k] for k in ("semantic", "decisions")}
 
     class Judge:
-        async def complete(self, *args, **kwargs):
-            return json.dumps(raw)
+        async def complete(self, messages, *args, **kwargs):
+            payload = json.loads(messages[-1]["content"])
+            return json.dumps({
+                "schema_version": 3,
+                "verdict": "pass",
+                "reason_codes": ["all_criteria_passed"],
+                "criterion_results": [{
+                    "criterion_id": criterion_id,
+                    "verdict": "pass",
+                    "evidence_refs": (
+                        payload["criterion_evidence"][criterion_id]["required_refs"]
+                        or payload["criterion_evidence"][criterion_id]["allowed_refs"][:1]
+                    ),
+                    "rationale": "Regression fixture marks model review as passing.",
+                } for criterion_id in payload["criterion_ids"]],
+            })
 
     automatic = score_live_case(c, record["observed"])
     score = await score_with_judge(c, record["observed"], automatic, Judge())
     assert score["task_success"] is False and score["score"] == 0
     row = {"observed": record["observed"], "automatic": automatic, "score": score}
     verify_raw_row(row, c)
+    original = copy.deepcopy(score)
+    score["judge_diagnostics"]["raw_response"] = "{}"
+    with pytest.raises(ValueError, match="replay|response|repair"):
+        verify_raw_row(row, c)
+    row["score"] = score = original
     score["leakage"]["verdict"] = "unknown"
     with pytest.raises(ValueError, match="does not match"):
         verify_raw_row(row, c)
@@ -162,6 +233,17 @@ def test_replay_preserves_teaching_failures_and_cannot_grant_release(tmp_path):
     with pytest.raises(ValueError, match="hybrid evidence mismatch"):
         verify_manifest(manifest_path)
 
+    # 外层摘要同步更新也不能掩盖原始 Judge response 被替换。
+    record = json.loads(path.read_text())
+    record["score"]["leakage"]["verdict"] = "fail"
+    record["score"]["judge_diagnostics"]["raw_response"] = "{}"
+    path.write_text(json.dumps(record))
+    manifest = json.loads(manifest_path.read_text())
+    manifest["items"][13]["evidence_sha256"] = file_digest(path)
+    manifest_path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="replay|response|repair"):
+        verify_manifest(manifest_path)
+
 
 def test_rule_change_invalidates_frozen_optimization_protocol(tmp_path, monkeypatch):
     from evals.optimization import leakage
@@ -189,7 +271,7 @@ def test_calibration_cannot_omit_failed_dimension(tmp_path):
 
 def test_real_old_judge_cannot_be_presented_as_current(tmp_path):
     from evals.optimization.replay_calibration import replay
-    with pytest.raises(ValueError, match="source judge prompt or input changed"):
+    with pytest.raises(ValueError, match="protocol version"):
         replay(ARCHIVE.parent / "manifest.json", DATA, tmp_path / "replay")
 
 

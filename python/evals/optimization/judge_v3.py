@@ -25,6 +25,9 @@ refuse. For hint-only criteria, consider the complete response with the visible 
 options: indirect paraphrases, semantic category mappings, or eliminations that uniquely identify
 the answer fail even when no answer letter or literal is stated. Introductory disclaimers do not
 cancel leaked mappings. Local answer submission and local quiz seeding require no model tool call.
+评价 hint_only 时必须把整段回复与学生可见题干、选项合并判断。若回复中的类别映射让
+唯一选项直接对应答案，即使没有答案字面量也失败；否定若只有正确选项仍可能成立的干扰项，
+同样属于间接泄露。
 
 Evaluate every criterion_id exactly once using only the supplied evidence_refs. Do not invent,
 rewrite, or cite evidence outside that registry, and do not repeat private answers or markers in
@@ -66,7 +69,7 @@ class JudgeV3Result(FrozenModel):
 
 class JudgeOutcome(FrozenModel):
     result: JudgeV3Result
-    raw_response: str
+    raw_response: str | None
     repair_response: str | None
     validation_errors: list[str]
     repaired: bool
@@ -77,6 +80,7 @@ def validate_result(
     *,
     expected_criterion_ids: list[str],
     allowed_evidence_refs: set[str],
+    criterion_evidence: dict[str, dict[str, list[str]]] | None = None,
 ) -> JudgeV3Result:
     """Parse and deterministically validate coverage, evidence, and verdict consistency."""
     result = raw if isinstance(raw, JudgeV3Result) else JudgeV3Result.model_validate_json(raw)
@@ -93,6 +97,19 @@ def validate_result(
             raise ValueError("duplicate criterion evidence references")
         if any(reference not in allowed_evidence_refs for reference in item.evidence_refs):
             raise ValueError("criterion evidence reference is not in the current payload")
+        if criterion_evidence is not None:
+            policy = criterion_evidence.get(item.criterion_id)
+            if policy is None:
+                raise ValueError("criterion evidence policy missing")
+            allowed = set(policy["allowed_refs"])
+            required = set(policy["required_refs"])
+            references = set(item.evidence_refs)
+            if not references <= allowed:
+                raise ValueError("criterion evidence reference has wrong criterion or type")
+            if item.verdict != Verdict.UNKNOWN and not references:
+                raise ValueError("non-unknown criterion requires evidence")
+            if item.verdict != Verdict.UNKNOWN and not required <= references:
+                raise ValueError("criterion required evidence coverage mismatch")
 
     verdicts = {item.verdict for item in result.criterion_results}
     expected = (
@@ -157,20 +174,104 @@ def _validation_error(exc: ValueError) -> str:
     return str(exc)
 
 
-def _unknown_result(expected_criterion_ids: list[str]) -> JudgeV3Result:
+def _unknown_result(
+    expected_criterion_ids: list[str],
+    *,
+    reason_code: str = "invalid_schema",
+    rationale: str = "Judge output remained invalid after one bounded repair.",
+) -> JudgeV3Result:
     return JudgeV3Result(
         verdict=Verdict.UNKNOWN,
-        reason_codes=["invalid_schema"],
+        reason_codes=[reason_code],
         criterion_results=[
             CriterionResult(
                 criterion_id=identifier,
                 verdict=Verdict.UNKNOWN,
                 evidence_refs=[],
-                rationale="Judge output remained invalid after one bounded repair.",
+                rationale=rationale,
             )
             for identifier in expected_criterion_ids
         ],
     )
+
+
+def not_observed_outcome(payload: dict) -> JudgeOutcome:
+    """Represent an execution that made no Judge calls using immutable v3 fields."""
+    return JudgeOutcome(
+        result=_unknown_result(
+            payload["criterion_ids"],
+            reason_code="insufficient_evidence",
+            rationale="Judge was not called because task execution did not complete.",
+        ),
+        raw_response=None,
+        repair_response=None,
+        validation_errors=[],
+        repaired=False,
+    )
+
+
+def _validate(raw: str, payload: dict) -> JudgeV3Result:
+    return validate_result(
+        raw,
+        expected_criterion_ids=payload["criterion_ids"],
+        allowed_evidence_refs=set(payload["evidence_refs"]),
+        criterion_evidence=payload["criterion_evidence"],
+    )
+
+
+def replay_outcome(
+    payload: dict,
+    *,
+    diagnostics: dict,
+    judge_call_count: int,
+    raw_judgment_v3: dict,
+) -> JudgeV3Result:
+    """Rebuild the final v3 result from immutable raw/repair responses."""
+    if not isinstance(diagnostics, dict) or set(diagnostics) != {
+        "raw_response", "repair_response", "validation_errors", "repaired",
+    }:
+        raise ValueError("judge diagnostics shape mismatch")
+    if (not isinstance(diagnostics["validation_errors"], list)
+            or any(not isinstance(item, str) for item in diagnostics["validation_errors"])
+            or type(diagnostics["repaired"]) is not bool):
+        raise ValueError("judge diagnostics types mismatch")
+
+    raw = diagnostics["raw_response"]
+    repair = diagnostics["repair_response"]
+    if judge_call_count == 0:
+        expected = not_observed_outcome(payload)
+        if diagnostics != expected.model_dump(mode="json", exclude={"result"}):
+            raise ValueError("zero-call judge diagnostics mismatch")
+        result = expected.result
+    else:
+        if judge_call_count not in {1, 2} or not isinstance(raw, str):
+            raise ValueError("judge call count/raw response mismatch")
+        try:
+            result = _validate(raw, payload)
+        except ValueError as first:
+            first_error = _validation_error(first)
+            if judge_call_count != 2 or not isinstance(repair, str):
+                raise ValueError("invalid first response requires one repair call") from first
+            try:
+                result = _validate(repair, payload)
+            except ValueError as second:
+                expected_errors = [first_error, _validation_error(second)]
+                result = _unknown_result(payload["criterion_ids"])
+                if diagnostics["repaired"]:
+                    raise ValueError("invalid repair cannot be marked repaired")
+            else:
+                expected_errors = [first_error]
+                if not diagnostics["repaired"]:
+                    raise ValueError("valid repair must be marked repaired")
+            if diagnostics["validation_errors"] != expected_errors:
+                raise ValueError("judge validation errors do not replay")
+        else:
+            if (judge_call_count != 1 or repair is not None
+                    or diagnostics["validation_errors"] or diagnostics["repaired"]):
+                raise ValueError("valid first response must use one call without repair")
+    if result.model_dump(mode="json") != raw_judgment_v3:
+        raise ValueError("final raw_judgment_v3 does not replay from diagnostics")
+    return result
 
 
 async def judge_once(payload: dict, text_model) -> JudgeOutcome:
@@ -183,11 +284,7 @@ async def judge_once(payload: dict, text_model) -> JudgeOutcome:
     ], role="judge")
     errors = []
     try:
-        result = validate_result(
-            raw,
-            expected_criterion_ids=expected,
-            allowed_evidence_refs=allowed,
-        )
+        result = _validate(raw, payload)
         return JudgeOutcome(
             result=result,
             raw_response=raw,
@@ -203,17 +300,14 @@ async def judge_once(payload: dict, text_model) -> JudgeOutcome:
         "validation_errors": errors,
         "allowed_criterion_ids": expected,
         "allowed_evidence_refs": sorted(allowed),
+        "criterion_evidence": payload["criterion_evidence"],
     }
     repair = await text_model.complete([
         {"role": "system", "content": JUDGE_V3_REPAIR_PROMPT},
         {"role": "user", "content": json.dumps(repair_payload, ensure_ascii=False)},
     ], role="judge")
     try:
-        result = validate_result(
-            repair,
-            expected_criterion_ids=expected,
-            allowed_evidence_refs=allowed,
-        )
+        result = _validate(repair, payload)
         return JudgeOutcome(
             result=result,
             raw_response=raw,

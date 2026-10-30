@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from evals.io import write_json
+from evals.optimization.protocol import digest
 
 GROUPS = ("retrieval_correct", "retrieval_misanswer", "hint_compliant", "hint_indirect_leak")
 
@@ -64,60 +65,49 @@ def verify_manifest(path: Path):
         verify_fresh_manifest(path.parent, manifest)
     rows = []
     identities = []
-    hybrid = manifest.get("scoring_protocol") is not None
-    if hybrid:
-        from evals.optimization.leakage import protocol_identity
-        from evals.live_cases import LiveCase
-        if manifest["scoring_protocol"] != protocol_identity():
-            raise ValueError("calibration leakage protocol changed")
+    from evals.optimization.leakage import protocol_identity
+    from evals.live_cases import LiveCase
+    if manifest.get("scoring_protocol") != protocol_identity():
+        raise ValueError("calibration scoring protocol missing or changed")
     for item in manifest["items"]:
         evidence = path.parent / item["evidence_path"]
         content = evidence.read_bytes()
         if hashlib.sha256(content).hexdigest() != item["evidence_sha256"]:
             raise ValueError("calibration evidence digest mismatch")
         record = json.loads(content)
-        from evals.optimization.scoring import JUDGE_PROMPT
-        from evals.optimization.protocol import digest
-        if (record["score"].get("judge_prompt_sha256") != digest(JUDGE_PROMPT)
-                or record["score"].get("judge_protocol_version") != 3
-                or record["score"].get("judge_verdict") == "unknown"
-                or record["score"].get("review_status") != "ai_reviewed"):
-            raise ValueError("calibration evidence uses a different or unobserved judge")
+        score = record["score"]
+        if score.get("review_status") != "ai_reviewed":
+            raise ValueError("calibration evidence uses an unobserved judge")
         identity = record.get("judge_identity")
         if not identity or any(identity != prior for prior in identities):
             raise ValueError("calibration judge identity missing or mixed")
         identities.append(identity)
-        if hybrid:
-            from evals.optimization.leakage import combine_judgment
-            from evals.optimization.judge_v3 import normalize_result, validate_result
-            from evals.optimization.scoring import judge_payload
+        from evals.optimization.leakage import combine_judgment
+        from evals.optimization.judge_v3 import Verdict, normalize_result
+        from evals.optimization.scoring import judge_payload, verify_judge_metadata
+        try:
             case = LiveCase.model_validate(record["case"])
-            case.validate_contract()
-            payload = judge_payload(case, record["observed"])
-            if (case.case_id != item["case_id"]
-                    or record["score"]["judge_input_sha256"] != digest(
-                        payload)):
-                raise ValueError("calibration case/input binding mismatch")
-            raw_v3 = validate_result(
-                json.dumps(record["score"]["raw_judgment_v3"]),
-                expected_criterion_ids=payload["criterion_ids"],
-                allowed_evidence_refs=set(payload["evidence_refs"]),
-            )
-            if (record["score"]["judge_verdict"] != raw_v3.verdict
-                    or record["score"]["judge_reason_codes"] != raw_v3.reason_codes):
-                raise ValueError("calibration judge v3 metadata mismatch")
-            raw = normalize_result(raw_v3, payload)
-            combined = combine_judgment(case, record["observed"], raw)
-            if any(record["score"].get(key) != combined[key] for key in combined):
-                raise ValueError("calibration hybrid evidence mismatch")
+        except (KeyError, ValueError) as exc:
+            raise ValueError("calibration evidence lacks replayable frozen case") from exc
+        case.validate_contract()
+        payload = judge_payload(case, record["observed"])
+        if (case.case_id != item["case_id"]
+                or score["judge_input_sha256"] != digest(payload)):
+            raise ValueError("calibration case/input binding mismatch")
+        raw_v3 = verify_judge_metadata(score, payload)
+        if raw_v3.verdict == Verdict.UNKNOWN:
+            raise ValueError("calibration evidence uses an unknown judge")
+        raw = normalize_result(raw_v3, payload)
+        combined = combine_judgment(case, record["observed"], raw)
+        if any(score.get(key) != combined[key] for key in combined):
+            raise ValueError("calibration hybrid evidence mismatch")
         response = record["observed"]["steps"][item["step_id"]]["result"]["teaching_response"]["response"]
         checks = {c["id"]: c for c in record["score"]["semantic"]}
         semantic_ids = item.get("semantic_ids", [item["check_id"]])
-        if hybrid:
-            prefix = "hint_" if item["group"].startswith("hint_") else "retrieval_"
-            required = {c.id for c in case.hard_checks if c.path.startswith(prefix)}
-            if not required or set(semantic_ids) != required:
-                raise ValueError("hybrid calibration requires all frozen dimensions")
+        prefix = "hint_" if item["group"].startswith("hint_") else "retrieval_"
+        required = {c.id for c in case.hard_checks if c.path.startswith(prefix)}
+        if not required or set(semantic_ids) != required:
+            raise ValueError("hybrid calibration requires all frozen dimensions")
         if (not semantic_ids or set(semantic_ids) - set(checks)
                 or len(semantic_ids) != len(set(semantic_ids))):
             raise ValueError("calibration semantic coverage mismatch")
@@ -127,7 +117,7 @@ def verify_manifest(path: Path):
         rows.append({**item, "response": response, "judge_passed": observed_passed})
     report = calibration_report(rows)
     # 旧协议或参与规则设计的资料只能回归复评；命中20条不等于独立校准。
-    eligible = hybrid and manifest.get("data_role") == "independent_calibration"
+    eligible = manifest.get("data_role") == "independent_calibration"
     return {**report, "measured_passed": report["passed"],
             "passed": report["passed"] and eligible,
             "status": report["status"] if eligible else "validation_required",

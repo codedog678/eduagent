@@ -11,6 +11,7 @@ from evals.optimization.judge_v3 import (
     Verdict,
     judge_once,
     normalize_result,
+    replay_outcome,
     validate_result,
 )
 
@@ -41,6 +42,16 @@ PAYLOAD = {
         "response:s1": "Observed response.",
         "call:s1:0": '{"name":"search_memory","arguments":{"query":"past work"}}',
     },
+    "criterion_evidence": {
+        "semantic:H5": {
+            "allowed_refs": ["response:s1"],
+            "required_refs": [],
+        },
+        "decision:s1": {
+            "allowed_refs": ["call:s1:0"],
+            "required_refs": ["call:s1:0"],
+        },
+    },
     "steps": {
         "s1": {
             "calls": [{"name": "search_memory", "arguments": {"query": "past work"}}],
@@ -54,6 +65,7 @@ def validated(value=VALID):
         json.dumps(value),
         expected_criterion_ids=PAYLOAD["criterion_ids"],
         allowed_evidence_refs=set(PAYLOAD["evidence_refs"]),
+        criterion_evidence=PAYLOAD["criterion_evidence"],
     )
 
 
@@ -139,6 +151,7 @@ async def test_one_bounded_repair_can_fix_schema_only():
         "validation_errors",
         "allowed_criterion_ids",
         "allowed_evidence_refs",
+        "criterion_evidence",
     }
     assert "steps" not in repair_payload
 
@@ -158,6 +171,74 @@ async def test_second_invalid_response_becomes_unknown_with_diagnostics():
     assert outcome.repaired is False
     assert len(outcome.validation_errors) == 2
     assert len(text_model.calls) == 2
+
+
+@pytest.mark.parametrize("mutation", [
+    "raw", "repair", "errors", "repaired", "calls", "final",
+])
+def test_replay_rejects_any_provenance_tampering(mutation):
+    invalid = json.dumps({**VALID, "unexpected": True})
+    diagnostics = {
+        "raw_response": invalid,
+        "repair_response": json.dumps(VALID),
+        "validation_errors": [],
+        "repaired": True,
+    }
+    try:
+        validate_result(
+            invalid,
+            expected_criterion_ids=PAYLOAD["criterion_ids"],
+            allowed_evidence_refs=set(PAYLOAD["evidence_refs"]),
+            criterion_evidence=PAYLOAD["criterion_evidence"],
+        )
+    except ValueError as exc:
+        from evals.optimization.judge_v3 import _validation_error
+        diagnostics["validation_errors"] = [_validation_error(exc)]
+    calls = 2
+    final = copy.deepcopy(VALID)
+    if mutation == "raw":
+        diagnostics["raw_response"] = json.dumps(VALID)
+    elif mutation == "repair":
+        diagnostics["repair_response"] = "invalid"
+    elif mutation == "errors":
+        diagnostics["validation_errors"] = ["forged"]
+    elif mutation == "repaired":
+        diagnostics["repaired"] = False
+    elif mutation == "calls":
+        calls = 1
+    else:
+        final["criterion_results"][0]["rationale"] = "forged"
+    with pytest.raises(ValueError):
+        replay_outcome(
+            PAYLOAD,
+            diagnostics=diagnostics,
+            judge_call_count=calls,
+            raw_judgment_v3=final,
+        )
+
+
+def test_criterion_evidence_is_nonempty_typed_and_covers_all_calls():
+    empty = copy.deepcopy(VALID)
+    empty["criterion_results"][0]["evidence_refs"] = []
+    with pytest.raises(ValueError, match="requires evidence"):
+        validated(empty)
+
+    cross_type = copy.deepcopy(VALID)
+    cross_type["criterion_results"][0]["evidence_refs"] = ["call:s1:0"]
+    with pytest.raises(ValueError, match="wrong criterion or type"):
+        validated(cross_type)
+
+    payload = copy.deepcopy(PAYLOAD)
+    payload["evidence_refs"]["call:s1:1"] = '{"name":"read_memory"}'
+    payload["criterion_evidence"]["decision:s1"]["allowed_refs"].append("call:s1:1")
+    payload["criterion_evidence"]["decision:s1"]["required_refs"].append("call:s1:1")
+    with pytest.raises(ValueError, match="coverage"):
+        validate_result(
+            json.dumps(VALID),
+            expected_criterion_ids=payload["criterion_ids"],
+            allowed_evidence_refs=set(payload["evidence_refs"]),
+            criterion_evidence=payload["criterion_evidence"],
+        )
 
 
 @pytest.mark.asyncio

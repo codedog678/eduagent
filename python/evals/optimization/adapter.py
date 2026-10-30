@@ -12,6 +12,7 @@ from evals.live_budget import LiveBudget
 from evals.live_executor import LiveExecutor
 from evals.live_scorers import score_live_case
 from evals.optimization.budget import OptimizationStopped, TextModel
+from evals.optimization.judge_v3 import JUDGE_MAX_CALLS
 from evals.optimization.protocol import (
     RUNTIME, capability_name, digest, policy_artifact, private_literals, validate_candidate,
 )
@@ -131,7 +132,7 @@ class TutorGEPAAdapter:
             raise RuntimeError("parallel adapter evaluation is unsupported")
         if any(case.case_id not in self.cases or case != self.cases[case.case_id] for case in batch):
             raise ValueError("evaluation case is outside this adapter's frozen dataset")
-        # 预留整批的最坏任务请求和每例一次裁判，不能把未执行例子补成 0。
+        # 预留整批最坏任务请求及 Judge 首次调用+一次修复；账本仍按实际调用结算。
         cached = {}
         if self.reuse_completed:
             for path in sorted((self.output / "evaluations").glob("*.json")):
@@ -140,8 +141,10 @@ class TutorGEPAAdapter:
                         {"completed", "unknown"} if self.tolerate_judge_failure else {"completed"})
                         and value.get("policy_sha256") == digest(candidate)):
                     cached.setdefault(value["case_id"], value)
-        self.budget.require_requests(sum(c.expected_model_requests_max + 1 for c in batch
-                                         if c.case_id not in cached))
+        self.budget.require_requests(sum(
+            c.expected_model_requests_max + JUDGE_MAX_CALLS
+            for c in batch if c.case_id not in cached
+        ))
         self._busy = True
         rows = []
         try:
@@ -176,7 +179,11 @@ class TutorGEPAAdapter:
     def evaluate(self, batch, candidate, capture_traces=False):
         from gepa.core.adapter import EvaluationBatch
         rows = self.evaluate_rows(batch, candidate)
-        if any(row["score"]["score"] is None for row in rows):
+        if any(
+            row["score"]["score"] is None
+            or row["score"].get("review_status") in {"unknown", "not_observed"}
+            for row in rows
+        ):
             raise OptimizationStopped("unknown judgments cannot enter GEPA scalar optimization")
         return EvaluationBatch(
             outputs=rows, scores=[row["score"]["score"] for row in rows],

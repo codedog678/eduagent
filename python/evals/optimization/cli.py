@@ -19,9 +19,18 @@ from evals.optimization.protocol import (
     load_policy, load_protocol, policy_artifact, prepare_protocol, seed_candidate,
 )
 from evals.optimization.gates import acceptance
+from evals.optimization.judge_v3 import JUDGE_MAX_CALLS
 
 
 DEFAULT_DATASET = Path(__file__).resolve().parents[1] / "datasets/tutor_agent50_rsi_v2.jsonl"
+
+
+def metric_request_reserve(case) -> int:
+    return case.expected_model_requests_max + JUDGE_MAX_CALLS
+
+
+def comparison_request_reserve(cases, repeats: int) -> int:
+    return 2 * repeats * sum(metric_request_reserve(case) for case in cases)
 
 
 def run_search(adapter, protocol, cases, *, max_metric_calls=160, minibatch=3, run_dir=None,
@@ -34,7 +43,12 @@ def run_search(adapter, protocol, cases, *, max_metric_calls=160, minibatch=3, r
     if minibatch < 1 or minibatch > len(train) or max_metric_calls <= len(val):
         raise ValueError("invalid minibatch or metric budget too small to go beyond seed validation")
     # 采用真实 GEPA 搜索/候选选择；Adapter 自定义反思请求用于统一计费。
-    iteration_requests = 2 * minibatch * 7 + sum(c.expected_model_requests_max + 1 for c in val) + 1
+    # 每个 metric 预留一次主 Judge 与一次 repair；实际账本只结算真实调用。
+    iteration_requests = (
+        2 * minibatch * 7
+        + sum(metric_request_reserve(case) for case in val)
+        + 1
+    )
     return gepa.optimize(
         seed_candidate=seed_candidate() if parent is None else parent,
         trainset=train, valset=val, adapter=adapter,
@@ -78,9 +92,7 @@ def run_remote(args):
     budget = DurableBudget(SharedLedger(), str(args.output.resolve()),
                            max_requests=args.max_requests, max_cny=args.max_cny)
     if args.command == "compare":
-        budget.require_requests(
-            2 * args.repeats * sum(c.expected_model_requests_max + 1 for c in evaluation_cases)
-        )
+        budget.require_requests(comparison_request_reserve(evaluation_cases, args.repeats))
     args.output.mkdir(parents=True, exist_ok=False)
     record = {
         "schema": SCHEMA, "status": "running", "command": args.command,
