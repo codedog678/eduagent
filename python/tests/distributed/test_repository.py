@@ -100,10 +100,13 @@ def test_distributed_metadata_contains_run_and_expert_plane_tables():
 
 
 async def test_m3_upgrade_from_isolated_m2_schema_is_complete_and_idempotent():
+    from core.distributed.promotion_contracts import PolicyArtifact
     from core.distributed.runtime import (
+        BUILTIN_FIXED_COMPONENTS_HASH,
         PRODUCTION_DEPLOYMENT_ID,
         upgrade_m3_schema,
     )
+    from core.policy_store import BUILTIN_HASH, builtin_components
 
     url = os.environ["DISTRIBUTED_TEST_DATABASE_URL"]
     engine = create_async_engine(url)
@@ -173,6 +176,17 @@ async def test_m3_upgrade_from_isolated_m2_schema_is_complete_and_idempotent():
                     )
                 )
             ).all()
+            artifact_rows = (
+                await connection.execute(
+                    text(
+                        "SELECT policy_hash, parent_policy_hash, components, "
+                        "fixed_components_hash, runtime_hash, source_revision, "
+                        "protocol_hash, proposer_hash, data_role, "
+                        "evidence_bindings, created_at "
+                        "FROM policy_artifacts ORDER BY policy_hash"
+                    )
+                )
+            ).mappings().all()
             columns = (
                 await connection.execute(
                     text(
@@ -218,6 +232,24 @@ async def test_m3_upgrade_from_isolated_m2_schema_is_complete_and_idempotent():
         assert experts == [
             ("legacy-job", PRODUCTION_DEPLOYMENT_ID, "production"),
         ]
+        artifacts = [
+            PolicyArtifact.model_validate(dict(row))
+            for row in artifact_rows
+        ]
+        builtin = next(
+            item for item in artifacts if item.policy_hash == BUILTIN_HASH
+        )
+        assert builtin.components.model_dump() == builtin_components()
+        assert builtin.fixed_components_hash == BUILTIN_FIXED_COMPONENTS_HASH
+        legacy = next(
+            item for item in artifacts if item.policy_hash == "9" * 64
+        )
+        assert legacy.data_role == "legacy"
+        assert legacy.evidence_bindings == {
+            "migration": "m3",
+            "legacy_policy_hash": "9" * 64,
+            "release_eligible": False,
+        }
         nullable = dict(columns)
         assert nullable["deployment_id"] == "NO"
         assert nullable["effective_policy_hash"] == "NO"

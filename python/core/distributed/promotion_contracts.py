@@ -109,6 +109,7 @@ class PolicyArtifact(FrozenContract):
     proposer_hash: Sha256
     data_role: Literal[
         "builtin",
+        "legacy",
         "development",
         "holdout_validated",
     ]

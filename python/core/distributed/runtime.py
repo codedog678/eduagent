@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from datetime import UTC, datetime
+import json
 from typing import TYPE_CHECKING
 
 from redis.asyncio import Redis
@@ -9,6 +10,12 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from config.settings import settings
+from core.policy_store import (
+    BUILTIN_HASH,
+    builtin_components,
+    digest as policy_digest,
+)
+from core.tutor_policy import fixed_components
 
 from .broker import RedisStreamBroker
 from .contracts import canonical_hash
@@ -286,9 +293,9 @@ async def upgrade_m1_schema(
     )
 
 
-BUILTIN_POLICY_COMPONENTS = {"retrieval_rules": "builtin"}
-BUILTIN_POLICY_HASH = canonical_hash(BUILTIN_POLICY_COMPONENTS)
-BUILTIN_FIXED_COMPONENTS_HASH = canonical_hash({"fixed": "builtin"})
+BUILTIN_POLICY_COMPONENTS = builtin_components()
+BUILTIN_POLICY_HASH = BUILTIN_HASH
+BUILTIN_FIXED_COMPONENTS_HASH = policy_digest(fixed_components())
 BUILTIN_RUNTIME_HASH = canonical_hash({"runtime": "builtin"})
 BUILTIN_PROTOCOL_HASH = canonical_hash({"protocol": "builtin"})
 BUILTIN_PROPOSER_HASH = canonical_hash({"proposer": "system"})
@@ -357,7 +364,12 @@ async def upgrade_m3_schema(connection) -> None:
         ),
         {
             "policy_hash": BUILTIN_POLICY_HASH,
-            "components": '{"retrieval_rules":"builtin"}',
+            "components": json.dumps(
+                BUILTIN_POLICY_COMPONENTS,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ),
             "fixed_hash": BUILTIN_FIXED_COMPONENTS_HASH,
             "runtime_hash": BUILTIN_RUNTIME_HASH,
             "protocol_hash": BUILTIN_PROTOCOL_HASH,
@@ -491,11 +503,18 @@ async def upgrade_m3_schema(connection) -> None:
                 "created_at"
                 ") SELECT "
                 "source.policy_hash, NULL, "
-                "json_build_object('legacy_policy_hash', "
-                "source.policy_hash), "
+                "json_build_object("
+                "'retrieval_rules', "
+                "'Legacy policy content is unavailable after M3 schema "
+                "migration; this placeholder is not release eligible.'"
+                "), "
                 ":fixed_hash, :runtime_hash, 'legacy-m3-backfill', "
                 ":protocol_hash, :proposer_hash, 'legacy', "
-                "json_build_object('migration', 'm3'), :created_at "
+                "json_build_object("
+                "'migration', 'm3', "
+                "'legacy_policy_hash', source.policy_hash, "
+                "'release_eligible', false"
+                "), :created_at "
                 f"FROM (SELECT DISTINCT {source_column} AS policy_hash "
                 f"FROM {source_table} WHERE {source_column} IS NOT NULL"
                 ") AS source "

@@ -143,6 +143,8 @@ def test_all_promotion_contract_shapes_validate():
     ]
     assert all(value.model_config["frozen"] for value in values)
 
+    assert artifact(data_role="legacy").data_role == "legacy"
+
     with pytest.raises(ValidationError, match="invalid deployment transition"):
         PromotionCommand(
             command_id="command-2",
