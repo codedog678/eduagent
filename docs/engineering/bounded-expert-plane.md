@@ -201,9 +201,11 @@ SHA-256 为
 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`。
 该 revision 是 Task 9 的实现边界；Task 10 的 CI、README 与本文属于随后
 发布提交，并由该提交的 GitHub Actions 重新验收，不把旧 JSON 冒充为发布
-提交证据。Task 10 发布内容 revision 为
-`1c6501c06aa2916daefb108345d75ccec17df4a0`；其后的 metadata-only 提交仅记录
-该 revision。
+提交证据。Task 10 初始发布 revision 为
+`1c6501c06aa2916daefb108345d75ccec17df4a0`；补齐 clean dev dependency 与
+FastAPI 版本无关 CI 断言后的最终验收内容 revision 为
+`b62d3e4fdc509c2778fda512afa1b6b74e64fecb`。其后的 metadata-only 提交仅记录
+这条 revision 链。
 
 本地环境：Python 3.11.17、PostgreSQL 16.15、Redis 8.10.3、macOS arm64。
 
