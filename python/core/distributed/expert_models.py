@@ -28,7 +28,13 @@ class DistributedExpertJob(DistributedBase):
     logical_key: Mapped[str] = mapped_column(String(128), nullable=False)
     role: Mapped[str] = mapped_column(String(32), nullable=False)
     input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    policy_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    policy_hash: Mapped[str] = mapped_column(
+        ForeignKey(
+            "policy_artifacts.policy_hash",
+            name="fk_expert_job_policy_artifact",
+        ),
+        nullable=False,
+    )
     deployment_id: Mapped[str | None] = mapped_column(
         ForeignKey(
             "policy_deployments.deployment_id",

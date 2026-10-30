@@ -45,7 +45,12 @@ class DistributedRun(DistributedBase):
             name="fk_distributed_run_deployment",
         )
     )
-    effective_policy_hash: Mapped[str | None] = mapped_column(String(64))
+    effective_policy_hash: Mapped[str | None] = mapped_column(
+        ForeignKey(
+            "policy_artifacts.policy_hash",
+            name="fk_distributed_run_effective_policy",
+        )
+    )
     policy_cohort: Mapped[str | None] = mapped_column(String(16))
     assignment_key_hash: Mapped[str | None] = mapped_column(String(64))
     assignment_reason: Mapped[str | None] = mapped_column(String(128))

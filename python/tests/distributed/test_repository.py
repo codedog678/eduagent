@@ -1,8 +1,12 @@
 import asyncio
+import os
 from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import text
+from sqlalchemy.exc import DBAPIError
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from core.distributed.contracts import RunStatus
 from core.distributed.models import (
@@ -85,80 +89,247 @@ def test_distributed_metadata_contains_run_and_expert_plane_tables():
     assert {"deployment_id", "state_namespace"} <= set(
         DistributedExpertJob.__table__.c.keys()
     )
+    assert {
+        foreign_key.target_fullname
+        for foreign_key in DistributedRun.__table__.c.effective_policy_hash.foreign_keys
+    } == {"policy_artifacts.policy_hash"}
+    assert {
+        foreign_key.target_fullname
+        for foreign_key in DistributedExpertJob.__table__.c.policy_hash.foreign_keys
+    } == {"policy_artifacts.policy_hash"}
 
 
-async def test_m3_upgrade_is_idempotent_and_backfills_run_and_expert(repo):
-    from core.distributed.runtime import upgrade_m3_schema
+async def test_m3_upgrade_from_isolated_m2_schema_is_complete_and_idempotent():
+    from core.distributed.runtime import (
+        PRODUCTION_DEPLOYMENT_ID,
+        upgrade_m3_schema,
+    )
 
-    run = await repo.accept(spec(request_id="legacy-m3-run"))
+    url = os.environ["DISTRIBUTED_TEST_DATABASE_URL"]
+    engine = create_async_engine(url)
+    schema = f"m3_upgrade_{uuid4().hex}"
+    now = datetime.now(UTC)
+    try:
+        async with engine.begin() as connection:
+            await connection.execute(text(f'CREATE SCHEMA "{schema}"'))
+            await connection.execute(
+                text(f'SET LOCAL search_path TO "{schema}"')
+            )
+            await _create_m2_run_and_expert_tables(connection)
+            await connection.run_sync(DistributedBase.metadata.create_all)
+            await connection.execute(
+                text(
+                    "INSERT INTO distributed_runs ("
+                    "id, learner_id, request_id, operation, input_hash, "
+                    "payload, status, trace_id, attempt_count, created_at, "
+                    "updated_at"
+                    ") VALUES ("
+                    "'00000000-0000-0000-0000-000000000021', 'student', "
+                    "'legacy-m3-run', 'learning_task', :hash, "
+                    "CAST('{}' AS JSON), 'queued', :trace_id, 0, :now, :now"
+                    ")"
+                ),
+                {"hash": "8" * 64, "trace_id": "7" * 32, "now": now},
+            )
+            await connection.execute(
+                text(
+                    "INSERT INTO distributed_expert_jobs ("
+                    "id, parent_run_id, parent_fencing_token, logical_key, "
+                    "role, input_hash, policy_hash, payload, payload_bytes, "
+                    "status, "
+                    "attempt_count, max_attempts, deadline_at, created_at, "
+                    "updated_at"
+                    ") VALUES ("
+                    "'00000000-0000-0000-0000-000000000022', "
+                    "'00000000-0000-0000-0000-000000000021', 1, "
+                    "'legacy-job', 'Assessment', :hash, :hash, "
+                    "CAST('{}' AS JSON), 2, 'queued', 0, 1, :deadline, "
+                    ":now, :now)"
+                ),
+                {
+                    "hash": "9" * 64,
+                    "deadline": now + timedelta(minutes=1),
+                    "now": now,
+                },
+            )
+
+            await upgrade_m3_schema(connection)
+            await upgrade_m3_schema(connection)
+
+            run = (
+                await connection.execute(
+                    text(
+                        "SELECT deployment_id, effective_policy_hash, "
+                        "policy_cohort, assignment_reason, state_namespace, "
+                        "rehearsal_fault_profile FROM distributed_runs"
+                    )
+                )
+            ).one()
+            experts = (
+                await connection.execute(
+                    text(
+                        "SELECT logical_key, deployment_id, state_namespace "
+                        "FROM distributed_expert_jobs ORDER BY logical_key"
+                    )
+                )
+            ).all()
+            columns = (
+                await connection.execute(
+                    text(
+                        "SELECT column_name, is_nullable "
+                        "FROM information_schema.columns "
+                        "WHERE table_schema = :schema "
+                        "AND table_name = 'distributed_runs'"
+                    ),
+                    {"schema": schema},
+                )
+            ).all()
+            constraints = set(
+                (
+                    await connection.execute(
+                        text(
+                            "SELECT conname FROM pg_constraint "
+                            "WHERE connamespace = "
+                            "(SELECT oid FROM pg_namespace "
+                            "WHERE nspname = :schema)"
+                        ),
+                        {"schema": schema},
+                    )
+                ).scalars()
+            )
+            indexes = set(
+                (
+                    await connection.execute(
+                        text(
+                            "SELECT indexname FROM pg_indexes "
+                            "WHERE schemaname = :schema"
+                        ),
+                        {"schema": schema},
+                    )
+                ).scalars()
+            )
+
+        assert run.deployment_id == PRODUCTION_DEPLOYMENT_ID
+        assert len(run.effective_policy_hash) == 64
+        assert run.policy_cohort == "stable"
+        assert run.assignment_reason == "legacy_backfill"
+        assert run.state_namespace == "production"
+        assert run.rehearsal_fault_profile == "none"
+        assert experts == [
+            ("legacy-job", PRODUCTION_DEPLOYMENT_ID, "production"),
+        ]
+        nullable = dict(columns)
+        assert nullable["deployment_id"] == "NO"
+        assert nullable["effective_policy_hash"] == "NO"
+        assert nullable["state_namespace"] == "NO"
+        assert {
+            "fk_distributed_run_deployment",
+            "fk_distributed_run_effective_policy",
+            "fk_expert_job_deployment",
+            "fk_expert_job_policy_artifact",
+        } <= constraints
+        assert {
+            "ix_distributed_run_deployment",
+            "ix_distributed_run_effective_policy",
+            "ix_expert_job_deployment",
+            "ix_expert_job_policy",
+        } <= indexes
+    finally:
+        async with engine.begin() as connection:
+            await connection.execute(
+                text(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE')
+            )
+        await engine.dispose()
+
+
+async def test_m3_expert_backfill_preserves_each_existing_binding(repo):
+    from core.distributed.runtime import (
+        PRODUCTION_DEPLOYMENT_ID,
+        REHEARSAL_DEPLOYMENT_ID,
+        upgrade_m3_schema,
+    )
+
+    run = await repo.accept(spec(request_id="partial-expert-backfill"))
+    now = datetime.now(UTC)
     async with repo.session_factory() as session, session.begin():
         connection = await session.connection()
         await connection.execute(
             text(
-                "INSERT INTO distributed_expert_jobs ("
-                "id, parent_run_id, parent_fencing_token, logical_key, role, "
-                "input_hash, policy_hash, payload, payload_bytes, status, "
-                "attempt_count, max_attempts, deadline_at, created_at, "
-                "updated_at"
+                "INSERT INTO policy_deployments ("
+                "deployment_id, environment, version, state, "
+                "candidate_policy_hash, stable_policy_hash, "
+                "previous_stable_deployment_id, traffic_basis_points, "
+                "assignment_salt_id, thresholds, thresholds_hash, "
+                "required_receipts, command_id, reason, actor, created_at"
                 ") VALUES ("
-                ":id, :run_id, 1, 'legacy-job', 'Assessment', :hash, :hash, "
-                "CAST('{}' AS JSON), 2, 'queued', 0, 1, :deadline, :now, :now"
-                ")"
+                ":deployment_id, 'test', 1, 'registered', NULL, :policy_hash, "
+                "NULL, 0, 'test', CAST('{}' AS JSON), :policy_hash, "
+                "CAST('[]' AS JSON), 'partial-backfill', 'test', 'test', :now)"
             ),
             {
-                "id": "00000000-0000-0000-0000-000000000021",
-                "run_id": run.id,
-                "hash": "9" * 64,
-                "deadline": datetime.now(UTC) + timedelta(minutes=1),
-                "now": datetime.now(UTC),
+                "deployment_id": REHEARSAL_DEPLOYMENT_ID,
+                "policy_hash": "a" * 64,
+                "now": now,
             },
         )
-        await upgrade_m3_schema(connection)
-        await upgrade_m3_schema(connection)
-        stored = (
+        for job_id, logical_key, deployment_id, state_namespace in (
+            (
+                "00000000-0000-0000-0000-000000000022",
+                "preserve-deployment",
+                REHEARSAL_DEPLOYMENT_ID,
+                None,
+            ),
+            (
+                "00000000-0000-0000-0000-000000000023",
+                "preserve-namespace",
+                None,
+                "legacy:preserved",
+            ),
+        ):
             await connection.execute(
                 text(
-                    "SELECT deployment_id, effective_policy_hash, "
-                    "policy_cohort, assignment_reason, state_namespace, "
-                    "rehearsal_fault_profile FROM distributed_runs "
-                    "WHERE id = :run_id"
+                    "INSERT INTO distributed_expert_jobs ("
+                    "id, parent_run_id, parent_fencing_token, logical_key, "
+                    "role, input_hash, policy_hash, deployment_id, "
+                    "state_namespace, payload, payload_bytes, status, "
+                    "attempt_count, max_attempts, deadline_at, created_at, "
+                    "updated_at"
+                    ") VALUES ("
+                    ":id, :run_id, 1, :logical_key, 'Assessment', :hash, "
+                    ":policy_hash, :deployment_id, :state_namespace, "
+                    "CAST('{}' AS JSON), 2, 'queued', 0, 1, :deadline, "
+                    ":now, :now)"
                 ),
-                {"run_id": run.id},
+                {
+                    "id": job_id,
+                    "run_id": run.id,
+                    "logical_key": logical_key,
+                    "hash": "9" * 64,
+                    "policy_hash": "a" * 64,
+                    "deployment_id": deployment_id,
+                    "state_namespace": state_namespace,
+                    "deadline": now + timedelta(minutes=1),
+                    "now": now,
+                },
             )
-        ).one()
-        heads = (
+
+        await upgrade_m3_schema(connection)
+        experts = (
             await connection.execute(
                 text(
-                    "SELECT heads.environment, deployments.state "
-                    "FROM policy_environment_heads AS heads "
-                    "JOIN policy_deployments AS deployments "
-                    "ON deployments.deployment_id = "
-                    "heads.current_deployment_id "
-                    "ORDER BY heads.environment"
+                    "SELECT logical_key, deployment_id, state_namespace "
+                    "FROM distributed_expert_jobs ORDER BY logical_key"
                 )
             )
         ).all()
-        expert = (
-            await connection.execute(
-                text(
-                    "SELECT deployment_id, state_namespace "
-                    "FROM distributed_expert_jobs WHERE logical_key = "
-                    "'legacy-job'"
-                )
-            )
-        ).one()
 
-    assert stored.deployment_id is not None
-    assert len(stored.effective_policy_hash) == 64
-    assert stored.policy_cohort == "stable"
-    assert stored.assignment_reason == "legacy_backfill"
-    assert stored.state_namespace == "production"
-    assert stored.rehearsal_fault_profile == "none"
-    assert expert.deployment_id == stored.deployment_id
-    assert expert.state_namespace == "production"
-    assert heads == [
-        ("production", "registered"),
-        ("rehearsal", "registered"),
+    assert experts == [
+        ("preserve-deployment", REHEARSAL_DEPLOYMENT_ID, "production"),
+        (
+            "preserve-namespace",
+            PRODUCTION_DEPLOYMENT_ID,
+            "legacy:preserved",
+        ),
     ]
 
 
@@ -209,6 +380,158 @@ async def test_m3_environment_head_remains_cas_updatable(repo):
         )
 
     assert result.rowcount == 1
+
+
+async def test_m3_run_assignment_rejects_update_but_lifecycle_can_advance(repo):
+    from core.distributed.runtime import upgrade_m3_schema
+
+    run = await repo.accept(spec(request_id="immutable-run-binding"))
+    async with repo.session_factory() as session, session.begin():
+        await upgrade_m3_schema(await session.connection())
+
+    async with repo.session_factory() as session:
+        with pytest.raises(DBAPIError, match="run assignment is immutable"):
+            await session.execute(
+                text(
+                    "UPDATE distributed_runs "
+                    "SET assignment_reason = 'tampered' WHERE id = :run_id"
+                ),
+                {"run_id": run.id},
+            )
+
+    async with repo.session_factory() as session, session.begin():
+        result = await session.execute(
+            text(
+                "UPDATE distributed_runs "
+                "SET status = 'running', attempt_count = attempt_count + 1 "
+                "WHERE id = :run_id"
+            ),
+            {"run_id": run.id},
+        )
+    assert result.rowcount == 1
+
+
+async def test_m3_expert_assignment_rejects_update_but_lifecycle_can_advance(
+    repo,
+):
+    from core.distributed.runtime import upgrade_m3_schema
+
+    run = await repo.accept(spec(request_id="immutable-expert-binding"))
+    async with repo.session_factory() as session, session.begin():
+        connection = await session.connection()
+        await upgrade_m3_schema(connection)
+        await _insert_expert_job(connection, run.id, "immutable-expert-job")
+
+    async with repo.session_factory() as session:
+        with pytest.raises(DBAPIError, match="expert assignment is immutable"):
+            await session.execute(
+                text(
+                    "UPDATE distributed_expert_jobs "
+                    "SET policy_hash = :policy_hash WHERE logical_key = :key"
+                ),
+                {"policy_hash": "6" * 64, "key": "immutable-expert-job"},
+            )
+
+    async with repo.session_factory() as session, session.begin():
+        result = await session.execute(
+            text(
+                "UPDATE distributed_expert_jobs "
+                "SET status = 'running', attempt_count = attempt_count + 1 "
+                "WHERE logical_key = :key"
+            ),
+            {"key": "immutable-expert-job"},
+        )
+    assert result.rowcount == 1
+
+
+async def test_m3_active_shadow_allows_lifecycle_update(repo):
+    shadow_id = await _insert_shadow(repo, "queued")
+    async with repo.session_factory() as session, session.begin():
+        result = await session.execute(
+            text(
+                "UPDATE policy_shadow_executions SET "
+                "status = 'running', fencing_token = fencing_token + 1, "
+                "owner = 'shadow-worker', lease_expires_at = :lease, "
+                "result = CAST(:result AS JSON), "
+                "updated_at = :updated_at WHERE shadow_id = :shadow_id"
+            ),
+            {
+                "lease": datetime.now(UTC) + timedelta(seconds=30),
+                "result": '{"started":true}',
+                "updated_at": datetime.now(UTC),
+                "shadow_id": shadow_id,
+            },
+        )
+    assert result.rowcount == 1
+
+
+async def test_m3_active_shadow_rejects_delete(repo):
+    shadow_id = await _insert_shadow(repo, "leased")
+    async with repo.session_factory() as session:
+        with pytest.raises(DBAPIError, match="cannot be deleted"):
+            await session.execute(
+                text(
+                    "DELETE FROM policy_shadow_executions "
+                    "WHERE shadow_id = :shadow_id"
+                ),
+                {"shadow_id": shadow_id},
+            )
+
+
+@pytest.mark.parametrize("operation", ["update", "delete"])
+async def test_m3_terminal_shadow_rejects_any_change(repo, operation):
+    shadow_id = await _insert_shadow(repo, "completed")
+    async with repo.session_factory() as session:
+        expected = (
+            "terminal row is append-only"
+            if operation == "update"
+            else "cannot be deleted"
+        )
+        with pytest.raises(DBAPIError, match=expected):
+            if operation == "update":
+                await session.execute(
+                    text(
+                        "UPDATE policy_shadow_executions "
+                        "SET updated_at = updated_at "
+                        "WHERE shadow_id = :shadow_id"
+                    ),
+                    {"shadow_id": shadow_id},
+                )
+            else:
+                await session.execute(
+                    text(
+                        "DELETE FROM policy_shadow_executions "
+                        "WHERE shadow_id = :shadow_id"
+                    ),
+                    {"shadow_id": shadow_id},
+                )
+
+
+@pytest.mark.parametrize(
+    ("column", "value"),
+    [
+        ("shadow_id", "00000000-0000-0000-0000-000000000099"),
+        ("parent_run_id", "00000000-0000-0000-0000-000000000098"),
+        ("deployment_id", "00000000-0000-0000-0000-000000000001"),
+        ("policy_hash", "5" * 64),
+        ("created_at", datetime(2099, 1, 1, tzinfo=UTC)),
+    ],
+)
+async def test_m3_active_shadow_rejects_identity_tampering(
+    repo,
+    column,
+    value,
+):
+    shadow_id = await _insert_shadow(repo, "running")
+    async with repo.session_factory() as session:
+        with pytest.raises(DBAPIError, match="identity is immutable"):
+            await session.execute(
+                text(
+                    f"UPDATE policy_shadow_executions SET {column} = :value "
+                    "WHERE shadow_id = :shadow_id"
+                ),
+                {"value": value, "shadow_id": shadow_id},
+            )
 
 
 async def _seed_append_only_test_rows(connection):
@@ -295,6 +618,99 @@ async def _seed_append_only_test_rows(connection):
             "now": now,
         },
     )
+
+
+async def _create_m2_run_and_expert_tables(connection):
+    await connection.execute(
+        text(
+            "CREATE TABLE distributed_runs ("
+            "id VARCHAR(36) PRIMARY KEY, learner_id VARCHAR(128) NOT NULL, "
+            "request_id VARCHAR(128) NOT NULL, operation VARCHAR(64) NOT NULL, "
+            "input_hash VARCHAR(64) NOT NULL, payload JSON NOT NULL, "
+            "status VARCHAR(32) NOT NULL, trace_id VARCHAR(64) NOT NULL, "
+            "result JSON, error_code VARCHAR(128), "
+            "attempt_count INTEGER NOT NULL, created_at TIMESTAMPTZ NOT NULL, "
+            "updated_at TIMESTAMPTZ NOT NULL)"
+        )
+    )
+    await connection.execute(
+        text(
+            "CREATE TABLE distributed_expert_jobs ("
+            "id VARCHAR(36) PRIMARY KEY, parent_run_id VARCHAR(36) NOT NULL "
+            "REFERENCES distributed_runs(id), "
+            "parent_fencing_token BIGINT NOT NULL, "
+            "logical_key VARCHAR(128) NOT NULL, role VARCHAR(32) NOT NULL, "
+            "input_hash VARCHAR(64) NOT NULL, policy_hash VARCHAR(64) NOT NULL, "
+            "payload JSON NOT NULL, payload_bytes INTEGER NOT NULL, "
+            "status VARCHAR(32) NOT NULL, attempt_count INTEGER NOT NULL, "
+            "max_attempts INTEGER NOT NULL, error_code VARCHAR(128), "
+            "deadline_at TIMESTAMPTZ NOT NULL, "
+            "created_at TIMESTAMPTZ NOT NULL, updated_at TIMESTAMPTZ NOT NULL, "
+            "completed_at TIMESTAMPTZ)"
+        )
+    )
+
+
+async def _insert_expert_job(connection, run_id, logical_key):
+    from core.distributed.runtime import BUILTIN_POLICY_HASH
+
+    now = datetime.now(UTC)
+    await connection.execute(
+        text(
+            "INSERT INTO distributed_expert_jobs ("
+            "id, parent_run_id, parent_fencing_token, logical_key, role, "
+            "input_hash, policy_hash, payload, payload_bytes, status, "
+            "attempt_count, max_attempts, deadline_at, created_at, updated_at"
+            ") VALUES ("
+            ":id, :run_id, 1, :logical_key, 'Assessment', :hash, "
+            ":policy_hash, CAST('{}' AS JSON), 2, 'queued', 0, 2, "
+            ":deadline, :now, :now)"
+        ),
+        {
+            "id": str(uuid4()),
+            "run_id": run_id,
+            "logical_key": logical_key,
+            "hash": "4" * 64,
+            "policy_hash": BUILTIN_POLICY_HASH,
+            "deadline": now + timedelta(minutes=1),
+            "now": now,
+        },
+    )
+
+
+async def _insert_shadow(repo, status):
+    from core.distributed.runtime import (
+        BUILTIN_POLICY_HASH,
+        REHEARSAL_DEPLOYMENT_ID,
+        upgrade_m3_schema,
+    )
+
+    run = await repo.accept(spec(request_id=f"shadow-{status}-{uuid4().hex}"))
+    shadow_id = str(uuid4())
+    now = datetime.now(UTC)
+    async with repo.session_factory() as session, session.begin():
+        connection = await session.connection()
+        await upgrade_m3_schema(connection)
+        await connection.execute(
+            text(
+                "INSERT INTO policy_shadow_executions ("
+                "shadow_id, parent_run_id, deployment_id, policy_hash, "
+                "status, fencing_token, owner, lease_expires_at, result, "
+                "created_at, updated_at"
+                ") VALUES ("
+                ":shadow_id, :run_id, :deployment_id, :policy_hash, :status, "
+                "0, NULL, NULL, NULL, :now, :now)"
+            ),
+            {
+                "shadow_id": shadow_id,
+                "run_id": run.id,
+                "deployment_id": REHEARSAL_DEPLOYMENT_ID,
+                "policy_hash": BUILTIN_POLICY_HASH,
+                "status": status,
+                "now": now,
+            },
+        )
+    return shadow_id
 
 
 async def test_accept_is_idempotent_and_conflicting_payload_is_rejected(repo):

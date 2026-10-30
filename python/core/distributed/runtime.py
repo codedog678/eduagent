@@ -470,13 +470,48 @@ async def upgrade_m3_schema(connection) -> None:
     await connection.execute(
         text(
             "UPDATE distributed_expert_jobs AS jobs SET "
-            "deployment_id = runs.deployment_id, "
-            "state_namespace = runs.state_namespace "
+            "deployment_id = COALESCE(jobs.deployment_id, runs.deployment_id), "
+            "state_namespace = COALESCE("
+            "jobs.state_namespace, runs.state_namespace) "
             "FROM distributed_runs AS runs "
             "WHERE jobs.parent_run_id = runs.id "
             "AND (jobs.deployment_id IS NULL OR jobs.state_namespace IS NULL)"
         )
     )
+    for source_table, source_column in (
+        ("distributed_runs", "effective_policy_hash"),
+        ("distributed_expert_jobs", "policy_hash"),
+    ):
+        await connection.execute(
+            text(
+                "INSERT INTO policy_artifacts ("
+                "policy_hash, parent_policy_hash, components, "
+                "fixed_components_hash, runtime_hash, source_revision, "
+                "protocol_hash, proposer_hash, data_role, evidence_bindings, "
+                "created_at"
+                ") SELECT "
+                "source.policy_hash, NULL, "
+                "json_build_object('legacy_policy_hash', "
+                "source.policy_hash), "
+                ":fixed_hash, :runtime_hash, 'legacy-m3-backfill', "
+                ":protocol_hash, :proposer_hash, 'legacy', "
+                "json_build_object('migration', 'm3'), :created_at "
+                f"FROM (SELECT DISTINCT {source_column} AS policy_hash "
+                f"FROM {source_table} WHERE {source_column} IS NOT NULL"
+                ") AS source "
+                "LEFT JOIN policy_artifacts AS artifacts "
+                "ON artifacts.policy_hash = source.policy_hash "
+                "WHERE artifacts.policy_hash IS NULL "
+                "ON CONFLICT (policy_hash) DO NOTHING"
+            ),
+            {
+                "fixed_hash": BUILTIN_FIXED_COMPONENTS_HASH,
+                "runtime_hash": BUILTIN_RUNTIME_HASH,
+                "protocol_hash": BUILTIN_PROTOCOL_HASH,
+                "proposer_hash": BUILTIN_PROPOSER_HASH,
+                "created_at": now,
+            },
+        )
 
     defaults = {
         "deployment_id": PRODUCTION_DEPLOYMENT_ID,
@@ -523,10 +558,20 @@ async def upgrade_m3_schema(connection) -> None:
             "FOREIGN KEY (deployment_id) "
             "REFERENCES policy_deployments(deployment_id)",
         ),
+        "fk_distributed_run_effective_policy": (
+            "distributed_runs",
+            "FOREIGN KEY (effective_policy_hash) "
+            "REFERENCES policy_artifacts(policy_hash)",
+        ),
         "fk_expert_job_deployment": (
             "distributed_expert_jobs",
             "FOREIGN KEY (deployment_id) "
             "REFERENCES policy_deployments(deployment_id)",
+        ),
+        "fk_expert_job_policy_artifact": (
+            "distributed_expert_jobs",
+            "FOREIGN KEY (policy_hash) "
+            "REFERENCES policy_artifacts(policy_hash)",
         ),
     }
     for name, (table_name, definition) in constraints.items():
@@ -534,7 +579,8 @@ async def upgrade_m3_schema(connection) -> None:
             text(
                 "DO $$ BEGIN "
                 f"IF NOT EXISTS (SELECT 1 FROM pg_constraint "
-                f"WHERE conname = '{name}') THEN "
+                f"WHERE conname = '{name}' "
+                f"AND conrelid = '{table_name}'::regclass) THEN "
                 f"ALTER TABLE {table_name} ADD CONSTRAINT {name} "
                 f"{definition}; "
                 "END IF; END $$"
@@ -548,8 +594,20 @@ async def upgrade_m3_schema(connection) -> None:
     )
     await connection.execute(
         text(
+            "CREATE INDEX IF NOT EXISTS ix_distributed_run_effective_policy "
+            "ON distributed_runs (effective_policy_hash)"
+        )
+    )
+    await connection.execute(
+        text(
             "CREATE INDEX IF NOT EXISTS ix_expert_job_deployment "
             "ON distributed_expert_jobs (deployment_id)"
+        )
+    )
+    await connection.execute(
+        text(
+            "CREATE INDEX IF NOT EXISTS ix_expert_job_policy "
+            "ON distributed_expert_jobs (policy_hash)"
         )
     )
 
@@ -585,12 +643,82 @@ async def upgrade_m3_schema(connection) -> None:
         )
     await connection.execute(
         text(
-            "CREATE OR REPLACE FUNCTION reject_terminal_shadow_change() "
+            "CREATE OR REPLACE FUNCTION reject_run_binding_change() "
             "RETURNS trigger AS $$ BEGIN "
+            "IF NEW.deployment_id IS DISTINCT FROM OLD.deployment_id "
+            "OR NEW.effective_policy_hash IS DISTINCT FROM "
+            "OLD.effective_policy_hash "
+            "OR NEW.policy_cohort IS DISTINCT FROM OLD.policy_cohort "
+            "OR NEW.assignment_key_hash IS DISTINCT FROM "
+            "OLD.assignment_key_hash "
+            "OR NEW.assignment_reason IS DISTINCT FROM OLD.assignment_reason "
+            "OR NEW.state_namespace IS DISTINCT FROM OLD.state_namespace "
+            "OR NEW.rehearsal_id IS DISTINCT FROM OLD.rehearsal_id "
+            "OR NEW.rehearsal_fault_profile IS DISTINCT FROM "
+            "OLD.rehearsal_fault_profile THEN "
+            "RAISE EXCEPTION 'distributed run assignment is immutable'; "
+            "END IF; "
+            "RETURN NEW; "
+            "END; $$ LANGUAGE plpgsql"
+        )
+    )
+    await connection.execute(
+        text(
+            "DROP TRIGGER IF EXISTS trg_distributed_run_binding_immutable "
+            "ON distributed_runs"
+        )
+    )
+    await connection.execute(
+        text(
+            "CREATE TRIGGER trg_distributed_run_binding_immutable "
+            "BEFORE UPDATE ON distributed_runs "
+            "FOR EACH ROW EXECUTE FUNCTION reject_run_binding_change()"
+        )
+    )
+    await connection.execute(
+        text(
+            "CREATE OR REPLACE FUNCTION reject_expert_binding_change() "
+            "RETURNS trigger AS $$ BEGIN "
+            "IF NEW.deployment_id IS DISTINCT FROM OLD.deployment_id "
+            "OR NEW.state_namespace IS DISTINCT FROM OLD.state_namespace "
+            "OR NEW.policy_hash IS DISTINCT FROM OLD.policy_hash THEN "
+            "RAISE EXCEPTION 'distributed expert assignment is immutable'; "
+            "END IF; "
+            "RETURN NEW; "
+            "END; $$ LANGUAGE plpgsql"
+        )
+    )
+    await connection.execute(
+        text(
+            "DROP TRIGGER IF EXISTS trg_expert_job_binding_immutable "
+            "ON distributed_expert_jobs"
+        )
+    )
+    await connection.execute(
+        text(
+            "CREATE TRIGGER trg_expert_job_binding_immutable "
+            "BEFORE UPDATE ON distributed_expert_jobs "
+            "FOR EACH ROW EXECUTE FUNCTION reject_expert_binding_change()"
+        )
+    )
+    await connection.execute(
+        text(
+            "CREATE OR REPLACE FUNCTION reject_invalid_shadow_change() "
+            "RETURNS trigger AS $$ BEGIN "
+            "IF TG_OP = 'DELETE' THEN "
+            "RAISE EXCEPTION '% rows cannot be deleted', TG_TABLE_NAME; "
+            "END IF; "
             "IF OLD.status NOT IN ('queued', 'leased', 'running') THEN "
             "RAISE EXCEPTION '% terminal row is append-only', TG_TABLE_NAME; "
             "END IF; "
-            "RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END; "
+            "IF NEW.shadow_id IS DISTINCT FROM OLD.shadow_id "
+            "OR NEW.parent_run_id IS DISTINCT FROM OLD.parent_run_id "
+            "OR NEW.deployment_id IS DISTINCT FROM OLD.deployment_id "
+            "OR NEW.policy_hash IS DISTINCT FROM OLD.policy_hash "
+            "OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN "
+            "RAISE EXCEPTION '% identity is immutable', TG_TABLE_NAME; "
+            "END IF; "
+            "RETURN NEW; "
             "END; $$ LANGUAGE plpgsql"
         )
     )
@@ -604,6 +732,6 @@ async def upgrade_m3_schema(connection) -> None:
         text(
             "CREATE TRIGGER trg_policy_shadow_terminal_immutable "
             "BEFORE UPDATE OR DELETE ON policy_shadow_executions "
-            "FOR EACH ROW EXECUTE FUNCTION reject_terminal_shadow_change()"
+            "FOR EACH ROW EXECUTE FUNCTION reject_invalid_shadow_change()"
         )
     )

@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -75,10 +75,11 @@ def test_deployment_rejects_traffic_outside_basis_point_range(traffic):
 
 
 def test_contracts_require_utc_timestamps_and_sha256_fields():
+    non_utc = timezone(timedelta(hours=8))
     with pytest.raises(ValidationError, match="aware UTC"):
         artifact(created_at=NOW.replace(tzinfo=None))
     with pytest.raises(ValidationError, match="aware UTC"):
-        receipt(issued_at=NOW.astimezone(tz=None))
+        receipt(issued_at=NOW.astimezone(non_utc))
     with pytest.raises(ValidationError, match="string_pattern_mismatch"):
         artifact(policy_hash="not-a-hash")
     with pytest.raises(ValidationError, match="extra_forbidden"):

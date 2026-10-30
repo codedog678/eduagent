@@ -1,9 +1,11 @@
 import os
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
 import pytest_asyncio
 from redis.asyncio import Redis
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 
@@ -20,6 +22,24 @@ async def repo():
     async with engine.begin() as conn:
         await conn.run_sync(DistributedBase.metadata.drop_all)
         await conn.run_sync(DistributedBase.metadata.create_all)
+        for policy_hash in ("a" * 64, "b" * 64):
+            await conn.execute(
+                text(
+                    "INSERT INTO policy_artifacts ("
+                    "policy_hash, parent_policy_hash, components, "
+                    "fixed_components_hash, runtime_hash, source_revision, "
+                    "protocol_hash, proposer_hash, data_role, "
+                    "evidence_bindings, created_at"
+                    ") VALUES ("
+                    ":policy_hash, NULL, CAST('{}' AS JSON), :policy_hash, "
+                    ":policy_hash, 'test', :policy_hash, :policy_hash, "
+                    "'test', CAST('{}' AS JSON), :created_at)"
+                ),
+                {
+                    "policy_hash": policy_hash,
+                    "created_at": datetime.now(UTC),
+                },
+            )
     factory = async_sessionmaker(engine, expire_on_commit=False)
     yield DistributedRunRepository(factory)
     async with engine.begin() as conn:
