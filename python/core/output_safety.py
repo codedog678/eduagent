@@ -1,12 +1,78 @@
 """从本轮不可信资料识别显式敏感载荷，统一处理模型输入和公开生成结果。"""
 
 import re
+from typing import Any
 
 
 PAYLOAD = re.compile(
     r"(?:口令|密码|密钥|私密令牌|api[_ -]?key|password|secret|access[_ -]?token)"
     r"\s*(?:是|为|[:：=])?\s*[`\"'“‘]?"
     r"([A-Za-z0-9][A-Za-z0-9_./+=-]{3,})", re.I)
+
+PRIVATE_PUBLIC_KEYS = frozenset({
+    "correct_answer",
+    "correct_index",
+    "explanation",
+    "system_prompt",
+    "thinking",
+})
+SECRET_KEY = re.compile(
+    r"(?:token|secret|password|authorization|cookie|api[_-]?key)",
+    re.I,
+)
+
+
+def secret_shaped_key(key: object) -> bool:
+    """秘密形状的键在任何嵌套层级都不能进入公开快照。"""
+    return isinstance(key, str) and bool(SECRET_KEY.search(key))
+
+
+def has_secret_shaped_key(value: Any) -> bool:
+    if isinstance(value, dict):
+        return any(
+            secret_shaped_key(key) or has_secret_shaped_key(item)
+            for key, item in value.items()
+        )
+    if isinstance(value, (list, tuple)):
+        return any(has_secret_shaped_key(item) for item in value)
+    return False
+
+
+def public_value(value: Any) -> Any:
+    """纯函数式复制公开数据，同时移除私有键并隐藏显式敏感载荷。"""
+    payloads: set[str] = set()
+
+    def collect(item: Any) -> None:
+        if isinstance(item, dict):
+            for nested in item.values():
+                collect(nested)
+        elif isinstance(item, (list, tuple)):
+            for nested in item:
+                collect(nested)
+        elif isinstance(item, str):
+            payloads.update(match.rstrip(".") for match in PAYLOAD.findall(item))
+
+    collect(value)
+
+    def clean(item: Any) -> Any:
+        if isinstance(item, dict):
+            return {
+                key: clean(nested)
+                for key, nested in item.items()
+                if str(key).lower() not in PRIVATE_PUBLIC_KEYS
+                and not secret_shaped_key(key)
+            }
+        if isinstance(item, (list, tuple)):
+            return [clean(nested) for nested in item]
+        if isinstance(item, str):
+            for payload in sorted(payloads, key=len, reverse=True):
+                item = item.replace(payload, "[敏感载荷已隐藏]")
+        return item
+
+    result = clean(value)
+    if has_secret_shaped_key(result):
+        raise ValueError("secret-shaped key survived public-data redaction")
+    return result
 
 
 def register_untrusted(ctx, value):
