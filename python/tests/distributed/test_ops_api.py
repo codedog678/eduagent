@@ -680,13 +680,13 @@ async def test_ops_access_requires_token_away_from_loopback():
 
 def test_ops_router_exposes_no_mutation_methods():
     app = create_app()
-    routes = [
-        route
-        for route in app.routes
-        if getattr(route, "path", "").startswith("/ops")
-    ]
+    routes = {
+        path: operations
+        for path, operations in app.openapi()["paths"].items()
+        if path.startswith("/ops")
+    }
 
-    assert {route.path for route in routes} == {
+    assert set(routes) == {
         "/ops/runs",
         "/ops/runs/{run_id}",
         "/ops/runs/{run_id}/trace",
@@ -694,4 +694,7 @@ def test_ops_router_exposes_no_mutation_methods():
         "/ops/expert-jobs/{job_id}",
         "/ops/workers",
     }
-    assert all(route.methods <= {"GET", "HEAD"} for route in routes)
+    assert all(
+        set(operations) <= {"get", "head"}
+        for operations in routes.values()
+    )
