@@ -315,6 +315,41 @@ class Coordinator:
         try:
             async def invoke(objective):
                 if step.agent == "Tutor":
+                    if ctx.expert_gateway is not None:
+                        tutor = TutorRuntime(
+                            ctx,
+                            self.service,
+                            ctx.knowledge_graph,
+                        )
+                        tutor.bind_prepared_quiz()
+                        draft = await self.expert(step, plan)
+                        if draft.status == "failed":
+                            raise AgentExecutionError(
+                                draft.error_code.value
+                                if draft.error_code
+                                else "expert_failed"
+                            )
+                        if draft.status == "needs_input":
+                            response = await ToolExecutor(
+                                ctx,
+                                role="Coordinator",
+                            ).execute(
+                                NativeToolCall(
+                                    id=f"{step.step_id}-tutor-ask",
+                                    name="ask_student",
+                                    arguments=json.dumps(
+                                        {"question": draft.needs_input}
+                                    ),
+                                )
+                            )
+                            if response["status"] != "ok":
+                                raise AgentExecutionError(
+                                    "question_not_created"
+                                )
+                            text_value = response["data"]["question"]
+                        else:
+                            text_value = draft.content
+                        return tutor.reply(text_value).model_dump()
                     ctx.record("agent_started", "Tutor", task_id=step.step_id, parent_run_id=ctx.run_id)
                     reply = await TutorRuntime(ctx, self.service, ctx.knowledge_graph).run(text)
                     ctx.record("agent_completed", "Tutor", task_id=step.step_id,

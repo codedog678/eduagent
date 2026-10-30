@@ -8,6 +8,7 @@ from core.distributed.contracts import (
     DistributedRunRequest,
     RunOperation,
 )
+from core.distributed.expert_contracts import RunExecutionAuthority
 from core.harness import LearningHarness
 
 
@@ -16,7 +17,11 @@ class BusinessStoreBusy(RuntimeError):
 
 
 class RunExecutor(Protocol):
-    async def execute(self, spec: DistributedRunRequest) -> dict:
+    async def execute(
+        self,
+        spec: DistributedRunRequest,
+        authority: RunExecutionAuthority,
+    ) -> dict:
         """Execute one frozen distributed run request."""
 
 
@@ -25,11 +30,17 @@ class LearningTaskExecutor:
         self,
         store_path: str,
         enable_db_logging: bool = False,
+        expert_gateway=None,
     ) -> None:
         self.store_path = store_path
         self.enable_db_logging = enable_db_logging
+        self.expert_gateway = expert_gateway
 
-    async def execute(self, spec: DistributedRunRequest) -> dict:
+    async def execute(
+        self,
+        spec: DistributedRunRequest,
+        authority: RunExecutionAuthority,
+    ) -> dict:
         if spec.operation != RunOperation.LEARNING_TASK:
             raise ValueError(f"unsupported operation: {spec.operation}")
 
@@ -44,6 +55,8 @@ class LearningTaskExecutor:
                     self.store_path,
                     settings.harness_timeout_seconds,
                     settings.quiz_ttl_seconds,
+                    execution_authority=authority,
+                    expert_gateway=self.expert_gateway,
                 )
             except RuntimeError as exc:
                 message = str(exc)

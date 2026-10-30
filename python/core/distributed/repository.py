@@ -837,6 +837,7 @@ class DistributedRunRepository:
     def _assert_active(run: DistributedRun) -> None:
         if run.status not in {
             RunStatus.RUNNING,
+            RunStatus.WAITING_EXPERT,
             RunStatus.COMMITTING,
         }:
             raise FencingViolation(

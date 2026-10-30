@@ -12,8 +12,14 @@ from core.coordination_models import AgentResult, LearningPlan, PlanStep
 from core.coordinator import Coordinator
 from core.llm_service import LLMResponse, NativeTurn, get_llm_service
 from core.run_context import active_run
-from core.distributed.expert_contracts import RunExecutionAuthority
+from core.distributed.expert_contracts import (
+    ExpertTerminalEnvelope,
+    ExpertUsage,
+    RunExecutionAuthority,
+    TutorDraft,
+)
 from core.specialist_runtime import SpecialistRuntime
+from core.tutor_runtime import TutorRuntime
 from tests.test_memory_coordination import call, context, harness, remote_plan, seed
 
 
@@ -170,6 +176,66 @@ def test_late_distributed_delegation_gets_fresh_bounded_deadline(
         frozen.budget.deadline_at - datetime.now(UTC)
     ).total_seconds()
     assert 115 <= remaining <= 120
+
+
+@pytest.mark.asyncio
+async def test_remote_tutor_draft_becomes_reply_only_in_parent(
+    harness,
+    monkeypatch,
+):
+    ctx = context(harness)
+    ctx.effective_policy_hash = "b" * 64
+    plan = LearningPlan(
+        goal="解释安排",
+        steps=[
+            PlanStep(
+                step_id="t",
+                agent="Tutor",
+                objective="解释安排",
+            )
+        ],
+    )
+
+    class Gateway:
+        async def execute(self, request):
+            return ExpertTerminalEnvelope(
+                step_id=request.step_id,
+                role=request.role,
+                input_hash=request.input_hash,
+                outcome="succeeded",
+                draft=TutorDraft(
+                    status="completed",
+                    content="先复习基础词汇。",
+                ),
+                usage=ExpertUsage(
+                    model_calls=1,
+                    tool_calls=0,
+                    input_tokens=10,
+                    output_tokens=5,
+                    provider="remote-test",
+                    model="expert-test",
+                ),
+                completed_at=datetime.now(UTC),
+            )
+
+    ctx.expert_gateway = Gateway()
+    calls = 0
+    original = TutorRuntime.reply
+
+    def recording_reply(self, text):
+        nonlocal calls
+        calls += 1
+        return original(self, text)
+
+    monkeypatch.setattr(TutorRuntime, "reply", recording_reply)
+    result = await Coordinator(
+        ctx,
+        Model(lambda *_: final("unused"), ctx),
+    ).delegate(plan.steps[0], plan, "请解释")
+
+    assert result["response"] == "先复习基础词汇。"
+    assert calls == 1
+    assert ctx.model_calls == 1
 
 
 @pytest.mark.asyncio

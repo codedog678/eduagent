@@ -135,13 +135,16 @@ class TutorRuntime:
     async def execute(self, call, batch_size=1):
         return await self.executor.execute(call, batch_size)
 
-    async def run(self, text):
-        self.ctx.role = "Tutor"
+    def bind_prepared_quiz(self):
         if self.ctx.prepared_quiz:
             quiz_id, quiz = self.ctx.prepared_quiz
             # 专家准备后又经过 Tutor 辅导的题目按受助练习记账。
             quiz["assisted"] = True
             self.ctx.quiz = {**quiz, "quiz_id": quiz_id}
+
+    async def run(self, text):
+        self.ctx.role = "Tutor"
+        self.bind_prepared_quiz()
         self.ctx.retrieved_items = (await self.ctx.history.retrieval.search(
             self.ctx.learner, self.ctx.knowledge_id, text, 5, self.ctx))["items"]
         self.ctx.retrieved_refs = list(dict.fromkeys(self.ctx.retrieved_refs +

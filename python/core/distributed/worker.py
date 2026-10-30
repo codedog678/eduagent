@@ -7,6 +7,7 @@ from fastapi import HTTPException
 
 from core.distributed.contracts import RunStatus
 from core.distributed.executor import BusinessStoreBusy
+from core.distributed.expert_contracts import RunExecutionAuthority
 from core.distributed.repository import FencingViolation
 from core.run_context import RunExhausted
 
@@ -281,7 +282,17 @@ class RunWorker:
                         )
                     else:
                         execution = asyncio.create_task(
-                            self.executor.execute(request)
+                            self.executor.execute(
+                                request,
+                                RunExecutionAuthority(
+                                    distributed_run_id=claim.run_id,
+                                    run_fencing_token=claim.fencing_token,
+                                    trace_id=claim.trace_id,
+                                    attempt_number=claim.attempt_count,
+                                    worker_id=self.worker_id,
+                                    parent_deadline_at=claim.deadline_at,
+                                ),
+                            )
                         )
                         heartbeat = asyncio.create_task(
                             self._heartbeat(

@@ -21,7 +21,8 @@ class BlockingExecutor:
         self.cancelled = asyncio.Event()
         self.calls = 0
 
-    async def execute(self, request):
+    async def execute(self, request, authority):
+        self.authority = authority
         self.calls += 1
         self.started.set()
         try:
@@ -36,18 +37,19 @@ class ImmediateExecutor:
     def __init__(self):
         self.calls = 0
 
-    async def execute(self, request):
+    async def execute(self, request, authority):
+        self.authority = authority
         self.calls += 1
         return {"request_id": request.request_id}
 
 
 class BusyExecutor:
-    async def execute(self, request):
+    async def execute(self, request, authority):
         raise BusinessStoreBusy("business_store_busy")
 
 
 class ForbiddenExecutor:
-    async def execute(self, request):
+    async def execute(self, request, authority):
         raise PermissionError("forbidden")
 
 

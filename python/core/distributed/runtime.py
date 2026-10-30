@@ -109,6 +109,43 @@ class DistributedRuntime:
             metrics=self.metrics,
         )
 
+    def expert_gateway(self):
+        if not self.settings.distributed_experts_enabled:
+            return None
+        from core.llm_service import get_llm_service
+
+        from .expert_engine import ExpertEngine
+        from .expert_gateway import (
+            DurableExpertGateway,
+            InlineExpertGateway,
+        )
+        from .expert_repository import ExpertJobRepository
+
+        repository = ExpertJobRepository(
+            self.session_factory,
+            queued_limit_per_role=(
+                self.settings.expert_queued_limit_per_role
+            ),
+            running_limit_per_role=(
+                self.settings.expert_running_limit_per_role
+            ),
+            queued_payload_bytes_limit=(
+                self.settings.expert_queued_payload_bytes_limit
+            ),
+            max_payload_bytes=self.settings.expert_max_payload_bytes,
+            max_job_seconds=self.settings.expert_max_job_seconds,
+            retry_base_seconds=self.settings.expert_retry_base_seconds,
+            retry_max_seconds=self.settings.expert_retry_max_seconds,
+        )
+        return DurableExpertGateway(
+            repository,
+            InlineExpertGateway(
+                ExpertEngine(get_llm_service())
+            ),
+            poll_seconds=self.settings.expert_result_poll_seconds,
+            metrics=self.metrics,
+        )
+
 
 def build_runtime(settings_obj=settings) -> DistributedRuntime:
     from .broker import RedisRunBroker

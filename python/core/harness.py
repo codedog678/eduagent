@@ -41,13 +41,16 @@ class IssuedQuestion(BaseModel):
 
 class LearningHarness:
     def __init__(self, orchestrator, path: str, timeout: float = 45,
-                 quiz_ttl: float = 86400, queue_timeout: float | None = None):
+                 quiz_ttl: float = 86400, queue_timeout: float | None = None,
+                 *, execution_authority=None, expert_gateway=None):
         self.orch = orchestrator
         self.timeout = timeout
         self.quiz_ttl = quiz_ttl
         self.learner_locks = KeyedLocks()
         self.queue_timeout = (settings.harness_queue_timeout_seconds
                               if queue_timeout is None else queue_timeout)
+        self.execution_authority = execution_authority
+        self.expert_gateway = expert_gateway
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         # 拒绝多个 worker 使用同一检查点，避免进程间缓存覆盖。
         self._owner = open(path + ".lock", "a")
@@ -234,6 +237,8 @@ class LearningHarness:
                 effective_policy_hash=policy["policy_hash"],
                 max_model_calls=settings.coordinator_max_model_calls,
                 max_tool_calls=settings.coordinator_max_tool_calls,
+                execution_authority=self.execution_authority,
+                expert_gateway=self.expert_gateway,
             )
             metadata = runtime_metadata(settings)
             metadata["effective_policy_hash"] = ctx.effective_policy_hash

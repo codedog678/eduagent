@@ -44,7 +44,10 @@ async def run_forever(command: str) -> None:
             )
             worker = runtime.worker(
                 worker_id,
-                LearningTaskExecutor(settings.harness_store_path),
+                LearningTaskExecutor(
+                    settings.harness_store_path,
+                    expert_gateway=runtime.expert_gateway(),
+                ),
             )
             while True:
                 await worker.run_once()
