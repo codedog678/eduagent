@@ -261,14 +261,13 @@ class RegistryProcess:
             with suppress(asyncio.CancelledError):
                 await self._heartbeat_task
         async with self._write_lock:
-            if self.active:
-                with suppress(Exception):
-                    await self._bounded(
-                        self.registry.stop(
-                            self.worker_id,
-                            self.instance_id,
-                        )
+            with suppress(Exception):
+                await self._bounded(
+                    self.registry.stop(
+                        self.worker_id,
+                        self.instance_id,
                     )
+                )
             self.active = False
 
     async def _heartbeat(self) -> None:

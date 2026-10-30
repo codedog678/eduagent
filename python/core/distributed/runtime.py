@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from config.settings import settings
 
+from .broker import RedisStreamBroker
 from .metrics import DistributedMetrics
 from .models import DistributedBase
 from .ops_queries import OpsQueries
@@ -39,6 +40,11 @@ class DistributedRuntime:
         self.session_factory = session_factory
         self.repository = repository
         self.broker = broker
+        self.expert_broker = RedisStreamBroker(
+            broker.redis,
+            settings_obj.expert_stream,
+            settings_obj.expert_consumer_group,
+        )
         self.metrics = metrics or DistributedMetrics()
         self.tracer = tracer or DurableTracer(repository)
         self.otel_provider = otel_provider
@@ -58,6 +64,8 @@ class DistributedRuntime:
                 self.settings.distributed_attempt_timeout_seconds,
             )
         await self.broker.ensure_group()
+        if self.settings.distributed_experts_enabled:
+            await self.expert_broker.ensure_group()
 
     async def close(self) -> None:
         try:
@@ -142,6 +150,50 @@ class DistributedRuntime:
             ),
             poll_seconds=self.settings.expert_result_poll_seconds,
             metrics=self.metrics,
+        )
+
+    def expert_dispatcher(self):
+        from .expert_dispatcher import ExpertDispatcher
+
+        return ExpertDispatcher(
+            self.expert_repository,
+            self.expert_broker,
+            self.settings.distributed_outbox_batch_size,
+            metrics=self.metrics,
+        )
+
+    def expert_reaper(self):
+        from .expert_reaper import ExpertReaper
+
+        return ExpertReaper(
+            self.expert_repository,
+            metrics=self.metrics,
+        )
+
+    def expert_worker(
+        self,
+        worker_id,
+        engine,
+        *,
+        roles,
+        registry_process=None,
+    ):
+        from .expert_worker import ExpertWorker
+
+        return ExpertWorker(
+            worker_id,
+            self.expert_repository,
+            self.expert_broker,
+            engine,
+            roles=roles,
+            lease_seconds=self.settings.expert_lease_seconds,
+            heartbeat_seconds=self.settings.expert_heartbeat_seconds,
+            poll_block_ms=self.settings.expert_poll_block_ms,
+            pause_before_result_seconds=(
+                self.settings.expert_demo_pause_before_result_seconds
+            ),
+            metrics=self.metrics,
+            registry_process=registry_process,
         )
 
     def _build_expert_repository(self):

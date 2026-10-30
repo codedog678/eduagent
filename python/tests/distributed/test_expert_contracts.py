@@ -182,7 +182,11 @@ def test_distributed_experts_require_distributed_run_plane():
     with pytest.raises(
         ValidationError, match="distributed experts require distributed run plane"
     ):
-        Settings(_env_file=None, distributed_experts_enabled=True)
+        Settings(
+            _env_file=None,
+            distributed_enabled=False,
+            distributed_experts_enabled=True,
+        )
 
 
 def test_waiting_expert_is_active_but_not_terminal():

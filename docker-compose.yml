@@ -86,9 +86,13 @@ services:
     environment:
       <<: &distributed-env
         DISTRIBUTED_ENABLED: "true"
+        DISTRIBUTED_EXPERTS_ENABLED: "true"
         DISTRIBUTED_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/edu_agent
         DISTRIBUTED_REDIS_URL: redis://redis:6379/1
-        HARNESS_STORE_PATH: /app/data/distributed-harness.sqlite3
+        EXPERT_STREAM: ${EXPERT_STREAM:-eduagent:experts}
+        EXPERT_CONSUMER_GROUP: ${EXPERT_CONSUMER_GROUP:-eduagent-expert-workers}
+        EXPERT_LEASE_SECONDS: ${EXPERT_LEASE_SECONDS:-15}
+        EXPERT_HEARTBEAT_SECONDS: ${EXPERT_HEARTBEAT_SECONDS:-3}
         LLM_PROVIDER: template
         MEMORY_RETRIEVAL_MODE: lexical
         MEMORY_WORKER_ENABLED: "false"
@@ -131,6 +135,7 @@ services:
       <<: *distributed-env
       DISTRIBUTED_WORKER_ID: worker-a
       DISTRIBUTED_DEMO_PAUSE_BEFORE_COMMIT_SECONDS: ${DISTRIBUTED_DEMO_PAUSE_BEFORE_COMMIT_SECONDS:-0}
+      HARNESS_STORE_PATH: /app/data/distributed-harness.sqlite3
     volumes:
       - distributed_harnessdata:/app/data
     depends_on:
@@ -146,8 +151,60 @@ services:
     environment:
       <<: *distributed-env
       DISTRIBUTED_WORKER_ID: worker-b
+      HARNESS_STORE_PATH: /app/data/distributed-harness.sqlite3
     volumes:
       - distributed_harnessdata:/app/data
+    depends_on:
+      distributed-api:
+        condition: service_started
+
+  expert-dispatcher:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "expert-dispatcher"]
+    environment: *distributed-env
+    depends_on:
+      distributed-api:
+        condition: service_started
+
+  expert-reaper:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "expert-reaper"]
+    environment: *distributed-env
+    depends_on:
+      distributed-api:
+        condition: service_started
+
+  expert-worker-a:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "expert-worker"]
+    environment:
+      <<: *distributed-env
+      EXPERT_WORKER_ID: expert-a
+      EXPERT_WORKER_ROLES: Assessment,Curriculum,Tutor
+      EXPERT_DEMO_PAUSE_BEFORE_RESULT_SECONDS: ${EXPERT_DEMO_PAUSE_BEFORE_RESULT_SECONDS:-0}
+    depends_on:
+      distributed-api:
+        condition: service_started
+
+  expert-worker-b:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "expert-worker"]
+    environment:
+      <<: *distributed-env
+      EXPERT_WORKER_ID: expert-b
+      EXPERT_WORKER_ROLES: Assessment,Curriculum,Tutor
     depends_on:
       distributed-api:
         condition: service_started

@@ -6,6 +6,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from api.distributed_main import create_app
+from config.settings import settings
 from core.distributed.metrics import DistributedMetrics
 from core.distributed.models import DistributedBase
 from core.distributed.repository import DistributedRunRepository
@@ -59,6 +60,9 @@ async def distributed_app():
         DistributedRunRepository(factory),
         FakeBroker(),
         metrics=DistributedMetrics(),
+        settings_obj=settings.model_copy(
+            update={"distributed_experts_enabled": False}
+        ),
     )
     app = create_app(lambda: runtime)
     async with app.router.lifespan_context(app):

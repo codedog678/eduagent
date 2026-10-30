@@ -45,6 +45,7 @@ def worker_process(
     env = {
         **os.environ,
         "DISTRIBUTED_ENABLED": "true",
+        "DISTRIBUTED_EXPERTS_ENABLED": "false",
         "DISTRIBUTED_DATABASE_URL": database_url,
         "DISTRIBUTED_REDIS_URL": redis_url,
         "DISTRIBUTED_STREAM": stream,

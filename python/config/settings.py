@@ -80,6 +80,8 @@ class Settings(BaseSettings):
     distributed_experts_enabled: bool = False
     expert_stream: str = "eduagent:experts"
     expert_consumer_group: str = "eduagent-expert-workers"
+    expert_worker_id: str = ""
+    expert_worker_roles: str = "Assessment,Curriculum,Tutor"
     expert_lease_seconds: float = Field(default=15, ge=3, le=300)
     expert_heartbeat_seconds: float = Field(default=3, ge=.5, le=60)
     expert_poll_block_ms: int = Field(default=1000, ge=10, le=60000)
