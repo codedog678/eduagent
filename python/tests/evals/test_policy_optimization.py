@@ -21,7 +21,10 @@ from evals.optimization.protocol import (
     assert_holdout_disjoint, load_policy, load_protocol, policy_artifact,
     prepare_protocol, private_literals, scorer_digest, seed_candidate, validate_candidate,
 )
-from evals.optimization.scoring import evidence_matches, score_with_judge, validate_judgment
+from evals.optimization.judge_v3 import validate_result
+from evals.optimization.scoring import (
+    evidence_matches, judge_payload, score_with_judge, validate_judgment,
+)
 
 
 DATASET = Path(__file__).resolve().parents[2] / "evals/datasets/tutor_agent50_rsi_v2.jsonl"
@@ -172,10 +175,6 @@ class MockTextModel:
         responses = [s["response"] for s in steps.values() if s["response"]]
         evidence = responses[-1] if responses else ""
         passed = "MOCK_IMPROVED" in evidence
-        response_ref = next(
-            (key for key in reversed(payload["evidence_refs"]) if key.startswith("response:")),
-            None,
-        )
         return json.dumps({
             "schema_version": 3,
             "verdict": "pass" if passed else "fail",
@@ -183,15 +182,7 @@ class MockTextModel:
             "criterion_results": [{
                 "criterion_id": criterion_id,
                 "verdict": "pass" if passed else "fail",
-                "evidence_refs": (
-                    [response_ref] if criterion_id.startswith("semantic:") and response_ref
-                    else ([
-                        key for key in payload["evidence_refs"]
-                        if key.startswith(
-                            "call:" + criterion_id.removeprefix("decision:") + ":"
-                        )
-                    ] or ["no_calls:" + criterion_id.removeprefix("decision:")])
-                ),
+                "evidence_refs": payload["criterion_evidence"][criterion_id]["required_refs"],
                 "rationale": "模拟判定，仅用于测试",
             } for criterion_id in payload["criterion_ids"]],
         })
@@ -284,11 +275,122 @@ def test_no_partial_batch_scoring_when_budget_is_insufficient(tmp_path):
 
 
 def test_standalone_cli_reserves_two_judge_calls_per_metric():
-    from evals.optimization.cli import comparison_request_reserve, metric_request_reserve
+    from evals.optimization.cli import (
+        comparison_request_reserve, iteration_request_reserve, metric_request_reserve,
+    )
     cases = load_live_cases(DATASET)[:2]
     assert metric_request_reserve(cases[0]) == cases[0].expected_model_requests_max + 2
     assert comparison_request_reserve(cases, 3) == 6 * sum(
         case.expected_model_requests_max + 2 for case in cases)
+    assert iteration_request_reserve(cases, cases[:1], 1) == (
+        2 * max(case.expected_model_requests_max + 2 for case in cases)
+        + cases[0].expected_model_requests_max + 2
+        + 1
+    )
+
+
+def semantic_result(payload, criterion_id, evidence_refs):
+    results = []
+    for identifier in payload["criterion_ids"]:
+        if identifier == criterion_id:
+            refs = evidence_refs
+        elif identifier.startswith("semantic:"):
+            refs = payload["criterion_evidence"][identifier]["required_refs"]
+        else:
+            refs = payload["criterion_evidence"][identifier]["required_refs"]
+        results.append({
+            "criterion_id": identifier,
+            "verdict": "pass",
+            "evidence_refs": refs,
+            "rationale": "测试证据绑定",
+        })
+    return json.dumps({
+        "schema_version": 3,
+        "verdict": "pass",
+        "reason_codes": ["all_criteria_passed"],
+        "criterion_results": results,
+    }, ensure_ascii=False)
+
+
+def test_semantic_evidence_rejects_unrelated_cross_step_response():
+    case = next(c for c in load_live_cases(DATASET) if c.case_id == "live-06-reading-goal-cross-session")
+    observed = {"steps": {
+        "s1": {"status": "completed", "action": "converse",
+               "result": {"teaching_response": {"response": "先说明你的目标。"}}},
+        "s2": {"status": "completed", "action": "converse",
+               "result": {"teaching_response": {"response": "找时间应定位具体细节。"}}},
+    }}
+    payload = judge_payload(case, observed)
+    criterion_id = "semantic:H5"
+
+    assert payload["criterion_evidence"][criterion_id] == {
+        "allowed_refs": ["response:s2"],
+        "required_refs": ["response:s2"],
+    }
+    with pytest.raises(ValueError, match="wrong criterion or type"):
+        validate_result(
+            semantic_result(payload, criterion_id, ["response:s1"]),
+            expected_criterion_ids=payload["criterion_ids"],
+            allowed_evidence_refs=set(payload["evidence_refs"]),
+            criterion_evidence=payload["criterion_evidence"],
+        )
+
+
+def test_multistep_semantic_evidence_requires_both_responses():
+    case = next(c for c in load_live_cases(DATASET) if c.case_id == "live-05-missing-sentence-followup")
+    observed = {"steps": {
+        "s1": {"status": "completed", "action": "converse",
+               "result": {"teaching_response": {"response": "请提供完整例句。"}}},
+        "s2": {"status": "completed", "action": "converse",
+               "result": {"teaching_response": {"response": "since 引出持续到现在的起点。"}}},
+    }}
+    payload = judge_payload(case, observed)
+    criterion_id = "semantic:H5"
+    required = ["response:s1", "response:s2"]
+
+    assert payload["criterion_evidence"][criterion_id] == {
+        "allowed_refs": required,
+        "required_refs": required,
+    }
+    with pytest.raises(ValueError, match="coverage"):
+        validate_result(
+            semantic_result(payload, criterion_id, ["response:s1"]),
+            expected_criterion_ids=payload["criterion_ids"],
+            allowed_evidence_refs=set(payload["evidence_refs"]),
+            criterion_evidence=payload["criterion_evidence"],
+        )
+    assert validate_result(
+        semantic_result(payload, criterion_id, required),
+        expected_criterion_ids=payload["criterion_ids"],
+        allowed_evidence_refs=set(payload["evidence_refs"]),
+        criterion_evidence=payload["criterion_evidence"],
+    )
+
+
+@pytest.mark.parametrize("case_id", [
+    "live-08-retrieve-full-old-note",
+    "live-11-assisted-correct-not-independent",
+])
+def test_frozen_rsi_semantics_bind_only_relevant_response_steps(case_id):
+    case = next(c for c in load_live_cases(DATASET) if c.case_id == case_id)
+    observed = {"steps": {
+        "s1": {"status": "completed", "action": "converse",
+               "result": {"teaching_response": {"response": "相关回复"}}},
+        "unrelated": {"status": "completed", "action": "converse",
+                      "result": {"teaching_response": {"response": "无关回复"}}},
+    }}
+    payload = judge_payload(case, observed)
+    semantic_policies = [
+        payload["criterion_evidence"][f"semantic:{check.id}"]
+        for check in case.hard_checks
+        if check.path.startswith(("retrieval_", "hint_"))
+    ]
+
+    assert semantic_policies
+    assert all(policy == {
+        "allowed_refs": ["response:s1"],
+        "required_refs": ["response:s1"],
+    } for policy in semantic_policies)
 
 
 def test_acceptance_keeps_baseline_on_hard_or_capability_regression():

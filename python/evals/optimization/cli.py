@@ -33,6 +33,15 @@ def comparison_request_reserve(cases, repeats: int) -> int:
     return 2 * repeats * sum(metric_request_reserve(case) for case in cases)
 
 
+def iteration_request_reserve(train, val, minibatch: int) -> int:
+    """Reserve one worst-case GEPA iteration, validation pass, and reflection call."""
+    return (
+        2 * minibatch * max(metric_request_reserve(case) for case in train)
+        + sum(metric_request_reserve(case) for case in val)
+        + 1
+    )
+
+
 def run_search(adapter, protocol, cases, *, max_metric_calls=160, minibatch=3, run_dir=None,
                parent=None):
     import gepa
@@ -44,11 +53,7 @@ def run_search(adapter, protocol, cases, *, max_metric_calls=160, minibatch=3, r
         raise ValueError("invalid minibatch or metric budget too small to go beyond seed validation")
     # 采用真实 GEPA 搜索/候选选择；Adapter 自定义反思请求用于统一计费。
     # 每个 metric 预留一次主 Judge 与一次 repair；实际账本只结算真实调用。
-    iteration_requests = (
-        2 * minibatch * 7
-        + sum(metric_request_reserve(case) for case in val)
-        + 1
-    )
+    iteration_requests = iteration_request_reserve(train, val, minibatch)
     return gepa.optimize(
         seed_candidate=seed_candidate() if parent is None else parent,
         trainset=train, valset=val, adapter=adapter,

@@ -100,6 +100,30 @@ def evidence_matches(evidence: str, observed_text: str) -> bool:
     return True
 
 
+def semantic_response_refs(check, case, evidence_refs: dict[str, str]) -> list[str]:
+    """Bind one semantic check to only the response steps named by its frozen path."""
+    path_steps = check.path.split(".", 1)[0].split("/")
+    if path_steps and all(re.fullmatch(r"s\d+", step_id) for step_id in path_steps):
+        step_ids = path_steps
+    elif check.path.startswith("retrieval_"):
+        step_ids = [
+            step.id for step in case.steps
+            if step.action == "converse" and not step.quiz_id
+        ]
+    elif check.path.startswith("hint_"):
+        step_ids = [
+            step.id for step in case.steps
+            if step.action == "converse" and step.quiz_id
+        ]
+    else:
+        raise ValueError(f"semantic check has no response-step binding: {check.id}")
+    return [
+        f"response:{step_id}"
+        for step_id in step_ids
+        if f"response:{step_id}" in evidence_refs
+    ]
+
+
 def validate_judgment(raw: str, case, observed) -> Judgment:
     require_rsi_contract(case)
     judgment = Judgment.model_validate_json(raw)
@@ -151,13 +175,18 @@ def judge_payload(case, observed):
         if step["action"] == "converse" and step["status"] == "completed" and not step["calls"]:
             evidence_refs[f"no_calls:{step_id}"] = json.dumps(
                 {"step_id": step_id, "call_count": 0}, separators=(",", ":"))
-    response_refs = [ref for ref in evidence_refs if ref.startswith("response:")]
+    semantic_checks = [
+        check for check in case.hard_checks if check.method == "semantic_review"
+    ]
+    semantic_by_id = {f"semantic:{check.id}": check for check in semantic_checks}
     criterion_evidence = {}
     for criterion_id in criterion_ids:
         if criterion_id.startswith("semantic:"):
+            response_refs = semantic_response_refs(
+                semantic_by_id[criterion_id], case, evidence_refs)
             criterion_evidence[criterion_id] = {
                 "allowed_refs": response_refs,
-                "required_refs": [],
+                "required_refs": response_refs,
             }
         else:
             step_id = criterion_id.removeprefix("decision:")
@@ -173,8 +202,7 @@ def judge_payload(case, observed):
         "criterion_ids": criterion_ids,
         "evidence_refs": evidence_refs,
         "criterion_evidence": criterion_evidence,
-        "semantic_checks": [c.model_dump() for c in case.hard_checks
-                            if c.method == "semantic_review"],
+        "semantic_checks": [check.model_dump() for check in semantic_checks],
         "expected_behavior": case.expected_behavior,
         "acceptable_tool_paths": case.acceptable_tool_paths,
         "criteria": case.tool_decision_criteria,

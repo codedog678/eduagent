@@ -10,6 +10,7 @@ from evals.optimization.judge_v3 import (
     JudgeV3Result,
     Verdict,
     judge_once,
+    not_observed_outcome,
     normalize_result,
     replay_outcome,
     validate_result,
@@ -215,6 +216,67 @@ def test_replay_rejects_any_provenance_tampering(mutation):
             judge_call_count=calls,
             raw_judgment_v3=final,
         )
+
+
+def replay_record(outcome, judge_call_count):
+    diagnostics = outcome.model_dump(mode="json", exclude={"result"})
+    return replay_outcome(
+        PAYLOAD,
+        diagnostics=diagnostics,
+        judge_call_count=judge_call_count,
+        raw_judgment_v3=outcome.result.model_dump(mode="json"),
+    )
+
+
+def test_replay_accepts_zero_call_not_observed():
+    outcome = not_observed_outcome(PAYLOAD)
+
+    assert replay_record(outcome, 0) == outcome.result
+
+
+@pytest.mark.asyncio
+async def test_replay_accepts_one_call_first_valid():
+    outcome = await judge_once(PAYLOAD, FakeTextModel([json.dumps(VALID)]))
+
+    assert replay_record(outcome, 1) == outcome.result
+    assert outcome.result.verdict == Verdict.PASS
+
+
+@pytest.mark.asyncio
+async def test_replay_accepts_two_calls_repair_valid():
+    invalid = json.dumps({**VALID, "unexpected": True})
+    outcome = await judge_once(
+        PAYLOAD, FakeTextModel([invalid, json.dumps(VALID)]))
+
+    assert replay_record(outcome, 2) == outcome.result
+    assert outcome.repaired is True
+
+
+@pytest.mark.asyncio
+async def test_replay_accepts_two_invalid_calls_as_deterministic_unknown():
+    outcome = await judge_once(PAYLOAD, FakeTextModel(["not-json", '{"schema_version":3}']))
+
+    replayed = replay_record(outcome, 2)
+
+    assert replayed == outcome.result
+    assert replayed.verdict == Verdict.UNKNOWN
+    assert replayed.reason_codes == ["invalid_schema"]
+
+
+@pytest.mark.parametrize("judge_call_count", [
+    True,
+    False,
+    1.0,
+    2.0,
+    "1",
+    "-1",
+    -1,
+])
+def test_replay_rejects_non_strict_or_negative_judge_call_count(judge_call_count):
+    outcome = not_observed_outcome(PAYLOAD)
+
+    with pytest.raises(ValueError, match="type or range"):
+        replay_record(outcome, judge_call_count)
 
 
 def test_criterion_evidence_is_nonempty_typed_and_covers_all_calls():

@@ -227,6 +227,8 @@ def replay_outcome(
     raw_judgment_v3: dict,
 ) -> JudgeV3Result:
     """Rebuild the final v3 result from immutable raw/repair responses."""
+    if type(judge_call_count) is not int or not 0 <= judge_call_count <= JUDGE_MAX_CALLS:
+        raise ValueError("judge call count type or range mismatch")
     if not isinstance(diagnostics, dict) or set(diagnostics) != {
         "raw_response", "repair_response", "validation_errors", "repaired",
     }:
