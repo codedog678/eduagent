@@ -1,9 +1,14 @@
 """单轮执行上下文；领域事件和 Tutor 共用关联 ID 与截止时间。"""
 
+from __future__ import annotations
+
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 import time
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.distributed.expert_contracts import RunExecutionAuthority
 
 
 class RunExhausted(RuntimeError):
@@ -55,6 +60,8 @@ class RunContext:
     history_discovery_used: bool = False
     role: str = "Tutor"
     task_id: str | None = None
+    execution_authority: RunExecutionAuthority | None = None
+    expert_gateway: Any = None
 
     def consume(self, resource):
         self.remaining()

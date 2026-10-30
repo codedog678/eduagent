@@ -74,6 +74,25 @@ class Settings(BaseSettings):
     distributed_demo_pause_before_commit_seconds: float = Field(
         default=0, ge=0, le=300
     )
+    distributed_experts_enabled: bool = False
+    expert_stream: str = "eduagent:experts"
+    expert_consumer_group: str = "eduagent-expert-workers"
+    expert_lease_seconds: float = Field(default=15, ge=3, le=300)
+    expert_heartbeat_seconds: float = Field(default=3, ge=.5, le=60)
+    expert_poll_block_ms: int = Field(default=1000, ge=10, le=60000)
+    expert_max_job_seconds: float = Field(default=120, ge=1, le=3600)
+    expert_max_payload_bytes: int = Field(default=262144, ge=1024, le=10485760)
+    expert_queued_payload_bytes_limit: int = Field(
+        default=10485760, ge=1024, le=1073741824
+    )
+    expert_queued_limit_per_role: int = Field(default=50, ge=1, le=10000)
+    expert_running_limit_per_role: int = Field(default=2, ge=1, le=1000)
+    expert_retry_base_seconds: float = Field(default=1, gt=0, le=300)
+    expert_retry_max_seconds: float = Field(default=30, gt=0, le=3600)
+    expert_result_poll_seconds: float = Field(default=.25, gt=0, le=60)
+    expert_demo_pause_before_result_seconds: float = Field(
+        default=0, ge=0, le=300
+    )
     otel_exporter_otlp_endpoint: str = ""
 
     api_port: int = 8888
@@ -145,6 +164,17 @@ class Settings(BaseSettings):
         if self.llm_provider not in {"auto", "template"}:
             if not getattr(self, f"{self.llm_provider}_api_key").strip():
                 raise ValueError(f"{self.llm_provider.upper()}_API_KEY is required for LLM_PROVIDER")
+        if self.distributed_experts_enabled and not self.distributed_enabled:
+            raise ValueError("distributed experts require distributed run plane")
+        if self.distributed_experts_enabled:
+            if self.expert_heartbeat_seconds >= self.expert_lease_seconds / 2:
+                raise ValueError("expert heartbeat must be less than half the lease")
+            if self.expert_retry_base_seconds > self.expert_retry_max_seconds:
+                raise ValueError("expert retry base must not exceed retry maximum")
+            if self.expert_max_payload_bytes > self.expert_queued_payload_bytes_limit:
+                raise ValueError(
+                    "expert payload maximum must not exceed queued payload limit"
+                )
         if self.distributed_enabled:
             database_url = self.effective_distributed_database_url
             if not database_url:

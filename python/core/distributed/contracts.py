@@ -36,6 +36,7 @@ class RunStatus(StrEnum):
     QUEUED = "queued"
     LEASED = "leased"
     RUNNING = "running"
+    WAITING_EXPERT = "waiting_expert"
     COMMITTING = "committing"
     RETRYABLE_FAILED = "retryable_failed"
     COMPLETED = "completed"
@@ -50,6 +51,14 @@ class RunStatus(StrEnum):
             self.TERMINAL_FAILED,
             self.EXHAUSTED,
             self.CANCELLED,
+        }
+
+    @property
+    def active(self) -> bool:
+        return self in {
+            self.RUNNING,
+            self.WAITING_EXPERT,
+            self.COMMITTING,
         }
 
 
