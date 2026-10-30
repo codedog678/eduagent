@@ -45,6 +45,10 @@ class DistributedRuntime:
     async def start(self) -> None:
         async with self.engine.begin() as conn:
             await conn.run_sync(DistributedBase.metadata.create_all)
+            await upgrade_m1_schema(
+                conn,
+                self.settings.distributed_attempt_timeout_seconds,
+            )
         await self.broker.ensure_group()
 
     async def close(self) -> None:
@@ -117,6 +121,9 @@ def build_runtime(settings_obj=settings) -> DistributedRuntime:
     repository = DistributedRunRepository(
         factory,
         max_attempts=settings_obj.distributed_max_attempts,
+        parent_timeout_seconds=(
+            settings_obj.distributed_attempt_timeout_seconds
+        ),
     )
     broker = RedisRunBroker(
         Redis.from_url(
@@ -139,4 +146,31 @@ def build_runtime(settings_obj=settings) -> DistributedRuntime:
         tracer=DurableTracer(repository, otel_tracer),
         otel_provider=otel_provider,
         settings_obj=settings_obj,
+    )
+
+
+async def upgrade_m1_schema(
+    connection,
+    parent_timeout_seconds: float,
+) -> None:
+    await connection.execute(
+        text(
+            "ALTER TABLE distributed_run_attempts "
+            "ADD COLUMN IF NOT EXISTS deadline_at TIMESTAMPTZ"
+        )
+    )
+    await connection.execute(
+        text(
+            "UPDATE distributed_run_attempts "
+            "SET deadline_at = started_at + "
+            "make_interval(secs => CAST(:timeout AS double precision)) "
+            "WHERE deadline_at IS NULL"
+        ),
+        {"timeout": parent_timeout_seconds},
+    )
+    await connection.execute(
+        text(
+            "ALTER TABLE distributed_run_attempts "
+            "ALTER COLUMN deadline_at SET NOT NULL"
+        )
     )

@@ -32,6 +32,7 @@ class FencingViolation(RuntimeError):
 
 @dataclass(frozen=True)
 class RunClaim:
+    attempt_id: str
     run_id: str
     learner_id: str
     request_id: str
@@ -41,6 +42,7 @@ class RunClaim:
     trace_id: str
     attempt_count: int
     fencing_token: int
+    deadline_at: datetime
 
     def to_request(self) -> DistributedRunRequest:
         return DistributedRunRequest(
@@ -57,12 +59,16 @@ class DistributedRunRepository:
         session_factory: async_sessionmaker[AsyncSession],
         clock: Callable[[], datetime] | None = None,
         max_attempts: int = 3,
+        parent_timeout_seconds: float = 120,
     ) -> None:
         if max_attempts < 1:
             raise ValueError("max_attempts must be positive")
+        if parent_timeout_seconds <= 0:
+            raise ValueError("parent_timeout_seconds must be positive")
         self.session_factory = session_factory
         self.clock = clock or (lambda: datetime.now(UTC))
         self.max_attempts = max_attempts
+        self.parent_timeout_seconds = parent_timeout_seconds
 
     async def accept(self, spec: DistributedRunRequest) -> DistributedRun:
         run, _ = await self.accept_with_replay(spec)
@@ -179,17 +185,18 @@ class DistributedRunRepository:
             lease.fencing_token += 1
             lease.expires_at = now + timedelta(seconds=lease_seconds)
             lease.updated_at = now
-            session.add(
-                DistributedRunAttempt(
-                    run_id=run_id,
-                    number=run.attempt_count,
-                    worker_id=worker_id,
-                    fencing_token=lease.fencing_token,
-                    status=RunStatus.RUNNING,
-                    started_at=now,
-                )
+            attempt = DistributedRunAttempt(
+                run_id=run_id,
+                number=run.attempt_count,
+                worker_id=worker_id,
+                fencing_token=lease.fencing_token,
+                status=RunStatus.RUNNING,
+                started_at=now,
+                deadline_at=now + timedelta(seconds=self.parent_timeout_seconds),
             )
-            return self._claim_from(run, lease)
+            session.add(attempt)
+            await session.flush()
+            return self._claim_from(run, lease, attempt)
 
     async def renew(
         self,
@@ -211,6 +218,7 @@ class DistributedRunRepository:
             )
             if run.status not in {
                 RunStatus.RUNNING,
+                RunStatus.WAITING_EXPERT,
                 RunStatus.COMMITTING,
             }:
                 raise FencingViolation(
@@ -444,6 +452,7 @@ class DistributedRunRepository:
                 return run, False
             run.status = RunStatus.CANCELLED
             run.updated_at = now
+            await self._close_expert_jobs_for_cancel(session, run_id, now)
             if lease.owner is not None:
                 await self._finish_attempt(
                     session,
@@ -554,6 +563,7 @@ class DistributedRunRepository:
                     continue
                 if run.status not in {
                     RunStatus.RUNNING,
+                    RunStatus.WAITING_EXPERT,
                     RunStatus.COMMITTING,
                 }:
                     lease.owner = None
@@ -847,8 +857,10 @@ class DistributedRunRepository:
     def _claim_from(
         run: DistributedRun,
         lease: DistributedLease,
+        attempt: DistributedRunAttempt,
     ) -> RunClaim:
         return RunClaim(
+            attempt_id=attempt.id,
             run_id=run.id,
             learner_id=run.learner_id,
             request_id=run.request_id,
@@ -858,4 +870,46 @@ class DistributedRunRepository:
             trace_id=run.trace_id,
             attempt_count=run.attempt_count,
             fencing_token=lease.fencing_token,
+            deadline_at=attempt.deadline_at,
         )
+
+    @staticmethod
+    async def _close_expert_jobs_for_cancel(
+        session: AsyncSession,
+        run_id: str,
+        now: datetime,
+    ) -> None:
+        from .expert_models import DistributedExpertJob, DistributedExpertLease
+
+        jobs = list(
+            await session.scalars(
+                select(DistributedExpertJob)
+                .where(
+                    DistributedExpertJob.parent_run_id == run_id,
+                    DistributedExpertJob.status.in_(
+                        {
+                            "accepted",
+                            "queued",
+                            "running",
+                            "retryable_failed",
+                        }
+                    ),
+                )
+                .order_by(DistributedExpertJob.id)
+                .with_for_update()
+            )
+        )
+        for job in jobs:
+            expert_lease = await session.scalar(
+                select(DistributedExpertLease)
+                .where(DistributedExpertLease.job_id == job.id)
+                .with_for_update()
+            )
+            job.status = "cancelled"
+            job.error_code = "cancelled"
+            job.completed_at = now
+            job.updated_at = now
+            if expert_lease is not None:
+                expert_lease.owner = None
+                expert_lease.expires_at = None
+                expert_lease.updated_at = now

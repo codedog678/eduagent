@@ -98,6 +98,10 @@ class DistributedRunAttempt(DistributedBase):
         DateTime(timezone=True),
         nullable=False,
     )
+    deadline_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
     finished_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True)
     )
@@ -256,3 +260,7 @@ class DistributedTraceSpan(DistributedBase):
             "started_at": self.started_at.isoformat(),
             "ended_at": self.ended_at.isoformat() if self.ended_at else None,
         }
+
+
+# Register the expert-plane tables whenever the shared metadata is imported.
+from . import expert_models as _expert_models  # noqa: E402,F401

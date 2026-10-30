@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 @pytest_asyncio.fixture
 async def repo():
+    from core.distributed import expert_models  # noqa: F401
     from core.distributed.models import DistributedBase
     from core.distributed.repository import DistributedRunRepository
 
@@ -24,6 +25,13 @@ async def repo():
     async with engine.begin() as conn:
         await conn.run_sync(DistributedBase.metadata.drop_all)
     await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def expert_repo(repo):
+    from core.distributed.expert_repository import ExpertJobRepository
+
+    return ExpertJobRepository(repo.session_factory)
 
 
 @pytest_asyncio.fixture

@@ -70,6 +70,9 @@ class Settings(BaseSettings):
     distributed_heartbeat_seconds: float = Field(default=3, ge=.5, le=60)
     distributed_poll_block_ms: int = Field(default=1000, ge=10, le=60000)
     distributed_max_attempts: int = Field(default=3, ge=1, le=20)
+    distributed_attempt_timeout_seconds: float = Field(
+        default=120, ge=1, le=3600
+    )
     distributed_outbox_batch_size: int = Field(default=50, ge=1, le=500)
     distributed_demo_pause_before_commit_seconds: float = Field(
         default=0, ge=0, le=300
