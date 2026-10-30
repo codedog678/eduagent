@@ -198,9 +198,8 @@ def test_all_promotion_contract_shapes_validate():
             deployment_version=1,
             learner_id="student",
             request_id="request-1",
-            operation="learning_task",
-            state_namespace="rehearsal:demo",
-            allowed_operations=["learning_task"],
+            namespace="rehearsal-demo",
+            operations=["learning_task"],
             fault_profile="none",
             nonce="nonce-1",
             issued_at=NOW,
@@ -231,6 +230,7 @@ def test_promotion_settings_require_distributed_mode_and_redacted_secrets():
             promotion_enabled=True,
             promotion_rehearsal_secret="r" * 32,
             promotion_assignment_secret="a" * 32,
+            promotion_command_principal="release.operator",
         )
 
     secret = "secret-that-must-never-appear"
@@ -241,6 +241,7 @@ def test_promotion_settings_require_distributed_mode_and_redacted_secrets():
             promotion_enabled=True,
             promotion_rehearsal_secret=secret,
             promotion_assignment_secret="short",
+            promotion_command_principal="release.operator",
         )
     assert secret not in str(error.value)
     assert "short" not in str(error.value)
@@ -251,6 +252,7 @@ def test_promotion_settings_require_distributed_mode_and_redacted_secrets():
         promotion_enabled=True,
         promotion_rehearsal_secret="r" * 32,
         promotion_assignment_secret="a" * 32,
+        promotion_command_principal="release.operator",
     )
     assert settings.promotion_rehearsal_secret.get_secret_value() == "r" * 32
 
@@ -340,3 +342,44 @@ def observation(**updates):
     }
     value.update(updates)
     return PolicyObservation.model_validate(value)
+
+
+def test_promotion_settings_require_authenticated_command_principal():
+    with pytest.raises(ValidationError, match="command principal"):
+        Settings(
+            _env_file=None,
+            distributed_enabled=True,
+            promotion_enabled=True,
+            promotion_rehearsal_secret="r" * 32,
+            promotion_assignment_secret="a" * 32,
+            promotion_command_principal="",
+        )
+
+    configured = Settings(
+        _env_file=None,
+        distributed_enabled=True,
+        promotion_enabled=True,
+        promotion_rehearsal_secret="r" * 32,
+        promotion_assignment_secret="a" * 32,
+        promotion_command_principal="release.operator",
+    )
+    assert configured.promotion_command_principal == "release.operator"
+
+
+def test_rehearsal_claims_use_task5_canonical_namespace_field():
+    claims = RehearsalClaims(
+        rehearsal_id="demo",
+        deployment_id=DEPLOYMENT_ID,
+        deployment_version=1,
+        learner_id="student",
+        request_id="request-1",
+        namespace="rehearsal-demo",
+        operations=["learning_task"],
+        fault_profile="none",
+        nonce="nonce-1",
+        issued_at=NOW,
+        expires_at=NOW + timedelta(minutes=5),
+    )
+
+    assert claims.model_dump(mode="json")["namespace"] == "rehearsal-demo"
+    assert "state_namespace" not in claims.model_dump(mode="json")

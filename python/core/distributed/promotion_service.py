@@ -147,10 +147,34 @@ class QualificationRepository(Protocol):
     ) -> DeploymentSnapshot: ...
 
 
-class PromotionService:
-    """Application boundary for registering campaign qualification evidence."""
+class AuthenticatedPrincipalMismatch(PermissionError):
+    """The audit actor does not match the trusted transport principal."""
 
-    def __init__(self, repository: QualificationRepository) -> None:
+
+class _AuthenticatedCommandBoundary:
+    def __init__(self, *, authenticated_principal: str) -> None:
+        principal = authenticated_principal.strip()
+        if not principal:
+            raise ValueError("authenticated command principal is required")
+        self.authenticated_principal = principal
+
+    def _authorize_actor(self, actor: str) -> None:
+        if actor != self.authenticated_principal:
+            raise AuthenticatedPrincipalMismatch(
+                "command actor must match authenticated principal"
+            )
+
+
+class PromotionService(_AuthenticatedCommandBoundary):
+    """Authenticated boundary for campaign registration commands."""
+
+    def __init__(
+        self,
+        repository: QualificationRepository,
+        *,
+        authenticated_principal: str,
+    ) -> None:
+        super().__init__(authenticated_principal=authenticated_principal)
         self.repository = repository
 
     async def register_campaign(
@@ -160,6 +184,7 @@ class PromotionService:
         actor: str,
         command_id: str,
     ) -> DeploymentSnapshot:
+        self._authorize_actor(actor)
         material = QualificationMaterial.model_validate(
             campaign.qualification_material()
         )
@@ -170,19 +195,43 @@ class PromotionService:
         )
 
 
-class PromotionCommandRepository(Protocol):
+class PromotionCommandRepository(QualificationRepository, Protocol):
     async def transition(self, command): ...
 
     async def get_head(self, environment: str) -> DeploymentSnapshot: ...
 
 
-class PromotionCommandService:
-    """The sole application write boundary for deployment transitions."""
+class PromotionCommandService(_AuthenticatedCommandBoundary):
+    """Authenticated application write boundary for promotion commands."""
 
-    def __init__(self, repository: PromotionCommandRepository) -> None:
+    def __init__(
+        self,
+        repository: PromotionCommandRepository,
+        *,
+        authenticated_principal: str,
+    ) -> None:
+        super().__init__(authenticated_principal=authenticated_principal)
         self.repository = repository
 
+    async def register_campaign(
+        self,
+        campaign,
+        *,
+        actor: str,
+        command_id: str,
+    ) -> DeploymentSnapshot:
+        self._authorize_actor(actor)
+        material = QualificationMaterial.model_validate(
+            campaign.qualification_material()
+        )
+        return await self.repository.register_qualification(
+            material,
+            actor=actor,
+            command_id=command_id,
+        )
+
     async def transition(self, command) -> DeploymentSnapshot:
+        self._authorize_actor(command.actor)
         return await self.repository.transition(command)
 
     async def show_head(self, environment: str) -> DeploymentSnapshot:
@@ -231,6 +280,11 @@ class RehearsalTokenIssuer:
 
         if not 30 <= ttl_seconds <= 3600:
             raise ValueError("ttl_seconds must be between 30 and 3600")
+        canonical_namespace = f"rehearsal-{rehearsal_id}"
+        if namespace != canonical_namespace:
+            raise ValueError(
+                "namespace must match the server-derived rehearsal namespace"
+            )
         if fault_profile != "none" and not self.allow_fault_injection:
             raise ValueError("promotion fault injection is disabled")
         head = await self.repository.get_head("rehearsal")
@@ -241,11 +295,10 @@ class RehearsalTokenIssuer:
             deployment_version=head.version,
             learner_id=learner_id,
             request_id=request_id,
-            operation=operation,
-            state_namespace=namespace,
-            allowed_operations=[operation],
+            namespace=canonical_namespace,
+            operations=[operation],
             fault_profile=fault_profile,
-            nonce=secrets.token_urlsafe(24),
+            nonce=secrets.token_hex(24),
             issued_at=now,
             expires_at=now + timedelta(seconds=ttl_seconds),
         )

@@ -117,11 +117,7 @@ async def run(args: argparse.Namespace) -> Any:
         if args.command == "register-campaign":
             from evals.optimization.campaign import Campaign
 
-            from .promotion_service import PromotionService
-
-            return await PromotionService(
-                runtime.service.repository
-            ).register_campaign(
+            return await runtime.service.register_campaign(
                 Campaign.open(args.campaign),
                 actor=args.actor,
                 command_id=args.command_id,

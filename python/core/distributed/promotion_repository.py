@@ -60,7 +60,11 @@ REQUIRED_EXTERNAL_GATES = {
         "harness_qualification",
     },
     DeploymentState.CANARY: {"shadow_health"},
-    DeploymentState.ACTIVE: {"canary_health"},
+    DeploymentState.ACTIVE: {
+        *REQUIRED_QUALIFICATION_GATES,
+        "shadow_health",
+        "canary_health",
+    },
 }
 
 
@@ -93,14 +97,20 @@ class PromotionRepository:
     ) -> DeploymentSnapshot:
         material = QualificationMaterial.model_validate(material)
         material_hash = canonical_hash(material.model_dump(mode="json"))
+        command_hash = canonical_hash(
+            {
+                "command_type": "register_qualification",
+                "material_hash": material_hash,
+                "actor": actor,
+            }
+        )
 
         async with self.session_factory() as session, session.begin():
             self._validate_material(material)
-            replay = await self._find_replay(
+            replay = await self._find_registration_replay(
                 session,
                 command_id=command_id,
-                material_hash=material_hash,
-                actor=actor,
+                command_hash=command_hash,
                 candidate_policy_hash=material.artifact.policy_hash,
             )
             if replay is not None:
@@ -119,11 +129,10 @@ class PromotionRepository:
                 )
                 .with_for_update()
             )
-            replay = await self._find_replay(
+            replay = await self._find_registration_replay(
                 session,
                 command_id=command_id,
-                material_hash=material_hash,
-                actor=actor,
+                command_hash=command_hash,
                 candidate_policy_hash=material.artifact.policy_hash,
             )
             if replay is not None:
@@ -201,6 +210,7 @@ class PromotionRepository:
                         ],
                         "budget": material.budget.model_dump(mode="json"),
                         "material_hash": material_hash,
+                        "command_hash": command_hash,
                     },
                     created_at=now,
                 )
@@ -227,7 +237,12 @@ class PromotionRepository:
         command: PromotionCommand,
     ) -> DeploymentSnapshot:
         command = PromotionCommand.model_validate(command)
-        command_hash = canonical_hash(command.model_dump(mode="json"))
+        command_hash = canonical_hash(
+            {
+                "command_type": "transition",
+                "command": command.model_dump(mode="json"),
+            }
+        )
         rejected: str | None = None
         result: DeploymentSnapshot | None = None
 
@@ -302,11 +317,34 @@ class PromotionRepository:
                     command.target_state,
                     set(),
                 )
-                missing_gates, gate_rows = await self._bound_gate_receipts(
+                health_bindings: dict[str, PolicyDeploymentRecord] = {}
+                if command.target_state == DeploymentState.CANARY:
+                    health_bindings["shadow_health"] = current
+                elif command.target_state == DeploymentState.ACTIVE:
+                    health_bindings["canary_health"] = current
+                    shadow = await session.scalar(
+                        select(PolicyDeploymentRecord).where(
+                            PolicyDeploymentRecord.environment
+                            == current.environment,
+                            PolicyDeploymentRecord.version
+                            == current.version - 1,
+                            PolicyDeploymentRecord.state == "shadow",
+                            PolicyDeploymentRecord.candidate_policy_hash
+                            == current.candidate_policy_hash,
+                        )
+                    )
+                    if shadow is None:
+                        missing_gates.append("shadow_health")
+                    else:
+                        health_bindings["shadow_health"] = shadow
+                bound_missing, gate_rows = await self._bound_gate_receipts(
                     session,
                     artifact=artifact,
-                    required=required,
+                    required=required - set(missing_gates),
+                    health_bindings=health_bindings,
                 )
+                missing_gates.extend(bound_missing)
+                missing_gates.sort()
                 if missing_gates:
                     rejected = "required gates are missing or invalid: " + ", ".join(
                         missing_gates
@@ -460,33 +498,47 @@ class PromotionRepository:
         *,
         artifact: PolicyArtifactRecord,
         required: set[str],
+        health_bindings: dict[str, PolicyDeploymentRecord],
     ) -> tuple[list[str], dict[str, PolicyGateReceiptRecord]]:
         missing: list[str] = []
         rows: dict[str, PolicyGateReceiptRecord] = {}
         for gate_type in sorted(required):
-            receipt = await session.scalar(
-                select(PolicyGateReceiptRecord)
-                .where(
-                    PolicyGateReceiptRecord.policy_hash
-                    == artifact.policy_hash,
-                    PolicyGateReceiptRecord.gate_type == gate_type,
+            query = select(PolicyGateReceiptRecord).where(
+                PolicyGateReceiptRecord.policy_hash == artifact.policy_hash,
+                PolicyGateReceiptRecord.gate_type == gate_type,
+                PolicyGateReceiptRecord.protocol_hash
+                == artifact.protocol_hash,
+                PolicyGateReceiptRecord.runtime_hash == artifact.runtime_hash,
+                PolicyGateReceiptRecord.source_revision
+                == artifact.source_revision,
+            )
+            if gate_type in {"shadow_health", "canary_health"}:
+                deployment = health_bindings.get(gate_type)
+                if deployment is None:
+                    missing.append(gate_type)
+                    continue
+                query = query.where(
+                    PolicyGateReceiptRecord.details[
+                        "deployment_id"
+                    ].as_string()
+                    == deployment.deployment_id,
+                    PolicyGateReceiptRecord.details[
+                        "deployment_version"
+                    ].as_integer()
+                    == deployment.version,
+                    PolicyGateReceiptRecord.details[
+                        "thresholds_hash"
+                    ].as_string()
+                    == deployment.thresholds_hash,
                 )
-                .order_by(
+            receipt = await session.scalar(
+                query.order_by(
                     PolicyGateReceiptRecord.issued_at.desc(),
                     PolicyGateReceiptRecord.created_at.desc(),
                     PolicyGateReceiptRecord.receipt_id.desc(),
-                )
-                .limit(1)
+                ).limit(1)
             )
-            if receipt is None or any(
-                (
-                    receipt.status != "passed",
-                    receipt.policy_hash != artifact.policy_hash,
-                    receipt.protocol_hash != artifact.protocol_hash,
-                    receipt.runtime_hash != artifact.runtime_hash,
-                    receipt.source_revision != artifact.source_revision,
-                )
-            ):
+            if receipt is None or receipt.status != "passed":
                 missing.append(gate_type)
             else:
                 rows[gate_type] = receipt
@@ -547,6 +599,13 @@ class PromotionRepository:
             "command_hash": command_hash,
             "canary_health_receipt_id": canary_health.receipt_id,
             "canary_health_evidence_hash": canary_health.evidence_hash,
+            "canary_deployment_id": canary_health.details["deployment_id"],
+            "canary_deployment_version": canary_health.details[
+                "deployment_version"
+            ],
+            "canary_thresholds_hash": canary_health.details[
+                "thresholds_hash"
+            ],
         }
         session.add(
             PolicyGateReceiptRecord(
@@ -665,37 +724,36 @@ class PromotionRepository:
             )
 
     @staticmethod
-    async def _find_replay(
+    async def _find_registration_replay(
         session: AsyncSession,
         *,
         command_id: str,
-        material_hash: str,
-        actor: str,
+        command_hash: str,
         candidate_policy_hash: str,
     ) -> PolicyDeploymentRecord | None:
+        audit = await session.scalar(
+            select(PolicyAuditEventRecord)
+            .where(PolicyAuditEventRecord.command_id == command_id)
+            .order_by(PolicyAuditEventRecord.created_at.asc())
+            .limit(1)
+        )
         replay = await session.scalar(
             select(PolicyDeploymentRecord).where(
                 PolicyDeploymentRecord.command_id == command_id
             )
         )
-        if replay is None:
+        if audit is None and replay is None:
             return None
-        audit = await session.scalar(
-            select(PolicyAuditEventRecord).where(
-                PolicyAuditEventRecord.command_id == command_id,
-                PolicyAuditEventRecord.deployment_id == replay.deployment_id,
-                PolicyAuditEventRecord.event_type
-                == "qualification_registered",
-            )
-        )
         if (
-            replay.candidate_policy_hash != candidate_policy_hash
-            or replay.actor != actor
-            or audit is None
-            or audit.details.get("material_hash") != material_hash
+            audit is None
+            or audit.event_type != "qualification_registered"
+            or audit.details.get("command_hash") != command_hash
+            or replay is None
+            or replay.deployment_id != audit.deployment_id
+            or replay.candidate_policy_hash != candidate_policy_hash
         ):
             raise ImmutablePromotionConflict(
-                "command_id is bound to another registration"
+                "command_id is bound to another promotion command"
             )
         return replay
 
@@ -793,6 +851,10 @@ class PromotionRepository:
                     PolicyGateReceiptRecord.gate_type == gate_type,
                     PolicyGateReceiptRecord.protocol_hash
                     == material.artifact.protocol_hash,
+                    PolicyGateReceiptRecord.runtime_hash
+                    == material.artifact.runtime_hash,
+                    PolicyGateReceiptRecord.source_revision
+                    == material.artifact.source_revision,
                 )
                 .order_by(
                     PolicyGateReceiptRecord.issued_at.desc(),

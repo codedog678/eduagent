@@ -102,6 +102,7 @@ class Settings(BaseSettings):
     ops_api_token: SecretStr = Field(default=SecretStr(""), repr=False)
     otel_exporter_otlp_endpoint: str = ""
     promotion_enabled: bool = False
+    promotion_command_principal: str = ""
     promotion_rehearsal_secret: SecretStr = Field(
         default=SecretStr(""), repr=False
     )
@@ -205,6 +206,19 @@ class Settings(BaseSettings):
         if self.promotion_enabled and not self.distributed_enabled:
             raise ValueError("policy promotion requires distributed run plane")
         if self.promotion_enabled:
+            principal = self.promotion_command_principal.strip()
+            if (
+                not principal
+                or len(principal) > 128
+                or not principal[0].isalnum()
+                or any(
+                    not (character.isalnum() or character in "._:-")
+                    for character in principal
+                )
+            ):
+                raise ValueError(
+                    "promotion command principal must be a configured identifier"
+                )
             rehearsal_secret = (
                 self.promotion_rehearsal_secret.get_secret_value()
             )

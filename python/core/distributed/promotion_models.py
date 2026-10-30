@@ -232,8 +232,6 @@ class PolicyAuditEventRecord(DistributedBase):
     __table_args__ = (
         UniqueConstraint(
             "command_id",
-            "deployment_id",
-            "event_type",
             name="uq_policy_audit_command_deployment_event_type",
         ),
     )

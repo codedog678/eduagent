@@ -735,6 +735,16 @@ async def _add_gate(repository, gate_type, *, overrides=None):
         "issuer": "health.evaluator",
         "created_at": NOW + timedelta(hours=4),
     }
+    if gate_type in {"shadow_health", "canary_health"} and not (
+        overrides and "details" in overrides
+    ):
+        deployment = await repository.get_head("rehearsal")
+        values["details"] = {
+            "window_id": f"{gate_type}-window",
+            "deployment_id": str(deployment.deployment_id),
+            "deployment_version": deployment.version,
+            "thresholds_hash": deployment.thresholds_hash,
+        }
     values.update(overrides or {})
     async with repository.session_factory() as session, session.begin():
         session.add(PolicyGateReceiptRecord(**values))
@@ -763,7 +773,10 @@ def _command(
 
 
 async def _advance_to(repository, target):
-    service = PromotionCommandService(repository)
+    service = PromotionCommandService(
+        repository,
+        authenticated_principal="release.operator",
+    )
     snapshot = await _registered(
         repository,
         command_id=f"register-until-{target}",
@@ -1077,6 +1090,10 @@ async def test_activate_creates_approval_bound_to_current_canary_health(
         DeploymentState.CANARY,
     )
     canary_health = await _add_gate(promotion_repo, "canary_health")
+    service = PromotionCommandService(
+        promotion_repo,
+        authenticated_principal="release.approver",
+    )
     command = _command(
         canary,
         "active",
@@ -1105,11 +1122,18 @@ async def test_activate_creates_approval_bound_to_current_canary_health(
     assert approval.details["canary_health_evidence_hash"] == canary_health[
         "evidence_hash"
     ]
+    assert approval.details["canary_deployment_id"] == str(
+        canary.deployment_id
+    )
+    assert approval.details["canary_deployment_version"] == canary.version
+    assert approval.details["canary_thresholds_hash"] == canary.thresholds_hash
     assert approval.policy_hash == active.candidate_policy_hash
     assert approval.protocol_hash == qualification_material().artifact.protocol_hash
     assert approval.runtime_hash == qualification_material().artifact.runtime_hash
     assert approval.source_revision == qualification_material().artifact.source_revision
     assert set(active.required_receipts) == {
+        *REQUIRED_GATES,
+        "shadow_health",
         "canary_health",
         "promotion_approval",
     }
@@ -1132,7 +1156,7 @@ async def test_show_head_and_issue_token_bind_current_deployment_without_storage
     )
     result = await issuer.issue(
         rehearsal_id="rehearsal-1",
-        namespace="rehearsal:one",
+        namespace="rehearsal-rehearsal-1",
         learner_id="learner-1",
         request_id="request-1",
         operation="learning_task",
@@ -1172,3 +1196,562 @@ def test_promotion_cli_help_lists_only_write_plane_commands(capsys):
         assert command in help_text
     for forbidden in ("http", "worker", "ops"):
         assert forbidden not in help_text.lower()
+
+
+async def test_shadow_health_latest_is_scoped_to_exact_deployment_binding(
+    promotion_repo,
+):
+    service, shadow = await _advance_to(
+        promotion_repo,
+        DeploymentState.SHADOW,
+    )
+    exact = {
+        "window_id": "shadow-current-window",
+        "deployment_id": str(shadow.deployment_id),
+        "deployment_version": shadow.version,
+        "thresholds_hash": shadow.thresholds_hash,
+    }
+    await _add_gate(
+        promotion_repo,
+        "shadow_health",
+        overrides={"details": exact},
+    )
+    await _add_gate(
+        promotion_repo,
+        "shadow_health",
+        overrides={
+            "status": "failed",
+            "issued_at": NOW + timedelta(hours=5),
+            "created_at": NOW + timedelta(hours=5),
+            "details": {
+                **exact,
+                "window_id": "other-shadow-window",
+                "deployment_id": str(uuid4()),
+            },
+        },
+    )
+
+    canary = await service.transition(
+        _command(
+            shadow,
+            "canary",
+            command_id="exact-shadow-health-latest",
+            traffic=500,
+        )
+    )
+
+    assert canary.state == DeploymentState.CANARY
+
+
+async def test_shadow_health_from_old_deployment_is_rejected(promotion_repo):
+    service, shadow = await _advance_to(
+        promotion_repo,
+        DeploymentState.SHADOW,
+    )
+    await _add_gate(
+        promotion_repo,
+        "shadow_health",
+        overrides={
+            "details": {
+                "window_id": "old-shadow-window",
+                "deployment_id": str(uuid4()),
+                "deployment_version": shadow.version - 1,
+                "thresholds_hash": shadow.thresholds_hash,
+            }
+        },
+    )
+
+    with pytest.raises(PromotionCommandRejected, match="shadow_health"):
+        await service.transition(
+            _command(
+                shadow,
+                "canary",
+                command_id="reject-old-shadow-health",
+                traffic=500,
+            )
+        )
+
+
+async def _reject_transition_with_command_id(repository, command_id):
+    service, registered = await _advance_to(
+        repository,
+        DeploymentState.REGISTERED,
+    )
+    async with repository.session_factory() as session, session.begin():
+        receipt = await session.scalar(
+            select(PolicyGateReceiptRecord).where(
+                PolicyGateReceiptRecord.policy_hash
+                == registered.candidate_policy_hash,
+                PolicyGateReceiptRecord.gate_type == "formal_holdout",
+            )
+        )
+        await session.delete(receipt)
+    command = _command(registered, "shadow", command_id=command_id)
+    with pytest.raises(PromotionCommandRejected) as error:
+        await service.transition(command)
+    return service, command, str(error.value)
+
+
+async def test_rejected_command_id_cannot_be_reused_for_registration(
+    promotion_repo,
+):
+    command_id = "global-rejected-then-register"
+    await _reject_transition_with_command_id(promotion_repo, command_id)
+
+    with pytest.raises(ImmutablePromotionConflict, match="command_id"):
+        await promotion_repo.register_qualification(
+            qualification_material(),
+            actor="release.operator",
+            command_id=command_id,
+        )
+
+
+async def test_registered_command_id_cannot_be_reused_for_transition(
+    promotion_repo,
+):
+    registered = await _registered(
+        promotion_repo,
+        command_id="global-register-then-transition",
+    )
+    service = PromotionCommandService(
+        promotion_repo,
+        authenticated_principal="release.operator",
+    )
+
+    with pytest.raises(ImmutablePromotionConflict, match="command_id"):
+        await service.transition(
+            _command(
+                registered,
+                "shadow",
+                command_id="global-register-then-transition",
+            )
+        )
+
+
+async def test_identical_rejected_command_replays_original_without_new_audit(
+    promotion_repo,
+):
+    service, command, original_error = await _reject_transition_with_command_id(
+        promotion_repo,
+        "idempotent-rejected-transition",
+    )
+
+    with pytest.raises(PromotionCommandRejected) as replay_error:
+        await service.transition(command)
+
+    assert str(replay_error.value) == original_error
+    async with promotion_repo.session_factory() as session:
+        audit_count = await session.scalar(
+            select(func.count())
+            .select_from(PolicyAuditEventRecord)
+            .where(
+                PolicyAuditEventRecord.command_id
+                == "idempotent-rejected-transition"
+            )
+        )
+    assert audit_count == 1
+
+
+async def test_rejected_command_id_conflicts_on_different_payload(
+    promotion_repo,
+):
+    service, command, _ = await _reject_transition_with_command_id(
+        promotion_repo,
+        "rejected-payload-conflict",
+    )
+
+    with pytest.raises(ImmutablePromotionConflict, match="command_id"):
+        await service.transition(
+            command.model_copy(update={"reason": "different rejection payload"})
+        )
+
+
+async def test_latest_gate_is_selected_after_full_artifact_binding_filter(
+    promotion_repo,
+):
+    service, registered = await _advance_to(
+        promotion_repo,
+        DeploymentState.REGISTERED,
+    )
+    material = qualification_material()
+    original = next(
+        receipt
+        for receipt in material.receipts
+        if receipt.gate_type == "formal_holdout"
+    )
+    values = original.model_dump(mode="python")
+    values.update(
+        receipt_id=str(uuid4()),
+        status="failed",
+        evidence_hash="7" * 64,
+        runtime_hash="6" * 64,
+        issued_at=NOW + timedelta(hours=8),
+        created_at=NOW + timedelta(hours=8),
+    )
+    async with promotion_repo.session_factory() as session, session.begin():
+        session.add(PolicyGateReceiptRecord(**values))
+
+    shadow = await service.transition(
+        _command(
+            registered,
+            "shadow",
+            command_id="artifact-bound-latest",
+        )
+    )
+
+    assert shadow.state == DeploymentState.SHADOW
+
+
+async def _deployment_at_version(repository, version):
+    async with repository.session_factory() as session:
+        return await session.scalar(
+            select(PolicyDeploymentRecord).where(
+                PolicyDeploymentRecord.environment == "rehearsal",
+                PolicyDeploymentRecord.version == version,
+            )
+        )
+
+
+async def test_active_revalidates_latest_qualification_evidence(promotion_repo):
+    service, canary = await _advance_to(
+        promotion_repo,
+        DeploymentState.CANARY,
+    )
+    await _add_gate(
+        promotion_repo,
+        "canary_health",
+        overrides={
+            "details": {
+                "window_id": "current-canary-window",
+                "deployment_id": str(canary.deployment_id),
+                "deployment_version": canary.version,
+                "thresholds_hash": canary.thresholds_hash,
+            }
+        },
+    )
+    material = qualification_material()
+    original = next(
+        receipt
+        for receipt in material.receipts
+        if receipt.gate_type == "formal_holdout"
+    )
+    values = original.model_dump(mode="python")
+    values.update(
+        receipt_id=str(uuid4()),
+        status="failed",
+        evidence_hash="5" * 64,
+        issued_at=NOW + timedelta(hours=9),
+        created_at=NOW + timedelta(hours=9),
+    )
+    async with promotion_repo.session_factory() as session, session.begin():
+        session.add(PolicyGateReceiptRecord(**values))
+
+    with pytest.raises(PromotionCommandRejected, match="formal_holdout"):
+        await service.transition(
+            _command(
+                canary,
+                "active",
+                command_id="active-rechecks-qualification",
+                traffic=10000,
+            )
+        )
+
+
+async def test_active_revalidates_shadow_health_from_current_chain(
+    promotion_repo,
+):
+    service, canary = await _advance_to(
+        promotion_repo,
+        DeploymentState.CANARY,
+    )
+    shadow = await _deployment_at_version(promotion_repo, canary.version - 1)
+    shadow_binding = {
+        "window_id": "chain-shadow-pass",
+        "deployment_id": shadow.deployment_id,
+        "deployment_version": shadow.version,
+        "thresholds_hash": shadow.thresholds_hash,
+    }
+    await _add_gate(
+        promotion_repo,
+        "shadow_health",
+        overrides={
+            "details": shadow_binding,
+            "issued_at": NOW + timedelta(hours=6),
+            "created_at": NOW + timedelta(hours=6),
+        },
+    )
+    await _add_gate(
+        promotion_repo,
+        "shadow_health",
+        overrides={
+            "status": "failed",
+            "details": {**shadow_binding, "window_id": "chain-shadow-fail"},
+            "issued_at": NOW + timedelta(hours=7),
+            "created_at": NOW + timedelta(hours=7),
+        },
+    )
+    await _add_gate(
+        promotion_repo,
+        "canary_health",
+        overrides={
+            "details": {
+                "window_id": "chain-canary-pass",
+                "deployment_id": str(canary.deployment_id),
+                "deployment_version": canary.version,
+                "thresholds_hash": canary.thresholds_hash,
+            }
+        },
+    )
+
+    with pytest.raises(PromotionCommandRejected, match="shadow_health"):
+        await service.transition(
+            _command(
+                canary,
+                "active",
+                command_id="active-rechecks-shadow-health",
+                traffic=10000,
+            )
+        )
+
+
+async def test_active_rejects_canary_health_from_old_deployment(
+    promotion_repo,
+):
+    service, canary = await _advance_to(
+        promotion_repo,
+        DeploymentState.CANARY,
+    )
+    await _add_gate(
+        promotion_repo,
+        "canary_health",
+        overrides={
+            "details": {
+                "window_id": "old-canary-window",
+                "deployment_id": str(uuid4()),
+                "deployment_version": canary.version - 1,
+                "thresholds_hash": canary.thresholds_hash,
+            }
+        },
+    )
+
+    with pytest.raises(PromotionCommandRejected, match="canary_health"):
+        await service.transition(
+            _command(
+                canary,
+                "active",
+                command_id="active-rejects-old-canary-health",
+                traffic=10000,
+            )
+        )
+
+
+async def test_forged_transition_actor_is_rejected_before_any_write(
+    promotion_repo,
+):
+    service, canary = await _advance_to(
+        promotion_repo,
+        DeploymentState.CANARY,
+    )
+    await _add_gate(
+        promotion_repo,
+        "canary_health",
+        overrides={
+            "details": {
+                "window_id": "principal-canary-window",
+                "deployment_id": str(canary.deployment_id),
+                "deployment_version": canary.version,
+                "thresholds_hash": canary.thresholds_hash,
+            }
+        },
+    )
+    authenticated = PromotionCommandService(
+        promotion_repo,
+        authenticated_principal="release.approver",
+    )
+    command = _command(
+        canary,
+        "active",
+        command_id="forged-transition-actor",
+        traffic=10000,
+        actor="forged.approver",
+    )
+    before = await _counts(promotion_repo)
+    before_head = await promotion_repo.get_head("rehearsal")
+
+    with pytest.raises(PermissionError, match="authenticated principal"):
+        await authenticated.transition(command)
+
+    assert await _counts(promotion_repo) == before
+    assert await promotion_repo.get_head("rehearsal") == before_head
+    async with promotion_repo.session_factory() as session:
+        approval_count = await session.scalar(
+            select(func.count())
+            .select_from(PolicyGateReceiptRecord)
+            .where(PolicyGateReceiptRecord.gate_type == "promotion_approval")
+        )
+        audit_count = await session.scalar(
+            select(func.count())
+            .select_from(PolicyAuditEventRecord)
+            .where(
+                PolicyAuditEventRecord.command_id == command.command_id
+            )
+        )
+    assert approval_count == 0
+    assert audit_count == 0
+
+
+async def test_forged_registration_actor_is_rejected_before_any_write(
+    promotion_repo,
+):
+    from core.distributed.promotion_service import PromotionService
+
+    class CampaignMaterial:
+        @staticmethod
+        def qualification_material():
+            return qualification_material().model_dump(mode="json")
+
+    service = PromotionService(
+        promotion_repo,
+        authenticated_principal="release.operator",
+    )
+    before = await _counts(promotion_repo)
+    before_head = await promotion_repo.get_head("rehearsal")
+
+    with pytest.raises(PermissionError, match="authenticated principal"):
+        await service.register_campaign(
+            CampaignMaterial(),
+            actor="forged.operator",
+            command_id="forged-registration-actor",
+        )
+
+    assert await _counts(promotion_repo) == before
+    assert await promotion_repo.get_head("rehearsal") == before_head
+
+@pytest.mark.parametrize(
+    "namespace",
+    [
+        "production",
+        "../rehearsal-demo",
+        "rehearsal-other",
+        "rehearsal-demo/../../production",
+    ],
+)
+async def test_issue_token_rejects_noncanonical_rehearsal_namespace(
+    promotion_repo,
+    namespace,
+):
+    from core.distributed.promotion_service import RehearsalTokenIssuer
+
+    issuer = RehearsalTokenIssuer(
+        promotion_repo,
+        signing_secret="r" * 32,
+        assignment_secret="a" * 32,
+        clock=lambda: NOW,
+    )
+
+    with pytest.raises(ValueError, match="namespace"):
+        await issuer.issue(
+            rehearsal_id="demo",
+            namespace=namespace,
+            learner_id="learner-1",
+            request_id="request-1",
+            operation="learning_task",
+            fault_profile="none",
+            ttl_seconds=60,
+        )
+
+
+async def test_issue_token_payload_uses_canonical_task5_fields(promotion_repo):
+    import base64
+    import json
+
+    from core.distributed.promotion_service import RehearsalTokenIssuer
+
+    issuer = RehearsalTokenIssuer(
+        promotion_repo,
+        signing_secret="r" * 32,
+        assignment_secret="a" * 32,
+        clock=lambda: NOW,
+    )
+    result = await issuer.issue(
+        rehearsal_id="demo",
+        namespace="rehearsal-demo",
+        learner_id="learner-1",
+        request_id="request-1",
+        operation="learning_task",
+        fault_profile="none",
+        ttl_seconds=60,
+    )
+    encoded_body = result["token"].split(".", 1)[0]
+    encoded_body += "=" * (-len(encoded_body) % 4)
+    payload = json.loads(base64.urlsafe_b64decode(encoded_body))
+
+    assert payload["rehearsal_id"] == "demo"
+    assert payload["namespace"] == "rehearsal-demo"
+    assert payload["operations"] == ["learning_task"]
+    assert "state_namespace" not in payload
+    assert "operation" not in payload
+    assert "allowed_operations" not in payload
+
+
+async def test_command_id_is_rechecked_after_head_lock_race(promotion_repo):
+    service, registered = await _advance_to(
+        promotion_repo,
+        DeploymentState.REGISTERED,
+    )
+    async with promotion_repo.session_factory() as session, session.begin():
+        receipt = await session.scalar(
+            select(PolicyGateReceiptRecord).where(
+                PolicyGateReceiptRecord.policy_hash
+                == registered.candidate_policy_hash,
+                PolicyGateReceiptRecord.gate_type == "formal_holdout",
+            )
+        )
+        await session.delete(receipt)
+
+    command_id = "command-id-head-lock-race"
+    first_check = asyncio.Event()
+    release_registration = asyncio.Event()
+    original_find = promotion_repo._find_registration_replay
+    find_calls = 0
+
+    async def pause_registration_after_first_check(session, **kwargs):
+        nonlocal find_calls
+        find_calls += 1
+        result = await original_find(session, **kwargs)
+        if find_calls == 1:
+            first_check.set()
+            await release_registration.wait()
+        return result
+
+    promotion_repo._find_registration_replay = pause_registration_after_first_check
+    registration = asyncio.create_task(
+        promotion_repo.register_qualification(
+            qualification_material(),
+            actor="release.operator",
+            command_id=command_id,
+        )
+    )
+    await asyncio.wait_for(first_check.wait(), timeout=5)
+    with pytest.raises(PromotionCommandRejected):
+        await service.transition(
+            _command(registered, "shadow", command_id=command_id)
+        )
+    release_registration.set()
+
+    with pytest.raises(ImmutablePromotionConflict, match="command_id"):
+        await asyncio.wait_for(registration, timeout=5)
+    assert find_calls == 2
+    async with promotion_repo.session_factory() as session:
+        audits = await session.scalar(
+            select(func.count())
+            .select_from(PolicyAuditEventRecord)
+            .where(PolicyAuditEventRecord.command_id == command_id)
+        )
+        deployments = await session.scalar(
+            select(func.count())
+            .select_from(PolicyDeploymentRecord)
+            .where(PolicyDeploymentRecord.command_id == command_id)
+        )
+    assert audits == 1
+    assert deployments == 0

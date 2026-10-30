@@ -225,14 +225,15 @@ class HealthDecision(FrozenContract):
 
 
 class RehearsalClaims(FrozenContract):
-    rehearsal_id: Identifier
+    rehearsal_id: Annotated[str, Field(pattern=r"^[a-z0-9][a-z0-9-]{0,62}$")]
     deployment_id: UUID
     deployment_version: int = Field(ge=1)
     learner_id: Identifier
     request_id: Identifier
-    operation: Literal["learning_task"]
-    state_namespace: str = Field(min_length=1, max_length=128)
-    allowed_operations: list[Literal["learning_task"]] = Field(
+    namespace: str = Field(
+        pattern=r"^rehearsal-[a-z0-9][a-z0-9-]{0,62}$"
+    )
+    operations: list[Literal["learning_task"]] = Field(
         min_length=1,
         max_length=8,
     )

@@ -592,10 +592,6 @@ async def upgrade_m3_schema(connection) -> None:
             "FOREIGN KEY (policy_hash) "
             "REFERENCES policy_artifacts(policy_hash)",
         ),
-        "uq_policy_audit_command_deployment_event_type": (
-            "policy_audit_events",
-            "UNIQUE (command_id, deployment_id, event_type)",
-        ),
     }
     for name, (table_name, definition) in constraints.items():
         await connection.execute(
@@ -609,6 +605,27 @@ async def upgrade_m3_schema(connection) -> None:
                 "END IF; END $$"
             )
         )
+    await connection.execute(
+        text(
+            "DO $$ BEGIN "
+            "IF EXISTS (SELECT 1 FROM pg_constraint "
+            "WHERE conname = "
+            "'uq_policy_audit_command_deployment_event_type' "
+            "AND conrelid = 'policy_audit_events'::regclass "
+            "AND pg_get_constraintdef(oid) <> 'UNIQUE (command_id)') THEN "
+            "ALTER TABLE policy_audit_events DROP CONSTRAINT "
+            "uq_policy_audit_command_deployment_event_type; "
+            "END IF; "
+            "IF NOT EXISTS (SELECT 1 FROM pg_constraint "
+            "WHERE conname = "
+            "'uq_policy_audit_command_deployment_event_type' "
+            "AND conrelid = 'policy_audit_events'::regclass) THEN "
+            "ALTER TABLE policy_audit_events ADD CONSTRAINT "
+            "uq_policy_audit_command_deployment_event_type "
+            "UNIQUE (command_id); "
+            "END IF; END $$"
+        )
+    )
     await connection.execute(
         text(
             "CREATE INDEX IF NOT EXISTS ix_distributed_run_deployment "
@@ -795,7 +812,12 @@ def build_promotion_command_runtime(settings_obj=settings) -> PromotionCommandRu
     return PromotionCommandRuntime(
         engine,
         factory,
-        PromotionCommandService(repository),
+        PromotionCommandService(
+            repository,
+            authenticated_principal=(
+                settings_obj.promotion_command_principal
+            ),
+        ),
         RehearsalTokenIssuer(
             repository,
             signing_secret=(
