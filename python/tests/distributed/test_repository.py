@@ -19,6 +19,7 @@ from core.distributed.models import (
     DistributedStep,
     DistributedTraceSpan,
 )
+from core.distributed.promotion_models import PolicyAuditEventRecord
 from core.distributed.expert_models import (
     DistributedExpertInbox,
     DistributedExpertJob,
@@ -76,6 +77,10 @@ def test_distributed_metadata_contains_run_and_expert_plane_tables():
     assert DistributedExpertOutbox.__table__.c.available_at.nullable is False
     assert DistributedExpertInbox.__table__.c.message_key.nullable is False
     assert DistributedWorkerRegistry.__table__.c.capabilities.type.python_type is dict
+    assert {
+        constraint.name
+        for constraint in PolicyAuditEventRecord.__table__.constraints
+    } >= {"uq_policy_audit_command_deployment_event_type"}
     assert {
         "deployment_id",
         "effective_policy_hash",
@@ -412,6 +417,55 @@ async def test_m3_environment_head_remains_cas_updatable(repo):
         )
 
     assert result.rowcount == 1
+
+
+async def test_m3_upgrade_restores_audit_business_key_constraint(repo):
+    from core.distributed.runtime import (
+        REHEARSAL_DEPLOYMENT_ID,
+        upgrade_m3_schema,
+    )
+
+    constraint = "uq_policy_audit_command_deployment_event_type"
+    async with repo.session_factory() as session, session.begin():
+        connection = await session.connection()
+        await connection.execute(
+            text(
+                f"ALTER TABLE policy_audit_events "
+                f"DROP CONSTRAINT IF EXISTS {constraint}"
+            )
+        )
+        await upgrade_m3_schema(connection)
+        await upgrade_m3_schema(connection)
+        names = set(
+            (
+                await connection.execute(
+                    text(
+                        "SELECT conname FROM pg_constraint "
+                        "WHERE conrelid = 'policy_audit_events'::regclass"
+                    )
+                )
+            ).scalars()
+        )
+    assert constraint in names
+
+    async with repo.session_factory() as session:
+        with pytest.raises(DBAPIError, match=constraint):
+            await session.execute(
+                text(
+                    "INSERT INTO policy_audit_events ("
+                    "event_id, environment, deployment_id, event_type, "
+                    "command_id, actor, reason, details, created_at"
+                    ") VALUES ("
+                    ":event_id, 'rehearsal', :deployment_id, 'bootstrap', "
+                    "'bootstrap-rehearsal', 'test', 'duplicate', "
+                    "CAST('{}' AS JSON), :created_at)"
+                ),
+                {
+                    "event_id": str(uuid4()),
+                    "deployment_id": REHEARSAL_DEPLOYMENT_ID,
+                    "created_at": datetime.now(UTC),
+                },
+            )
 
 
 async def test_m3_run_assignment_rejects_update_but_lifecycle_can_advance(repo):

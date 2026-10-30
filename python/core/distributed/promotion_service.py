@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from typing import Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    model_serializer,
+    model_validator,
+)
 
 from .promotion_contracts import (
     DeploymentSnapshot,
@@ -19,11 +25,41 @@ class BudgetUsage(StrictFrozenModel):
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)
     prompt_cache_hit_tokens: int = Field(default=0, ge=0)
+    prompt_cache_miss_tokens: int = Field(default=0, ge=0)
+
+    @model_serializer(mode="wrap")
+    def serialize_supplied_cache_fields(self, handler):
+        value = handler(self)
+        for field in (
+            "prompt_cache_hit_tokens",
+            "prompt_cache_miss_tokens",
+        ):
+            if field not in self.model_fields_set:
+                value.pop(field, None)
+        return value
 
     @model_validator(mode="after")
     def validate_cache_usage(self) -> BudgetUsage:
-        if self.prompt_cache_hit_tokens > self.input_tokens:
-            raise ValueError("cache-hit tokens cannot exceed input tokens")
+        cache_fields = {
+            "prompt_cache_hit_tokens",
+            "prompt_cache_miss_tokens",
+        }
+        supplied = cache_fields & self.model_fields_set
+        if supplied == cache_fields and (
+            self.prompt_cache_hit_tokens + self.prompt_cache_miss_tokens
+            != self.input_tokens
+        ):
+            raise ValueError(
+                "cache-hit and cache-miss tokens must equal input tokens"
+            )
+        if (
+            supplied != cache_fields
+            and any(
+                getattr(self, field) > self.input_tokens
+                for field in supplied
+            )
+        ):
+            raise ValueError("cache tokens cannot exceed input tokens")
         return self
 
 

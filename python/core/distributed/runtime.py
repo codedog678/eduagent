@@ -592,6 +592,10 @@ async def upgrade_m3_schema(connection) -> None:
             "FOREIGN KEY (policy_hash) "
             "REFERENCES policy_artifacts(policy_hash)",
         ),
+        "uq_policy_audit_command_deployment_event_type": (
+            "policy_audit_events",
+            "UNIQUE (command_id, deployment_id, event_type)",
+        ),
     }
     for name, (table_name, definition) in constraints.items():
         await connection.execute(

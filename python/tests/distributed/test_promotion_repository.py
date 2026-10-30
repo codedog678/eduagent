@@ -141,6 +141,24 @@ def qualification_material() -> QualificationMaterial:
     )
 
 
+def newer_material(
+    material: QualificationMaterial,
+    *,
+    marker: str,
+    issued_after: timedelta,
+) -> QualificationMaterial:
+    body = material.model_dump(mode="json")
+    for index, receipt in enumerate(body["receipts"], start=1):
+        receipt["receipt_id"] = str(uuid4())
+        receipt["evidence_hash"] = canonical_hash(
+            {"marker": marker, "gate": receipt["gate_type"]}
+        )
+        receipt["issued_at"] = (
+            NOW + issued_after + timedelta(seconds=index)
+        ).isoformat()
+    return QualificationMaterial.model_validate(body)
+
+
 @pytest.fixture
 async def promotion_repo(repo):
     async with repo.session_factory() as session, session.begin():
@@ -279,6 +297,65 @@ async def test_concurrent_identical_command_returns_one_snapshot(
         "deployments": 2,
         "audits": 1,
     }
+
+
+async def test_head_lock_revalidates_latest_receipts_and_rejects_stale_material(
+    promotion_repo,
+):
+    baseline = qualification_material()
+    await promotion_repo.register_qualification(
+        baseline,
+        actor="release.operator",
+        command_id="register-baseline",
+    )
+    stale = newer_material(
+        baseline,
+        marker="stale",
+        issued_after=timedelta(hours=1),
+    )
+    latest = newer_material(
+        baseline,
+        marker="latest",
+        issued_after=timedelta(hours=2),
+    )
+    stale_repo = PromotionRepository(
+        promotion_repo.session_factory,
+        clock=lambda: NOW,
+    )
+    prechecked = asyncio.Event()
+    release_stale = asyncio.Event()
+    original_verify = stale_repo._verify_latest_receipts
+    verify_calls = 0
+
+    async def pause_after_first_verify(session, material):
+        nonlocal verify_calls
+        verify_calls += 1
+        await original_verify(session, material)
+        if verify_calls == 1:
+            prechecked.set()
+            await release_stale.wait()
+
+    stale_repo._verify_latest_receipts = pause_after_first_verify
+    stale_task = asyncio.create_task(
+        stale_repo.register_qualification(
+            stale,
+            actor="release.operator",
+            command_id="register-stale",
+        )
+    )
+    await asyncio.wait_for(prechecked.wait(), timeout=5)
+    latest_snapshot = await promotion_repo.register_qualification(
+        latest,
+        actor="release.operator",
+        command_id="register-latest",
+    )
+    release_stale.set()
+
+    with pytest.raises(QualificationRejected, match="latest.*does not match"):
+        await asyncio.wait_for(stale_task, timeout=5)
+
+    assert latest_snapshot.candidate_policy_hash == latest.artifact.policy_hash
+    assert verify_calls == 2
 
 
 @pytest.mark.parametrize("changed", ["receipt", "budget"])

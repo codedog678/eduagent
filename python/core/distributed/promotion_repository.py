@@ -109,6 +109,7 @@ class PromotionRepository:
                 raise QualificationRejected(
                     "rehearsal deployment head is not initialized"
                 )
+            await self._verify_latest_receipts(session, material)
             current = await session.get(
                 PolicyDeploymentRecord,
                 head.current_deployment_id,

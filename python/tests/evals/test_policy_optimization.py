@@ -5,6 +5,7 @@ import copy
 import json
 from pathlib import Path
 import socket
+from types import SimpleNamespace
 
 import pytest
 
@@ -15,7 +16,11 @@ from core.tutor_policy import BASE_RULES, QUIZ_RULES, TURN_RULES, system_prompt,
 from evals.live_cases import load_live_cases
 from evals.live_validation import fixture_service
 from evals.optimization.adapter import TutorGEPAAdapter
-from evals.optimization.budget import OptimizationBudget, OptimizationStopped
+from evals.optimization.budget import (
+    OptimizationBudget,
+    OptimizationStopped,
+    TextModel,
+)
 from evals.optimization.cli import acceptance, run_search
 from evals.optimization.protocol import (
     assert_holdout_disjoint, load_policy, load_protocol, policy_artifact,
@@ -133,6 +138,48 @@ def test_total_budget_covers_roles_and_keeps_unknown_usage_reserved():
         OptimizationBudget(max_cny=float("nan"))
     with pytest.raises(OptimizationStopped):
         OptimizationBudget(max_cny=.000001).reserve_for("task", [], [], 800)
+
+
+@pytest.mark.asyncio
+async def test_text_model_preserves_deepseek_cache_miss_usage(monkeypatch):
+    response = SimpleNamespace(
+        usage=SimpleNamespace(
+            prompt_tokens=1000,
+            completion_tokens=100,
+            prompt_cache_hit_tokens=600,
+            prompt_cache_miss_tokens=400,
+        ),
+        choices=[
+            SimpleNamespace(
+                finish_reason="stop",
+                message=SimpleNamespace(content='{"verdict":"ok"}'),
+            )
+        ],
+    )
+
+    async def create(**kwargs):
+        return response
+
+    client = SimpleNamespace(
+        chat=SimpleNamespace(
+            completions=SimpleNamespace(create=create),
+        )
+    )
+    service = SimpleNamespace(
+        model="deepseek-test",
+        _get_client=lambda: client,
+        _compatible_request_options=lambda **kwargs: kwargs,
+    )
+    budget = OptimizationBudget(max_requests=1, max_cny=1)
+
+    await TextModel(service, budget).complete([], role="judge", max_tokens=20)
+
+    assert budget.summary()["usage"] == {
+        "input_tokens": 1000,
+        "output_tokens": 100,
+        "prompt_cache_hit_tokens": 600,
+        "prompt_cache_miss_tokens": 400,
+    }
 
 
 def test_holdout_rejects_renamed_duplicates():

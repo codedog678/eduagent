@@ -65,9 +65,13 @@ class TextModel:
         if usage:
             normalized = {"input_tokens": usage.prompt_tokens,
                           "output_tokens": usage.completion_tokens}
-            hit = getattr(usage, "prompt_cache_hit_tokens", None)
-            if isinstance(hit, int):
-                normalized["prompt_cache_hit_tokens"] = hit
+            for field in (
+                "prompt_cache_hit_tokens",
+                "prompt_cache_miss_tokens",
+            ):
+                value = getattr(usage, field, None)
+                if isinstance(value, int):
+                    normalized[field] = value
             self.budget.settle(index, normalized)
         choice = response.choices[0]
         if choice.finish_reason != "stop" or not choice.message.content:

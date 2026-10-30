@@ -19,11 +19,77 @@ from core.distributed.promotion_contracts import (
     PromotionCommand,
     RehearsalClaims,
 )
+from core.distributed.promotion_service import BudgetUsage, QualificationBudget
+from evals.optimization.budget import OptimizationBudget
+from evals.optimization.ledger import DurableBudget, SharedLedger
 
 HASH = "a" * 64
 OTHER_HASH = "b" * 64
 DEPLOYMENT_ID = UUID("11111111-1111-1111-1111-111111111111")
 NOW = datetime(2026, 10, 30, 8, 0, tzinfo=UTC)
+
+
+@pytest.mark.parametrize("durable", [False, True])
+def test_real_budget_summaries_preserve_deepseek_cache_usage(
+    tmp_path,
+    durable,
+):
+    if durable:
+        budget = DurableBudget(
+            SharedLedger(tmp_path / "ledger.sqlite"),
+            "qualification",
+            max_requests=2,
+            max_cny=1,
+        )
+    else:
+        budget = OptimizationBudget(max_requests=2, max_cny=1)
+    index = budget.reserve_for("judge", [], [], 20)
+    budget.settle(
+        index,
+        {
+            "input_tokens": 1000,
+            "output_tokens": 100,
+            "prompt_cache_hit_tokens": 600,
+            "prompt_cache_miss_tokens": 400,
+        },
+    )
+
+    summary = budget.summary()
+    qualified = QualificationBudget.model_validate(summary)
+
+    assert qualified.usage.prompt_cache_hit_tokens == 600
+    assert qualified.usage.prompt_cache_miss_tokens == 400
+
+
+@pytest.mark.parametrize(
+    "usage",
+    [
+        {
+            "input_tokens": 1000,
+            "output_tokens": 100,
+            "prompt_cache_hit_tokens": 600,
+        },
+        {
+            "input_tokens": 1000,
+            "output_tokens": 100,
+            "prompt_cache_miss_tokens": 400,
+        },
+    ],
+)
+def test_budget_usage_accepts_partial_deepseek_cache_fields(usage):
+    assert BudgetUsage.model_validate(usage).input_tokens == 1000
+
+
+def test_budget_usage_requires_complete_cache_split_to_match_input():
+    with pytest.raises(ValidationError, match="cache"):
+        BudgetUsage.model_validate(
+            {
+                "input_tokens": 1000,
+                "output_tokens": 100,
+                "prompt_cache_hit_tokens": 600,
+                "prompt_cache_miss_tokens": 399,
+            }
+        )
 
 
 def test_deployment_states_and_transitions_are_strict():
