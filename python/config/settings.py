@@ -101,6 +101,35 @@ class Settings(BaseSettings):
     ops_worker_stale_seconds: float = Field(default=15, ge=1, le=3600)
     ops_api_token: SecretStr = Field(default=SecretStr(""), repr=False)
     otel_exporter_otlp_endpoint: str = ""
+    promotion_enabled: bool = False
+    promotion_rehearsal_secret: SecretStr = Field(
+        default=SecretStr(""), repr=False
+    )
+    promotion_assignment_secret: SecretStr = Field(
+        default=SecretStr(""), repr=False
+    )
+    promotion_rehearsal_store_root: str = str(
+        PROJECT_ROOT / "data/rehearsal"
+    )
+    promotion_rehearsal_stream: str = "eduagent:rehearsal-runs"
+    promotion_rehearsal_consumer_group: str = (
+        "eduagent-rehearsal-run-workers"
+    )
+    promotion_shadow_stream: str = "eduagent:policy-shadow"
+    promotion_shadow_consumer_group: str = (
+        "eduagent-policy-shadow-workers"
+    )
+    promotion_shadow_lease_seconds: float = Field(default=15, ge=3, le=300)
+    promotion_shadow_heartbeat_seconds: float = Field(
+        default=3, ge=.5, le=60
+    )
+    promotion_shadow_poll_seconds: float = Field(default=.25, gt=0, le=60)
+    promotion_health_poll_seconds: float = Field(default=1, gt=0, le=300)
+    promotion_token_ttl_seconds: int = Field(default=300, ge=30, le=3600)
+    promotion_fault_injection_enabled: bool = False
+    promotion_injected_latency_seconds: float = Field(
+        default=2, ge=0, le=30
+    )
 
     api_port: int = 8888
     log_level: str = "INFO"
@@ -173,6 +202,27 @@ class Settings(BaseSettings):
                 raise ValueError(f"{self.llm_provider.upper()}_API_KEY is required for LLM_PROVIDER")
         if self.distributed_experts_enabled and not self.distributed_enabled:
             raise ValueError("distributed experts require distributed run plane")
+        if self.promotion_enabled and not self.distributed_enabled:
+            raise ValueError("policy promotion requires distributed run plane")
+        if self.promotion_enabled:
+            rehearsal_secret = (
+                self.promotion_rehearsal_secret.get_secret_value()
+            )
+            assignment_secret = (
+                self.promotion_assignment_secret.get_secret_value()
+            )
+            if len(rehearsal_secret) < 32 or len(assignment_secret) < 32:
+                raise ValueError(
+                    "promotion secrets must each contain at least 32 characters"
+                )
+            if (
+                self.promotion_shadow_heartbeat_seconds
+                >= self.promotion_shadow_lease_seconds / 2
+            ):
+                raise ValueError(
+                    "promotion shadow heartbeat must be less than half "
+                    "the lease"
+                )
         if self.distributed_experts_enabled:
             if self.expert_heartbeat_seconds >= self.expert_lease_seconds / 2:
                 raise ValueError("expert heartbeat must be less than half the lease")

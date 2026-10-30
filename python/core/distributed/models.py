@@ -39,6 +39,22 @@ class DistributedRun(DistributedBase):
     trace_id: Mapped[str] = mapped_column(String(64), nullable=False)
     result: Mapped[dict | None] = mapped_column(JSON)
     error_code: Mapped[str | None] = mapped_column(String(128))
+    deployment_id: Mapped[str | None] = mapped_column(
+        ForeignKey(
+            "policy_deployments.deployment_id",
+            name="fk_distributed_run_deployment",
+        )
+    )
+    effective_policy_hash: Mapped[str | None] = mapped_column(String(64))
+    policy_cohort: Mapped[str | None] = mapped_column(String(16))
+    assignment_key_hash: Mapped[str | None] = mapped_column(String(64))
+    assignment_reason: Mapped[str | None] = mapped_column(String(128))
+    state_namespace: Mapped[str | None] = mapped_column(String(128))
+    rehearsal_id: Mapped[str | None] = mapped_column(String(128))
+    rehearsal_fault_profile: Mapped[str | None] = mapped_column(
+        String(32),
+        server_default="none",
+    )
     attempt_count: Mapped[int] = mapped_column(
         Integer,
         default=0,
@@ -264,3 +280,4 @@ class DistributedTraceSpan(DistributedBase):
 
 # Register the expert-plane tables whenever the shared metadata is imported.
 from . import expert_models as _expert_models  # noqa: E402,F401
+from . import promotion_models as _promotion_models  # noqa: E402,F401

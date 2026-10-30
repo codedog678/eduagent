@@ -29,6 +29,13 @@ class DistributedExpertJob(DistributedBase):
     role: Mapped[str] = mapped_column(String(32), nullable=False)
     input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     policy_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    deployment_id: Mapped[str | None] = mapped_column(
+        ForeignKey(
+            "policy_deployments.deployment_id",
+            name="fk_expert_job_deployment",
+        )
+    )
+    state_namespace: Mapped[str | None] = mapped_column(String(128))
     payload: Mapped[dict] = mapped_column(JSON, nullable=False)
     payload_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from redis.asyncio import Redis
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from config.settings import settings
 
 from .broker import RedisStreamBroker
+from .contracts import canonical_hash
 from .metrics import DistributedMetrics
 from .models import DistributedBase
 from .ops_queries import OpsQueries
@@ -63,6 +65,7 @@ class DistributedRuntime:
                 conn,
                 self.settings.distributed_attempt_timeout_seconds,
             )
+            await upgrade_m3_schema(conn)
         await self.broker.ensure_group()
         if self.settings.distributed_experts_enabled:
             await self.expert_broker.ensure_group()
@@ -279,5 +282,328 @@ async def upgrade_m1_schema(
         text(
             "ALTER TABLE distributed_run_attempts "
             "ALTER COLUMN deadline_at SET NOT NULL"
+        )
+    )
+
+
+BUILTIN_POLICY_COMPONENTS = {"retrieval_rules": "builtin"}
+BUILTIN_POLICY_HASH = canonical_hash(BUILTIN_POLICY_COMPONENTS)
+BUILTIN_FIXED_COMPONENTS_HASH = canonical_hash({"fixed": "builtin"})
+BUILTIN_RUNTIME_HASH = canonical_hash({"runtime": "builtin"})
+BUILTIN_PROTOCOL_HASH = canonical_hash({"protocol": "builtin"})
+BUILTIN_PROPOSER_HASH = canonical_hash({"proposer": "system"})
+PRODUCTION_DEPLOYMENT_ID = "00000000-0000-0000-0000-000000000001"
+REHEARSAL_DEPLOYMENT_ID = "00000000-0000-0000-0000-000000000002"
+DEFAULT_POLICY_THRESHOLDS = {
+    "candidate_min_runs": 20,
+    "stable_min_runs": 20,
+    "window_max_runs": 50,
+    "commit_failure_rate": "0.05",
+    "terminal_failure_rate": "0.10",
+    "latency_increase_rate": "0.50",
+    "mean_cost_increase_rate": "0.30",
+    "unknown_rate": "0.10",
+    "relative_epsilon": "0.000001",
+}
+DEFAULT_POLICY_THRESHOLDS_HASH = canonical_hash(DEFAULT_POLICY_THRESHOLDS)
+
+
+async def upgrade_m3_schema(connection) -> None:
+    if connection.dialect.name != "postgresql":
+        return
+
+    run_columns = {
+        "deployment_id": "VARCHAR(36)",
+        "effective_policy_hash": "VARCHAR(64)",
+        "policy_cohort": "VARCHAR(16)",
+        "assignment_key_hash": "VARCHAR(64)",
+        "assignment_reason": "VARCHAR(128)",
+        "state_namespace": "VARCHAR(128)",
+        "rehearsal_id": "VARCHAR(128)",
+        "rehearsal_fault_profile": "VARCHAR(32) DEFAULT 'none'",
+    }
+    expert_columns = {
+        "deployment_id": "VARCHAR(36)",
+        "state_namespace": "VARCHAR(128)",
+    }
+    for name, sql_type in run_columns.items():
+        await connection.execute(
+            text(
+                f"ALTER TABLE distributed_runs "
+                f"ADD COLUMN IF NOT EXISTS {name} {sql_type}"
+            )
+        )
+    for name, sql_type in expert_columns.items():
+        await connection.execute(
+            text(
+                f"ALTER TABLE distributed_expert_jobs "
+                f"ADD COLUMN IF NOT EXISTS {name} {sql_type}"
+            )
+        )
+
+    now = datetime.now(UTC)
+    await connection.execute(
+        text(
+            "INSERT INTO policy_artifacts ("
+            "policy_hash, parent_policy_hash, components, "
+            "fixed_components_hash, runtime_hash, source_revision, "
+            "protocol_hash, proposer_hash, data_role, evidence_bindings, "
+            "created_at"
+            ") VALUES ("
+            ":policy_hash, NULL, CAST(:components AS JSON), "
+            ":fixed_hash, :runtime_hash, 'builtin', :protocol_hash, "
+            ":proposer_hash, 'builtin', CAST('{}' AS JSON), :created_at"
+            ") ON CONFLICT (policy_hash) DO NOTHING"
+        ),
+        {
+            "policy_hash": BUILTIN_POLICY_HASH,
+            "components": '{"retrieval_rules":"builtin"}',
+            "fixed_hash": BUILTIN_FIXED_COMPONENTS_HASH,
+            "runtime_hash": BUILTIN_RUNTIME_HASH,
+            "protocol_hash": BUILTIN_PROTOCOL_HASH,
+            "proposer_hash": BUILTIN_PROPOSER_HASH,
+            "created_at": now,
+        },
+    )
+    for environment, deployment_id in (
+        ("production", PRODUCTION_DEPLOYMENT_ID),
+        ("rehearsal", REHEARSAL_DEPLOYMENT_ID),
+    ):
+        await connection.execute(
+            text(
+                "INSERT INTO policy_deployments ("
+                "deployment_id, environment, version, state, "
+                "candidate_policy_hash, stable_policy_hash, "
+                "previous_stable_deployment_id, traffic_basis_points, "
+                "assignment_salt_id, thresholds, thresholds_hash, "
+                "required_receipts, command_id, reason, actor, created_at"
+                ") VALUES ("
+                ":deployment_id, :environment, 1, 'registered', NULL, "
+                ":policy_hash, NULL, 0, 'builtin', "
+                "CAST(:thresholds AS JSON), :thresholds_hash, "
+                "CAST('[]' AS JSON), :command_id, 'builtin bootstrap', "
+                "'system', :created_at"
+                ") ON CONFLICT (deployment_id) DO NOTHING"
+            ),
+            {
+                "deployment_id": deployment_id,
+                "environment": environment,
+                "policy_hash": BUILTIN_POLICY_HASH,
+                "thresholds": (
+                    '{"candidate_min_runs":20,"commit_failure_rate":"0.05",'
+                    '"latency_increase_rate":"0.50",'
+                    '"mean_cost_increase_rate":"0.30",'
+                    '"relative_epsilon":"0.000001","stable_min_runs":20,'
+                    '"terminal_failure_rate":"0.10","unknown_rate":"0.10",'
+                    '"window_max_runs":50}'
+                ),
+                "thresholds_hash": DEFAULT_POLICY_THRESHOLDS_HASH,
+                "command_id": f"bootstrap-{environment}",
+                "created_at": now,
+            },
+        )
+        await connection.execute(
+            text(
+                "INSERT INTO policy_environment_heads ("
+                "environment, current_deployment_id, current_version, "
+                "updated_at"
+                ") VALUES (:environment, :deployment_id, 1, :updated_at) "
+                "ON CONFLICT (environment) DO NOTHING"
+            ),
+            {
+                "environment": environment,
+                "deployment_id": deployment_id,
+                "updated_at": now,
+            },
+        )
+        await connection.execute(
+            text(
+                "INSERT INTO policy_audit_events ("
+                "event_id, environment, deployment_id, event_type, "
+                "command_id, actor, reason, details, created_at"
+                ") VALUES ("
+                ":event_id, :environment, :deployment_id, 'bootstrap', "
+                ":command_id, 'system', 'builtin bootstrap', "
+                "CAST('{}' AS JSON), :created_at"
+                ") ON CONFLICT (event_id) DO NOTHING"
+            ),
+            {
+                "event_id": (
+                    "00000000-0000-0000-0000-000000000011"
+                    if environment == "production"
+                    else "00000000-0000-0000-0000-000000000012"
+                ),
+                "environment": environment,
+                "deployment_id": deployment_id,
+                "command_id": f"bootstrap-{environment}",
+                "created_at": now,
+            },
+        )
+
+    await connection.execute(
+        text(
+            "UPDATE distributed_runs SET "
+            "deployment_id = COALESCE(deployment_id, :deployment_id), "
+            "effective_policy_hash = COALESCE("
+            "effective_policy_hash, :policy_hash), "
+            "policy_cohort = COALESCE(policy_cohort, 'stable'), "
+            "assignment_key_hash = COALESCE("
+            "assignment_key_hash, :policy_hash), "
+            "assignment_reason = COALESCE("
+            "assignment_reason, 'legacy_backfill'), "
+            "state_namespace = COALESCE(state_namespace, 'production'), "
+            "rehearsal_fault_profile = COALESCE("
+            "rehearsal_fault_profile, 'none') "
+            "WHERE deployment_id IS NULL "
+            "OR effective_policy_hash IS NULL "
+            "OR policy_cohort IS NULL "
+            "OR assignment_key_hash IS NULL "
+            "OR assignment_reason IS NULL "
+            "OR state_namespace IS NULL "
+            "OR rehearsal_fault_profile IS NULL"
+        ),
+        {
+            "deployment_id": PRODUCTION_DEPLOYMENT_ID,
+            "policy_hash": BUILTIN_POLICY_HASH,
+        },
+    )
+    await connection.execute(
+        text(
+            "UPDATE distributed_expert_jobs AS jobs SET "
+            "deployment_id = runs.deployment_id, "
+            "state_namespace = runs.state_namespace "
+            "FROM distributed_runs AS runs "
+            "WHERE jobs.parent_run_id = runs.id "
+            "AND (jobs.deployment_id IS NULL OR jobs.state_namespace IS NULL)"
+        )
+    )
+
+    defaults = {
+        "deployment_id": PRODUCTION_DEPLOYMENT_ID,
+        "effective_policy_hash": BUILTIN_POLICY_HASH,
+        "policy_cohort": "stable",
+        "assignment_key_hash": BUILTIN_POLICY_HASH,
+        "assignment_reason": "legacy_backfill",
+        "state_namespace": "production",
+        "rehearsal_fault_profile": "none",
+    }
+    for column, default in defaults.items():
+        await connection.execute(
+            text(
+                f"ALTER TABLE distributed_runs ALTER COLUMN {column} "
+                f"SET DEFAULT '{default}'"
+            )
+        )
+        await connection.execute(
+            text(
+                f"ALTER TABLE distributed_runs ALTER COLUMN {column} "
+                "SET NOT NULL"
+            )
+        )
+    for column, default in (
+        ("deployment_id", PRODUCTION_DEPLOYMENT_ID),
+        ("state_namespace", "production"),
+    ):
+        await connection.execute(
+            text(
+                f"ALTER TABLE distributed_expert_jobs ALTER COLUMN {column} "
+                f"SET DEFAULT '{default}'"
+            )
+        )
+        await connection.execute(
+            text(
+                f"ALTER TABLE distributed_expert_jobs ALTER COLUMN {column} "
+                "SET NOT NULL"
+            )
+        )
+
+    constraints = {
+        "fk_distributed_run_deployment": (
+            "distributed_runs",
+            "FOREIGN KEY (deployment_id) "
+            "REFERENCES policy_deployments(deployment_id)",
+        ),
+        "fk_expert_job_deployment": (
+            "distributed_expert_jobs",
+            "FOREIGN KEY (deployment_id) "
+            "REFERENCES policy_deployments(deployment_id)",
+        ),
+    }
+    for name, (table_name, definition) in constraints.items():
+        await connection.execute(
+            text(
+                "DO $$ BEGIN "
+                f"IF NOT EXISTS (SELECT 1 FROM pg_constraint "
+                f"WHERE conname = '{name}') THEN "
+                f"ALTER TABLE {table_name} ADD CONSTRAINT {name} "
+                f"{definition}; "
+                "END IF; END $$"
+            )
+        )
+    await connection.execute(
+        text(
+            "CREATE INDEX IF NOT EXISTS ix_distributed_run_deployment "
+            "ON distributed_runs (deployment_id)"
+        )
+    )
+    await connection.execute(
+        text(
+            "CREATE INDEX IF NOT EXISTS ix_expert_job_deployment "
+            "ON distributed_expert_jobs (deployment_id)"
+        )
+    )
+
+    await connection.execute(
+        text(
+            "CREATE OR REPLACE FUNCTION reject_m3_append_only_change() "
+            "RETURNS trigger AS $$ BEGIN "
+            "RAISE EXCEPTION '% is append-only', TG_TABLE_NAME; "
+            "END; $$ LANGUAGE plpgsql"
+        )
+    )
+    for table_name in (
+        "policy_artifacts",
+        "policy_gate_receipts",
+        "policy_deployments",
+        "policy_observations",
+        "policy_health_windows",
+        "policy_audit_events",
+    ):
+        trigger_name = f"trg_{table_name}_append_only"
+        await connection.execute(
+            text(
+                f"DROP TRIGGER IF EXISTS {trigger_name} ON {table_name}"
+            )
+        )
+        await connection.execute(
+            text(
+                f"CREATE TRIGGER {trigger_name} "
+                f"BEFORE UPDATE OR DELETE ON {table_name} "
+                "FOR EACH ROW EXECUTE FUNCTION "
+                "reject_m3_append_only_change()"
+            )
+        )
+    await connection.execute(
+        text(
+            "CREATE OR REPLACE FUNCTION reject_terminal_shadow_change() "
+            "RETURNS trigger AS $$ BEGIN "
+            "IF OLD.status NOT IN ('queued', 'leased', 'running') THEN "
+            "RAISE EXCEPTION '% terminal row is append-only', TG_TABLE_NAME; "
+            "END IF; "
+            "RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END; "
+            "END; $$ LANGUAGE plpgsql"
+        )
+    )
+    await connection.execute(
+        text(
+            "DROP TRIGGER IF EXISTS trg_policy_shadow_terminal_immutable "
+            "ON policy_shadow_executions"
+        )
+    )
+    await connection.execute(
+        text(
+            "CREATE TRIGGER trg_policy_shadow_terminal_immutable "
+            "BEFORE UPDATE OR DELETE ON policy_shadow_executions "
+            "FOR EACH ROW EXECUTE FUNCTION reject_terminal_shadow_change()"
         )
     )

@@ -49,6 +49,15 @@ def test_distributed_metadata_contains_run_and_expert_plane_tables():
         "distributed_expert_outbox",
         "distributed_expert_inbox",
         "distributed_worker_registry",
+        "policy_artifacts",
+        "policy_gate_receipts",
+        "policy_deployments",
+        "policy_environment_heads",
+        "rehearsal_token_nonces",
+        "policy_observations",
+        "policy_health_windows",
+        "policy_audit_events",
+        "policy_shadow_executions",
     }
     assert DistributedRun.__table__.c.payload.type.python_type is dict
     assert DistributedRunAttempt.__table__.c.fencing_token.type.python_type is int
@@ -63,6 +72,229 @@ def test_distributed_metadata_contains_run_and_expert_plane_tables():
     assert DistributedExpertOutbox.__table__.c.available_at.nullable is False
     assert DistributedExpertInbox.__table__.c.message_key.nullable is False
     assert DistributedWorkerRegistry.__table__.c.capabilities.type.python_type is dict
+    assert {
+        "deployment_id",
+        "effective_policy_hash",
+        "policy_cohort",
+        "assignment_key_hash",
+        "assignment_reason",
+        "state_namespace",
+        "rehearsal_id",
+        "rehearsal_fault_profile",
+    } <= set(DistributedRun.__table__.c.keys())
+    assert {"deployment_id", "state_namespace"} <= set(
+        DistributedExpertJob.__table__.c.keys()
+    )
+
+
+async def test_m3_upgrade_is_idempotent_and_backfills_run_and_expert(repo):
+    from core.distributed.runtime import upgrade_m3_schema
+
+    run = await repo.accept(spec(request_id="legacy-m3-run"))
+    async with repo.session_factory() as session, session.begin():
+        connection = await session.connection()
+        await connection.execute(
+            text(
+                "INSERT INTO distributed_expert_jobs ("
+                "id, parent_run_id, parent_fencing_token, logical_key, role, "
+                "input_hash, policy_hash, payload, payload_bytes, status, "
+                "attempt_count, max_attempts, deadline_at, created_at, "
+                "updated_at"
+                ") VALUES ("
+                ":id, :run_id, 1, 'legacy-job', 'Assessment', :hash, :hash, "
+                "CAST('{}' AS JSON), 2, 'queued', 0, 1, :deadline, :now, :now"
+                ")"
+            ),
+            {
+                "id": "00000000-0000-0000-0000-000000000021",
+                "run_id": run.id,
+                "hash": "9" * 64,
+                "deadline": datetime.now(UTC) + timedelta(minutes=1),
+                "now": datetime.now(UTC),
+            },
+        )
+        await upgrade_m3_schema(connection)
+        await upgrade_m3_schema(connection)
+        stored = (
+            await connection.execute(
+                text(
+                    "SELECT deployment_id, effective_policy_hash, "
+                    "policy_cohort, assignment_reason, state_namespace, "
+                    "rehearsal_fault_profile FROM distributed_runs "
+                    "WHERE id = :run_id"
+                ),
+                {"run_id": run.id},
+            )
+        ).one()
+        heads = (
+            await connection.execute(
+                text(
+                    "SELECT heads.environment, deployments.state "
+                    "FROM policy_environment_heads AS heads "
+                    "JOIN policy_deployments AS deployments "
+                    "ON deployments.deployment_id = "
+                    "heads.current_deployment_id "
+                    "ORDER BY heads.environment"
+                )
+            )
+        ).all()
+        expert = (
+            await connection.execute(
+                text(
+                    "SELECT deployment_id, state_namespace "
+                    "FROM distributed_expert_jobs WHERE logical_key = "
+                    "'legacy-job'"
+                )
+            )
+        ).one()
+
+    assert stored.deployment_id is not None
+    assert len(stored.effective_policy_hash) == 64
+    assert stored.policy_cohort == "stable"
+    assert stored.assignment_reason == "legacy_backfill"
+    assert stored.state_namespace == "production"
+    assert stored.rehearsal_fault_profile == "none"
+    assert expert.deployment_id == stored.deployment_id
+    assert expert.state_namespace == "production"
+    assert heads == [
+        ("production", "registered"),
+        ("rehearsal", "registered"),
+    ]
+
+
+@pytest.mark.parametrize(
+    "table_name",
+    [
+        "policy_artifacts",
+        "policy_gate_receipts",
+        "policy_deployments",
+        "policy_observations",
+        "policy_health_windows",
+        "policy_audit_events",
+    ],
+)
+async def test_m3_append_only_tables_reject_update_and_delete(repo, table_name):
+    from sqlalchemy.exc import DBAPIError
+
+    from core.distributed.runtime import upgrade_m3_schema
+
+    async with repo.session_factory() as session, session.begin():
+        connection = await session.connection()
+        await upgrade_m3_schema(connection)
+        await _seed_append_only_test_rows(connection)
+
+    for operation in ("UPDATE", "DELETE"):
+        async with repo.session_factory() as session:
+            with pytest.raises(DBAPIError, match="append-only"):
+                if operation == "UPDATE":
+                    await session.execute(
+                        text(f"UPDATE {table_name} SET created_at = created_at")
+                    )
+                else:
+                    await session.execute(text(f"DELETE FROM {table_name}"))
+
+
+async def test_m3_environment_head_remains_cas_updatable(repo):
+    from core.distributed.runtime import upgrade_m3_schema
+
+    async with repo.session_factory() as session, session.begin():
+        connection = await session.connection()
+        await upgrade_m3_schema(connection)
+        result = await connection.execute(
+            text(
+                "UPDATE policy_environment_heads "
+                "SET current_version = current_version "
+                "WHERE environment = 'rehearsal' AND current_version = 1"
+            )
+        )
+
+    assert result.rowcount == 1
+
+
+async def _seed_append_only_test_rows(connection):
+    from core.distributed.runtime import (
+        BUILTIN_POLICY_HASH,
+        REHEARSAL_DEPLOYMENT_ID,
+    )
+
+    run_id = "00000000-0000-0000-0000-000000000031"
+    now = datetime.now(UTC)
+    await connection.execute(
+        text(
+            "INSERT INTO distributed_runs ("
+            "id, learner_id, request_id, operation, input_hash, payload, "
+            "status, trace_id, attempt_count, created_at, updated_at"
+            ") VALUES ("
+            ":id, 'student', 'append-only-test', 'learning_task', "
+            ":hash, CAST('{}' AS JSON), 'completed', :trace_id, 0, :now, :now"
+            ") ON CONFLICT (id) DO NOTHING"
+        ),
+        {
+            "id": run_id,
+            "hash": "d" * 64,
+            "trace_id": "e" * 32,
+            "now": now,
+        },
+    )
+    await connection.execute(
+        text(
+            "INSERT INTO policy_gate_receipts ("
+            "receipt_id, policy_hash, gate_type, status, evidence_hash, "
+            "protocol_hash, runtime_hash, source_revision, model_identity, "
+            "data_role, sample_count, cost, details, issued_at, issuer, "
+            "created_at"
+            ") VALUES ("
+            "'00000000-0000-0000-0000-000000000032', :policy_hash, "
+            "'artifact_integrity', 'passed', :hash, :hash, :hash, "
+            "'test', 'test', 'builtin', 1, 0, CAST('{}' AS JSON), "
+            ":now, 'test', :now"
+            ") ON CONFLICT (receipt_id) DO NOTHING"
+        ),
+        {"policy_hash": BUILTIN_POLICY_HASH, "hash": "f" * 64, "now": now},
+    )
+    await connection.execute(
+        text(
+            "INSERT INTO policy_observations ("
+            "observation_key, run_id, deployment_id, policy_hash, cohort, "
+            "state_namespace, metric_contract_version, terminal_status, "
+            "latency_seconds, input_tokens, output_tokens, cost, "
+            "commit_outcome, permission_outcome, structured_result, "
+            "injected, observed_at, source_trace_id, created_at"
+            ") VALUES ("
+            ":key, :run_id, :deployment_id, :policy_hash, 'stable', "
+            "'production', 1, 'completed', 1, 1, 1, 0, 'succeeded', "
+            "'allowed', 'valid', FALSE, :now, :trace_id, :now"
+            ") ON CONFLICT (observation_key) DO NOTHING"
+        ),
+        {
+            "key": "1" * 64,
+            "run_id": run_id,
+            "deployment_id": REHEARSAL_DEPLOYMENT_ID,
+            "policy_hash": BUILTIN_POLICY_HASH,
+            "now": now,
+            "trace_id": "e" * 32,
+        },
+    )
+    await connection.execute(
+        text(
+            "INSERT INTO policy_health_windows ("
+            "window_id, deployment_id, metric_contract_version, "
+            "observation_start_key, observation_end_key, candidate_stats, "
+            "stable_stats, decision, triggered_thresholds, evaluated_at, "
+            "created_at"
+            ") VALUES ("
+            ":window_id, :deployment_id, 1, :key, :key, "
+            "CAST('{}' AS JSON), CAST('{}' AS JSON), 'hold', "
+            "CAST('[]' AS JSON), :now, :now"
+            ") ON CONFLICT (window_id) DO NOTHING"
+        ),
+        {
+            "window_id": "2" * 64,
+            "deployment_id": REHEARSAL_DEPLOYMENT_ID,
+            "key": "1" * 64,
+            "now": now,
+        },
+    )
 
 
 async def test_accept_is_idempotent_and_conflicting_payload_is_rejected(repo):
