@@ -47,9 +47,19 @@ class PromotionRepository:
         session_factory: async_sessionmaker[AsyncSession],
         *,
         clock: Callable[[], datetime] | None = None,
+        judge_protocol_digest: Callable[[], str] | None = None,
     ) -> None:
         self.session_factory = session_factory
         self.clock = clock or (lambda: datetime.now(UTC))
+        self.judge_protocol_digest = (
+            judge_protocol_digest or self._current_judge_protocol_digest
+        )
+
+    @staticmethod
+    def _current_judge_protocol_digest() -> str:
+        from evals.optimization.scoring import judge_protocol_digest
+
+        return judge_protocol_digest()
 
     async def register_qualification(
         self,
@@ -59,31 +69,26 @@ class PromotionRepository:
         command_id: str,
     ) -> DeploymentSnapshot:
         material = QualificationMaterial.model_validate(material)
+        material_hash = canonical_hash(material.model_dump(mode="json"))
 
         async with self.session_factory() as session, session.begin():
             self._validate_material(material)
+            replay = await self._find_replay(
+                session,
+                command_id=command_id,
+                material_hash=material_hash,
+                actor=actor,
+                candidate_policy_hash=material.artifact.policy_hash,
+            )
+            if replay is not None:
+                return self._deployment(replay)
+
             now = self.clock()
             await self._insert_or_compare_artifact(session, material.artifact)
             for receipt in material.receipts:
                 await self._insert_or_compare_receipt(session, receipt, now)
 
             await self._verify_latest_receipts(session, material)
-            replay = await session.scalar(
-                select(PolicyDeploymentRecord).where(
-                    PolicyDeploymentRecord.command_id == command_id
-                )
-            )
-            if replay is not None:
-                if (
-                    replay.candidate_policy_hash
-                    != material.artifact.policy_hash
-                    or replay.actor != actor
-                ):
-                    raise ImmutablePromotionConflict(
-                        "command_id is bound to another registration"
-                    )
-                return self._deployment(replay)
-
             head = await session.scalar(
                 select(PolicyEnvironmentHeadRecord)
                 .where(
@@ -91,6 +96,15 @@ class PromotionRepository:
                 )
                 .with_for_update()
             )
+            replay = await self._find_replay(
+                session,
+                command_id=command_id,
+                material_hash=material_hash,
+                actor=actor,
+                candidate_policy_hash=material.artifact.policy_hash,
+            )
+            if replay is not None:
+                return self._deployment(replay)
             if head is None:
                 raise QualificationRejected(
                     "rehearsal deployment head is not initialized"
@@ -161,7 +175,8 @@ class PromotionRepository:
                             str(receipt.receipt_id)
                             for receipt in material.receipts
                         ],
-                        "budget": material.budget,
+                        "budget": material.budget.model_dump(mode="json"),
+                        "material_hash": material_hash,
                     },
                     created_at=now,
                 )
@@ -185,14 +200,13 @@ class PromotionRepository:
         }
         return canonical_hash(body)
 
-    @classmethod
-    def _validate_material(cls, material: QualificationMaterial) -> None:
+    def _validate_material(self, material: QualificationMaterial) -> None:
         artifact = material.artifact
         if artifact.data_role != "holdout_validated":
             raise QualificationRejected(
                 "candidate artifact must use data_role=holdout_validated"
             )
-        if cls._artifact_hash(artifact) != artifact.policy_hash:
+        if self._artifact_hash(artifact) != artifact.policy_hash:
             raise QualificationRejected("artifact canonical hash mismatch")
         if set(receipt.gate_type for receipt in material.receipts) != set(
             REQUIRED_QUALIFICATION_GATES
@@ -202,14 +216,12 @@ class PromotionRepository:
             )
 
         try:
-            expected_cost = Decimal(
-                str(material.budget["estimated_peak_cny"])
-            )
-        except (KeyError, InvalidOperation, ValueError):
-            raise QualificationRejected(
-                "shared budget lacks a valid estimated_peak_cny"
-            ) from None
-        judge_protocol_hashes: set[str] = set()
+            expected_cost = Decimal(str(material.budget.estimated_peak_cny))
+        except (InvalidOperation, ValueError):
+            raise QualificationRejected("shared budget cost is invalid") from None
+        expected_budget = material.budget.model_dump(mode="json")
+        expected_judge_protocol_hash = self.judge_protocol_digest()
+        model_identities: set[str] = set()
         for receipt in material.receipts:
             if receipt.status != "passed":
                 raise QualificationRejected(
@@ -231,6 +243,7 @@ class PromotionRepository:
                 raise QualificationRejected(
                     "receipt model_identity is required"
                 )
+            model_identities.add(receipt.model_identity)
             details = receipt.details
             if details.get("campaign_id") != material.campaign_id:
                 raise QualificationRejected(
@@ -248,19 +261,11 @@ class PromotionRepository:
                     "candidate registration requires Judge v3"
                 )
             judge_protocol_hash = details.get("judge_protocol_hash")
-            if (
-                not isinstance(judge_protocol_hash, str)
-                or len(judge_protocol_hash) != 64
-                or any(
-                    character not in "0123456789abcdef"
-                    for character in judge_protocol_hash
-                )
-            ):
+            if judge_protocol_hash != expected_judge_protocol_hash:
                 raise QualificationRejected(
-                    "Judge v3 protocol hash is missing or invalid"
+                    "Judge v3 protocol hash does not match current Judge v3"
                 )
-            judge_protocol_hashes.add(judge_protocol_hash)
-            if details.get("budget") != material.budget:
+            if details.get("budget") != expected_budget:
                 raise QualificationRejected(
                     "receipt budget does not match shared budget"
                 )
@@ -268,10 +273,45 @@ class PromotionRepository:
                 raise QualificationRejected(
                     "receipt cost does not match shared budget"
                 )
-        if len(judge_protocol_hashes) != 1:
+        if len(model_identities) != 1:
             raise QualificationRejected(
-                "receipts use inconsistent Judge v3 protocols"
+                "receipts use inconsistent model_identity"
             )
+
+    @staticmethod
+    async def _find_replay(
+        session: AsyncSession,
+        *,
+        command_id: str,
+        material_hash: str,
+        actor: str,
+        candidate_policy_hash: str,
+    ) -> PolicyDeploymentRecord | None:
+        replay = await session.scalar(
+            select(PolicyDeploymentRecord).where(
+                PolicyDeploymentRecord.command_id == command_id
+            )
+        )
+        if replay is None:
+            return None
+        audit = await session.scalar(
+            select(PolicyAuditEventRecord).where(
+                PolicyAuditEventRecord.command_id == command_id,
+                PolicyAuditEventRecord.deployment_id == replay.deployment_id,
+                PolicyAuditEventRecord.event_type
+                == "qualification_registered",
+            )
+        )
+        if (
+            replay.candidate_policy_hash != candidate_policy_hash
+            or replay.actor != actor
+            or audit is None
+            or audit.details.get("material_hash") != material_hash
+        ):
+            raise ImmutablePromotionConflict(
+                "command_id is bound to another registration"
+            )
+        return replay
 
     @staticmethod
     async def _insert_or_compare_artifact(
@@ -355,6 +395,9 @@ class PromotionRepository:
         session: AsyncSession,
         material: QualificationMaterial,
     ) -> None:
+        expected_by_gate = {
+            receipt.gate_type: receipt for receipt in material.receipts
+        }
         for gate_type in REQUIRED_QUALIFICATION_GATES:
             latest = await session.scalar(
                 select(PolicyGateReceiptRecord)
@@ -376,6 +419,17 @@ class PromotionRepository:
                 status = latest.status if latest is not None else "missing"
                 raise QualificationRejected(
                     f"latest {gate_type} receipt is {status}"
+                )
+            try:
+                matches = (
+                    PromotionRepository._receipt(latest)
+                    == expected_by_gate[gate_type]
+                )
+            except ValueError:
+                matches = False
+            if not matches:
+                raise QualificationRejected(
+                    f"latest {gate_type} receipt does not match material"
                 )
 
     @staticmethod

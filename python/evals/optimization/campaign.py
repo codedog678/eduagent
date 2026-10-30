@@ -333,11 +333,21 @@ class Campaign:
         fresh.verify_eligibility()
 
         from core.distributed.contracts import canonical_hash
-        from core.distributed.promotion_service import QualificationMaterial
+        from core.distributed.promotion_service import (
+            QualificationBudget,
+            QualificationMaterial,
+        )
+        from evals.optimization.scoring import judge_protocol_digest
 
         local_artifact = fresh.policy_artifact()
         if fresh.data["protocol"].get("schema") != "eduagent.gepa.v3":
             raise ValueError("promotion requires Judge v3 campaign protocol")
+        current_judge_protocol_hash = judge_protocol_digest()
+        if (
+            fresh.data["protocol"].get("judge_protocol_sha256")
+            != current_judge_protocol_hash
+        ):
+            raise ValueError("campaign Judge v3 protocol is not current")
         calibration = verify_manifest(
             Path(fresh.config["calibration_manifest"])
         )
@@ -354,7 +364,9 @@ class Campaign:
             or digest(harness) != fresh.data["harness_hash"]
         ):
             raise ValueError("qualification evidence changed during export")
-        budget = fresh.budget.summary()
+        budget = QualificationBudget.model_validate(
+            fresh.budget.summary()
+        ).model_dump(mode="json")
         model_identity = json.dumps(
             calibration["judge_identity"],
             ensure_ascii=False,
@@ -367,9 +379,7 @@ class Campaign:
             "campaign_id": fresh.data["id"],
             "campaign_binding": fresh.binding,
             "judge_protocol_version": 3,
-            "judge_protocol_hash": fresh.data["protocol"][
-                "judge_protocol_sha256"
-            ],
+            "judge_protocol_hash": current_judge_protocol_hash,
             "budget": budget,
         }
         evidence = {

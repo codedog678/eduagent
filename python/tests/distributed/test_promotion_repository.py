@@ -1,9 +1,11 @@
+import asyncio
 import copy
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID, uuid4
 
 import pytest
+from pydantic import ValidationError
 from sqlalchemy import func, select
 
 from core.distributed.contracts import canonical_hash
@@ -20,8 +22,11 @@ from core.distributed.promotion_repository import (
     QualificationRejected,
 )
 from core.distributed.promotion_service import (
+    QualificationBudget,
     QualificationMaterial,
 )
+from evals.live_budget import PRICING
+from evals.optimization.scoring import judge_protocol_digest
 
 pytestmark = pytest.mark.distributed_integration
 
@@ -59,11 +64,28 @@ def qualification_material() -> QualificationMaterial:
         "created_at": NOW.isoformat(),
     }
     policy_hash = canonical_hash(artifact_body)
-    budget = {
-        "requests": 80,
-        "estimated_peak_cny": 1.25,
-        "billing_status": "estimate_only",
-    }
+    budget = QualificationBudget.model_validate(
+        {
+            "max_requests": 1200,
+            "max_cny": 10.0,
+            "requests": 80,
+            "usage": {
+                "input_tokens": 1000,
+                "output_tokens": 200,
+                "prompt_cache_hit_tokens": 300,
+            },
+            "estimated_peak_cny": 1.25,
+            "estimated_off_peak_cny": 0.625,
+            "unconfirmed_reservation_cny": 0.0,
+            "billing_status": "estimate_only",
+            "pricing": PRICING,
+            "pricing_note": (
+                "Default Flash rates; per-request pricing overrides apply "
+                "when present."
+            ),
+            "roles": {"task": 40, "judge": 36, "reflection": 4},
+        }
+    ).model_dump(mode="json")
     receipts = []
     for index, gate_type in enumerate(REQUIRED_GATES, start=1):
         receipts.append(
@@ -88,7 +110,7 @@ def qualification_material() -> QualificationMaterial:
                     "campaign_id": "campaign-1",
                     "campaign_binding": "b" * 64,
                     "judge_protocol_version": 3,
-                    "judge_protocol_hash": "c" * 64,
+                    "judge_protocol_hash": judge_protocol_digest(),
                     "budget": budget,
                 },
                 "issued_at": (NOW + timedelta(seconds=index)).isoformat(),
@@ -221,6 +243,73 @@ async def test_identical_registration_is_idempotent_and_binds_current_stable(
         "deployments": 2,
         "audits": 1,
     }
+    async with promotion_repo.session_factory() as session:
+        audit = await session.scalar(
+            select(PolicyAuditEventRecord).where(
+                PolicyAuditEventRecord.command_id == "register-candidate-1"
+            )
+        )
+    assert audit.details["material_hash"] == canonical_hash(
+        material.model_dump(mode="json")
+    )
+
+
+async def test_concurrent_identical_command_returns_one_snapshot(
+    promotion_repo,
+):
+    material = qualification_material()
+
+    first, second = await asyncio.gather(
+        promotion_repo.register_qualification(
+            material,
+            actor="release.operator",
+            command_id="register-concurrent",
+        ),
+        promotion_repo.register_qualification(
+            material,
+            actor="release.operator",
+            command_id="register-concurrent",
+        ),
+    )
+
+    assert first == second
+    assert await _counts(promotion_repo) == {
+        "artifacts": 3,
+        "receipts": 4,
+        "deployments": 2,
+        "audits": 1,
+    }
+
+
+@pytest.mark.parametrize("changed", ["receipt", "budget"])
+async def test_command_id_binds_complete_material_without_side_effects(
+    promotion_repo,
+    changed,
+):
+    original = qualification_material()
+    await promotion_repo.register_qualification(
+        original,
+        actor="release.operator",
+        command_id="register-material-bound",
+    )
+    before = await _counts(promotion_repo)
+    body = original.model_dump(mode="json")
+    if changed == "receipt":
+        body["receipts"][0]["receipt_id"] = str(uuid4())
+    else:
+        body["budget"]["max_cny"] = 11.0
+        for receipt in body["receipts"]:
+            receipt["details"]["budget"]["max_cny"] = 11.0
+    material = QualificationMaterial.model_validate(body)
+
+    with pytest.raises(ImmutablePromotionConflict, match="command_id"):
+        await promotion_repo.register_qualification(
+            material,
+            actor="release.operator",
+            command_id="register-material-bound",
+        )
+
+    assert await _counts(promotion_repo) == before
 
 
 async def test_existing_same_hash_with_different_body_is_rejected(
@@ -325,6 +414,34 @@ async def test_receipts_require_complete_immutable_binding(
         )
 
 
+async def test_receipts_require_current_judge_digest_and_one_model_identity(
+    promotion_repo,
+):
+    for mutate, message in (
+        (
+            lambda body: body["receipts"][0]["details"].update(
+                judge_protocol_hash="f" * 64
+            ),
+            "protocol hash",
+        ),
+        (
+            lambda body: body["receipts"][0].update(
+                model_identity='{"model":"other","provider":"test"}'
+            ),
+            "model_identity",
+        ),
+    ):
+        body = qualification_material().model_dump(mode="json")
+        mutate(body)
+        material = QualificationMaterial.model_validate(body)
+        with pytest.raises(QualificationRejected, match=message):
+            await promotion_repo.register_qualification(
+                material,
+                actor="release.operator",
+                command_id=f"reject-{message}",
+            )
+
+
 @pytest.mark.parametrize("status", ["failed", "unknown"])
 async def test_newer_failed_or_unknown_receipt_overrides_older_pass(
     promotion_repo,
@@ -360,6 +477,61 @@ async def test_newer_failed_or_unknown_receipt_overrides_older_pass(
             actor="release.operator",
             command_id="retry-after-unknown",
         )
+
+
+@pytest.mark.parametrize("malformed", [False, True])
+async def test_latest_pass_must_exactly_match_material_receipt(
+    promotion_repo,
+    malformed,
+):
+    material = qualification_material()
+    await promotion_repo.register_qualification(
+        material,
+        actor="release.operator",
+        command_id="first-exact-pass",
+    )
+    latest = material.receipts[2].model_copy(
+        update={
+            "receipt_id": uuid4(),
+            "evidence_hash": "8" * 64,
+            "issued_at": NOW + timedelta(hours=1),
+        }
+    )
+    values = latest.model_dump(mode="python")
+    values["receipt_id"] = str(latest.receipt_id)
+    if malformed:
+        values["model_identity"] = ""
+    async with promotion_repo.session_factory() as session, session.begin():
+        session.add(
+            PolicyGateReceiptRecord(
+                **values,
+                created_at=NOW + timedelta(hours=1),
+            )
+        )
+
+    with pytest.raises(QualificationRejected, match="latest.*does not match"):
+        await promotion_repo.register_qualification(
+            material,
+            actor="release.operator",
+            command_id=f"retry-latest-{malformed}",
+        )
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda body: body.update(schema_version="1"),
+        lambda body: body["budget"].update(max_requests="1200"),
+        lambda body: body["budget"].update(unexpected=1),
+        lambda body: body["budget"].update(estimated_peak_cny=-0.01),
+        lambda body: body["budget"]["roles"].update(judge=-1),
+    ],
+)
+def test_qualification_material_is_strict_and_budget_is_bounded(mutate):
+    body = qualification_material().model_dump(mode="json")
+    mutate(body)
+    with pytest.raises(ValidationError):
+        QualificationMaterial.model_validate(body)
 
 
 async def test_changed_material_and_non_v3_or_development_artifact_are_rejected(

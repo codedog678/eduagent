@@ -15,6 +15,7 @@ from evals.optimization.gates import acceptance
 from evals.optimization.ledger import DurableBudget, SharedLedger
 from evals.optimization.loop import FailureQueue, ImprovementLoop
 from evals.optimization.protocol import prepare_protocol, capability_name
+from evals.optimization.scoring import judge_protocol_digest
 
 DATASET = Path(__file__).parents[2] / "evals/datasets/tutor_agent50_rsi_v2.jsonl"
 
@@ -407,10 +408,26 @@ def test_qualification_material_reloads_and_binds_all_evidence(
         receipt["details"]["campaign_binding"]
         == qualified_campaign.binding
         and receipt["details"]["judge_protocol_version"] == 3
+        and receipt["details"]["judge_protocol_hash"]
+        == judge_protocol_digest()
         and receipt["details"]["budget"] == material["budget"]
         and receipt["data_role"] == "holdout_validated"
         for receipt in material["receipts"]
     )
+    assert len({r["model_identity"] for r in material["receipts"]}) == 1
+    assert set(material["budget"]) == {
+        "max_requests",
+        "max_cny",
+        "requests",
+        "usage",
+        "estimated_peak_cny",
+        "estimated_off_peak_cny",
+        "unconfirmed_reservation_cny",
+        "billing_status",
+        "pricing",
+        "pricing_note",
+        "roles",
+    }
 
     harness_path = qualified_campaign.root / "harness.json"
     changed = json.loads(harness_path.read_text())
