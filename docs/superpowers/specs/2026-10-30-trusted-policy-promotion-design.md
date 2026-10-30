@@ -168,14 +168,15 @@ Read-only Ops API / Console
 - `assignment_reason`
 - `state_namespace`
 - `rehearsal_id`
+- `rehearsal_fault_profile`：`none / latency / commit_failure`，仅服务端签名演练 token 可设置
 
 这些字段在首次受理时写入，之后不可修改。Run attempt、step、expert job、expert result 和 trace 均携带或可关联这些值。任何版本或 namespace 不一致的结果都不能提交。
 
 ### 5.5 观测、窗口与审计
 
-`policy_observations` 以幂等键记录单 Run 观测：
+`policy_observations` 以幂等键记录单次 stable/candidate/shadow 执行观测：
 
-- `observation_key = run_id + metric_contract_version`
+- `observation_key = SHA256(canonical JSON {run_id, deployment_id, cohort, metric_contract_version})`
 - deployment、policy、cohort、namespace、结果分类
 - latency、token、cost、commit outcome、permission outcome
 - observation time、source trace
@@ -208,7 +209,10 @@ Canary 使用：
 ```text
 bucket = uint64(HMAC-SHA256(
   assignment_secret,
-  environment || deployment_id || learner_id || request_id
+  utf8(environment) || 0x00 ||
+  utf8(deployment_id) || 0x00 ||
+  utf8(learner_id) || 0x00 ||
+  utf8(request_id)
 )) mod 10000
 
 candidate if bucket < traffic_basis_points else stable
@@ -291,10 +295,11 @@ Shadow 门禁至少验证：执行成功率、schema 有效率、权限拒绝、
 
 Canary 只接收 Rehearsal Driver 产生的签名流量：
 
-- token 绑定 rehearsal、过期时间、允许操作和 nonce。
+- token 绑定 rehearsal、deployment ID/version、learner/request、过期时间、允许操作、nonce 和显式 fault profile。
 - nonce 只能使用一次；过期、签名错误或权限不符直接拒绝。
+- fault injection 默认关闭，只允许 candidate cohort 的签名演练流量触发；observation 和报告必须标注 injected，不能冒充自然故障。
 - server 将其映射到独立 `state_namespace`。
-- PostgreSQL 角色、repository 条件和提交校验共同禁止 rehearsal 写入生产 namespace。
+- 独立 Rehearsal Worker 流、进程挂载边界、服务端 store router 和提交校验共同禁止 rehearsal 写入生产 namespace；当前业务学习状态仍使用 SQLite，不能把 PostgreSQL 控制面角色误称为学习状态隔离。
 - 使用隔离 learner ID 和测试数据，不能引用真实学生数据。
 
 候选会真实运行、真实提交到 rehearsal namespace 并产生真实指标，因此可以验证分流、状态隔离和回滚，而不污染正式学习状态。
@@ -398,7 +403,7 @@ Health Evaluator 检测到触发条件后，在一个事务中：
 - 两个 evaluator 只能提交一次回滚。
 - 迟到 observation 不影响新 deployment。
 - append-only 表不能 UPDATE/DELETE。
-- rehearsal 数据库角色不能写生产 namespace。
+- Rehearsal Worker 不挂载生产 store，且 router/提交校验拒绝生产 namespace。
 
 ### 12.3 多进程故障测试
 
