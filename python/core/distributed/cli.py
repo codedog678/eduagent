@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import os
 import socket
+from uuid import uuid4
 
 from config.settings import settings
 from core.distributed.executor import LearningTaskExecutor
@@ -24,35 +25,48 @@ def parser() -> argparse.ArgumentParser:
 async def run_forever(command: str) -> None:
     runtime = build_runtime()
     await runtime.start()
+    worker_id = (
+        settings.distributed_worker_id
+        if command == "worker" and settings.distributed_worker_id
+        else f"{socket.gethostname()}:{os.getpid()}:{command}"
+    )
     try:
-        if command == "dispatcher":
-            dispatcher = runtime.dispatcher()
-            while True:
-                await dispatcher.dispatch_once()
-                await asyncio.sleep(0.25)
-        elif command == "reaper":
-            reaper = runtime.reaper()
-            while True:
-                await reaper.reap_once()
-                await asyncio.sleep(
-                    settings.distributed_heartbeat_seconds,
+        async with runtime.worker_registry.process(
+            worker_id=worker_id,
+            instance_id=uuid4().hex,
+            process_type=(
+                "run-worker" if command == "worker" else command
+            ),
+            heartbeat_seconds=settings.distributed_heartbeat_seconds,
+            capabilities=(
+                ["learning_task"] if command == "worker" else []
+            ),
+        ) as registry_process:
+            if command == "dispatcher":
+                dispatcher = runtime.dispatcher()
+                while True:
+                    await dispatcher.dispatch_once()
+                    await asyncio.sleep(0.25)
+            elif command == "reaper":
+                reaper = runtime.reaper()
+                while True:
+                    await reaper.reap_once()
+                    await asyncio.sleep(
+                        settings.distributed_heartbeat_seconds,
+                    )
+            elif command == "worker":
+                worker = runtime.worker(
+                    worker_id,
+                    LearningTaskExecutor(
+                        settings.harness_store_path,
+                        expert_gateway=runtime.expert_gateway(),
+                    ),
+                    registry_process=registry_process,
                 )
-        elif command == "worker":
-            worker_id = (
-                settings.distributed_worker_id
-                or f"{socket.gethostname()}:{os.getpid()}"
-            )
-            worker = runtime.worker(
-                worker_id,
-                LearningTaskExecutor(
-                    settings.harness_store_path,
-                    expert_gateway=runtime.expert_gateway(),
-                ),
-            )
-            while True:
-                await worker.run_once()
-        else:
-            raise ValueError(f"unsupported command: {command}")
+                while True:
+                    await worker.run_once()
+            else:
+                raise ValueError(f"unsupported command: {command}")
     finally:
         await runtime.close()
 

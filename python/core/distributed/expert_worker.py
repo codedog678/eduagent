@@ -39,6 +39,7 @@ class ExpertWorker:
         poll_block_ms: int = 100,
         pause_before_result_seconds: float = 0,
         metrics=None,
+        registry_process=None,
     ) -> None:
         if not roles:
             raise ValueError("expert worker requires at least one role")
@@ -63,6 +64,7 @@ class ExpertWorker:
         self.poll_block_ms = poll_block_ms
         self.pause_before_result_seconds = pause_before_result_seconds
         self.metrics = metrics
+        self.registry_process = registry_process
 
     async def _heartbeat(self, claim) -> None:
         try:
@@ -124,6 +126,8 @@ class ExpertWorker:
                 await self.broker.ack(message.redis_id)
             return
 
+        if self.registry_process is not None:
+            await self.registry_process.assign(job_id=job_id)
         execution = None
         heartbeat = None
         started = monotonic()
@@ -178,6 +182,8 @@ class ExpertWorker:
             if heartbeat is not None:
                 with suppress(asyncio.CancelledError, ExpertLeaseLost):
                     await heartbeat
+            if self.registry_process is not None:
+                await self.registry_process.clear_assignment()
 
     def _observe_attempt(self, seconds: float) -> None:
         if self.metrics is None:

@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -96,6 +96,8 @@ class Settings(BaseSettings):
     expert_demo_pause_before_result_seconds: float = Field(
         default=0, ge=0, le=300
     )
+    ops_worker_stale_seconds: float = Field(default=15, ge=1, le=3600)
+    ops_api_token: SecretStr = Field(default=SecretStr(""), repr=False)
     otel_exporter_otlp_endpoint: str = ""
 
     api_port: int = 8888

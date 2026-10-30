@@ -26,6 +26,7 @@ async def submit_run(spec: DistributedRunRequest, request: Request):
         "status": run.status,
         "status_url": f"/api/distributed/runs/{run.id}",
         "trace_url": f"/api/distributed/runs/{run.id}/trace",
+        "ops_url": f"/ops/runs/{run.id}",
     }
 
 

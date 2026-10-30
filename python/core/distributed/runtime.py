@@ -11,8 +11,10 @@ from config.settings import settings
 
 from .metrics import DistributedMetrics
 from .models import DistributedBase
+from .ops_queries import OpsQueries
 from .repository import DistributedRunRepository
 from .telemetry import DurableTracer, build_optional_otel_tracer
+from .worker_registry import WorkerRegistry
 
 if TYPE_CHECKING:
     from .dispatcher import OutboxDispatcher
@@ -41,6 +43,12 @@ class DistributedRuntime:
         self.tracer = tracer or DurableTracer(repository)
         self.otel_provider = otel_provider
         self.settings = settings_obj
+        self.worker_registry = WorkerRegistry(session_factory)
+        self.ops_queries = OpsQueries(
+            session_factory,
+            worker_stale_seconds=settings_obj.ops_worker_stale_seconds,
+        )
+        self.expert_repository = self._build_expert_repository()
 
     async def start(self) -> None:
         async with self.engine.begin() as conn:
@@ -91,7 +99,13 @@ class DistributedRuntime:
             metrics=self.metrics,
         )
 
-    def worker(self, worker_id, executor) -> RunWorker:
+    def worker(
+        self,
+        worker_id,
+        executor,
+        *,
+        registry_process=None,
+    ) -> RunWorker:
         from .worker import RunWorker
 
         return RunWorker(
@@ -107,6 +121,7 @@ class DistributedRuntime:
             ),
             tracer=self.tracer,
             metrics=self.metrics,
+            registry_process=registry_process,
         )
 
     def expert_gateway(self):
@@ -119,9 +134,20 @@ class DistributedRuntime:
             DurableExpertGateway,
             InlineExpertGateway,
         )
+
+        return DurableExpertGateway(
+            self.expert_repository,
+            InlineExpertGateway(
+                ExpertEngine(get_llm_service())
+            ),
+            poll_seconds=self.settings.expert_result_poll_seconds,
+            metrics=self.metrics,
+        )
+
+    def _build_expert_repository(self):
         from .expert_repository import ExpertJobRepository
 
-        repository = ExpertJobRepository(
+        return ExpertJobRepository(
             self.session_factory,
             queued_limit_per_role=(
                 self.settings.expert_queued_limit_per_role
@@ -136,14 +162,6 @@ class DistributedRuntime:
             max_job_seconds=self.settings.expert_max_job_seconds,
             retry_base_seconds=self.settings.expert_retry_base_seconds,
             retry_max_seconds=self.settings.expert_retry_max_seconds,
-        )
-        return DurableExpertGateway(
-            repository,
-            InlineExpertGateway(
-                ExpertEngine(get_llm_service())
-            ),
-            poll_seconds=self.settings.expert_result_poll_seconds,
-            metrics=self.metrics,
         )
 
 

@@ -31,6 +31,7 @@ class RunWorker:
         pending_idle_ms: int | None = None,
         tracer=None,
         metrics=None,
+        registry_process=None,
     ) -> None:
         if lease_seconds <= 0:
             raise ValueError("lease_seconds must be positive")
@@ -52,6 +53,7 @@ class RunWorker:
         self.pause_before_commit_seconds = pause_before_commit_seconds
         self.tracer = tracer
         self.metrics = metrics
+        self.registry_process = registry_process
         self.pending_idle_ms = (
             max(1, int(lease_seconds * 1000))
             if pending_idle_ms is None
@@ -231,6 +233,8 @@ class RunWorker:
             await self.broker.ack(message.redis_id)
             return
 
+        if self.registry_process is not None:
+            await self.registry_process.assign(run_id=run_id)
         lease_lost = asyncio.Event()
         execution: asyncio.Task | None = None
         heartbeat: asyncio.Task | None = None
@@ -409,6 +413,8 @@ class RunWorker:
             if heartbeat is not None:
                 with suppress(asyncio.CancelledError, LeaseLost):
                     await heartbeat
+            if self.registry_process is not None:
+                await self.registry_process.clear_assignment()
 
     async def run_once(self) -> bool:
         messages = await self.broker.reclaim(
