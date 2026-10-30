@@ -79,6 +79,8 @@ def verify_manifest(path: Path):
         from evals.optimization.scoring import JUDGE_PROMPT
         from evals.optimization.protocol import digest
         if (record["score"].get("judge_prompt_sha256") != digest(JUDGE_PROMPT)
+                or record["score"].get("judge_protocol_version") != 3
+                or record["score"].get("judge_verdict") == "unknown"
                 or record["score"].get("review_status") != "ai_reviewed"):
             raise ValueError("calibration evidence uses a different or unobserved judge")
         identity = record.get("judge_identity")
@@ -87,15 +89,24 @@ def verify_manifest(path: Path):
         identities.append(identity)
         if hybrid:
             from evals.optimization.leakage import combine_judgment
-            from evals.optimization.scoring import judge_payload, validate_judgment
+            from evals.optimization.judge_v3 import normalize_result, validate_result
+            from evals.optimization.scoring import judge_payload
             case = LiveCase.model_validate(record["case"])
             case.validate_contract()
+            payload = judge_payload(case, record["observed"])
             if (case.case_id != item["case_id"]
                     or record["score"]["judge_input_sha256"] != digest(
-                        judge_payload(case, record["observed"]))):
+                        payload)):
                 raise ValueError("calibration case/input binding mismatch")
-            raw = record["score"]["raw_judgment"]
-            validate_judgment(json.dumps(raw), case, record["observed"])
+            raw_v3 = validate_result(
+                json.dumps(record["score"]["raw_judgment_v3"]),
+                expected_criterion_ids=payload["criterion_ids"],
+                allowed_evidence_refs=set(payload["evidence_refs"]),
+            )
+            if (record["score"]["judge_verdict"] != raw_v3.verdict
+                    or record["score"]["judge_reason_codes"] != raw_v3.reason_codes):
+                raise ValueError("calibration judge v3 metadata mismatch")
+            raw = normalize_result(raw_v3, payload)
             combined = combine_judgment(case, record["observed"], raw)
             if any(record["score"].get(key) != combined[key] for key in combined):
                 raise ValueError("calibration hybrid evidence mismatch")

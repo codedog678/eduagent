@@ -8,6 +8,7 @@ import pytest
 
 from core.policy_store import (BUILTIN_HASH, PolicyRegistry, artifact, atomic_json,
                                builtin_components, digest)
+from evals.optimization.budget import OptimizationStopped
 from evals.optimization.campaign import Campaign
 from evals.optimization.gates import acceptance
 from evals.optimization.ledger import DurableBudget, SharedLedger
@@ -127,6 +128,13 @@ def test_campaign_cannot_skip_dev_or_inherit_candidate(tmp_path):
     atomic_json(campaign.root / "campaign.json", saved)
     with pytest.raises(ValueError, match="binding"):
         Campaign.open(campaign.root)
+
+
+def test_campaign_preflight_reserves_two_judge_calls_per_metric(tmp_path):
+    campaign = create(tmp_path, max_requests=255)
+    with pytest.raises(OptimizationStopped, match="insufficient requests"):
+        campaign.preflight()
+    assert campaign.data["state"] == "prepared"
 
 
 def test_comparison_resume_reuses_complete_rows_charges_retry(tmp_path):
@@ -346,7 +354,9 @@ def test_real_manifest_rejects_missing_or_mixed_model_identity(tmp_path):
     from evals.optimization.scoring import JUDGE_PROMPT
     evidence = tmp_path / "row.json"
     record = {
-        "score": {"judge_prompt_sha256": digest(JUDGE_PROMPT), "review_status": "ai_reviewed",
+        "score": {"judge_prompt_sha256": digest(JUDGE_PROMPT),
+                  "judge_protocol_version": 3, "judge_verdict": "pass",
+                  "review_status": "ai_reviewed",
                   "semantic": [{"id": "S1", "passed": True}]},
         "observed": {"steps": {"s1": {"result": {"teaching_response": {"response": "测试证据"}}}}},
     }

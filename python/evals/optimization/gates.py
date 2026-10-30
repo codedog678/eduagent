@@ -6,7 +6,8 @@ from evals.optimization.scoring import summarize
 def verify_raw_row(row, case):
     import json
     from evals.live_scorers import score_live_case
-    from evals.optimization.scoring import JUDGE_PROMPT, validate_judgment
+    from evals.optimization.judge_v3 import Verdict, normalize_result, validate_result
+    from evals.optimization.scoring import JUDGE_PROMPT, judge_payload
     from evals.optimization.protocol import digest
     automatic = score_live_case(case, row["observed"])
     if automatic != row["automatic"]:
@@ -18,17 +19,35 @@ def verify_raw_row(row, case):
         return
     if score["judge_prompt_sha256"] != digest(JUDGE_PROMPT):
         raise ValueError("judge protocol changed")
+    if score.get("judge_protocol_version") != 3:
+        raise ValueError("judge protocol version changed")
+    payload = judge_payload(case, row["observed"])
+    if score.get("judge_input_sha256") != digest(payload):
+        raise ValueError("judge input binding changed")
+    raw_v3 = validate_result(
+        json.dumps(score["raw_judgment_v3"]),
+        expected_criterion_ids=payload["criterion_ids"],
+        allowed_evidence_refs=set(payload["evidence_refs"]),
+    )
+    if (score.get("judge_verdict") != raw_v3.verdict
+            or score.get("judge_reason_codes") != raw_v3.reason_codes):
+        raise ValueError("judge v3 result metadata mismatch")
+    if raw_v3.verdict == Verdict.UNKNOWN or score.get("review_status") == "unknown":
+        raise ValueError("unknown judge result cannot qualify")
     from evals.optimization.leakage import combine_judgment
-    raw = validate_judgment(json.dumps(score["raw_judgment"]), case, row["observed"])
-    combined = combine_judgment(case, row["observed"], raw.model_dump())
+    normalized = normalize_result(raw_v3, payload)
+    combined = combine_judgment(case, row["observed"], normalized)
     if any(score.get(key) != combined[key]
            for key in ("semantic", "decisions", "leakage", "raw_judgment")):
         raise ValueError("deterministic leakage score does not match raw evidence")
-    judgment = validate_judgment(json.dumps(
-        {key: combined[key] for key in ("semantic", "decisions")}), case, row["observed"])
-    passed = automatic["automatic_passed"] and all(c.passed for c in judgment.semantic)
-    decisions = [d.required_tools_present and all(c.selection_correct and c.arguments_correct
-                                                 for c in d.calls) for d in judgment.decisions]
+    passed = (raw_v3.verdict == Verdict.PASS and automatic["automatic_passed"]
+              and all(check["passed"] for check in combined["semantic"]))
+    decisions = [
+        decision["required_tools_present"]
+        and all(call["selection_correct"] and call["arguments_correct"]
+                for call in decision["calls"])
+        for decision in combined["decisions"]
+    ]
     rate = sum(decisions) / len(decisions) if decisions else 0
     if (score["task_success"] != passed or score["automatic_passed"] != automatic["automatic_passed"]
             or score["decision_rate"] != rate or score["score"] != (.8 + .2 * rate if passed else 0)):

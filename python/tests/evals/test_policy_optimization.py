@@ -148,17 +148,28 @@ class MockTextModel:
         responses = [s["response"] for s in steps.values() if s["response"]]
         evidence = responses[-1] if responses else ""
         passed = "MOCK_IMPROVED" in evidence
+        response_ref = next(
+            (key for key in reversed(payload["evidence_refs"]) if key.startswith("response:")),
+            None,
+        )
         return json.dumps({
-            "semantic": [{"id": c["id"], "passed": passed,
-                          "reason": "模拟判定，仅用于测试", "evidence": evidence}
-                         for c in payload["semantic_checks"]],
-            "decisions": [
-                {"step_id": sid, "required_tools_present": True,
-                 "calls": [{"index": i, "selection_correct": True, "arguments_correct": True}
-                           for i in range(len(s["calls"]))],
-                 "reason": "模拟判定", "evidence": ""}
-                for sid, s in steps.items() if s["action"] == "converse" and s["status"] == "completed"
-            ],
+            "schema_version": 3,
+            "verdict": "pass" if passed else "fail",
+            "reason_codes": ["all_criteria_passed" if passed else "criterion_failed"],
+            "criterion_results": [{
+                "criterion_id": criterion_id,
+                "verdict": "pass" if passed else "fail",
+                "evidence_refs": (
+                    [response_ref] if criterion_id.startswith("semantic:") and response_ref
+                    else [
+                        key for key in payload["evidence_refs"]
+                        if key.startswith(
+                            "call:" + criterion_id.removeprefix("decision:") + ":"
+                        )
+                    ]
+                ),
+                "rationale": "模拟判定，仅用于测试",
+            } for criterion_id in payload["criterion_ids"]],
         })
 
 
@@ -188,6 +199,7 @@ def test_adapter_runs_real_harness_and_gepa_without_network(tmp_path):
         assert reflection_inputs
         assert all("reference_facts_for_evaluation_only" not in json.dumps(m) for m in reflection_inputs)
         row = next(r for r in adapter.rows if r["case_id"] == cases[2].case_id)
+        assert row["score"]["judge_call_count"] == 1
         from gepa.core.adapter import EvaluationBatch
         with pytest.raises(ValueError, match="cannot enter reflection"):
             adapter.make_reflective_dataset(seed_candidate(),
@@ -297,25 +309,34 @@ def test_cli_search_compare_and_all50_fixtures(monkeypatch, tmp_path):
     assert len(rows) == 50 and all(row["automatic"]["automatic_passed"] for row in rows)
 
 
-def test_judge_failure_keeps_trace_and_never_becomes_zero_reward(tmp_path):
+def test_judge_failure_keeps_trace_and_becomes_fail_closed_unknown(tmp_path):
     case = load_live_cases(DATASET)[0]
     budget = OptimizationBudget(max_requests=10, max_cny=2)
 
     class BrokenJudge(MockTextModel):
         async def complete(self, messages, *, role, max_tokens=2200):
-            await super().complete(messages, role=role, max_tokens=max_tokens)
+            index = self.budget.reserve_for(role, messages, [], max_tokens)
+            self.budget.settle(index, {"input_tokens": 10, "output_tokens": 10})
+            self.inputs.append((role, messages))
             return '{"semantic":[],"decisions":[]}'
 
     previous = settings.enable_coordinator
     with TutorGEPAAdapter([case], [case.case_id], budget, tmp_path,
                           service=LLMService(), text_model=BrokenJudge(budget),
                           service_factory=mocked_service) as adapter:
-        with pytest.raises(OptimizationStopped, match="judge schema"):
-            adapter.evaluate_rows([case], seed_candidate())
-        assert not adapter.rows
+        row = adapter.evaluate_rows([case], seed_candidate())[0]
+        assert row["scoring_status"] == "completed"
+        assert row["score"]["task_success"] is False
+        assert row["score"]["score"] == 0
+        assert row["score"]["judge_call_count"] == 2
+        assert budget.summary()["roles"]["judge"] == 2
+        from evals.optimization.gates import verify_raw_row
+        with pytest.raises(ValueError, match="unknown judge result"):
+            verify_raw_row(row, case)
     saved = json.loads((tmp_path / "evaluations/00001.json").read_text())
-    assert saved["scoring_status"] == "interrupted"
-    assert saved["observed"]["steps"] and "score" not in saved
+    assert saved["scoring_status"] == "completed"
+    assert saved["observed"]["steps"]
+    assert saved["score"]["judge_diagnostics"]["repair_response"]
     assert settings.enable_coordinator == previous
 
 

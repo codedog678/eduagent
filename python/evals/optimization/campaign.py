@@ -13,6 +13,7 @@ from evals.optimization.budget import OptimizationStopped
 from evals.optimization.calibration import verify_manifest
 from evals.optimization.gates import acceptance
 from evals.optimization.ledger import DurableBudget, SharedLedger
+from evals.optimization.judge_v3 import JUDGE_MAX_CALLS
 from evals.optimization.protocol import (
     assert_holdout_disjoint, file_digest, load_protocol, validate_candidate,
 )
@@ -105,6 +106,17 @@ class Campaign:
 
     def preflight(self):
         self.verify_environment()
+        protocol, cases = self._inputs()
+        search_cases = [cases[case_id] for case_id in (
+            protocol["train_ids"] + protocol["dev_validation_ids"]
+        )]
+        worst_case_per_metric = max(
+            case.expected_model_requests_max + JUDGE_MAX_CALLS
+            for case in search_cases
+        )
+        self.budget.require_requests(
+            self.config["max_metric_calls"] * worst_case_per_metric
+        )
         self.transition("preflight_passed", {"prepared"})
 
     def verify_environment(self):
@@ -172,7 +184,7 @@ class Campaign:
         rows = {"baseline": [], "candidate": []}
         policies = {"baseline": self.data["parent"]["components"], "candidate": self.data["candidate"]}
         remaining = sum(
-            case.expected_model_requests_max + 1
+            case.expected_model_requests_max + JUDGE_MAX_CALLS
             for repeat in range(3) for case in cases for label in policies
             if not (output / "completed" / f"{repeat}-{digest(case.case_id)}-{label}.json").exists())
         self.budget.require_requests(remaining)

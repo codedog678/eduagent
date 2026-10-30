@@ -11,7 +11,7 @@ from evals.live_cases import CASE_IDS, load_live_cases
 from evals.semantic_contract import require_rsi_contract
 
 
-SCHEMA = "eduagent.gepa.v2"
+SCHEMA = "eduagent.gepa.v3"
 GEPA_VERSION = "0.1.4"
 RUNTIME = {
     "policy_loading_enabled": False,
