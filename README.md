@@ -181,6 +181,44 @@ python tools/demo_distributed_recovery.py
 完整状态机、故障矩阵、测试与指标入口见
 [Distributed Run Plane](docs/engineering/distributed-run-plane.md)。
 
+### 有界 Expert Plane 与 Ops Console（M2）
+
+开启 `DISTRIBUTED_EXPERTS_ENABLED=true` 后，Run Worker 可将 Assessment、
+Curriculum 和 Tutor 的只读草稿工作委派给独立 Expert Worker。PostgreSQL
+保存 job、独立 lease/fencing token、append-only result 和 outbox；Redis
+Streams 仍只负责投递提示。Expert Worker 只读取冻结、脱敏、带预算的快照，
+不挂载 Harness SQLite，也不能提交 BKT、测验、记忆、计划或公开回复。
+
+父 Run Worker 持有唯一 learner-state 写权限。它按当前 parent fencing token
+读取结果，再校验 role、step、policy hash、来源范围和当前来源可用性；通过后
+才执行 Curriculum 动作或构造 Tutor 公开回复。旧 parent、旧 expert token、
+重复 Redis 消息和取消后的迟到草稿都会保留审计记录，但不能被采用。
+
+distributed profile 启动两个 Run Worker、两个 Expert Worker、两类 dispatcher
+与 reaper，以及只读 Ops Console：
+
+```bash
+docker compose --profile distributed up --build -d
+open http://localhost:3000/ops/
+```
+
+本地 Compose 默认 Ops token 为 `local-ops-console`，仅注入
+`distributed-api`；Console 在当前标签页的 session storage 中保存输入值。
+生产环境应覆盖 `OPS_API_TOKEN`，并通过反向代理限制 `/ops/*`。
+
+真实故障演示和固定 template 的控制面基准：
+
+```bash
+python tools/demo_expert_failover.py
+python tools/benchmark_expert_plane.py --requests 30 --concurrency 4
+```
+
+演示强杀第一个 Expert Worker，验证第二个 Worker 使用更高 token 接管且只有
+一个 accepted result。基准报告 enqueue-to-start、端到端 p50/p95、吞吐、
+峰值队列、错误、成本未知状态及父侧 owner lock 等待代理值；它不代表远程模型
+容量，也不证明 learner-state 可水平多写。完整协议、失败证据和限制见
+[Bounded Expert Plane](docs/engineering/bounded-expert-plane.md)。
+
 ### 队列与存储
 
 事件队列使用 Python 标准库 `heapq`，保存在当前交互的内存中，不依赖数据库或外部消息服务。Agent 发布后续事件时只入队，当前处理器退出并释放本学习者的锁后再执行后续事件。默认每次事件链最多入队 64 个事件，普通处理器超时为 15 秒，REST 答疑的 Tutor 处理器超时为 40 秒，整次业务执行超时为 45 秒。Tutor 模型调用共用本轮剩余 deadline；上下文预算采用 UTF-8 字节估计，模型实际 usage 单独记录。等待同一学习者执行锁的时间使用独立排队超时，不计入业务执行超时。

@@ -66,6 +66,7 @@ jobs:
           --health-retries 20
     env:
       DISTRIBUTED_ENABLED: "true"
+      DISTRIBUTED_EXPERTS_ENABLED: "true"
       DISTRIBUTED_TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/edu_agent
       DISTRIBUTED_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/edu_agent
       DISTRIBUTED_TEST_REDIS_URL: redis://localhost:6379/15
@@ -86,7 +87,160 @@ jobs:
         working-directory: python
         run: >-
           python -m pytest tests/distributed
-          tests/integration/test_distributed_failover.py -q
+          tests/integration/test_distributed_failover.py
+          tests/integration/test_expert_failover.py
+          --junitxml=/tmp/eduagent-distributed-junit.xml -q
+      - name: Archive distributed test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: distributed-test-evidence
+          path: /tmp/eduagent-distributed-junit.xml
+          if-no-files-found: error
+
+  compose-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate distributed Compose profile
+        run: docker compose --profile distributed config > /tmp/eduagent-compose.yml
+      - name: Start distributed Compose profile
+        run: docker compose --profile distributed up --build -d
+      - name: Exercise runs, Ops, trace, and worker loss
+        env:
+          OPS_API_TOKEN: local-ops-console
+        run: |
+          set -euo pipefail
+
+          wait_http() {
+            local url="$1"
+            for _ in $(seq 1 120); do
+              if curl --fail --silent --show-error "$url" >/dev/null; then
+                return 0
+              fi
+              sleep 1
+            done
+            echo "timed out waiting for $url" >&2
+            return 1
+          }
+
+          wait_workers() {
+            for _ in $(seq 1 120); do
+              if curl --fail --silent \
+                -H "Authorization: Bearer $OPS_API_TOKEN" \
+                "http://127.0.0.1:8890/ops/workers?limit=100" \
+                | jq -e '
+                  ([.items[] | select(
+                    .process_type == "run-worker" and .status == "running"
+                  )] | length) >= 2
+                  and
+                  ([.items[] | select(
+                    .process_type == "expert-worker"
+                    and .status == "running"
+                  )] | length) >= 2
+                ' >/dev/null; then
+                return 0
+              fi
+              sleep 1
+            done
+            echo "timed out waiting for worker registration" >&2
+            return 1
+          }
+
+          submit_and_wait() {
+            local request_id="$1"
+            local output="$2"
+            local body run_id status
+            body="$(jq -nc --arg request_id "$request_id" '{
+              learner_id: "compose-student",
+              request_id: $request_id,
+              operation: "learning_task",
+              payload: {
+                learner_id: "compose-student",
+                request_id: $request_id,
+                knowledge_id: "grammar_tenses",
+                question: "Review tense selection with one example."
+              }
+            }')"
+            run_id="$(curl --fail --silent --show-error \
+              -H "Content-Type: application/json" \
+              --data "$body" \
+              http://127.0.0.1:8890/api/distributed/runs | jq -er '.run_id')"
+            status=""
+            for _ in $(seq 1 120); do
+              status="$(curl --fail --silent --show-error \
+                "http://127.0.0.1:8890/api/distributed/runs/$run_id" \
+                | jq -er '.status')"
+              case "$status" in
+                completed)
+                  break
+                  ;;
+                terminal_failed|exhausted|cancelled)
+                  echo "run $run_id ended as $status" >&2
+                  return 1
+                  ;;
+              esac
+              sleep 1
+            done
+            test "$status" = "completed"
+
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $OPS_API_TOKEN" \
+              "http://127.0.0.1:8890/ops/runs/$run_id" \
+              | jq -e --arg run_id "$run_id" \
+                '.run_id == $run_id and .status == "completed"' >/dev/null
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $OPS_API_TOKEN" \
+              "http://127.0.0.1:8890/ops/runs/$run_id/trace" \
+              | jq -e --arg run_id "$run_id" \
+                '.run_id == $run_id and (.spans | length) > 0' >/dev/null
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $OPS_API_TOKEN" \
+              "http://127.0.0.1:8890/ops/expert-jobs?parent_run_id=$run_id" \
+              | jq -e \
+                '(.items | length) > 0 and all(.items[]; .status == "completed")' \
+                >/dev/null
+            jq -nc --arg run_id "$run_id" --arg status "$status" \
+              '{run_id: $run_id, status: $status}' > "$output"
+          }
+
+          wait_http http://127.0.0.1:8890/api/health
+          wait_http http://127.0.0.1:3000/ops/
+          wait_workers
+
+          submit_and_wait "compose-before-kill-${GITHUB_RUN_ID}" /tmp/run-before.json
+          docker compose kill expert-worker-a
+          submit_and_wait "compose-after-kill-${GITHUB_RUN_ID}" /tmp/run-after.json
+
+          jq -s '{
+            schema_version: 1,
+            status: "completed",
+            scenario: "compose-profile-expert-worker-loss",
+            runs: .
+          }' /tmp/run-before.json /tmp/run-after.json \
+            > /tmp/eduagent-compose-smoke.json
+      - name: Capture Compose evidence
+        if: always()
+        run: |
+          docker compose --profile distributed ps --all \
+            > /tmp/eduagent-compose-ps.txt
+          docker compose --profile distributed logs --no-color \
+            > /tmp/eduagent-compose.log 2>&1 || true
+      - name: Archive Compose smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compose-smoke-evidence
+          path: |
+            /tmp/eduagent-compose.yml
+            /tmp/eduagent-compose-smoke.json
+            /tmp/eduagent-compose-ps.txt
+            /tmp/eduagent-compose.log
+          if-no-files-found: warn
+      - name: Stop distributed Compose profile
+        if: always()
+        run: docker compose --profile distributed down -v
 
   package:
     runs-on: ubuntu-latest
@@ -106,5 +260,6 @@ jobs:
           python -m venv /tmp/eduagent-package
           /tmp/eduagent-package/bin/python -m pip install dist/*.whl
           cd /tmp
-          /tmp/eduagent-package/bin/python -c "import agents, api, core, evals"
+          /tmp/eduagent-package/bin/python -c "import agents, api, core, evals; import api.ops_routes; import core.distributed.cli, core.distributed.expert_adopter, core.distributed.expert_contracts, core.distributed.expert_dispatcher, core.distributed.expert_engine, core.distributed.expert_gateway, core.distributed.expert_models, core.distributed.expert_reaper, core.distributed.expert_repository, core.distributed.expert_snapshot, core.distributed.expert_worker, core.distributed.ops_contracts, core.distributed.ops_queries, core.distributed.runtime, core.distributed.worker_registry"
+          /tmp/eduagent-package/bin/python -m core.distributed.cli --help
           /tmp/eduagent-package/bin/eduagent-eval validate
