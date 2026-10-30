@@ -8,6 +8,7 @@ import pytest
 
 from core.policy_store import (BUILTIN_HASH, PolicyRegistry, artifact, atomic_json,
                                builtin_components, digest)
+from evals.optimization.adapter import PROPOSER_PROMPT
 from evals.optimization.budget import OptimizationStopped
 from evals.optimization.campaign import Campaign
 from evals.optimization.gates import acceptance
@@ -25,7 +26,11 @@ def create(tmp_path, **updates):
               "runtime_hash": "test", "deployment_runtime_hash": "test",
               "simulation": True, "calibration_manifest": "", "max_metric_calls": 32,
               "minibatch": 1, **updates}
-    registry = PolicyRegistry(tmp_path / "registry", runtime_hash="test", source_revision="test")
+    registry = PolicyRegistry(
+        tmp_path / "registry",
+        runtime_hash=config["deployment_runtime_hash"],
+        source_revision=config["source_revision"],
+    )
     return Campaign.create(tmp_path / "campaign", dataset=DATASET, protocol_path=protocol,
                            registry=registry, config=config, ledger=SharedLedger(tmp_path / "shared.sqlite"))
 
@@ -60,6 +65,100 @@ def start_dev(campaign):
     campaign.preflight()
     campaign.transition("searching", {"preflight_passed"})
     campaign.choose_candidate({"retrieval_rules": "先查找来源，再阅读全文并核对结论。"})
+
+
+@pytest.fixture
+def qualified_campaign(tmp_path, monkeypatch):
+    from evals.optimization import campaign as campaign_module
+    from evals.optimization import runtime as runtime_module
+    from evals.optimization.protocol import file_digest
+
+    calibration = tmp_path / "calibration.json"
+    atomic_json(calibration, {"fixture": "replayable Judge v3 evidence"})
+    campaign = create(
+        tmp_path,
+        simulation=False,
+        calibration_manifest=str(calibration),
+        calibration_sha256=file_digest(calibration),
+        runtime_hash=digest({"runtime": "campaign"}),
+        deployment_runtime_hash=digest({"runtime": "deployment"}),
+    )
+    candidate = {"retrieval_rules": "先查找来源，再阅读全文并核对结论。"}
+    campaign.data.update(
+        state="eligible",
+        candidate=candidate,
+        comparison_binding=digest(
+            {"campaign": campaign.binding, "candidate": candidate}
+        ),
+    )
+    holdout = tmp_path / "holdout.jsonl"
+    holdout.write_text('{"fixture":"frozen holdout"}\n')
+    campaign.data.update(
+        holdout_path=str(holdout),
+        holdout_hash=file_digest(holdout),
+    )
+    rows = {"baseline": [{"case_id": "case-1"}],
+            "candidate": [{"case_id": "case-1"}]}
+    for role in ("dev", "holdout"):
+        receipt = {
+            "binding": campaign.data["comparison_binding"],
+            "role": role,
+            "rows": rows,
+            "gate": {"passed": True},
+        }
+        atomic_json(campaign.root / role / "receipt.json", receipt)
+        campaign.data[f"{role}_receipt_hash"] = digest(receipt)
+    harness = {
+        "binding": campaign.data["comparison_binding"],
+        "rows": rows,
+        "dataset_hash": "d" * 64,
+        "teaching_reviews": [{"case_id": "case-1"}],
+    }
+    atomic_json(campaign.root / "harness.json", harness)
+    campaign.data["harness_hash"] = digest(harness)
+    campaign.data["artifact"] = artifact(
+        candidate,
+        parent=campaign.data["parent"]["policy_hash"],
+        protocol=digest(campaign.data["protocol"]),
+        runtime=campaign.config["deployment_runtime_hash"],
+        source=campaign.config["source_revision"],
+        proposer=digest(PROPOSER_PROMPT),
+        evidence={
+            "campaign": str(campaign.root),
+            "dev": campaign.data["dev_receipt_hash"],
+            "holdout": campaign.data["holdout_receipt_hash"],
+            "harness": campaign.data["harness_hash"],
+        },
+    )
+    campaign.save()
+
+    monkeypatch.setattr(Campaign, "verify_environment", lambda self: None)
+    monkeypatch.setattr(
+        Campaign,
+        "verify_receipt",
+        lambda self, role: {"passed": True},
+    )
+    monkeypatch.setattr(
+        campaign_module,
+        "verify_manifest",
+        lambda path: {
+            "passed": True,
+            "counts": {"positive": 10, "negative": 10},
+            "data_role": "independent_calibration",
+            "judge_identity": {
+                "provider": "test",
+                "model": "judge-v3",
+                "thinking": False,
+            },
+            "scoring_protocol": {"version": 3},
+        },
+    )
+    monkeypatch.setattr(
+        runtime_module,
+        "verify_harness_evidence",
+        lambda value, current: None,
+    )
+    return Campaign.open(campaign.root)
 
 
 def test_budget_crash_shared_caps_and_unknown_reservation(tmp_path):
@@ -278,7 +377,47 @@ def test_full_simulated_dev_holdout_path_still_cannot_release(tmp_path):
     assert campaign.verify_receipt("holdout")["passed"]
     with pytest.raises(ValueError, match="simulation"):
         campaign.verify_eligibility()
+    with pytest.raises(ValueError, match="simulation"):
+        campaign.qualification_material()
     assert campaign.budget.requests == (14 + 18) * 3 * 2
+
+
+def test_exploratory_campaign_cannot_export_qualification_material(tmp_path):
+    campaign = create(tmp_path, mode="exploratory")
+    with pytest.raises(ValueError, match="exploratory"):
+        campaign.qualification_material()
+
+
+def test_qualification_material_reloads_and_binds_all_evidence(
+    qualified_campaign,
+):
+    material = qualified_campaign.qualification_material()
+
+    assert (
+        material["artifact"]["policy_hash"]
+        == qualified_campaign.policy_artifact()["policy_hash"]
+    )
+    assert {receipt["gate_type"] for receipt in material["receipts"]} == {
+        "campaign_eligibility",
+        "judge_calibration",
+        "formal_holdout",
+        "harness_qualification",
+    }
+    assert all(
+        receipt["details"]["campaign_binding"]
+        == qualified_campaign.binding
+        and receipt["details"]["judge_protocol_version"] == 3
+        and receipt["details"]["budget"] == material["budget"]
+        and receipt["data_role"] == "holdout_validated"
+        for receipt in material["receipts"]
+    )
+
+    harness_path = qualified_campaign.root / "harness.json"
+    changed = json.loads(harness_path.read_text())
+    changed["dataset_hash"] = "e" * 64
+    atomic_json(harness_path, changed)
+    with pytest.raises(ValueError, match="harness evidence changed"):
+        qualified_campaign.qualification_material()
 
 
 def test_health_monitor_minimum_window_and_old_policy_isolation(tmp_path):

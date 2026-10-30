@@ -1,6 +1,7 @@
 """受控跨代编排；已完成案例可恢复，留出只能从同版本开发凭证进入。"""
 
 from datetime import datetime, timezone
+from decimal import Decimal
 import json
 from pathlib import Path
 import shutil
@@ -324,6 +325,147 @@ class Campaign:
         if digest(value) != self.data["harness_hash"]:
             raise ValueError("harness evidence changed")
         verify_harness_evidence(value, self)
+
+    def qualification_material(self):
+        """Rebuild immutable promotion evidence from its durable sources."""
+        self.require_qualification()
+        fresh = Campaign.open(self.root)
+        fresh.verify_eligibility()
+
+        from core.distributed.contracts import canonical_hash
+        from core.distributed.promotion_service import QualificationMaterial
+
+        local_artifact = fresh.policy_artifact()
+        if fresh.data["protocol"].get("schema") != "eduagent.gepa.v3":
+            raise ValueError("promotion requires Judge v3 campaign protocol")
+        calibration = verify_manifest(
+            Path(fresh.config["calibration_manifest"])
+        )
+        dev = json.loads((fresh.root / "dev" / "receipt.json").read_text())
+        holdout = json.loads(
+            (fresh.root / "holdout" / "receipt.json").read_text()
+        )
+        harness = json.loads((fresh.root / "harness.json").read_text())
+        if (
+            file_digest(fresh.config["calibration_manifest"])
+            != fresh.config["calibration_sha256"]
+            or digest(dev) != fresh.data["dev_receipt_hash"]
+            or digest(holdout) != fresh.data["holdout_receipt_hash"]
+            or digest(harness) != fresh.data["harness_hash"]
+        ):
+            raise ValueError("qualification evidence changed during export")
+        budget = fresh.budget.summary()
+        model_identity = json.dumps(
+            calibration["judge_identity"],
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        cost = Decimal(str(budget["estimated_peak_cny"]))
+        issued_at = local_artifact["created_at"]
+        common_details = {
+            "campaign_id": fresh.data["id"],
+            "campaign_binding": fresh.binding,
+            "judge_protocol_version": 3,
+            "judge_protocol_hash": fresh.data["protocol"][
+                "judge_protocol_sha256"
+            ],
+            "budget": budget,
+        }
+        evidence = {
+            "campaign_eligibility": (
+                fresh.binding,
+                len(dev["rows"]["candidate"]),
+                {
+                    "development_receipt_hash": digest(dev),
+                    "comparison_binding": fresh.data["comparison_binding"],
+                },
+            ),
+            "judge_calibration": (
+                file_digest(fresh.config["calibration_manifest"]),
+                sum(calibration["counts"].values()),
+                {
+                    "calibration_data_role": calibration["data_role"],
+                    "scoring_protocol": calibration["scoring_protocol"],
+                },
+            ),
+            "formal_holdout": (
+                digest(holdout),
+                len(holdout["rows"]["candidate"]),
+                {"holdout_dataset_hash": fresh.data["holdout_hash"]},
+            ),
+            "harness_qualification": (
+                digest(harness),
+                len(harness["rows"]["candidate"]),
+                {
+                    "harness_dataset_hash": harness["dataset_hash"],
+                    "teaching_review_count": len(
+                        harness["teaching_reviews"]
+                    ),
+                },
+            ),
+        }
+        receipts = []
+        for gate_type, (
+            evidence_hash,
+            sample_count,
+            gate_details,
+        ) in evidence.items():
+            receipt_seed = canonical_hash(
+                {
+                    "policy_hash": local_artifact["policy_hash"],
+                    "gate_type": gate_type,
+                    "evidence_hash": evidence_hash,
+                    "campaign_binding": fresh.binding,
+                }
+            )
+            receipts.append(
+                {
+                    "receipt_id": str(uuid.UUID(hex=receipt_seed[:32])),
+                    "policy_hash": local_artifact["policy_hash"],
+                    "gate_type": gate_type,
+                    "status": "passed",
+                    "evidence_hash": evidence_hash,
+                    "protocol_hash": local_artifact["protocol_hash"],
+                    "runtime_hash": local_artifact["runtime_hash"],
+                    "source_revision": local_artifact["source_revision"],
+                    "model_identity": model_identity,
+                    "data_role": "holdout_validated",
+                    "sample_count": sample_count,
+                    "cost": cost,
+                    "details": {**common_details, **gate_details},
+                    "issued_at": issued_at,
+                    "issuer": f"campaign:{fresh.data['id']}",
+                }
+            )
+        return QualificationMaterial.model_validate(
+            {
+                "schema_version": 1,
+                "campaign_id": fresh.data["id"],
+                "campaign_binding": fresh.binding,
+                "artifact": {
+                    "policy_hash": local_artifact["policy_hash"],
+                    "parent_policy_hash": local_artifact[
+                        "parent_policy_hash"
+                    ],
+                    "components": local_artifact["components"],
+                    "fixed_components_hash": local_artifact[
+                        "fixed_components_hash"
+                    ],
+                    "runtime_hash": local_artifact["runtime_hash"],
+                    "source_revision": local_artifact["source_revision"],
+                    "protocol_hash": local_artifact["protocol_hash"],
+                    "proposer_hash": local_artifact["proposer_hash"],
+                    "data_role": local_artifact["data_role"],
+                    "evidence_bindings": local_artifact[
+                        "evidence_paths"
+                    ],
+                    "created_at": local_artifact["created_at"],
+                },
+                "receipts": receipts,
+                "budget": budget,
+            }
+        ).model_dump(mode="json")
 
     def policy_artifact(self):
         self.require_qualification()

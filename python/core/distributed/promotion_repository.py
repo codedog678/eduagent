@@ -1,0 +1,427 @@
+from __future__ import annotations
+
+from collections.abc import Callable
+from datetime import UTC, datetime
+from decimal import Decimal, InvalidOperation
+from uuid import UUID, uuid4
+
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from .contracts import canonical_hash
+from .promotion_contracts import (
+    DeploymentSnapshot,
+    GateReceipt,
+    PolicyArtifact,
+    PolicyThresholds,
+)
+from .promotion_models import (
+    PolicyArtifactRecord,
+    PolicyAuditEventRecord,
+    PolicyDeploymentRecord,
+    PolicyEnvironmentHeadRecord,
+    PolicyGateReceiptRecord,
+)
+from .promotion_service import QualificationMaterial
+
+REQUIRED_QUALIFICATION_GATES = (
+    "campaign_eligibility",
+    "judge_calibration",
+    "formal_holdout",
+    "harness_qualification",
+)
+
+
+class QualificationRejected(ValueError):
+    pass
+
+
+class ImmutablePromotionConflict(RuntimeError):
+    pass
+
+
+class PromotionRepository:
+    def __init__(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        *,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        self.session_factory = session_factory
+        self.clock = clock or (lambda: datetime.now(UTC))
+
+    async def register_qualification(
+        self,
+        material: QualificationMaterial,
+        *,
+        actor: str,
+        command_id: str,
+    ) -> DeploymentSnapshot:
+        material = QualificationMaterial.model_validate(material)
+
+        async with self.session_factory() as session, session.begin():
+            self._validate_material(material)
+            now = self.clock()
+            await self._insert_or_compare_artifact(session, material.artifact)
+            for receipt in material.receipts:
+                await self._insert_or_compare_receipt(session, receipt, now)
+
+            await self._verify_latest_receipts(session, material)
+            replay = await session.scalar(
+                select(PolicyDeploymentRecord).where(
+                    PolicyDeploymentRecord.command_id == command_id
+                )
+            )
+            if replay is not None:
+                if (
+                    replay.candidate_policy_hash
+                    != material.artifact.policy_hash
+                    or replay.actor != actor
+                ):
+                    raise ImmutablePromotionConflict(
+                        "command_id is bound to another registration"
+                    )
+                return self._deployment(replay)
+
+            head = await session.scalar(
+                select(PolicyEnvironmentHeadRecord)
+                .where(
+                    PolicyEnvironmentHeadRecord.environment == "rehearsal"
+                )
+                .with_for_update()
+            )
+            if head is None:
+                raise QualificationRejected(
+                    "rehearsal deployment head is not initialized"
+                )
+            current = await session.get(
+                PolicyDeploymentRecord,
+                head.current_deployment_id,
+            )
+            if current is None:
+                raise ImmutablePromotionConflict(
+                    "rehearsal head references a missing deployment"
+                )
+
+            thresholds = PolicyThresholds()
+            deployment_id = str(uuid4())
+            version = head.current_version + 1
+            stable_policy_hash = (
+                current.candidate_policy_hash
+                if current.state == "active"
+                and current.candidate_policy_hash is not None
+                else current.stable_policy_hash
+            )
+            row = PolicyDeploymentRecord(
+                deployment_id=deployment_id,
+                environment="rehearsal",
+                version=version,
+                state="registered",
+                candidate_policy_hash=material.artifact.policy_hash,
+                stable_policy_hash=stable_policy_hash,
+                previous_stable_deployment_id=current.deployment_id,
+                traffic_basis_points=0,
+                assignment_salt_id=(
+                    f"registration-{material.artifact.policy_hash[:16]}"
+                ),
+                thresholds=thresholds.model_dump(mode="json"),
+                thresholds_hash=thresholds.digest,
+                required_receipts=list(REQUIRED_QUALIFICATION_GATES),
+                command_id=command_id,
+                reason=(
+                    f"qualification registered for campaign "
+                    f"{material.campaign_id}"
+                ),
+                actor=actor,
+                created_at=now,
+            )
+            session.add(row)
+            await session.flush()
+            head.current_deployment_id = deployment_id
+            head.current_version = version
+            head.updated_at = now
+            session.add(
+                PolicyAuditEventRecord(
+                    event_id=str(uuid4()),
+                    environment="rehearsal",
+                    deployment_id=deployment_id,
+                    event_type="qualification_registered",
+                    command_id=command_id,
+                    actor=actor,
+                    reason="immutable qualification evidence registered",
+                    details={
+                        "campaign_id": material.campaign_id,
+                        "campaign_binding": material.campaign_binding,
+                        "candidate_policy_hash": (
+                            material.artifact.policy_hash
+                        ),
+                        "stable_policy_hash": stable_policy_hash,
+                        "receipt_ids": [
+                            str(receipt.receipt_id)
+                            for receipt in material.receipts
+                        ],
+                        "budget": material.budget,
+                    },
+                    created_at=now,
+                )
+            )
+            return self._deployment(row)
+
+    @staticmethod
+    def _artifact_hash(artifact: PolicyArtifact) -> str:
+        body = {
+            "schema_version": 1,
+            "parent_policy_hash": artifact.parent_policy_hash,
+            "components": artifact.components.model_dump(mode="json"),
+            "fixed_components_hash": artifact.fixed_components_hash,
+            "proposer_hash": artifact.proposer_hash,
+            "protocol_hash": artifact.protocol_hash,
+            "runtime_hash": artifact.runtime_hash,
+            "source_revision": artifact.source_revision,
+            "data_role": artifact.data_role,
+            "evidence_paths": artifact.evidence_bindings,
+            "created_at": artifact.created_at.isoformat(),
+        }
+        return canonical_hash(body)
+
+    @classmethod
+    def _validate_material(cls, material: QualificationMaterial) -> None:
+        artifact = material.artifact
+        if artifact.data_role != "holdout_validated":
+            raise QualificationRejected(
+                "candidate artifact must use data_role=holdout_validated"
+            )
+        if cls._artifact_hash(artifact) != artifact.policy_hash:
+            raise QualificationRejected("artifact canonical hash mismatch")
+        if set(receipt.gate_type for receipt in material.receipts) != set(
+            REQUIRED_QUALIFICATION_GATES
+        ):
+            raise QualificationRejected(
+                "qualification requires exactly four release receipts"
+            )
+
+        try:
+            expected_cost = Decimal(
+                str(material.budget["estimated_peak_cny"])
+            )
+        except (KeyError, InvalidOperation, ValueError):
+            raise QualificationRejected(
+                "shared budget lacks a valid estimated_peak_cny"
+            ) from None
+        judge_protocol_hashes: set[str] = set()
+        for receipt in material.receipts:
+            if receipt.status != "passed":
+                raise QualificationRejected(
+                    f"{receipt.gate_type} receipt status is {receipt.status}"
+                )
+            bindings = {
+                "policy_hash": artifact.policy_hash,
+                "protocol_hash": artifact.protocol_hash,
+                "runtime_hash": artifact.runtime_hash,
+                "source_revision": artifact.source_revision,
+                "data_role": "holdout_validated",
+            }
+            for field, expected in bindings.items():
+                if getattr(receipt, field) != expected:
+                    raise QualificationRejected(
+                        f"receipt {field} does not match candidate"
+                    )
+            if not receipt.model_identity.strip():
+                raise QualificationRejected(
+                    "receipt model_identity is required"
+                )
+            details = receipt.details
+            if details.get("campaign_id") != material.campaign_id:
+                raise QualificationRejected(
+                    "receipt campaign_id does not match material"
+                )
+            if (
+                details.get("campaign_binding")
+                != material.campaign_binding
+            ):
+                raise QualificationRejected(
+                    "receipt campaign_binding does not match material"
+                )
+            if details.get("judge_protocol_version") != 3:
+                raise QualificationRejected(
+                    "candidate registration requires Judge v3"
+                )
+            judge_protocol_hash = details.get("judge_protocol_hash")
+            if (
+                not isinstance(judge_protocol_hash, str)
+                or len(judge_protocol_hash) != 64
+                or any(
+                    character not in "0123456789abcdef"
+                    for character in judge_protocol_hash
+                )
+            ):
+                raise QualificationRejected(
+                    "Judge v3 protocol hash is missing or invalid"
+                )
+            judge_protocol_hashes.add(judge_protocol_hash)
+            if details.get("budget") != material.budget:
+                raise QualificationRejected(
+                    "receipt budget does not match shared budget"
+                )
+            if receipt.cost != expected_cost:
+                raise QualificationRejected(
+                    "receipt cost does not match shared budget"
+                )
+        if len(judge_protocol_hashes) != 1:
+            raise QualificationRejected(
+                "receipts use inconsistent Judge v3 protocols"
+            )
+
+    @staticmethod
+    async def _insert_or_compare_artifact(
+        session: AsyncSession,
+        artifact: PolicyArtifact,
+    ) -> None:
+        values = {
+            "policy_hash": artifact.policy_hash,
+            "parent_policy_hash": artifact.parent_policy_hash,
+            "components": artifact.components.model_dump(mode="json"),
+            "fixed_components_hash": artifact.fixed_components_hash,
+            "runtime_hash": artifact.runtime_hash,
+            "source_revision": artifact.source_revision,
+            "protocol_hash": artifact.protocol_hash,
+            "proposer_hash": artifact.proposer_hash,
+            "data_role": artifact.data_role,
+            "evidence_bindings": artifact.evidence_bindings,
+            "created_at": artifact.created_at,
+        }
+        inserted = await session.scalar(
+            pg_insert(PolicyArtifactRecord)
+            .values(**values)
+            .on_conflict_do_nothing()
+            .returning(PolicyArtifactRecord.policy_hash)
+        )
+        if inserted is not None:
+            return
+        existing = await session.get(
+            PolicyArtifactRecord,
+            artifact.policy_hash,
+        )
+        if existing is None or PolicyArtifact.model_validate(
+            {
+                key: getattr(existing, key)
+                for key in values
+            }
+        ) != artifact:
+            raise ImmutablePromotionConflict(
+                "immutable artifact hash collision"
+            )
+
+    @staticmethod
+    async def _insert_or_compare_receipt(
+        session: AsyncSession,
+        receipt: GateReceipt,
+        now: datetime,
+    ) -> None:
+        values = receipt.model_dump(mode="python")
+        values["receipt_id"] = str(receipt.receipt_id)
+        values["created_at"] = now
+        inserted = await session.scalar(
+            pg_insert(PolicyGateReceiptRecord)
+            .values(**values)
+            .on_conflict_do_nothing()
+            .returning(PolicyGateReceiptRecord.receipt_id)
+        )
+        if inserted is not None:
+            return
+        existing = await session.get(
+            PolicyGateReceiptRecord,
+            str(receipt.receipt_id),
+        )
+        if existing is None:
+            existing = await session.scalar(
+                select(PolicyGateReceiptRecord).where(
+                    PolicyGateReceiptRecord.policy_hash
+                    == receipt.policy_hash,
+                    PolicyGateReceiptRecord.gate_type
+                    == receipt.gate_type,
+                    PolicyGateReceiptRecord.evidence_hash
+                    == receipt.evidence_hash,
+                )
+            )
+        if existing is None or PromotionRepository._receipt(existing) != receipt:
+            raise ImmutablePromotionConflict(
+                "immutable qualification receipt collision"
+            )
+
+    @staticmethod
+    async def _verify_latest_receipts(
+        session: AsyncSession,
+        material: QualificationMaterial,
+    ) -> None:
+        for gate_type in REQUIRED_QUALIFICATION_GATES:
+            latest = await session.scalar(
+                select(PolicyGateReceiptRecord)
+                .where(
+                    PolicyGateReceiptRecord.policy_hash
+                    == material.artifact.policy_hash,
+                    PolicyGateReceiptRecord.gate_type == gate_type,
+                    PolicyGateReceiptRecord.protocol_hash
+                    == material.artifact.protocol_hash,
+                )
+                .order_by(
+                    PolicyGateReceiptRecord.issued_at.desc(),
+                    PolicyGateReceiptRecord.created_at.desc(),
+                    PolicyGateReceiptRecord.receipt_id.desc(),
+                )
+                .limit(1)
+            )
+            if latest is None or latest.status != "passed":
+                status = latest.status if latest is not None else "missing"
+                raise QualificationRejected(
+                    f"latest {gate_type} receipt is {status}"
+                )
+
+    @staticmethod
+    def _receipt(row: PolicyGateReceiptRecord) -> GateReceipt:
+        return GateReceipt.model_validate(
+            {
+                "receipt_id": UUID(row.receipt_id),
+                "policy_hash": row.policy_hash,
+                "gate_type": row.gate_type,
+                "status": row.status,
+                "evidence_hash": row.evidence_hash,
+                "protocol_hash": row.protocol_hash,
+                "runtime_hash": row.runtime_hash,
+                "source_revision": row.source_revision,
+                "model_identity": row.model_identity,
+                "data_role": row.data_role,
+                "sample_count": row.sample_count,
+                "cost": row.cost,
+                "details": row.details,
+                "issued_at": row.issued_at,
+                "issuer": row.issuer,
+            }
+        )
+
+    @staticmethod
+    def _deployment(row: PolicyDeploymentRecord) -> DeploymentSnapshot:
+        return DeploymentSnapshot.model_validate(
+            {
+                "deployment_id": UUID(row.deployment_id),
+                "environment": row.environment,
+                "version": row.version,
+                "state": row.state,
+                "candidate_policy_hash": row.candidate_policy_hash,
+                "stable_policy_hash": row.stable_policy_hash,
+                "previous_stable_deployment_id": (
+                    UUID(row.previous_stable_deployment_id)
+                    if row.previous_stable_deployment_id
+                    else None
+                ),
+                "traffic_basis_points": row.traffic_basis_points,
+                "assignment_salt_id": row.assignment_salt_id,
+                "thresholds": row.thresholds,
+                "required_receipts": row.required_receipts,
+                "command_id": row.command_id,
+                "reason": row.reason,
+                "actor": row.actor,
+                "created_at": row.created_at,
+            }
+        )
