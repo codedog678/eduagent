@@ -7,18 +7,25 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from .contracts import RunStatus
 from .expert_contracts import (
+    AssessmentCompleted,
+    CurriculumCompleted,
     ExpertErrorCode,
+    ExpertFailed,
     ExpertJobRequest,
+    ExpertNeedsInput,
     ExpertRole,
     ExpertTerminalEnvelope,
     ExpertUsage,
+    TutorDraft,
 )
 from .expert_models import (
     DistributedExpertJob,
+    DistributedExpertInbox,
     DistributedExpertLease,
     DistributedExpertOutbox,
     DistributedExpertResult,
@@ -310,10 +317,35 @@ class ExpertJobRepository:
             identity = await self._job_identity(session, job_id)
             job_role = ExpertRole(identity.role)
             if job_role not in roles:
+                now = await self._db_now(session)
+                job = await session.scalar(
+                    select(DistributedExpertJob)
+                    .where(DistributedExpertJob.id == job_id)
+                    .with_for_update()
+                )
+                if job is None:
+                    raise LookupError(f"expert job {job_id} does not exist")
+                available_at = now + timedelta(
+                    seconds=min(0.1, self.retry_base_seconds)
+                )
+                if job.status in {
+                    "accepted",
+                    "queued",
+                    "retryable_failed",
+                }:
+                    session.add(
+                        self._outbox(
+                            job,
+                            f"capability:{worker_id}:{new_id()}",
+                            now,
+                            available_at,
+                        )
+                    )
                 return ExpertClaimReceipt(
                     job_id=job_id,
                     claimed=False,
                     rejection_code="capability_mismatch",
+                    available_at=available_at,
                 )
             now = await self._db_now(session)
             run, run_lease = await self._locked_parent(
@@ -342,6 +374,19 @@ class ExpertJobRepository:
             if job.status not in {"accepted", "queued", "retryable_failed"}:
                 raise ExpertFencingViolation(
                     f"expert job cannot be claimed from {job.status}"
+                )
+            not_before = await session.scalar(
+                select(func.max(DistributedExpertOutbox.available_at)).where(
+                    DistributedExpertOutbox.job_id == job.id,
+                    DistributedExpertOutbox.published_at.is_(None),
+                )
+            )
+            if not_before is not None and not_before > now:
+                return ExpertClaimReceipt(
+                    job_id=job.id,
+                    claimed=False,
+                    rejection_code="not_due",
+                    available_at=not_before,
                 )
             if (
                 expert_lease.owner is not None
@@ -391,6 +436,89 @@ class ExpertJobRepository:
                 fencing_token=expert_lease.fencing_token,
                 lease_expires_at=expert_lease.expires_at,
             )
+
+    async def pending_outbox(
+        self,
+        limit: int,
+    ) -> list[DistributedExpertOutbox]:
+        if limit < 1:
+            raise ValueError("limit must be positive")
+        async with self.session_factory() as session, session.begin():
+            now = await self._db_now(session)
+            rows = list(
+                await session.scalars(
+                    select(DistributedExpertOutbox)
+                    .where(
+                        DistributedExpertOutbox.published_at.is_(None),
+                        DistributedExpertOutbox.available_at <= now,
+                    )
+                    .order_by(
+                        DistributedExpertOutbox.available_at,
+                        DistributedExpertOutbox.created_at,
+                        DistributedExpertOutbox.id,
+                    )
+                    .limit(limit)
+                    .with_for_update(skip_locked=True)
+                )
+            )
+            for row in rows:
+                row.publish_attempts += 1
+            return rows
+
+    async def mark_outbox_published(
+        self,
+        outbox_id: str,
+        event_key: str,
+    ) -> None:
+        async with self.session_factory() as session, session.begin():
+            row = await session.scalar(
+                select(DistributedExpertOutbox)
+                .where(DistributedExpertOutbox.id == outbox_id)
+                .with_for_update()
+            )
+            if row is None:
+                raise LookupError(f"expert outbox {outbox_id} does not exist")
+            if row.event_key != event_key:
+                raise ExpertRequestConflict(
+                    f"expert outbox {outbox_id} event key does not match"
+                )
+            if row.published_at is None:
+                row.published_at = await self._db_now(session)
+
+    async def record_inbox(
+        self,
+        consumer: str,
+        event_key: str,
+    ) -> bool:
+        async with self.session_factory() as session, session.begin():
+            inserted = await session.scalar(
+                pg_insert(DistributedExpertInbox)
+                .values(
+                    id=new_id(),
+                    consumer=consumer,
+                    message_key=event_key,
+                    received_at=await self._db_now(session),
+                )
+                .on_conflict_do_nothing(
+                    index_elements=["consumer", "message_key"]
+                )
+                .returning(DistributedExpertInbox.id)
+            )
+            return inserted is not None
+
+    async def consumed_usage(self, job_id: str) -> ExpertUsage:
+        async with self.session_factory() as session:
+            exists = await session.get(DistributedExpertJob, job_id)
+            if exists is None:
+                raise LookupError(f"expert job {job_id} does not exist")
+            rows = list(
+                await session.scalars(
+                    select(DistributedExpertResult)
+                    .where(DistributedExpertResult.job_id == job_id)
+                    .order_by(DistributedExpertResult.created_at)
+                )
+            )
+            return self._cumulative_usage(rows)
 
     async def renew(
         self,
@@ -523,7 +651,7 @@ class ExpertJobRepository:
         worker_id: str,
         token: int,
         failure: ExpertFailure,
-    ) -> DistributedExpertJob:
+    ) -> DistributedExpertJob | ResultReceipt:
         async with self.session_factory() as session, session.begin():
             identity = await self._job_identity(session, job_id)
             now = await self._db_now(session)
@@ -541,6 +669,35 @@ class ExpertJobRepository:
                 job_id,
             )
             await self._locked_results(session, job_id)
+            rejection = self._authority_rejection(
+                run,
+                run_lease,
+                job,
+                expert_lease,
+                worker_id,
+                token,
+                now,
+            )
+            session.add(
+                DistributedExpertResult(
+                    job_id=job.id,
+                    expert_fencing_token=token,
+                    worker_id=worker_id,
+                    disposition="rejected",
+                    rejection_code=rejection or failure.code.value,
+                    draft=None,
+                    usage=failure.usage.model_dump(mode="json"),
+                    diagnostics=list(failure.diagnostics),
+                    created_at=now,
+                )
+            )
+            if rejection is not None:
+                return ResultReceipt(
+                    job_id=job.id,
+                    accepted=False,
+                    disposition="rejected",
+                    rejection_code=rejection,
+                )
             self._assert_parent_authority(
                 run,
                 run_lease,
@@ -554,19 +711,6 @@ class ExpertJobRepository:
                 worker_id,
                 token,
                 now,
-            )
-            session.add(
-                DistributedExpertResult(
-                    job_id=job.id,
-                    expert_fencing_token=token,
-                    worker_id=worker_id,
-                    disposition="rejected",
-                    rejection_code=failure.code.value,
-                    draft=None,
-                    usage=failure.usage.model_dump(mode="json"),
-                    diagnostics=list(failure.diagnostics),
-                    created_at=now,
-                )
             )
             expert_lease.owner = None
             expert_lease.expires_at = None
@@ -608,21 +752,31 @@ class ExpertJobRepository:
         job_id: str,
         parent_token: int,
     ) -> ExpertTerminalEnvelope | None:
-        async with self.session_factory() as session:
-            job = await session.get(DistributedExpertJob, job_id)
-            if job is None:
-                raise LookupError(f"expert job {job_id} does not exist")
+        async with self.session_factory() as session, session.begin():
+            identity = await self._job_identity(session, job_id)
+            now = await self._db_now(session)
+            run, run_lease = await self._locked_parent(
+                session,
+                identity.parent_run_id,
+            )
+            attempt = await self._locked_parent_attempt(
+                session,
+                identity.parent_run_id,
+                parent_token,
+            )
+            job, _ = await self._locked_job_and_lease(session, job_id)
             if job.parent_fencing_token != parent_token:
                 raise ExpertFencingViolation("parent fencing token is stale")
+            self._assert_parent_authority(
+                run,
+                run_lease,
+                attempt,
+                parent_token,
+                now,
+            )
             if job.status not in TERMINAL_JOB_STATUSES:
                 return None
-            rows = list(
-                await session.scalars(
-                    select(DistributedExpertResult)
-                    .where(DistributedExpertResult.job_id == job_id)
-                    .order_by(DistributedExpertResult.created_at)
-                )
-            )
+            rows = await self._locked_results(session, job_id)
             request = ExpertJobRequest.model_validate(job.payload)
             cumulative = self._cumulative_usage(rows)
             accepted = next(
@@ -686,6 +840,13 @@ class ExpertJobRepository:
                     and run.status in {RunStatus.RUNNING, RunStatus.WAITING_EXPERT}
                 )
                 if not parent_valid:
+                    self._record_uncertain_attempt(
+                        session,
+                        job,
+                        expert_lease,
+                        "parent_stale",
+                        now,
+                    )
                     self._close_job(
                         job,
                         expert_lease,
@@ -696,6 +857,13 @@ class ExpertJobRepository:
                     changed.append(job.id)
                     continue
                 if job.deadline_at <= now:
+                    self._record_uncertain_attempt(
+                        session,
+                        job,
+                        expert_lease,
+                        ExpertErrorCode.DEADLINE_EXPIRED.value,
+                        now,
+                    )
                     self._close_job(
                         job,
                         expert_lease,
@@ -711,6 +879,13 @@ class ExpertJobRepository:
                     and expert_lease.expires_at is not None
                     and expert_lease.expires_at <= now
                 ):
+                    self._record_uncertain_attempt(
+                        session,
+                        job,
+                        expert_lease,
+                        "lease_expired",
+                        now,
+                    )
                     if job.attempt_count >= job.max_attempts:
                         self._close_job(
                             job,
@@ -771,6 +946,23 @@ class ExpertJobRepository:
                 )
                 or 0
             )
+
+    async def status_counts(self) -> dict[tuple[str, str], int]:
+        async with self.session_factory() as session:
+            rows = await session.execute(
+                select(
+                    DistributedExpertJob.role,
+                    DistributedExpertJob.status,
+                    func.count(DistributedExpertJob.id),
+                ).group_by(
+                    DistributedExpertJob.role,
+                    DistributedExpertJob.status,
+                )
+            )
+            return {
+                (str(role), str(status)): int(count)
+                for role, status, count in rows
+            }
 
     async def force_lease_expiry(
         self,
@@ -888,6 +1080,41 @@ class ExpertJobRepository:
         envelope: ExpertTerminalEnvelope,
         now: datetime,
     ) -> str | None:
+        rejection = ExpertJobRepository._authority_rejection(
+            run,
+            run_lease,
+            job,
+            expert_lease,
+            worker_id,
+            token,
+            now,
+        )
+        if rejection is not None:
+            return rejection
+        if any(result.disposition == "accepted" for result in results):
+            return "result_conflict"
+        if (
+            envelope.role.value != job.role
+            or envelope.step_id != job.payload.get("step_id")
+            or envelope.input_hash != job.input_hash
+            or job.payload.get("snapshot", {}).get(
+                "effective_policy_hash"
+            ) != job.policy_hash
+            or not ExpertJobRepository._draft_matches_role(envelope)
+        ):
+            return "schema_invalid"
+        return None
+
+    @staticmethod
+    def _authority_rejection(
+        run: DistributedRun,
+        run_lease: DistributedLease,
+        job: DistributedExpertJob,
+        expert_lease: DistributedExpertLease,
+        worker_id: str,
+        token: int,
+        now: datetime,
+    ) -> str | None:
         if (
             run_lease.fencing_token != job.parent_fencing_token
             or run_lease.owner is None
@@ -906,15 +1133,61 @@ class ExpertJobRepository:
             or expert_lease.expires_at <= now
         ):
             return "expert_token_stale"
-        if any(result.disposition == "accepted" for result in results):
-            return "result_conflict"
-        if (
-            envelope.role.value != job.role
-            or envelope.step_id != job.payload.get("step_id")
-            or envelope.input_hash != job.input_hash
-        ):
-            return "schema_invalid"
         return None
+
+    @staticmethod
+    def _record_uncertain_attempt(
+        session: AsyncSession,
+        job: DistributedExpertJob,
+        lease: DistributedExpertLease,
+        rejection_code: str,
+        now: datetime,
+    ) -> None:
+        if job.status != "running":
+            return
+        session.add(
+            DistributedExpertResult(
+                job_id=job.id,
+                expert_fencing_token=lease.fencing_token,
+                worker_id="__expert_reaper__",
+                disposition="rejected",
+                rejection_code=rejection_code,
+                draft=None,
+                usage=ExpertUsage(
+                    model_calls=1,
+                    tool_calls=0,
+                    input_tokens=None,
+                    output_tokens=None,
+                    estimated_cost_usd=None,
+                    provider="unknown",
+                    model="unknown",
+                    uncertain=True,
+                ).model_dump(mode="json"),
+                diagnostics=[
+                    f"attempt_usage_unknown:{rejection_code}"
+                ],
+                created_at=now,
+            )
+        )
+
+    @staticmethod
+    def _draft_matches_role(envelope: ExpertTerminalEnvelope) -> bool:
+        if envelope.outcome == "failed":
+            return envelope.draft is None
+        allowed = {
+            ExpertRole.ASSESSMENT: (
+                AssessmentCompleted,
+                ExpertNeedsInput,
+                ExpertFailed,
+            ),
+            ExpertRole.CURRICULUM: (
+                CurriculumCompleted,
+                ExpertNeedsInput,
+                ExpertFailed,
+            ),
+            ExpertRole.TUTOR: (TutorDraft,),
+        }[envelope.role]
+        return type(envelope.draft) in allowed
 
     @staticmethod
     def _assert_parent_authority(
@@ -1037,7 +1310,10 @@ class ExpertJobRepository:
             await session.scalars(
                 select(DistributedExpertResult)
                 .where(DistributedExpertResult.job_id == job_id)
-                .order_by(DistributedExpertResult.id)
+                .order_by(
+                    DistributedExpertResult.created_at,
+                    DistributedExpertResult.id,
+                )
                 .with_for_update()
             )
         )
@@ -1092,7 +1368,34 @@ class ExpertJobRepository:
     def _cumulative_usage(
         rows: list[DistributedExpertResult],
     ) -> ExpertUsage:
-        usages = [ExpertUsage.model_validate(row.usage) for row in rows]
+        attempts: dict[int, list[DistributedExpertResult]] = {}
+        for row in rows:
+            attempts.setdefault(row.expert_fencing_token, []).append(row)
+        billable = []
+        for attempt_rows in attempts.values():
+            accepted = next(
+                (
+                    row
+                    for row in attempt_rows
+                    if row.disposition == "accepted"
+                ),
+                None,
+            )
+            real = next(
+                (
+                    row
+                    for row in attempt_rows
+                    if row.worker_id != "__expert_reaper__"
+                ),
+                None,
+            )
+            billable.append(
+                accepted or real or attempt_rows[0]
+            )
+        usages = [
+            ExpertUsage.model_validate(row.usage)
+            for row in billable
+        ]
         if not usages:
             return ExpertUsage(
                 model_calls=0,

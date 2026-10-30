@@ -133,13 +133,17 @@ def request(role=ExpertRole.ASSESSMENT, *, budget_updates=None, snapshot_updates
 @pytest.mark.asyncio
 async def test_assessment_searches_then_reads_before_citing_source():
     service = Service(
-        tool_turn(("search", "search_learning_history", '{"query":"时态"}')),
+        tool_turn(
+            ("search", "search_learning_history", '{"query":"时态"}'),
+            usage={"input_tokens": 8, "output_tokens": 2},
+        ),
         tool_turn(
             (
                 "read",
                 "read_learning_history",
                 '{"source_ref":"message:own","offset":0,"limit":3000}',
-            )
+            ),
+            usage={"input_tokens": 10, "output_tokens": 2},
         ),
         final(
             '{"status":"completed","findings":["过去时态需要复习"],'
@@ -166,7 +170,14 @@ async def test_curriculum_accepts_action_and_assessment_rejects_same_schema():
         Service(final(content)), clock=lambda: NOW
     ).execute(request(ExpertRole.CURRICULUM))
     assessment = await ExpertEngine(
-        Service(final(content), final(content)), clock=lambda: NOW
+        Service(
+            final(
+                content,
+                usage={"input_tokens": 8, "output_tokens": 3},
+            ),
+            final(content),
+        ),
+        clock=lambda: NOW,
     ).execute(request(ExpertRole.ASSESSMENT))
 
     assert curriculum.outcome == "succeeded"
@@ -236,6 +247,7 @@ async def test_model_and_tool_budget_exhaustion_are_failed_envelopes():
             tool_turn(
                 ("one", "get_knowledge_context", "{}"),
                 ("two", "get_learner_profile", "{}"),
+                usage={"input_tokens": 8, "output_tokens": 2},
             ),
             final(
                 '{"status":"completed","findings":["按现有快照保守判断"],'
@@ -255,6 +267,34 @@ async def test_model_and_tool_budget_exhaustion_are_failed_envelopes():
 
 
 @pytest.mark.asyncio
+async def test_unknown_prior_output_usage_cannot_restore_retry_budget():
+    service = Service(
+        final(
+            '{"status":"completed","findings":["不应执行"],'
+            '"source_refs":[],"uncertainty":""}',
+            usage={"input_tokens": 10, "output_tokens": 5},
+        )
+    )
+
+    result = await ExpertEngine(service, clock=lambda: NOW).execute(
+        request(),
+        consumed=usage(
+            model_calls=1,
+            input_tokens=None,
+            output_tokens=None,
+            uncertain=True,
+        ),
+    )
+
+    assert result.outcome == "failed"
+    assert result.error_code == ExpertErrorCode.BUDGET_EXHAUSTED
+    assert result.diagnostics == [
+        "model_skipped:prior_output_usage_unknown"
+    ]
+    assert service.calls == []
+
+
+@pytest.mark.asyncio
 async def test_duplicate_tool_ids_and_unread_citations_are_rejected():
     duplicate = await ExpertEngine(
         Service(
@@ -269,7 +309,8 @@ async def test_duplicate_tool_ids_and_unread_citations_are_rejected():
         Service(
             final(
                 '{"status":"completed","findings":["引用搜索摘要"],'
-                '"source_refs":["message:own"],"uncertainty":""}'
+                '"source_refs":["message:own"],"uncertainty":""}',
+                usage={"input_tokens": 8, "output_tokens": 3},
             ),
             final(
                 '{"status":"completed","findings":["仍引用搜索摘要"],'
@@ -354,7 +395,8 @@ async def test_invalid_schema_repairs_once_without_replaying_private_draft():
         final(
             '{"status":"completed","findings":["'
             + private
-            + '"],"extra":"forbidden"}'
+            + '"],"extra":"forbidden"}',
+            usage={"input_tokens": 8, "output_tokens": 3},
         ),
         final(
             '{"status":"completed","findings":["修正后的结论"],'

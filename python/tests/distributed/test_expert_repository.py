@@ -3,11 +3,12 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 
 from core.distributed.contracts import RunStatus
 from core.distributed.expert_contracts import (
     AssessmentCompleted,
+    CurriculumCompleted,
     ExpertBudget,
     ExpertErrorCode,
     ExpertJobRequest,
@@ -28,6 +29,7 @@ from core.distributed.expert_repository import (
     ExpertFencingViolation,
     ExpertJobRepository,
     ExpertRequestConflict,
+    ResultReceipt,
 )
 from tests.distributed.helpers import spec
 
@@ -120,6 +122,18 @@ async def parent_claim(repo, request_id: str = "expert-parent"):
     run = await repo.accept(spec(request_id=request_id))
     claim = await repo.claim(run.id, "parent-worker", lease_seconds=120)
     return run, claim
+
+
+async def make_expert_outbox_due(repo, job_id: str) -> None:
+    async with repo.session_factory() as session, session.begin():
+        await session.execute(
+            update(DistributedExpertOutbox)
+            .where(
+                DistributedExpertOutbox.job_id == job_id,
+                DistributedExpertOutbox.published_at.is_(None),
+            )
+            .values(available_at=datetime.now(UTC) - timedelta(seconds=1))
+        )
 
 
 async def test_create_is_idempotent_and_hash_conflict_is_rejected(repo, expert_repo):
@@ -291,9 +305,20 @@ async def test_capability_mismatch_does_not_consume_attempt(repo, expert_repo):
 
     assert not receipt.claimed
     assert receipt.rejection_code == "capability_mismatch"
+    assert receipt.available_at is not None
     stored = await expert_repo.get(job.id)
     assert stored.attempt_count == 0
     assert stored.status == "queued"
+    async with repo.session_factory() as session:
+        outboxes = list(
+            await session.scalars(
+                select(DistributedExpertOutbox).where(
+                    DistributedExpertOutbox.job_id == job.id,
+                    DistributedExpertOutbox.published_at.is_(None),
+                )
+            )
+        )
+    assert len(outboxes) == 2
 
 
 async def test_claim_renew_and_running_admission_are_fenced(repo):
@@ -349,6 +374,14 @@ async def test_result_race_retains_rejected_stale_attempt(repo, expert_repo):
         datetime.now(UTC) - timedelta(seconds=1),
     )
     await expert_repo.reap_expired()
+    denied = await expert_repo.claim(
+        job.id,
+        "worker-b",
+        {ExpertRole.ASSESSMENT},
+        lease_seconds=30,
+    )
+    assert denied.rejection_code == "not_due"
+    await make_expert_outbox_due(repo, job.id)
     second = await expert_repo.claim(
         job.id,
         "worker-b",
@@ -373,7 +406,7 @@ async def test_result_race_retains_rejected_stale_attempt(repo, expert_repo):
 
     assert sum(item.accepted for item in receipts) == 1
     assert await expert_repo.accepted_result_count(job.id) == 1
-    assert await expert_repo.result_count(job.id) == 2
+    assert await expert_repo.result_count(job.id) == 3
 
 
 async def test_late_result_is_append_only_and_does_not_mutate_job(repo, expert_repo):
@@ -432,6 +465,40 @@ async def test_mismatched_step_result_is_rejected_append_only(repo, expert_repo)
     assert await expert_repo.result_count(job.id) == 1
 
 
+async def test_role_incompatible_draft_is_rejected_before_acceptance(
+    repo,
+    expert_repo,
+):
+    _, parent = await parent_claim(repo, "role-schema")
+    request = request_for(parent)
+    job, _ = await expert_repo.create_or_replay(request)
+    claim = await expert_repo.claim(
+        job.id,
+        "worker-a",
+        {ExpertRole.ASSESSMENT},
+        lease_seconds=30,
+    )
+    incompatible = envelope(request).model_copy(
+        update={
+            "draft": CurriculumCompleted(
+                status="completed",
+                findings=["Looks valid but belongs to Curriculum"],
+            )
+        }
+    )
+
+    receipt = await expert_repo.submit_result(
+        job.id,
+        "worker-a",
+        claim.fencing_token,
+        incompatible,
+    )
+
+    assert not receipt.accepted
+    assert receipt.rejection_code == "schema_invalid"
+    assert await expert_repo.accepted_result_count(job.id) == 0
+
+
 async def test_retry_usage_is_cumulative_and_outbox_is_delayed(repo):
     configured = ExpertJobRepository(
         repo.session_factory,
@@ -468,6 +535,14 @@ async def test_retry_usage_is_cumulative_and_outbox_is_delayed(repo):
     assert outbox is not None
     assert outbox.available_at >= outbox.created_at + timedelta(seconds=9)
 
+    denied = await configured.claim(
+        job.id,
+        "worker-b",
+        {ExpertRole.ASSESSMENT},
+        lease_seconds=30,
+    )
+    assert denied.rejection_code == "not_due"
+    await make_expert_outbox_due(repo, job.id)
     second = await configured.claim(
         job.id,
         "worker-b",
@@ -546,6 +621,46 @@ async def test_reaper_expires_deadline_and_retries_expired_lease(repo, expert_re
     assert retry_job.id in changed
     assert (await expert_repo.get(expired_job.id)).status == "terminal_failed"
     assert (await expert_repo.get(retry_job.id)).status == "queued"
+    consumed = await expert_repo.consumed_usage(retry_job.id)
+    assert consumed.model_calls == 1
+    assert consumed.output_tokens is None
+    assert consumed.uncertain
+
+
+async def test_late_retryable_failure_retains_real_usage(repo, expert_repo):
+    _, parent = await parent_claim(repo, "late-retryable-failure")
+    request = request_for(parent)
+    job, _ = await expert_repo.create_or_replay(request)
+    first = await expert_repo.claim(
+        job.id,
+        "worker-a",
+        {ExpertRole.ASSESSMENT},
+        lease_seconds=30,
+    )
+    await expert_repo.force_lease_expiry(
+        job.id,
+        datetime.now(UTC) - timedelta(seconds=1),
+    )
+    await expert_repo.reap_expired()
+
+    receipt = await expert_repo.fail_attempt(
+        job.id,
+        "worker-a",
+        first.fencing_token,
+        ExpertFailure(
+            code=ExpertErrorCode.PROVIDER_TIMEOUT,
+            retryable=True,
+            usage=usage(model_calls=2, output_tokens=7),
+        ),
+    )
+
+    assert isinstance(receipt, ResultReceipt)
+    assert not receipt.accepted
+    assert receipt.rejection_code == "expert_token_stale"
+    assert await expert_repo.result_count(job.id) == 2
+    consumed = await expert_repo.consumed_usage(job.id)
+    assert consumed.model_calls == 2
+    assert consumed.output_tokens == 7
 
 
 async def test_new_parent_epoch_closes_old_active_job(repo, expert_repo):

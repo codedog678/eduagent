@@ -48,3 +48,19 @@ async def broker():
     yield value
     await value.reset_for_tests()
     await client.aclose()
+
+
+@pytest_asyncio.fixture
+async def expert_broker():
+    from core.distributed.broker import RedisStreamBroker
+
+    url = os.getenv("DISTRIBUTED_TEST_REDIS_URL")
+    if not url:
+        pytest.skip("DISTRIBUTED_TEST_REDIS_URL is not configured")
+    client = Redis.from_url(url, decode_responses=True)
+    stream = f"test:experts:{uuid4().hex}"
+    value = RedisStreamBroker(client, stream, "test-expert-workers")
+    await value.reset_for_tests()
+    yield value
+    await value.reset_for_tests()
+    await client.aclose()

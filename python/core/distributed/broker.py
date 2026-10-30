@@ -9,13 +9,13 @@ from redis.exceptions import ResponseError
 
 
 @dataclass(frozen=True)
-class RunMessage:
+class StreamMessage:
     redis_id: str
     event_key: str
     payload: dict
 
 
-class RedisRunBroker:
+class RedisStreamBroker:
     def __init__(self, redis: Redis, stream: str, group: str) -> None:
         self.redis = redis
         self.stream = stream
@@ -55,7 +55,7 @@ class RedisRunBroker:
         consumer: str,
         count: int,
         block_ms: int,
-    ) -> list[RunMessage]:
+    ) -> list[StreamMessage]:
         await self.ensure_group()
         rows = await self.redis.xreadgroup(
             self.group,
@@ -75,7 +75,7 @@ class RedisRunBroker:
         consumer: str,
         min_idle_ms: int,
         count: int,
-    ) -> list[RunMessage]:
+    ) -> list[StreamMessage]:
         await self.ensure_group()
         response = await self.redis.xautoclaim(
             self.stream,
@@ -118,12 +118,12 @@ class RedisRunBroker:
         cls,
         message_id: Any,
         fields: dict[Any, Any],
-    ) -> RunMessage:
+    ) -> StreamMessage:
         normalized = {
             cls._text(key): cls._text(value)
             for key, value in fields.items()
         }
-        return RunMessage(
+        return StreamMessage(
             redis_id=cls._text(message_id),
             event_key=normalized["event_key"],
             payload=json.loads(normalized["payload"]),
@@ -132,3 +132,8 @@ class RedisRunBroker:
     @staticmethod
     def _text(value: Any) -> str:
         return value.decode("utf-8") if isinstance(value, bytes) else str(value)
+
+
+# M1 compatibility: the transport is generic, while existing imports stay stable.
+RunMessage = StreamMessage
+RedisRunBroker = RedisStreamBroker

@@ -107,6 +107,17 @@ class ExpertEngine:
         )
         try:
             self._check_deadline(request)
+            if (
+                consumed.model_calls > 0
+                and consumed.output_tokens is None
+            ):
+                return self._failure(
+                    request,
+                    counter,
+                    ExpertErrorCode.BUDGET_EXHAUSTED,
+                    "model_skipped:prior_output_usage_unknown",
+                    [],
+                )
             messages = self._messages(request)
             schemas = executor.schemas()
             schemas = [
