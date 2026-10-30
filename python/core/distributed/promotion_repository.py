@@ -5,14 +5,16 @@ from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from uuid import UUID, uuid4
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from .contracts import canonical_hash
 from .promotion_contracts import (
     DeploymentSnapshot,
+    DeploymentState,
     GateReceipt,
+    PromotionCommand,
     PolicyArtifact,
     PolicyThresholds,
 )
@@ -23,6 +25,7 @@ from .promotion_models import (
     PolicyEnvironmentHeadRecord,
     PolicyGateReceiptRecord,
 )
+from .models import DistributedOutbox
 from .promotion_service import QualificationMaterial
 
 REQUIRED_QUALIFICATION_GATES = (
@@ -39,6 +42,26 @@ class QualificationRejected(ValueError):
 
 class ImmutablePromotionConflict(RuntimeError):
     pass
+
+
+class PromotionVersionConflict(ImmutablePromotionConflict):
+    pass
+
+
+class PromotionCommandRejected(ValueError):
+    pass
+
+
+REQUIRED_EXTERNAL_GATES = {
+    DeploymentState.SHADOW: {
+        "campaign_eligibility",
+        "judge_calibration",
+        "formal_holdout",
+        "harness_qualification",
+    },
+    DeploymentState.CANARY: {"shadow_health"},
+    DeploymentState.ACTIVE: {"canary_health"},
+}
 
 
 class PromotionRepository:
@@ -183,6 +206,368 @@ class PromotionRepository:
                 )
             )
             return self._deployment(row)
+
+    async def get_head(self, environment: str) -> DeploymentSnapshot:
+        async with self.session_factory() as session:
+            head = await session.get(PolicyEnvironmentHeadRecord, environment)
+            if head is None:
+                raise LookupError(f"{environment} deployment head is not initialized")
+            row = await session.get(
+                PolicyDeploymentRecord,
+                head.current_deployment_id,
+            )
+            if row is None:
+                raise ImmutablePromotionConflict(
+                    f"{environment} head references a missing deployment"
+                )
+            return self._deployment(row)
+
+    async def transition(
+        self,
+        command: PromotionCommand,
+    ) -> DeploymentSnapshot:
+        command = PromotionCommand.model_validate(command)
+        command_hash = canonical_hash(command.model_dump(mode="json"))
+        rejected: str | None = None
+        result: DeploymentSnapshot | None = None
+
+        async with self.session_factory() as session, session.begin():
+            replay = await self._find_transition_replay(
+                session,
+                command=command,
+                command_hash=command_hash,
+            )
+            if replay is not None:
+                return self._deployment(replay)
+
+            head = await session.scalar(
+                select(PolicyEnvironmentHeadRecord)
+                .where(
+                    PolicyEnvironmentHeadRecord.environment
+                    == command.environment
+                )
+                .with_for_update()
+            )
+            replay = await self._find_transition_replay(
+                session,
+                command=command,
+                command_hash=command_hash,
+            )
+            if replay is not None:
+                return self._deployment(replay)
+            if head is None:
+                raise PromotionVersionConflict(
+                    f"{command.environment} deployment head is not initialized"
+                )
+            current = await session.get(
+                PolicyDeploymentRecord,
+                head.current_deployment_id,
+            )
+            if current is None:
+                raise ImmutablePromotionConflict(
+                    f"{command.environment} head references a missing deployment"
+                )
+
+            if command.environment != "rehearsal":
+                rejected = "candidate transitions are restricted to rehearsal"
+            elif (
+                head.current_version != command.expected_version
+                or current.version != command.expected_version
+            ):
+                rejected = (
+                    "expected_version conflict: expected "
+                    f"{command.expected_version}, current {head.current_version}"
+                )
+            elif current.state != command.current_state.value:
+                rejected = (
+                    "current_state conflict: expected "
+                    f"{command.current_state.value}, current {current.state}"
+                )
+
+            missing_gates: list[str] = []
+            gate_rows: dict[str, PolicyGateReceiptRecord] = {}
+            artifact: PolicyArtifactRecord | None = None
+            if rejected is None:
+                if current.candidate_policy_hash is None:
+                    rejected = "current deployment has no candidate policy"
+                else:
+                    artifact = await session.get(
+                        PolicyArtifactRecord,
+                        current.candidate_policy_hash,
+                    )
+                    if artifact is None:
+                        rejected = "candidate policy artifact is missing"
+            if rejected is None and artifact is not None:
+                required = REQUIRED_EXTERNAL_GATES.get(
+                    command.target_state,
+                    set(),
+                )
+                missing_gates, gate_rows = await self._bound_gate_receipts(
+                    session,
+                    artifact=artifact,
+                    required=required,
+                )
+                if missing_gates:
+                    rejected = "required gates are missing or invalid: " + ", ".join(
+                        missing_gates
+                    )
+
+            if rejected is not None:
+                await self._append_rejected_audit(
+                    session,
+                    command=command,
+                    current=current,
+                    command_hash=command_hash,
+                    error=rejected,
+                    missing_gates=missing_gates,
+                )
+            else:
+                assert artifact is not None
+                now = self.clock()
+                required_receipts = sorted(
+                    REQUIRED_EXTERNAL_GATES.get(command.target_state, set())
+                )
+                if command.target_state == DeploymentState.ACTIVE:
+                    await self._create_promotion_approval(
+                        session,
+                        command=command,
+                        artifact=artifact,
+                        canary_health=gate_rows["canary_health"],
+                        command_hash=command_hash,
+                        now=now,
+                    )
+                    required_receipts.append("promotion_approval")
+
+                deployment_id = str(uuid4())
+                row = PolicyDeploymentRecord(
+                    deployment_id=deployment_id,
+                    environment=current.environment,
+                    version=current.version + 1,
+                    state=command.target_state.value,
+                    candidate_policy_hash=current.candidate_policy_hash,
+                    stable_policy_hash=current.stable_policy_hash,
+                    previous_stable_deployment_id=(
+                        current.previous_stable_deployment_id
+                    ),
+                    traffic_basis_points=command.traffic_basis_points,
+                    assignment_salt_id=current.assignment_salt_id,
+                    thresholds=current.thresholds,
+                    thresholds_hash=current.thresholds_hash,
+                    required_receipts=required_receipts,
+                    command_id=command.command_id,
+                    reason=command.reason,
+                    actor=command.actor,
+                    created_at=now,
+                )
+                session.add(row)
+                await session.flush()
+                cas = await session.execute(
+                    update(PolicyEnvironmentHeadRecord)
+                    .where(
+                        PolicyEnvironmentHeadRecord.environment
+                        == command.environment,
+                        PolicyEnvironmentHeadRecord.current_version
+                        == command.expected_version,
+                        PolicyEnvironmentHeadRecord.current_deployment_id
+                        == current.deployment_id,
+                    )
+                    .values(
+                        current_deployment_id=deployment_id,
+                        current_version=row.version,
+                        updated_at=now,
+                    )
+                )
+                if cas.rowcount != 1:
+                    raise PromotionVersionConflict(
+                        "deployment head changed during CAS transition"
+                    )
+                session.add(
+                    PolicyAuditEventRecord(
+                        event_id=str(uuid4()),
+                        environment=command.environment,
+                        deployment_id=deployment_id,
+                        event_type="promotion_transitioned",
+                        command_id=command.command_id,
+                        actor=command.actor,
+                        reason=command.reason,
+                        details={
+                            "command_hash": command_hash,
+                            "from_state": current.state,
+                            "to_state": command.target_state.value,
+                            "from_version": current.version,
+                            "to_version": row.version,
+                            "required_receipts": required_receipts,
+                        },
+                        created_at=now,
+                    )
+                )
+                session.add(
+                    DistributedOutbox(
+                        event_key=f"deployment:{deployment_id}:changed",
+                        topic="policy.deployment.changed",
+                        payload={
+                            "deployment_id": deployment_id,
+                            "environment": command.environment,
+                            "version": row.version,
+                            "state": command.target_state.value,
+                        },
+                        created_at=now,
+                        publish_attempts=0,
+                    )
+                )
+                result = self._deployment(row)
+
+        if rejected is not None:
+            if rejected.startswith("expected_version"):
+                raise PromotionVersionConflict(rejected)
+            raise PromotionCommandRejected(rejected)
+        assert result is not None
+        return result
+
+    @staticmethod
+    async def _find_transition_replay(
+        session: AsyncSession,
+        *,
+        command: PromotionCommand,
+        command_hash: str,
+    ) -> PolicyDeploymentRecord | None:
+        row = await session.scalar(
+            select(PolicyDeploymentRecord).where(
+                PolicyDeploymentRecord.command_id == command.command_id
+            )
+        )
+        audit = await session.scalar(
+            select(PolicyAuditEventRecord)
+            .where(PolicyAuditEventRecord.command_id == command.command_id)
+            .order_by(PolicyAuditEventRecord.created_at.asc())
+            .limit(1)
+        )
+        if row is None and audit is None:
+            return None
+        if audit is None or audit.details.get("command_hash") != command_hash:
+            raise ImmutablePromotionConflict(
+                "command_id is bound to another promotion payload"
+            )
+        if row is None:
+            raise PromotionCommandRejected(
+                audit.details.get("error", "promotion command was rejected")
+            )
+        return row
+
+    @staticmethod
+    async def _bound_gate_receipts(
+        session: AsyncSession,
+        *,
+        artifact: PolicyArtifactRecord,
+        required: set[str],
+    ) -> tuple[list[str], dict[str, PolicyGateReceiptRecord]]:
+        missing: list[str] = []
+        rows: dict[str, PolicyGateReceiptRecord] = {}
+        for gate_type in sorted(required):
+            receipt = await session.scalar(
+                select(PolicyGateReceiptRecord)
+                .where(
+                    PolicyGateReceiptRecord.policy_hash
+                    == artifact.policy_hash,
+                    PolicyGateReceiptRecord.gate_type == gate_type,
+                )
+                .order_by(
+                    PolicyGateReceiptRecord.issued_at.desc(),
+                    PolicyGateReceiptRecord.created_at.desc(),
+                    PolicyGateReceiptRecord.receipt_id.desc(),
+                )
+                .limit(1)
+            )
+            if receipt is None or any(
+                (
+                    receipt.status != "passed",
+                    receipt.policy_hash != artifact.policy_hash,
+                    receipt.protocol_hash != artifact.protocol_hash,
+                    receipt.runtime_hash != artifact.runtime_hash,
+                    receipt.source_revision != artifact.source_revision,
+                )
+            ):
+                missing.append(gate_type)
+            else:
+                rows[gate_type] = receipt
+        return missing, rows
+
+    async def _append_rejected_audit(
+        self,
+        session: AsyncSession,
+        *,
+        command: PromotionCommand,
+        current: PolicyDeploymentRecord,
+        command_hash: str,
+        error: str,
+        missing_gates: list[str],
+    ) -> None:
+        now = self.clock()
+        await session.execute(
+            pg_insert(PolicyAuditEventRecord)
+            .values(
+                event_id=str(uuid4()),
+                environment=command.environment,
+                deployment_id=current.deployment_id,
+                event_type="promotion_rejected",
+                command_id=command.command_id,
+                actor=command.actor,
+                reason=command.reason,
+                details={
+                    "command_hash": command_hash,
+                    "error": error,
+                    "expected_version": command.expected_version,
+                    "current_version": current.version,
+                    "current_state": current.state,
+                    "target_state": command.target_state.value,
+                    "missing_gates": missing_gates,
+                },
+                created_at=now,
+            )
+            .on_conflict_do_nothing(
+                constraint="uq_policy_audit_command_deployment_event_type"
+            )
+        )
+
+    @staticmethod
+    async def _create_promotion_approval(
+        session: AsyncSession,
+        *,
+        command: PromotionCommand,
+        artifact: PolicyArtifactRecord,
+        canary_health: PolicyGateReceiptRecord,
+        command_hash: str,
+        now: datetime,
+    ) -> None:
+        receipt_id = str(uuid4())
+        details = {
+            "actor": command.actor,
+            "reason": command.reason,
+            "command_id": command.command_id,
+            "command_hash": command_hash,
+            "canary_health_receipt_id": canary_health.receipt_id,
+            "canary_health_evidence_hash": canary_health.evidence_hash,
+        }
+        session.add(
+            PolicyGateReceiptRecord(
+                receipt_id=receipt_id,
+                policy_hash=artifact.policy_hash,
+                gate_type="promotion_approval",
+                status="passed",
+                evidence_hash=canonical_hash(details),
+                protocol_hash=artifact.protocol_hash,
+                runtime_hash=artifact.runtime_hash,
+                source_revision=artifact.source_revision,
+                model_identity="authenticated-promotion-command",
+                data_role=artifact.data_role,
+                sample_count=canary_health.sample_count,
+                cost=Decimal("0"),
+                details=details,
+                issued_at=now,
+                issuer=command.actor,
+                created_at=now,
+            )
+        )
 
     @staticmethod
     def _artifact_hash(artifact: PolicyArtifact) -> str:

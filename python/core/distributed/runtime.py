@@ -758,3 +758,54 @@ async def upgrade_m3_schema(connection) -> None:
             "FOR EACH ROW EXECUTE FUNCTION reject_invalid_shadow_change()"
         )
     )
+
+
+class PromotionCommandRuntime:
+    """Database-only runtime for the isolated promotion command CLI."""
+
+    def __init__(self, engine, session_factory, service, token_issuer) -> None:
+        self.engine = engine
+        self.session_factory = session_factory
+        self.service = service
+        self.token_issuer = token_issuer
+
+    async def start(self) -> None:
+        async with self.engine.begin() as connection:
+            await connection.run_sync(DistributedBase.metadata.create_all)
+            await upgrade_m3_schema(connection)
+
+    async def close(self) -> None:
+        await self.engine.dispose()
+
+
+def build_promotion_command_runtime(settings_obj=settings) -> PromotionCommandRuntime:
+    """Build promotion DB services without Redis, HTTP, workers, or Ops."""
+    from .promotion_repository import PromotionRepository
+    from .promotion_service import (
+        PromotionCommandService,
+        RehearsalTokenIssuer,
+    )
+
+    engine = create_async_engine(
+        settings_obj.effective_distributed_database_url,
+        pool_pre_ping=True,
+    )
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    repository = PromotionRepository(factory)
+    return PromotionCommandRuntime(
+        engine,
+        factory,
+        PromotionCommandService(repository),
+        RehearsalTokenIssuer(
+            repository,
+            signing_secret=(
+                settings_obj.promotion_rehearsal_secret.get_secret_value()
+            ),
+            assignment_secret=(
+                settings_obj.promotion_assignment_secret.get_secret_value()
+            ),
+            allow_fault_injection=(
+                settings_obj.promotion_fault_injection_enabled
+            ),
+        ),
+    )
