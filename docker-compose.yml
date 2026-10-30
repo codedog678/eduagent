@@ -65,7 +65,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:80"
+      - "127.0.0.1:3000:80"
     depends_on:
       - python-api
 
@@ -82,15 +82,17 @@ services:
       - --port
       - "8890"
     ports:
-      - "8890:8890"
-    environment: &distributed-env
-      DISTRIBUTED_ENABLED: "true"
-      DISTRIBUTED_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/edu_agent
-      DISTRIBUTED_REDIS_URL: redis://redis:6379/1
-      HARNESS_STORE_PATH: /app/data/distributed-harness.sqlite3
-      LLM_PROVIDER: template
-      MEMORY_RETRIEVAL_MODE: lexical
-      MEMORY_WORKER_ENABLED: "false"
+      - "127.0.0.1:8890:8890"
+    environment:
+      <<: &distributed-env
+        DISTRIBUTED_ENABLED: "true"
+        DISTRIBUTED_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/edu_agent
+        DISTRIBUTED_REDIS_URL: redis://redis:6379/1
+        HARNESS_STORE_PATH: /app/data/distributed-harness.sqlite3
+        LLM_PROVIDER: template
+        MEMORY_RETRIEVAL_MODE: lexical
+        MEMORY_WORKER_ENABLED: "false"
+      OPS_API_TOKEN: ${OPS_API_TOKEN:-local-ops-console}
     depends_on:
       postgres:
         condition: service_healthy
