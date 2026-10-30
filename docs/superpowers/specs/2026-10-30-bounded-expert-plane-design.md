@@ -108,6 +108,7 @@ run_fencing_token
 trace_id
 attempt_number
 worker_id
+parent_deadline_at
 ```
 
 `LearningTaskExecutor` injects this authority and an `ExpertGateway` into the
@@ -160,7 +161,9 @@ The payload never contains:
 
 `deadline_at` is a PostgreSQL `TIMESTAMPTZ`. Every process compares it with the
 PostgreSQL clock at a state transition and with local UTC only for early cancellation.
-The database decision is authoritative.
+The database decision is authoritative. The parent attempt persists
+`parent_deadline_at`, derived from PostgreSQL time when claimed; an expert deadline
+cannot exceed it.
 
 ### 5.3 Snapshot tools
 
@@ -351,6 +354,11 @@ Default limits are intentionally small for the interview profile: one active job
 run, two running jobs per role, and fifty queued jobs per role. Limits are settings,
 validated as positive integers, and exposed in health/metrics.
 
+Before a new parent fencing epoch admits work, it atomically marks active jobs from
+older parent tokens `parent_stale`; an abandoned old job cannot block takeover.
+Rejecting a job whose role is outside a Worker's advertised capabilities does not
+increment attempt count or consume retry budget.
+
 Once a durable job has been accepted, the parent does not silently run the same step
 inline. That could double provider cost and create two competing drafts. Inline
 fallback is allowed only when durable mode is disabled or job creation fails before
@@ -375,6 +383,11 @@ estimated cost, provider/model, and whether the call outcome was uncertain. The 
 budget is cumulative across attempts. A retry receives only the remaining allowance.
 The parent charges total terminal usage, including failed attempts, before continuing.
 Unknown usage is retained as unknown rather than replaced with zero.
+
+Database acceptance and parent adoption are separate decisions. A result accepted
+under live execution authority can still fail adoption if a cited source is deleted or
+the pinned policy becomes unavailable before the parent reads it. The accepted row is
+retained and an `expert.adoption_rejected` span records the reason.
 
 ## 12. Dispatcher, Worker, and Reaper
 
@@ -462,6 +475,9 @@ loading states, and responsive detail drawers. It has no mutation buttons.
 - Existing saved `LearningPlan` rows require no migration.
 - New PostgreSQL tables are created through the current metadata bootstrap in M2;
   production migration tooling remains a later deployment concern and is documented.
+- The parent keeps the single-writer SQLite lock while waiting for an expert. This
+  preserves M1 safety but serializes learner-state execution during remote latency;
+  the benchmark reports this limitation rather than claiming horizontal state writes.
 
 ## 16. Failure Matrix
 
