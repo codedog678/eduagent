@@ -2,11 +2,14 @@ import asyncio
 import copy
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 from uuid import UUID, uuid4
 
 import pytest
 from pydantic import ValidationError
 from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from core.distributed.contracts import canonical_hash
 from core.distributed.promotion_models import (
@@ -1755,3 +1758,227 @@ async def test_command_id_is_rechecked_after_head_lock_race(promotion_repo):
         )
     assert audits == 1
     assert deployments == 0
+
+
+@pytest.mark.parametrize(
+    ("source", "cli_command", "extra"),
+    [
+        ("registered", "start-shadow", []),
+        ("shadow", "start-canary", ["--basis-points", "500"]),
+        ("canary", "activate", ["--reason", "approved"]),
+        ("registered", "freeze", ["--reason", "stop"]),
+        ("canary", "rollback", ["--reason", "rollback"]),
+    ],
+)
+async def test_cli_run_replays_expected_version_after_head_advances(
+    promotion_repo, monkeypatch, source, cli_command, extra,
+):
+    from core.distributed import promotion_cli
+
+    service, snapshot = await _advance_to(promotion_repo, DeploymentState(source))
+    if cli_command == "start-canary":
+        await _add_gate(promotion_repo, "shadow_health")
+    if cli_command == "activate":
+        await _add_gate(promotion_repo, "canary_health")
+    runtime = SimpleNamespace(service=service, start=AsyncMock(), close=AsyncMock())
+    monkeypatch.setattr(promotion_cli, "build_promotion_command_runtime", lambda _: runtime)
+    argv = [
+        cli_command, "--environment", "rehearsal",
+        "--expected-version", str(snapshot.version),
+        "--actor", "release.operator", "--command-id", "cli-replay",
+        *extra,
+    ]
+    args = promotion_cli.parser().parse_args(argv)
+    first = await promotion_cli.run(args)
+    assert await promotion_cli.run(args) == first
+    later = await _registered(promotion_repo, command_id="cli-later-registration")
+    counts = await _counts(promotion_repo)
+    assert await promotion_cli.run(args) == first
+    assert await service.show_head("rehearsal") == later
+    assert await _counts(promotion_repo) == counts
+    changed = copy.copy(args)
+    changed.reason = "different CLI payload"
+    with pytest.raises(ImmutablePromotionConflict, match="command_id"):
+        await promotion_cli.run(changed)
+    if cli_command == "start-canary":
+        changed = copy.copy(args)
+        changed.basis_points = 600
+        with pytest.raises(ImmutablePromotionConflict, match="command_id"):
+            await promotion_cli.run(changed)
+    assert runtime.close.await_count == runtime.start.await_count
+
+
+async def _audit_body(repository, command_id):
+    async with repository.session_factory() as session:
+        audit = await session.scalar(select(PolicyAuditEventRecord).where(
+            PolicyAuditEventRecord.command_id == command_id
+        ))
+        return {
+            column.name: copy.deepcopy(getattr(audit, column.name))
+            for column in PolicyAuditEventRecord.__table__.columns
+        }
+
+
+async def _legacy_registration(repository, command_id):
+    snapshot = await _registered(repository, command_id=command_id)
+    async with repository.session_factory() as session, session.begin():
+        audit = await session.scalar(select(PolicyAuditEventRecord).where(
+            PolicyAuditEventRecord.command_id == command_id
+        ))
+        details = dict(audit.details)
+        details.pop("command_hash")  # Exact 1fc25ab registration format.
+        audit.details = details
+    return snapshot
+
+
+async def test_legacy_registration_upgrade_replays_twice_without_audit_mutation(
+    promotion_repo,
+):
+    command_id = "legacy-registration"
+    first = await _legacy_registration(promotion_repo, command_id)
+    original = await _audit_body(promotion_repo, command_id)
+    counts = await _counts(promotion_repo)
+    for _ in range(2):
+        upgraded = PromotionRepository(promotion_repo.session_factory, clock=lambda: NOW)
+        assert await _registered(upgraded, command_id=command_id) == first
+    assert await _audit_body(promotion_repo, command_id) == original
+    assert await _counts(promotion_repo) == counts
+
+
+@pytest.mark.parametrize("tamper", [
+    "actor", "material", "event_type", "command_id", "material_hash",
+    "candidate_policy_hash", "campaign_id", "campaign_binding", "receipt_ids",
+    "budget", "stable_policy_hash", "command_hash", "deployment_id",
+])
+async def test_legacy_registration_payload_tampering_fails_closed(promotion_repo, tamper):
+    command_id = "legacy-registration-tamper"
+    await _legacy_registration(promotion_repo, command_id)
+    material = qualification_material()
+    actor = "release.operator"
+    if tamper == "actor":
+        actor = "another.operator"
+    elif tamper == "material":
+        material = newer_material(material, marker="changed", issued_after=timedelta(hours=1))
+    else:
+        async with promotion_repo.session_factory() as session, session.begin():
+            audit = await session.scalar(select(PolicyAuditEventRecord).where(
+                PolicyAuditEventRecord.command_id == command_id
+            ))
+            if tamper in {"event_type", "command_id"}:
+                setattr(audit, tamper, "different-value")
+            elif tamper == "deployment_id":
+                audit.deployment_id = None
+            else:
+                audit.details = {**audit.details, tamper: "tampered"}
+    with pytest.raises(ImmutablePromotionConflict, match="command_id"):
+        await promotion_repo.register_qualification(material, actor=actor, command_id=command_id)
+
+
+@pytest.mark.parametrize("rejected", [False, True])
+async def test_legacy_transition_upgrade_replays_twice_without_audit_mutation(
+    promotion_repo, rejected,
+):
+    command_id = "legacy-transition"
+    if rejected:
+        service, command, error = await _reject_transition_with_command_id(promotion_repo, command_id)
+    else:
+        service, registered = await _advance_to(promotion_repo, DeploymentState.REGISTERED)
+        command = _command(registered, "shadow", command_id=command_id)
+        first = await service.transition(command)
+        await service.transition(_command(first, "frozen", command_id="legacy-later-freeze"))
+    async with promotion_repo.session_factory() as session, session.begin():
+        audit = await session.scalar(select(PolicyAuditEventRecord).where(
+            PolicyAuditEventRecord.command_id == command_id
+        ))
+        audit.details = {**audit.details, "command_hash": canonical_hash(command.model_dump(mode="json"))}
+    original = await _audit_body(promotion_repo, command_id)
+    counts = await _counts(promotion_repo)
+    for _ in range(2):
+        upgraded = PromotionRepository(promotion_repo.session_factory, clock=lambda: NOW)
+        if rejected:
+            with pytest.raises(PromotionCommandRejected, match=error):
+                await upgraded.transition(command)
+        else:
+            assert await upgraded.transition(command) == first
+    with pytest.raises(ImmutablePromotionConflict, match="command_id"):
+        await upgraded.transition(command.model_copy(update={"reason": "tampered payload"}))
+    with pytest.raises(ImmutablePromotionConflict, match="command_id"):
+        await _registered(upgraded, command_id=command_id)
+    assert await _audit_body(promotion_repo, command_id) == original
+    assert await _counts(promotion_repo) == counts
+
+
+@pytest.mark.parametrize("legacy_hash", [False, True])
+@pytest.mark.parametrize("event_type", ["qualification_registered", "promotion_rejected"])
+async def test_transition_replay_requires_matching_event_type(promotion_repo, legacy_hash, event_type):
+    service, registered = await _advance_to(promotion_repo, DeploymentState.REGISTERED)
+    command = _command(registered, "shadow", command_id="transition-event-tamper")
+    await service.transition(command)
+    async with promotion_repo.session_factory() as session, session.begin():
+        audit = await session.scalar(select(PolicyAuditEventRecord).where(
+            PolicyAuditEventRecord.command_id == command.command_id
+        ))
+        audit.event_type = event_type
+        if legacy_hash:
+            audit.details = {**audit.details, "command_hash": canonical_hash(command.model_dump(mode="json"))}
+    with pytest.raises(ImmutablePromotionConflict, match="command_id"):
+        await service.transition(command)
+
+
+@pytest.mark.parametrize("operation", ["registration", "transition"])
+async def test_read_committed_replay_query_commit_barrier(promotion_repo, operation):
+    """Commit between the reader's first replay SELECT and its next statement."""
+    command_id = "snapshot-barrier-replay"
+    queried = asyncio.Event()
+    release = asyncio.Event()
+    first_table = "policy_audit_events" if operation == "registration" else "policy_deployments"
+
+    class BarrierSession(AsyncSession):
+        paused = False
+
+        async def _barrier(self, statement):
+            if not self.paused and first_table in str(statement):
+                self.paused = True
+                queried.set()
+                await release.wait()
+
+        async def scalar(self, statement, *args, **kwargs):
+            result = await super().scalar(statement, *args, **kwargs)
+            await self._barrier(statement)
+            return result
+
+        async def execute(self, statement, *args, **kwargs):
+            result = await super().execute(statement, *args, **kwargs)
+            await self._barrier(statement)
+            return result
+
+    reader = PromotionRepository(async_sessionmaker(
+        promotion_repo.session_factory.kw["bind"],
+        class_=BarrierSession, expire_on_commit=False,
+    ), clock=lambda: NOW)
+    if operation == "registration":
+        async def invoke(repository):
+            return await _registered(repository, command_id=command_id)
+    else:
+        _, registered = await _advance_to(promotion_repo, DeploymentState.REGISTERED)
+        command = _command(registered, "shadow", command_id=command_id)
+
+        async def invoke(repository):
+            return await repository.transition(command)
+
+    task = asyncio.create_task(invoke(reader))
+    try:
+        await asyncio.wait_for(queried.wait(), timeout=5)
+        first = await asyncio.wait_for(invoke(promotion_repo), timeout=5)
+        release.set()
+        assert await asyncio.wait_for(task, timeout=5) == first
+    finally:
+        release.set()
+        if not task.done():
+            task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+    async with promotion_repo.session_factory() as session:
+        for model in (PolicyDeploymentRecord, PolicyAuditEventRecord):
+            assert await session.scalar(select(func.count()).select_from(model).where(
+                model.command_id == command_id
+            )) == 1

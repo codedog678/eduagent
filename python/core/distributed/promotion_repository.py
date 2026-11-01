@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from uuid import UUID, uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -111,7 +111,9 @@ class PromotionRepository:
                 session,
                 command_id=command_id,
                 command_hash=command_hash,
-                candidate_policy_hash=material.artifact.policy_hash,
+                material=material,
+                material_hash=material_hash,
+                actor=actor,
             )
             if replay is not None:
                 return self._deployment(replay)
@@ -133,7 +135,9 @@ class PromotionRepository:
                 session,
                 command_id=command_id,
                 command_hash=command_hash,
-                candidate_policy_hash=material.artifact.policy_hash,
+                material=material,
+                material_hash=material_hash,
+                actor=actor,
             )
             if replay is not None:
                 return self._deployment(replay)
@@ -198,18 +202,9 @@ class PromotionRepository:
                     actor=actor,
                     reason="immutable qualification evidence registered",
                     details={
-                        "campaign_id": material.campaign_id,
-                        "campaign_binding": material.campaign_binding,
-                        "candidate_policy_hash": (
-                            material.artifact.policy_hash
+                        **self._registration_details(
+                            material, material_hash, stable_policy_hash
                         ),
-                        "stable_policy_hash": stable_policy_hash,
-                        "receipt_ids": [
-                            str(receipt.receipt_id)
-                            for receipt in material.receipts
-                        ],
-                        "budget": material.budget.model_dump(mode="json"),
-                        "material_hash": material_hash,
                         "command_hash": command_hash,
                     },
                     created_at=now,
@@ -229,6 +224,23 @@ class PromotionRepository:
             if row is None:
                 raise ImmutablePromotionConflict(
                     f"{environment} head references a missing deployment"
+                )
+            return self._deployment(row)
+
+    async def get_snapshot(
+        self, environment: str, version: int
+    ) -> DeploymentSnapshot:
+        """Read the immutable source of a command, never the mutable head."""
+        async with self.session_factory() as session:
+            row = await session.scalar(
+                select(PolicyDeploymentRecord).where(
+                    PolicyDeploymentRecord.environment == environment,
+                    PolicyDeploymentRecord.version == version,
+                )
+            )
+            if row is None:
+                raise LookupError(
+                    f"{environment} deployment version {version} does not exist"
                 )
             return self._deployment(row)
 
@@ -463,32 +475,69 @@ class PromotionRepository:
         return result
 
     @staticmethod
+    async def _command_evidence(
+        session: AsyncSession, command_id: str,
+    ) -> tuple[PolicyDeploymentRecord | None, PolicyAuditEventRecord | None]:
+        # One READ COMMITTED statement snapshot, including orphaned evidence.
+        # Joining on command_id (not deployment_id) keeps rejections row-less.
+        evidence = (await session.execute(
+            select(PolicyDeploymentRecord, PolicyAuditEventRecord)
+            .outerjoin(
+                PolicyAuditEventRecord,
+                PolicyDeploymentRecord.command_id == PolicyAuditEventRecord.command_id,
+                full=True,
+            )
+            .where(or_(
+                PolicyDeploymentRecord.command_id == command_id,
+                PolicyAuditEventRecord.command_id == command_id,
+            ))
+        )).one_or_none()
+        return (None, None) if evidence is None else (evidence[0], evidence[1])
+
+    @staticmethod
     async def _find_transition_replay(
         session: AsyncSession,
         *,
         command: PromotionCommand,
         command_hash: str,
     ) -> PolicyDeploymentRecord | None:
-        row = await session.scalar(
-            select(PolicyDeploymentRecord).where(
-                PolicyDeploymentRecord.command_id == command.command_id
-            )
-        )
-        audit = await session.scalar(
-            select(PolicyAuditEventRecord)
-            .where(PolicyAuditEventRecord.command_id == command.command_id)
-            .order_by(PolicyAuditEventRecord.created_at.asc())
-            .limit(1)
+        row, audit = await PromotionRepository._command_evidence(
+            session, command.command_id
         )
         if row is None and audit is None:
             return None
-        if audit is None or audit.details.get("command_hash") != command_hash:
+        expected_event = "promotion_rejected" if row is None else "promotion_transitioned"
+        legacy_hash = canonical_hash(command.model_dump(mode="json"))
+        if (
+            audit is None
+            or audit.event_type != expected_event
+            or audit.details.get("command_hash") not in {command_hash, legacy_hash}
+            or audit.environment != command.environment
+            or audit.actor != command.actor
+            or audit.reason != command.reason
+        ):
             raise ImmutablePromotionConflict(
                 "command_id is bound to another promotion payload"
             )
         if row is None:
             raise PromotionCommandRejected(
                 audit.details.get("error", "promotion command was rejected")
+            )
+        if (
+            row.deployment_id != audit.deployment_id
+            or row.environment != command.environment
+            or row.version != command.expected_version + 1
+            or row.state != command.target_state.value
+            or row.traffic_basis_points != command.traffic_basis_points
+            or row.actor != command.actor
+            or row.reason != command.reason
+            or audit.details.get("from_state") != command.current_state.value
+            or audit.details.get("from_version") != command.expected_version
+            or audit.details.get("to_state") != row.state
+            or audit.details.get("to_version") != row.version
+        ):
+            raise ImmutablePromotionConflict(
+                "command_id is bound to another promotion payload"
             )
         return row
 
@@ -724,34 +773,59 @@ class PromotionRepository:
             )
 
     @staticmethod
+    def _registration_details(
+        material: QualificationMaterial,
+        material_hash: str,
+        stable_policy_hash: str,
+    ) -> dict:
+        return {
+            "campaign_id": material.campaign_id,
+            "campaign_binding": material.campaign_binding,
+            "candidate_policy_hash": material.artifact.policy_hash,
+            "stable_policy_hash": stable_policy_hash,
+            "receipt_ids": [str(receipt.receipt_id) for receipt in material.receipts],
+            "budget": material.budget.model_dump(mode="json"),
+            "material_hash": material_hash,
+        }
+
+    @staticmethod
     async def _find_registration_replay(
         session: AsyncSession,
         *,
         command_id: str,
         command_hash: str,
-        candidate_policy_hash: str,
+        material: QualificationMaterial,
+        material_hash: str,
+        actor: str,
     ) -> PolicyDeploymentRecord | None:
-        audit = await session.scalar(
-            select(PolicyAuditEventRecord)
-            .where(PolicyAuditEventRecord.command_id == command_id)
-            .order_by(PolicyAuditEventRecord.created_at.asc())
-            .limit(1)
-        )
-        replay = await session.scalar(
-            select(PolicyDeploymentRecord).where(
-                PolicyDeploymentRecord.command_id == command_id
-            )
+        replay, audit = await PromotionRepository._command_evidence(
+            session, command_id
         )
         if audit is None and replay is None:
             return None
         if (
             audit is None
             or audit.event_type != "qualification_registered"
-            or audit.details.get("command_hash") != command_hash
+            or audit.environment != "rehearsal"
+            or audit.actor != actor
             or replay is None
             or replay.deployment_id != audit.deployment_id
-            or replay.candidate_policy_hash != candidate_policy_hash
+            or replay.environment != "rehearsal"
+            or replay.state != "registered"
+            or replay.actor != actor
+            or replay.candidate_policy_hash != material.artifact.policy_hash
         ):
+            raise ImmutablePromotionConflict(
+                "command_id is bound to another promotion command"
+            )
+        expected_details = PromotionRepository._registration_details(
+            material, material_hash, replay.stable_policy_hash
+        )
+        # Only the exact 1fc25ab body may omit command_hash. A present but
+        # incorrect hash must never fall back to legacy evidence.
+        if "command_hash" in audit.details:
+            expected_details["command_hash"] = command_hash
+        if audit.details != expected_details:
             raise ImmutablePromotionConflict(
                 "command_id is bound to another promotion command"
             )

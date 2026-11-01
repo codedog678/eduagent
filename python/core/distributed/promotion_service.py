@@ -200,6 +200,10 @@ class PromotionCommandRepository(QualificationRepository, Protocol):
 
     async def get_head(self, environment: str) -> DeploymentSnapshot: ...
 
+    async def get_snapshot(
+        self, environment: str, version: int
+    ) -> DeploymentSnapshot: ...
+
 
 class PromotionCommandService(_AuthenticatedCommandBoundary):
     """Authenticated application write boundary for promotion commands."""
@@ -236,6 +240,11 @@ class PromotionCommandService(_AuthenticatedCommandBoundary):
 
     async def show_head(self, environment: str) -> DeploymentSnapshot:
         return await self.repository.get_head(environment)
+
+    async def show_snapshot(
+        self, environment: str, version: int
+    ) -> DeploymentSnapshot:
+        return await self.repository.get_snapshot(environment, version)
 
 
 class RehearsalTokenIssuer:

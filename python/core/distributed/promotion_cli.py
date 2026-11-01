@@ -96,7 +96,9 @@ def _canonical_json(value: Any) -> str:
 
 
 async def _transition(runtime, args, target: str, traffic: int = 0):
-    current = await runtime.service.show_head(args.environment)
+    current = await runtime.service.show_snapshot(
+        args.environment, args.expected_version
+    )
     command = PromotionCommand(
         command_id=args.command_id,
         environment=args.environment,
