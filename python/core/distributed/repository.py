@@ -201,8 +201,8 @@ class DistributedRunRepository:
         allowed_environment=None,
     ) -> RunClaim:
         async with self.session_factory() as session, session.begin():
-            now = await self._db_now(session)
             run, lease = await self._locked_run_and_lease(session, run_id)
+            now = await self._db_now(session)
             if allowed_environment is not None:
                 from .rehearsal_store import validate_environment
 
@@ -255,14 +255,12 @@ class DistributedRunRepository:
         lease_seconds: float,
     ) -> DistributedLease:
         async with self.session_factory() as session, session.begin():
-            now = await self._db_now(session)
             run, lease = await self._locked_run_and_lease(session, run_id)
-            await self._assert_active_lease(
+            now = await self._assert_active_lease(
                 session,
                 run,
                 lease,
                 token,
-                now,
                 worker_id,
             )
             if run.status not in {
@@ -292,17 +290,15 @@ class DistributedRunRepository:
         token: int,
     ) -> DistributedStep:
         async with self.session_factory() as session, session.begin():
-            now = await self._db_now(session)
             run, lease = await self._locked_run_and_lease(session, run_id)
-            await self._assert_active_lease(
+            existing = await self._locked_step(session, run_id, step_id)
+            now = await self._assert_active_lease(
                 session,
                 run,
                 lease,
                 token,
-                now,
             )
             self._assert_active(run)
-            existing = await self._locked_step(session, run_id, step_id)
             if existing is not None:
                 self._assert_step_hash(existing, input_hash)
                 if existing.status == RunStatus.RUNNING:
@@ -329,17 +325,15 @@ class DistributedRunRepository:
         result: dict,
     ) -> DistributedStep:
         async with self.session_factory() as session, session.begin():
-            now = await self._db_now(session)
             run, lease = await self._locked_run_and_lease(session, run_id)
-            await self._assert_active_lease(
+            step = await self._locked_step(session, run_id, step_id)
+            now = await self._assert_active_lease(
                 session,
                 run,
                 lease,
                 token,
-                now,
             )
             self._assert_active(run)
-            step = await self._locked_step(session, run_id, step_id)
             if step is None:
                 raise RequestConflict(
                     f"step {step_id} has not been started for run {run_id}"
@@ -368,14 +362,12 @@ class DistributedRunRepository:
         token: int,
     ) -> DistributedRun:
         async with self.session_factory() as session, session.begin():
-            now = await self._db_now(session)
             run, lease = await self._locked_run_and_lease(session, run_id)
-            await self._assert_active_lease(
+            now = await self._assert_active_lease(
                 session,
                 run,
                 lease,
                 token,
-                now,
             )
             if run.status == RunStatus.COMMITTING:
                 return run
@@ -394,14 +386,12 @@ class DistributedRunRepository:
         result: dict,
     ) -> DistributedRun:
         async with self.session_factory() as session, session.begin():
-            now = await self._db_now(session)
             run, lease = await self._locked_run_and_lease(session, run_id)
-            await self._assert_active_lease(
+            now = await self._assert_active_lease(
                 session,
                 run,
                 lease,
                 token,
-                now,
             )
             validate_business_result(result, self._persisted_binding(run))
             updated = await session.execute(
@@ -452,14 +442,12 @@ class DistributedRunRepository:
         retryable: bool,
     ) -> DistributedRun:
         async with self.session_factory() as session, session.begin():
-            now = await self._db_now(session)
             run, lease = await self._locked_run_and_lease(session, run_id)
-            await self._assert_active_lease(
+            now = await self._assert_active_lease(
                 session,
                 run,
                 lease,
                 token,
-                now,
             )
             self._assert_active(run)
             if retryable and run.attempt_count >= self.max_attempts:
@@ -612,6 +600,8 @@ class DistributedRunRepository:
                     session,
                     run_id,
                 )
+                if lease.owner is not None:
+                    await self._locked_attempt(session, run_id, lease.fencing_token)
                 database_now = await self._db_now(session)
                 if (
                     lease.owner is None
@@ -808,15 +798,12 @@ class DistributedRunRepository:
             .with_for_update()
         )
 
-    async def _finish_attempt(
+    async def _locked_attempt(
         self,
         session: AsyncSession,
         run_id: str,
         token: int,
-        status: RunStatus,
-        finished_at: datetime,
-        reason: str | None = None,
-    ) -> None:
+    ) -> DistributedRunAttempt:
         attempt = await session.scalar(
             select(DistributedRunAttempt)
             .where(
@@ -829,6 +816,19 @@ class DistributedRunRepository:
             raise FencingViolation(
                 f"run {run_id} has no attempt for token {token}"
             )
+        return attempt
+
+    async def _finish_attempt(
+        self,
+        session: AsyncSession,
+        run_id: str,
+        token: int,
+        status: RunStatus,
+        finished_at: datetime,
+        reason: str | None = None,
+    ) -> None:
+        # worker 与 reaper 已持有此 attempt 锁，不会在授权检查后再次等新锁。
+        attempt = await self._locked_attempt(session, run_id, token)
         attempt.status = status
         attempt.reason = reason
         attempt.finished_at = finished_at
@@ -858,10 +858,13 @@ class DistributedRunRepository:
         run: DistributedRun,
         lease: DistributedLease,
         token: int,
-        now: datetime,
         worker_id: str | None = None,
-    ) -> None:
+    ) -> datetime:
+        attempt = await self._locked_attempt(session, run.id, token)
+        # 调用方先锁 step；这里在最后的 attempt 锁返回后重新取数据库时间。
+        now = await self._db_now(session)
         run_id = run.id
+        self._assert_active(run)
         if lease.fencing_token != token:
             raise FencingViolation(
                 f"stale fencing token for run {run_id}"
@@ -874,22 +877,17 @@ class DistributedRunRepository:
             )
         if lease.expires_at is None or lease.expires_at <= now:
             raise FencingViolation(f"lease for run {run_id} has expired")
-        attempt = await session.scalar(
-            select(DistributedRunAttempt)
-            .where(
-                DistributedRunAttempt.run_id == run.id,
-                DistributedRunAttempt.fencing_token == token,
-            )
-            .with_for_update()
-        )
         if (
-            attempt is None
-            or attempt.finished_at is not None
+            attempt.finished_at is not None
             or attempt.worker_id != lease.owner
+            or attempt.status != RunStatus.RUNNING
         ):
             raise FencingViolation(
                 f"lease owner and attempt do not match for run {run_id}"
             )
+        if attempt.deadline_at <= now:
+            raise FencingViolation(f"deadline for run {run_id} has expired")
+        return now
 
     @staticmethod
     def _assert_active(run: DistributedRun) -> None:

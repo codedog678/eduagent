@@ -163,7 +163,6 @@ class ExpertJobRepository:
         )
         parent_run_id = str(request.authority.distributed_run_id)
         async with self.session_factory() as session, session.begin():
-            now = await self._db_now(session)
             run, run_lease = await self._locked_parent(
                 session,
                 parent_run_id,
@@ -176,6 +175,21 @@ class ExpertJobRepository:
                 parent_run_id,
                 request.authority.run_fencing_token,
             )
+            old_epochs = await self._locked_old_parent_epochs(
+                session, parent_run_id, request.authority.run_fencing_token,
+            )
+            existing = await session.scalar(
+                select(DistributedExpertJob)
+                .where(
+                    DistributedExpertJob.parent_run_id == parent_run_id,
+                    DistributedExpertJob.parent_fencing_token
+                    == request.authority.run_fencing_token,
+                    DistributedExpertJob.logical_key == request.logical_key,
+                )
+                .with_for_update()
+            )
+            # 包含旧 epoch 的 job/lease 以及重放 job；授权前不修改任何记录。
+            now = await self._db_now(session)
             self._assert_parent_authority(
                 run,
                 run_lease,
@@ -211,22 +225,11 @@ class ExpertJobRepository:
             if payload_bytes > self.max_payload_bytes:
                 raise ExpertBackpressure("expert payload exceeds maximum")
 
-            await self._close_old_parent_epochs(
-                session,
-                parent_run_id,
-                request.authority.run_fencing_token,
-                now,
-            )
-            existing = await session.scalar(
-                select(DistributedExpertJob)
-                .where(
-                    DistributedExpertJob.parent_run_id == parent_run_id,
-                    DistributedExpertJob.parent_fencing_token
-                    == request.authority.run_fencing_token,
-                    DistributedExpertJob.logical_key == request.logical_key,
+            for old_job, old_lease in old_epochs:
+                self._close_job(
+                    old_job, old_lease, "parent_stale",
+                    ExpertErrorCode.PARENT_STALE.value, now,
                 )
-                .with_for_update()
-            )
             if existing is not None:
                 self._assert_job_binding(run, existing)
                 if existing.input_hash != request.input_hash:
@@ -323,14 +326,15 @@ class ExpertJobRepository:
             identity = await self._job_identity(session, job_id)
             job_role = ExpertRole(identity.role)
             if job_role not in roles:
-                now = await self._db_now(session)
                 job = await session.scalar(
                     select(DistributedExpertJob)
                     .where(DistributedExpertJob.id == job_id)
                     .with_for_update()
+                    .execution_options(populate_existing=True)
                 )
                 if job is None:
                     raise LookupError(f"expert job {job_id} does not exist")
+                now = await self._db_now(session)
                 available_at = now + timedelta(
                     seconds=min(0.1, self.retry_base_seconds)
                 )
@@ -353,7 +357,6 @@ class ExpertJobRepository:
                     rejection_code="capability_mismatch",
                     available_at=available_at,
                 )
-            now = await self._db_now(session)
             run, run_lease = await self._locked_parent(
                 session,
                 identity.parent_run_id,
@@ -369,6 +372,7 @@ class ExpertJobRepository:
             )
             self._assert_job_binding(run, job)
             await self._advisory_lock(session, "role", job.role)
+            now = await self._db_now(session)
             self._assert_parent_authority(
                 run,
                 run_lease,
@@ -536,7 +540,6 @@ class ExpertJobRepository:
     ) -> ExpertLeaseView:
         async with self.session_factory() as session, session.begin():
             identity = await self._job_identity(session, job_id)
-            now = await self._db_now(session)
             run, run_lease = await self._locked_parent(
                 session,
                 identity.parent_run_id,
@@ -550,6 +553,7 @@ class ExpertJobRepository:
                 session,
                 job_id,
             )
+            now = await self._db_now(session)
             self._assert_parent_authority(
                 run,
                 run_lease,
@@ -583,19 +587,23 @@ class ExpertJobRepository:
     ) -> ResultReceipt:
         async with self.session_factory() as session, session.begin():
             identity = await self._job_identity(session, job_id)
-            now = await self._db_now(session)
             run, run_lease = await self._locked_parent(
                 session,
                 identity.parent_run_id,
+            )
+            attempt = await self._locked_parent_attempt(
+                session, identity.parent_run_id, identity.parent_fencing_token,
             )
             job, expert_lease = await self._locked_job_and_lease(
                 session,
                 job_id,
             )
             results = await self._locked_results(session, job_id)
+            now = await self._db_now(session)
             rejection = self._result_rejection(
                 run,
                 run_lease,
+                attempt,
                 job,
                 expert_lease,
                 results,
@@ -662,7 +670,6 @@ class ExpertJobRepository:
     ) -> DistributedExpertJob | ResultReceipt:
         async with self.session_factory() as session, session.begin():
             identity = await self._job_identity(session, job_id)
-            now = await self._db_now(session)
             run, run_lease = await self._locked_parent(
                 session,
                 identity.parent_run_id,
@@ -677,9 +684,11 @@ class ExpertJobRepository:
                 job_id,
             )
             await self._locked_results(session, job_id)
+            now = await self._db_now(session)
             rejection = self._authority_rejection(
                 run,
                 run_lease,
+                attempt,
                 job,
                 expert_lease,
                 worker_id,
@@ -762,7 +771,6 @@ class ExpertJobRepository:
     ) -> ExpertTerminalEnvelope | None:
         async with self.session_factory() as session, session.begin():
             identity = await self._job_identity(session, job_id)
-            now = await self._db_now(session)
             run, run_lease = await self._locked_parent(
                 session,
                 identity.parent_run_id,
@@ -773,6 +781,8 @@ class ExpertJobRepository:
                 parent_token,
             )
             job, _ = await self._locked_job_and_lease(session, job_id)
+            rows = await self._locked_results(session, job_id)
+            now = await self._db_now(session)
             if job.parent_fencing_token != parent_token:
                 raise ExpertFencingViolation("parent fencing token is stale")
             self._assert_parent_authority(
@@ -785,7 +795,6 @@ class ExpertJobRepository:
             self._assert_job_binding(run, job)
             if job.status not in TERMINAL_JOB_STATUSES:
                 return None
-            rows = await self._locked_results(session, job_id)
             request = ExpertJobRequest.model_validate(job.payload)
             cumulative = self._cumulative_usage(rows)
             accepted = next(
@@ -829,25 +838,28 @@ class ExpertJobRepository:
             )
             for job_id in job_ids:
                 identity = await self._job_identity(session, job_id)
-                now = await self._db_now(session)
                 run, run_lease = await self._locked_parent(
                     session,
                     identity.parent_run_id,
+                )
+                attempt = await self._locked_parent_attempt(
+                    session, identity.parent_run_id, identity.parent_fencing_token,
                 )
                 job, expert_lease = await self._locked_job_and_lease(
                     session,
                     job_id,
                 )
                 await self._locked_results(session, job_id)
+                now = await self._db_now(session)
                 if job.status not in ACTIVE_JOB_STATUSES:
                     continue
-                parent_valid = (
-                    run_lease.fencing_token == job.parent_fencing_token
-                    and run_lease.owner is not None
-                    and run_lease.expires_at is not None
-                    and run_lease.expires_at > now
-                    and run.status in {RunStatus.RUNNING, RunStatus.WAITING_EXPERT}
-                )
+                try:
+                    self._assert_parent_authority(
+                        run, run_lease, attempt, job.parent_fencing_token, now,
+                    )
+                    parent_valid = True
+                except ExpertFencingViolation:
+                    parent_valid = False
                 if not parent_valid:
                     self._record_uncertain_attempt(
                         session,
@@ -1004,13 +1016,12 @@ class ExpertJobRepository:
                 raise LookupError(f"expert job {job_id} does not exist")
             job.deadline_at = at
 
-    async def _close_old_parent_epochs(
+    async def _locked_old_parent_epochs(
         self,
         session: AsyncSession,
         parent_run_id: str,
         parent_token: int,
-        now: datetime,
-    ) -> None:
+    ) -> list[tuple[DistributedExpertJob, DistributedExpertLease]]:
         jobs = list(
             await session.scalars(
                 select(DistributedExpertJob)
@@ -1023,6 +1034,7 @@ class ExpertJobRepository:
                 .with_for_update()
             )
         )
+        locked = []
         for job in jobs:
             lease = await session.scalar(
                 select(DistributedExpertLease)
@@ -1030,13 +1042,8 @@ class ExpertJobRepository:
                 .with_for_update()
             )
             if lease is not None:
-                self._close_job(
-                    job,
-                    lease,
-                    "parent_stale",
-                    ExpertErrorCode.PARENT_STALE.value,
-                    now,
-                )
+                locked.append((job, lease))
+        return locked
 
     async def _restore_parent_running(
         self,
@@ -1081,6 +1088,7 @@ class ExpertJobRepository:
     def _result_rejection(
         run: DistributedRun,
         run_lease: DistributedLease,
+        attempt: DistributedRunAttempt,
         job: DistributedExpertJob,
         expert_lease: DistributedExpertLease,
         results: list[DistributedExpertResult],
@@ -1092,6 +1100,7 @@ class ExpertJobRepository:
         rejection = ExpertJobRepository._authority_rejection(
             run,
             run_lease,
+            attempt,
             job,
             expert_lease,
             worker_id,
@@ -1118,6 +1127,7 @@ class ExpertJobRepository:
     def _authority_rejection(
         run: DistributedRun,
         run_lease: DistributedLease,
+        attempt: DistributedRunAttempt,
         job: DistributedExpertJob,
         expert_lease: DistributedExpertLease,
         worker_id: str,
@@ -1128,13 +1138,11 @@ class ExpertJobRepository:
             ExpertJobRepository._assert_job_binding(run, job)
         except ExpertFencingViolation:
             return "policy_binding_mismatch"
-        if (
-            run_lease.fencing_token != job.parent_fencing_token
-            or run_lease.owner is None
-            or run_lease.expires_at is None
-            or run_lease.expires_at <= now
-            or run.status not in {RunStatus.RUNNING, RunStatus.WAITING_EXPERT}
-        ):
+        try:
+            ExpertJobRepository._assert_parent_authority(
+                run, run_lease, attempt, job.parent_fencing_token, now,
+            )
+        except ExpertFencingViolation:
             return "parent_stale"
         if job.deadline_at <= now:
             return "deadline_expired"
@@ -1253,7 +1261,12 @@ class ExpertJobRepository:
             raise ExpertFencingViolation(
                 f"parent run is not active: {run.status}"
             )
-        if attempt.finished_at is not None or attempt.worker_id != lease.owner:
+        if (
+            attempt.fencing_token != token
+            or attempt.status != RunStatus.RUNNING
+            or attempt.finished_at is not None
+            or attempt.worker_id != lease.owner
+        ):
             raise ExpertFencingViolation("parent attempt is not active")
         if attempt.deadline_at <= now:
             raise ExpertFencingViolation("parent deadline has expired")
@@ -1335,6 +1348,8 @@ class ExpertJobRepository:
             select(DistributedExpertJob)
             .where(DistributedExpertJob.id == job_id)
             .with_for_update()
+            # identity 在等锁前已读入；锁返回后必须覆盖 ORM 缓存中的旧状态。
+            .execution_options(populate_existing=True)
         )
         if job is None:
             raise LookupError(f"expert job {job_id} does not exist")
