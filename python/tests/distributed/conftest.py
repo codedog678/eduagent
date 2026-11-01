@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 
 @pytest_asyncio.fixture
-async def repo():
+async def raw_repo():
     from core.distributed import expert_models  # noqa: F401
     from core.distributed.models import DistributedBase
     from core.distributed.repository import DistributedRunRepository
@@ -45,6 +45,16 @@ async def repo():
     async with engine.begin() as conn:
         await conn.run_sync(DistributedBase.metadata.drop_all)
     await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def repo(raw_repo):
+    # Existing M1/M2 regressions need the production snapshot for new admission,
+    # but must keep their pre-migration expert schema for backfill tests.
+    from tests.distributed.helpers import bootstrap_production
+
+    await bootstrap_production(raw_repo)
+    return raw_repo
 
 
 @pytest_asyncio.fixture

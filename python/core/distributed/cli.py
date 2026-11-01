@@ -33,7 +33,7 @@ def parser() -> argparse.ArgumentParser:
         description="EduAgent distributed run-plane process",
     )
     subcommands = value.add_subparsers(dest="command", required=True)
-    subcommands.add_parser("dispatcher")
+    subcommands.add_parser("dispatcher", help="publish production, rehearsal and deployment topics to isolated streams")
     subcommands.add_parser("worker")
     subcommands.add_parser("reaper")
     subcommands.add_parser("expert-dispatcher")

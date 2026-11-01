@@ -88,6 +88,49 @@ class PromotionRepository:
 
         return judge_protocol_digest()
 
+    async def freeze_if_current(
+        self, session: AsyncSession, deployment_id: str, version: int,
+    ) -> bool:
+        """Freeze a failed admission snapshot in the caller's surviving transaction."""
+        current = await session.get(PolicyDeploymentRecord, deployment_id)
+        if current is None:
+            return False
+        head = await session.scalar(select(PolicyEnvironmentHeadRecord).where(
+            PolicyEnvironmentHeadRecord.environment == current.environment
+        ).with_for_update().execution_options(populate_existing=True))
+        if (head is None or head.current_deployment_id != deployment_id
+            or head.current_version != version or current.state == "frozen"):
+            return False
+        now = self.clock()
+        command_id = f"admission-freeze-{deployment_id}-{version}"
+        frozen = PolicyDeploymentRecord(
+            deployment_id=str(uuid4()), environment=current.environment, version=version + 1,
+            state="frozen", candidate_policy_hash=current.candidate_policy_hash,
+            stable_policy_hash=current.stable_policy_hash,
+            previous_stable_deployment_id=current.previous_stable_deployment_id,
+            traffic_basis_points=0, assignment_salt_id=current.assignment_salt_id,
+            thresholds=current.thresholds, thresholds_hash=current.thresholds_hash,
+            required_receipts=current.required_receipts, command_id=command_id,
+            actor="run-admission", reason="selected artifact unavailable or incompatible", created_at=now,
+        )
+        session.add(frozen)
+        await session.flush()
+        head.current_deployment_id, head.current_version = frozen.deployment_id, frozen.version
+        head.updated_at = now
+        session.add(PolicyAuditEventRecord(
+            event_id=str(uuid4()), environment=current.environment,
+            deployment_id=frozen.deployment_id, event_type="admission_artifact_rejected",
+            command_id=command_id, actor="run-admission", reason=frozen.reason,
+            details={"failed_deployment_id": deployment_id, "failed_version": version}, created_at=now,
+        ))
+        session.add(DistributedOutbox(
+            event_key=f"policy:{frozen.deployment_id}:changed", topic="policy.deployment.changed",
+            payload={"environment": current.environment, "deployment_id": frozen.deployment_id,
+                     "version": frozen.version}, created_at=now, publish_attempts=0,
+        ))
+        await session.flush()
+        return True
+
     async def register_qualification(
         self,
         material: QualificationMaterial,

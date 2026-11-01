@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager, suppress
 
+from .repository import PRODUCTION_RUN_TOPICS, REHEARSAL_RUN_TOPICS
+
 
 class OutboxDispatcher:
     def __init__(
@@ -12,6 +14,8 @@ class OutboxDispatcher:
         *,
         tracer=None,
         metrics=None,
+        rehearsal_broker=None,
+        deployment_broker=None,
     ) -> None:
         if batch_size < 1:
             raise ValueError("batch_size must be positive")
@@ -20,10 +24,15 @@ class OutboxDispatcher:
         self.batch_size = batch_size
         self.tracer = tracer
         self.metrics = metrics
+        self.routes = {topic: broker for topic in PRODUCTION_RUN_TOPICS}
+        if rehearsal_broker is not None:
+            self.routes.update({topic: rehearsal_broker for topic in REHEARSAL_RUN_TOPICS})
+        if deployment_broker is not None:
+            self.routes["policy.deployment.changed"] = deployment_broker
 
     @asynccontextmanager
     async def _publish_span(self, row):
-        if self.tracer is None:
+        if self.tracer is None or row.topic == "policy.deployment.changed":
             yield None
             return
         run = await self.repository.get(row.payload["run_id"])
@@ -48,11 +57,11 @@ class OutboxDispatcher:
             gauge.set(await self.broker.pending_count())
 
     async def dispatch_once(self) -> int:
-        rows = await self.repository.pending_outbox(self.batch_size)
+        rows = await self.repository.pending_outbox(self.batch_size, topics=tuple(self.routes))
         published = 0
         for row in rows:
             async with self._publish_span(row):
-                await self.broker.publish(row.event_key, row.payload)
+                await self.routes[row.topic].publish(row.event_key, row.payload)
                 await self.repository.mark_outbox_published(
                     row.id,
                     row.event_key,

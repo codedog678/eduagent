@@ -7,6 +7,8 @@ from prometheus_client import CONTENT_TYPE_LATEST
 
 from core.distributed.contracts import DistributedRunRequest
 from core.distributed.repository import RequestConflict
+from core.distributed.policy_assignment import ArtifactUnavailable, InvalidRehearsalToken, RehearsalTokenConflict
+from sqlalchemy.exc import SQLAlchemyError
 
 router = APIRouter()
 metrics_router = APIRouter()
@@ -16,13 +18,23 @@ metrics_router = APIRouter()
 async def submit_run(spec: DistributedRunRequest, request: Request):
     runtime = request.app.state.distributed
     try:
-        run, replayed = await runtime.repository.accept_with_replay(spec)
+        run, replayed = await runtime.repository.accept_with_replay(
+            spec, rehearsal_token=request.headers.get("X-EduAgent-Rehearsal")
+        )
     except RequestConflict as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    except InvalidRehearsalToken:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid rehearsal token") from None
+    except RehearsalTokenConflict:
+        raise HTTPException(status.HTTP_409_CONFLICT, "rehearsal token expired or already consumed") from None
+    except (ArtifactUnavailable, SQLAlchemyError, OSError, TimeoutError):
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE,
+                            "run admission temporarily unavailable", headers={"Retry-After": "1"}) from None
     if replayed:
         runtime.metrics.idempotency_hits.labels(scope="request").inc()
     return {
         "run_id": run.id,
+        "policy_binding": run.public_policy_binding(),
         "status": run.status,
         "status_url": f"/api/distributed/runs/{run.id}",
         "trace_url": f"/api/distributed/runs/{run.id}/trace",

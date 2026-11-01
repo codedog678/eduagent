@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+import hashlib
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
@@ -10,6 +11,13 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from .contracts import DistributedRunRequest, RunStatus
+from .policy_assignment import ArtifactUnavailable, PolicyAssigner, RehearsalTokenConflict
+from .promotion_contracts import PolicyExecutionBinding
+from .promotion_models import PolicyDeploymentRecord, PolicyEnvironmentHeadRecord, RehearsalTokenNonceRecord
+from .promotion_repository import PromotionRepository
+
+PRODUCTION_RUN_TOPICS = ("run.accepted", "run.retry", "run.cancelled")
+REHEARSAL_RUN_TOPICS = ("run.rehearsal.accepted", "run.rehearsal.retry", "run.rehearsal.cancelled")
 from .models import (
     DistributedInbox,
     DistributedLease,
@@ -43,6 +51,7 @@ class RunClaim:
     attempt_count: int
     fencing_token: int
     deadline_at: datetime
+    policy_binding: PolicyExecutionBinding
 
     def to_request(self) -> DistributedRunRequest:
         return DistributedRunRequest(
@@ -60,12 +69,14 @@ class DistributedRunRepository:
         clock: Callable[[], datetime] | None = None,
         max_attempts: int = 3,
         parent_timeout_seconds: float = 120,
+        policy_assigner: PolicyAssigner | None = None,
     ) -> None:
         if max_attempts < 1:
             raise ValueError("max_attempts must be positive")
         if parent_timeout_seconds <= 0:
             raise ValueError("parent_timeout_seconds must be positive")
         self.session_factory = session_factory
+        self.policy_assigner = policy_assigner or PolicyAssigner()
         self.clock = clock or (lambda: datetime.now(UTC))
         self.max_attempts = max_attempts
         self.parent_timeout_seconds = parent_timeout_seconds
@@ -77,63 +88,84 @@ class DistributedRunRepository:
     async def accept_with_replay(
         self,
         spec: DistributedRunRequest,
+        *,
+        rehearsal_token: str | None = None,
     ) -> tuple[DistributedRun, bool]:
-        run_id = new_id()
-        trace_id = uuid4().hex
+        # Lock the logical request before verifying/consuming tokens. Replays must
+        # return the original binding even when their replacement token is invalid.
+        request_key = hashlib.sha256(
+            f"{spec.learner_id}\x00{spec.request_id}".encode()
+        ).digest()
+        failure = None
         async with self.session_factory() as session, session.begin():
-            now = await self._db_now(session)
-            inserted_id = await session.scalar(
-                pg_insert(DistributedRun)
-                .values(
-                    id=run_id,
-                    learner_id=spec.learner_id,
-                    request_id=spec.request_id,
-                    operation=spec.operation,
-                    input_hash=spec.input_hash,
-                    payload=spec.payload.model_dump(mode="json"),
-                    status=RunStatus.ACCEPTED,
-                    trace_id=trace_id,
-                    attempt_count=0,
-                    created_at=now,
-                    updated_at=now,
-                )
-                .on_conflict_do_nothing(
-                    index_elements=["learner_id", "request_id"]
-                )
-                .returning(DistributedRun.id)
-            )
-            if inserted_id is None:
-                existing = await session.scalar(
-                    select(DistributedRun).where(
-                        DistributedRun.learner_id == spec.learner_id,
-                        DistributedRun.request_id == spec.request_id,
-                    )
-                )
-                if existing is None or existing.input_hash != spec.input_hash:
-                    raise RequestConflict(
-                        "request_id is already bound to different input"
-                    )
+            await session.execute(select(func.pg_advisory_xact_lock(
+                int.from_bytes(request_key[:8], "big", signed=True)
+            )))
+            existing = await session.scalar(select(DistributedRun).where(
+                DistributedRun.learner_id == spec.learner_id,
+                DistributedRun.request_id == spec.request_id,
+            ))
+            if existing is not None:
+                if existing.input_hash != spec.input_hash:
+                    raise RequestConflict("request_id is already bound to different input")
                 return existing, True
-
-            run = await self._locked_run(session, run_id)
-            session.add(
-                DistributedLease(
-                    run_id=run_id,
-                    owner=None,
-                    fencing_token=0,
-                    expires_at=None,
-                    updated_at=now,
-                )
-            )
-            session.add(
-                self._outbox(
-                    run_id,
-                    "accepted",
-                    "run.accepted",
-                    now,
-                )
-            )
-            return run, False
+            now = await self._db_now(session)
+            claims = (self.policy_assigner.verify(rehearsal_token, spec, now)
+                      if rehearsal_token is not None else None)
+            deployment = None
+            try:
+                # Roll back nonce + all run writes on validation failure, but keep
+                # the surrounding transaction alive for a durable CAS freeze.
+                async with session.begin_nested():
+                    if claims is not None:
+                        nonce_id = await session.scalar(
+                            pg_insert(RehearsalTokenNonceRecord).values(
+                                nonce_digest=hashlib.sha256(claims.nonce.encode()).hexdigest(),
+                                rehearsal_id=claims.rehearsal_id, expires_at=claims.expires_at,
+                                consumed_at=now, created_at=now,
+                            ).on_conflict_do_nothing().returning(RehearsalTokenNonceRecord.nonce_digest)
+                        )
+                        if nonce_id is None:
+                            raise RehearsalTokenConflict()
+                    environment = "rehearsal" if claims else "production"
+                    head = await session.scalar(select(PolicyEnvironmentHeadRecord).where(
+                        PolicyEnvironmentHeadRecord.environment == environment
+                    ).with_for_update())
+                    if head is None:
+                        raise ArtifactUnavailable()
+                    deployment = await session.get(PolicyDeploymentRecord, head.current_deployment_id)
+                    if deployment is None:
+                        raise ArtifactUnavailable()
+                    # Capture identity before rollback expires ORM objects.
+                    deployment_id, deployment_version = deployment.deployment_id, deployment.version
+                    if deployment.version != head.current_version:
+                        raise ArtifactUnavailable()
+                    binding = await self.policy_assigner.bind(session, deployment, spec, claims)
+                    fixed = binding.model_dump(mode="json")
+                    run = DistributedRun(
+                        id=new_id(), learner_id=spec.learner_id, request_id=spec.request_id,
+                        operation=spec.operation, input_hash=spec.input_hash,
+                        payload=spec.payload.model_dump(mode="json"), status=RunStatus.ACCEPTED,
+                        trace_id=uuid4().hex, attempt_count=0, created_at=now, updated_at=now,
+                        policy_binding=fixed,
+                        **{key: value for key, value in fixed.items() if key not in {"environment", "components"}},
+                    )
+                    session.add(run)
+                    await session.flush()
+                    session.add(DistributedLease(run_id=run.id, owner=None,
+                        fencing_token=0, expires_at=None, updated_at=now))
+                    session.add(self._outbox(run.id, "accepted", self._run_topic(run, "accepted"), now))
+                    await session.flush()
+            except ArtifactUnavailable as exc:
+                if deployment is not None:
+                    await PromotionRepository(self.session_factory).freeze_if_current(
+                        session, deployment_id, deployment_version
+                    )
+                failure = exc
+        if failure is not None:
+            # Raise only after the outer transaction commits the freeze.
+            raise failure
+        return run, False
 
     async def get(self, run_id: str) -> DistributedRun | None:
         async with self.session_factory() as session:
@@ -431,7 +463,7 @@ class DistributedRunRepository:
                     self._outbox(
                         run_id,
                         f"retry:{token}",
-                        "run.retry",
+                        self._run_topic(run, "retry"),
                         now,
                     )
                 )
@@ -469,7 +501,7 @@ class DistributedRunRepository:
                 self._outbox(
                     run_id,
                     "cancelled",
-                    "run.cancelled",
+                    self._run_topic(run, "cancelled"),
                     now,
                 )
             )
@@ -478,11 +510,13 @@ class DistributedRunRepository:
     async def pending_outbox(
         self,
         limit: int,
+        *,
+        topics: tuple[str, ...] = PRODUCTION_RUN_TOPICS,
     ) -> list[DistributedOutbox]:
         async with self.session_factory() as session, session.begin():
             rows = await session.scalars(
                 select(DistributedOutbox)
-                .where(DistributedOutbox.published_at.is_(None))
+                .where(DistributedOutbox.published_at.is_(None), DistributedOutbox.topic.in_(topics))
                 .order_by(DistributedOutbox.created_at)
                 .limit(limit)
                 .with_for_update(skip_locked=True)
@@ -599,7 +633,7 @@ class DistributedRunRepository:
                         self._outbox(
                             run.id,
                             f"retry:{token}",
-                            "run.retry",
+                            self._run_topic(run, "retry"),
                             database_now,
                         )
                     )
@@ -855,6 +889,20 @@ class DistributedRunRepository:
             )
 
     @staticmethod
+    def _run_topic(run: DistributedRun, event: str) -> str:
+        return f"run.rehearsal.{event}" if run.state_namespace != "production" else f"run.{event}"
+
+    @staticmethod
+    def _persisted_binding(run: DistributedRun) -> PolicyExecutionBinding:
+        from pydantic import ValidationError
+
+        try:
+            return PolicyExecutionBinding.model_validate(run.policy_binding)
+        except (ValidationError, TypeError):
+            # Unknown legacy assignments are never silently executed as builtin.
+            raise ArtifactUnavailable() from None
+
+    @staticmethod
     def _claim_from(
         run: DistributedRun,
         lease: DistributedLease,
@@ -872,6 +920,7 @@ class DistributedRunRepository:
             attempt_count=run.attempt_count,
             fencing_token=lease.fencing_token,
             deadline_at=attempt.deadline_at,
+            policy_binding=DistributedRunRepository._persisted_binding(run),
         )
 
     @staticmethod

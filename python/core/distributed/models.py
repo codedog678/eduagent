@@ -51,6 +51,7 @@ class DistributedRun(DistributedBase):
             name="fk_distributed_run_effective_policy",
         )
     )
+    policy_binding: Mapped[dict | None] = mapped_column(JSON)
     policy_cohort: Mapped[str | None] = mapped_column(String(16))
     assignment_key_hash: Mapped[str | None] = mapped_column(String(64))
     assignment_reason: Mapped[str | None] = mapped_column(String(128))
@@ -82,6 +83,19 @@ class DistributedRun(DistributedBase):
         Index("ix_distributed_run_status_updated", "status", "updated_at"),
     )
 
+    def public_policy_binding(self) -> dict | None:
+        """Expose assignment identity, never executable artifact components."""
+        if self.policy_binding is None:
+            return None
+        return {
+            key: self.policy_binding[key]
+            for key in (
+                "deployment_id", "environment", "effective_policy_hash",
+                "policy_cohort", "state_namespace", "rehearsal_id",
+                "rehearsal_fault_profile",
+            )
+        }
+
     def public_dict(self) -> dict:
         return {
             "run_id": self.id,
@@ -90,6 +104,7 @@ class DistributedRun(DistributedBase):
             "operation": self.operation,
             "status": self.status,
             "attempt_count": self.attempt_count,
+            "policy_binding": self.public_policy_binding(),
             "result": self.result,
             "error_code": self.error_code,
             "trace_id": self.trace_id,

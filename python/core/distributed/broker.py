@@ -21,6 +21,10 @@ class RedisStreamBroker:
         self.stream = stream
         self.group = group
 
+    def for_stream(self, stream: str, group: str) -> RedisStreamBroker:
+        """Share the connection, not the delivery namespace or worker group."""
+        return RedisStreamBroker(self.redis, stream, group)
+
     async def ping(self) -> bool:
         return bool(await self.redis.ping())
 

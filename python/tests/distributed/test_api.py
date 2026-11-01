@@ -157,3 +157,23 @@ async def test_missing_run_resources_return_404(distributed_client):
     assert status.status_code == 404
     assert trace.status_code == 404
     assert cancel.status_code == 404
+
+
+async def test_invalid_rehearsal_header_is_not_silently_production(distributed_client):
+    response = await distributed_client.post("/api/distributed/runs",
+        json=run_payload("invalid-token"), headers={"X-EduAgent-Rehearsal": "private-invalid-token"})
+    assert response.status_code == 401
+    assert "private-invalid-token" not in response.text
+
+
+async def test_database_failure_returns_sanitized_retryable_503(distributed_app, distributed_client, monkeypatch):
+    from sqlalchemy.exc import OperationalError
+
+    async def unavailable(*args, **kwargs):
+        raise OperationalError("private SQL", {"private": "payload"}, Exception("private-db"))
+
+    monkeypatch.setattr(distributed_app.state.distributed.repository, "accept_with_replay", unavailable)
+    response = await distributed_client.post("/api/distributed/runs", json=run_payload("db-down"))
+    assert response.status_code == 503
+    assert response.headers["Retry-After"] == "1"
+    assert "private" not in response.text

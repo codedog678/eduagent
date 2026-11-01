@@ -164,7 +164,8 @@ def newer_material(
 
 
 @pytest.fixture
-async def promotion_repo(repo):
+async def promotion_repo(raw_repo):
+    repo = raw_repo
     async with repo.session_factory() as session, session.begin():
         head = PolicyDeploymentRecord(
             deployment_id=str(uuid4()),

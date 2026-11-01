@@ -23,6 +23,7 @@ from .metrics import DistributedMetrics
 from .models import DistributedBase
 from .ops_queries import OpsQueries
 from .repository import DistributedRunRepository
+from .policy_assignment import PolicyAssigner
 from .telemetry import DurableTracer, build_optional_otel_tracer
 from .worker_registry import WorkerRegistry
 
@@ -49,6 +50,17 @@ class DistributedRuntime:
         self.session_factory = session_factory
         self.repository = repository
         self.broker = broker
+        self.rehearsal_broker = RedisStreamBroker(
+            broker.redis,
+            getattr(settings_obj, "promotion_rehearsal_stream", "eduagent:rehearsal-runs"),
+            getattr(settings_obj, "promotion_rehearsal_consumer_group", "eduagent-rehearsal-run-workers"),
+        )
+        # Control events have no run_id and never go through a Run worker group.
+        self.deployment_broker = RedisStreamBroker(
+            broker.redis,
+            getattr(settings_obj, "distributed_stream", "eduagent:runs") + ":policy-deployments",
+            "eduagent-policy-deployment-events",
+        )
         self.expert_broker = RedisStreamBroker(
             broker.redis,
             settings_obj.expert_stream,
@@ -106,6 +118,8 @@ class DistributedRuntime:
             self.settings.distributed_outbox_batch_size,
             tracer=self.tracer,
             metrics=self.metrics,
+            rehearsal_broker=self.rehearsal_broker,
+            deployment_broker=self.deployment_broker,
         )
 
     def reaper(self) -> LeaseReaper:
@@ -241,6 +255,14 @@ def build_runtime(settings_obj=settings) -> DistributedRuntime:
         parent_timeout_seconds=(
             settings_obj.distributed_attempt_timeout_seconds
         ),
+        policy_assigner=PolicyAssigner(
+            signing_secret=(settings_obj.promotion_rehearsal_secret.get_secret_value().encode()
+                            if settings_obj.promotion_enabled else None),
+            assignment_secret=(settings_obj.promotion_assignment_secret.get_secret_value().encode()
+                               if settings_obj.promotion_enabled else None),
+            allow_fault_injection=settings_obj.promotion_fault_injection_enabled,
+            settings_obj=settings_obj,
+        ),
     )
     broker = RedisRunBroker(
         Redis.from_url(
@@ -328,6 +350,7 @@ async def upgrade_m3_schema(connection) -> None:
         "state_namespace": "VARCHAR(128)",
         "rehearsal_id": "VARCHAR(128)",
         "rehearsal_fault_profile": "VARCHAR(32) DEFAULT 'none'",
+        "policy_binding": "JSON",
     }
     expert_columns = {
         "deployment_id": "VARCHAR(36)",
@@ -347,6 +370,13 @@ async def upgrade_m3_schema(connection) -> None:
                 f"ADD COLUMN IF NOT EXISTS {name} {sql_type}"
             )
         )
+
+    # Transactional DDL holds the table lock until the trigger is reinstalled.
+    # This permits one-time NULL-binding backfill when upgrading a Task4 schema
+    # or a partially migrated schema, without exposing mutable live bindings.
+    await connection.execute(text(
+        "DROP TRIGGER IF EXISTS trg_distributed_run_binding_immutable ON distributed_runs"
+    ))
 
     now = datetime.now(UTC)
     await connection.execute(
@@ -532,6 +562,25 @@ async def upgrade_m3_schema(connection) -> None:
             },
         )
 
+    # Historical builtin Runs get explicit frozen components, never a mutable
+    # head lookup at claim time. Unknown legacy hashes remain non-executable.
+    await connection.execute(
+        text(
+            "UPDATE distributed_runs AS runs SET policy_binding = json_build_object("
+            "'deployment_id', runs.deployment_id, 'environment', deployments.environment, "
+            "'effective_policy_hash', runs.effective_policy_hash, "
+            "'components', CAST(:components AS JSON), 'policy_cohort', runs.policy_cohort, "
+            "'assignment_key_hash', runs.assignment_key_hash, "
+            "'assignment_reason', runs.assignment_reason, 'state_namespace', runs.state_namespace, "
+            "'rehearsal_id', runs.rehearsal_id, "
+            "'rehearsal_fault_profile', runs.rehearsal_fault_profile) "
+            "FROM policy_deployments AS deployments "
+            "WHERE runs.deployment_id = deployments.deployment_id "
+            "AND runs.policy_binding IS NULL AND runs.effective_policy_hash = :policy_hash"
+        ),
+        {"components": json.dumps(BUILTIN_POLICY_COMPONENTS), "policy_hash": BUILTIN_POLICY_HASH},
+    )
+
     defaults = {
         "deployment_id": PRODUCTION_DEPLOYMENT_ID,
         "effective_policy_hash": BUILTIN_POLICY_HASH,
@@ -685,7 +734,8 @@ async def upgrade_m3_schema(connection) -> None:
         text(
             "CREATE OR REPLACE FUNCTION reject_run_binding_change() "
             "RETURNS trigger AS $$ BEGIN "
-            "IF NEW.deployment_id IS DISTINCT FROM OLD.deployment_id "
+            "IF NEW.policy_binding::jsonb IS DISTINCT FROM OLD.policy_binding::jsonb "
+            "OR NEW.deployment_id IS DISTINCT FROM OLD.deployment_id "
             "OR NEW.effective_policy_hash IS DISTINCT FROM "
             "OLD.effective_policy_hash "
             "OR NEW.policy_cohort IS DISTINCT FROM OLD.policy_cohort "
