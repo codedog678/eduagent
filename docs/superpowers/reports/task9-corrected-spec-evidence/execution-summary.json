@@ -1,0 +1,141 @@
+{
+  "role": "fresh independent reviewer executions; not implementer reruns",
+  "raw_xml": {
+    "all-api.xml": {
+      "counts": {
+        "tests": 104,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "sha256": "7a84e06e589a757189ff44b1e0aa70039990dd1d3da916f15c3b065229ea7c34"
+    },
+    "fresh-attacks.xml": {
+      "counts": {
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "sha256": "986b6f7faacd5fd57c0e71edde12e14d41ad53251c486dfa04acc67f1a99d21e"
+    },
+    "ui-40.xml": {
+      "counts": {
+        "tests": 40,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "sha256": "54933b2920c6dc88c2a83de605a9b1a0db62eddb72b040c5168f21c93c31af9a"
+    },
+    "live-failed.xml": {
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "sha256": "2f6610c110845f8f67940f31d0af3ab44db1fdc75dc7e0215e070a68df262bb5"
+    },
+    "live-unknown.xml": {
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "sha256": "f5d302f1ac3f9d3a4c57fb8b3730a3c18b5c8604e5159254f443c7f5e2f09373"
+    },
+    "live-run-detail-unknown.xml": {
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "sha256": "8c09241b9faf2b7adee3d783eb4bd2f0cb8c57ec8d842d60ba7d6ef314c4e8bc"
+    }
+  },
+  "total_test_executions": 179,
+  "api_test_executions": 127,
+  "browser_test_executions": 52,
+  "real_pg_production_browser_executions": 12,
+  "dist_sha256": "dee1c3dbd3260679fa5c5caaf53e0f4f9cd3fde47fccbed80ee976fefa58060f",
+  "dist_files": {
+    "index.html": "47b479397ae19a75206b7ef4c81f993381a8868ce726e598d8d5fc3349aeae65",
+    "ops/index.html": "b74c2cb6807288faa4f14d8adc835d50620cc5e2ac64eb8523c8cf05762e5807",
+    "assets/index-CKgg64cC.js": "2b1d97afd8db785e286a93b6ff647feb7815f98c8b3851dd0df3a46fcde0e51a",
+    "assets/ops-BG3zPoxm.css": "4f3070753582aa2f0a5e82bd28b182212feeb9724a92bf7aee5ae14a2a0c75e6",
+    "assets/learning-DZQWMO5z.js": "7a3138621253dcde02291289eb206d40a1c0e162e44b02bb434d3d4371aa1493",
+    "assets/ops-Co7cP2zo.js": "e0950f399c891f14001b316781714e19ed59beb4702a5b3fffbce3959b848052"
+  },
+  "database_audit": {
+    "command": [
+      "/opt/homebrew/opt/postgresql@16/bin/psql",
+      "-h",
+      "127.0.0.1",
+      "-p",
+      "55432",
+      "-U",
+      "postgres",
+      "-d",
+      "postgres",
+      "-Atc",
+      "SELECT datname FROM pg_database WHERE datname LIKE 'm3_t9_cspec_%';"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "listener_audit": {
+    "command": [
+      "lsof",
+      "-nP",
+      "-iTCP:33290",
+      "-iTCP:33291",
+      "-sTCP:LISTEN"
+    ],
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  "redis_prefix_audit": {
+    "command": [
+      "redis-cli",
+      "-h",
+      "127.0.0.1",
+      "-p",
+      "56379",
+      "-n",
+      "0",
+      "--scan",
+      "--pattern",
+      "m3_t9_cspec_*"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "redis_deleted_keys": [],
+  "redis_used_by_targeted_tests": false,
+  "server_exit_codes": {
+    "failed": 143,
+    "unknown": 143
+  },
+  "server_exit_explanation": "intentional TERM; EXIT traps dropped owned databases and snapshotted",
+  "deleted_owned_paths": [
+    "/tmp/m3-task9-corrected-spec-20261102/frontend",
+    "/tmp/m3-task9-corrected-spec-20261102/npm-cache",
+    "/tmp/m3-task9-corrected-spec-20261102/pycache",
+    "/tmp/m3-task9-corrected-spec-20261102/pytest-cache",
+    "/tmp/m3-task9-corrected-spec-20261102/vite-cache",
+    "/tmp/m3-task9-corrected-spec-20261102/playwright-ui",
+    "/tmp/m3-task9-corrected-spec-20261102/playwright-live-failed",
+    "/tmp/m3-task9-corrected-spec-20261102/playwright-live-unknown",
+    "/tmp/m3-task9-corrected-spec-20261102/playwright-live-run-detail-unknown",
+    "/tmp/m3-task9-corrected-spec-20261102/live-runner.pid",
+    "/tmp/m3-task9-corrected-spec-20261102/prepare.sh"
+  ],
+  "retained": "own evidence only; raw XML/log/scripts/config/SHA/screenshots/snapshots",
+  "cleanup_assertions": "no own DBs, listeners, Redis prefix keys, caches/dependencies/dist/PID"
+}
