@@ -32,9 +32,8 @@ from core.distributed.expert_gateway import DurableExpertGateway
 from core.distributed.expert_models import DistributedExpertResult
 from core.distributed.expert_repository import ExpertJobRepository
 from core.distributed.expert_worker import ExpertWorker
-from core.distributed.models import DistributedBase
 from core.distributed.repository import DistributedRunRepository
-from core.distributed.runtime import upgrade_m1_schema
+from core.distributed.runtime import migrate_schema
 from core.llm_service import get_llm_service
 from api.orchestrator import AgentOrchestrator
 from core.harness import LearningHarness
@@ -111,9 +110,8 @@ async def main(args: argparse.Namespace) -> int:
     measured_job_ids: list[str] = []
 
     try:
-        async with engine.begin() as connection:
-            await connection.run_sync(DistributedBase.metadata.create_all)
-            await upgrade_m1_schema(connection, 120)
+        # 基准数据库由脚本独占，使用完整迁移以保持与工作进程相同的启动协议。
+        await migrate_schema(engine, 120)
         await broker.reset_for_tests()
         await broker.ensure_group()
         recording_engine = RecordingEngine(

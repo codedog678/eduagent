@@ -206,12 +206,24 @@ open http://localhost:3000/ops/
 `distributed-api`；Console 在当前标签页的 session storage 中保存输入值。
 生产环境应覆盖 `OPS_API_TOKEN`，并通过反向代理限制 `/ops/*`。
 
-真实故障演示和固定 template 的控制面基准：
+真实故障演示和固定 template 的控制面基准需在已安装 `python[dev]` 的
+Python 3.11 环境运行。脚本为每次执行创建独立数据库，连接账号需有
+`CREATE DATABASE` 权限，指定的管理数据库需已存在：
 
 ```bash
+export DISTRIBUTED_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/edu_agent
+export DISTRIBUTED_REDIS_URL=redis://localhost:6379/15
+export LLM_PROVIDER=template
+export MEMORY_RETRIEVAL_MODE=lexical
+export MEMORY_WORKER_ENABLED=false
 python tools/demo_expert_failover.py
 python tools/benchmark_expert_plane.py --requests 30 --concurrency 4
 ```
+
+本机 PostgreSQL/Redis 使用其他端口时替换上述 URL。脚本在独立数据库内完成
+当前 schema 迁移和策略引导，执行结束自动删除数据库与专用 Redis stream。
+M3 兼容修复的实跑结果与原始失败见
+[演示启动验证](docs/superpowers/reports/2026-11-01-m3-demo-startup.md)。
 
 演示强杀第一个 Expert Worker，验证第二个 Worker 使用更高 token 接管且只有
 一个 accepted result。基准报告 enqueue-to-start、端到端 p50/p95、吞吐、

@@ -30,9 +30,8 @@ from core.distributed.expert_models import (
 )
 from core.distributed.expert_reaper import ExpertReaper
 from core.distributed.expert_repository import ExpertJobRepository
-from core.distributed.models import DistributedBase
 from core.distributed.repository import DistributedRunRepository
-from core.distributed.runtime import upgrade_m1_schema
+from core.distributed.runtime import migrate_schema
 from core.harness_migrations import migrate
 from expert_plane_support import (
     expert_request,
@@ -84,11 +83,8 @@ async def main() -> int:
             migrate(connection)
         learner_before = _learner_state(learner_store)
         try:
-            async with engine.begin() as connection:
-                await connection.run_sync(
-                    DistributedBase.metadata.create_all
-                )
-                await upgrade_m1_schema(connection, 120)
+            # 演示数据库由脚本独占，先完成策略引导与版本迁移，再启动工作进程。
+            await migrate_schema(engine, 120)
             await broker.reset_for_tests()
             await broker.ensure_group()
 

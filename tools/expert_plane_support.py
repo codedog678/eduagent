@@ -30,6 +30,7 @@ from core.distributed.expert_contracts import (
     ExpertSnapshot,
     RunExecutionAuthority,
 )
+from core.distributed.promotion_contracts import PolicyExecutionBinding
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -182,6 +183,8 @@ def expert_request(
     logical_key: str,
     role: ExpertRole = ExpertRole.ASSESSMENT,
 ) -> ExpertJobRequest:
+    # 专家快照与权限必须继承已受理 Run 的固定版本，不能另外指定演示策略。
+    binding = PolicyExecutionBinding.model_validate(claim.policy_binding)
     deadline = min(
         claim.deadline_at,
         datetime.now(UTC) + timedelta(seconds=60),
@@ -199,7 +202,9 @@ def expert_request(
             knowledge_id="grammar_tenses",
             current_input="Explain when to use the present perfect.",
             goal="Assess tense understanding",
-            effective_policy_hash="a" * 64,
+            effective_policy_hash=binding.effective_policy_hash,
+            deployment_id=binding.deployment_id,
+            state_namespace=binding.state_namespace,
         ),
         budget=ExpertBudget(
             max_model_calls=3,
@@ -216,6 +221,11 @@ def expert_request(
             attempt_number=claim.attempt_count,
             worker_id="evidence-parent",
             parent_deadline_at=claim.deadline_at,
+            deployment_id=binding.deployment_id,
+            effective_policy_hash=binding.effective_policy_hash,
+            policy_cohort=binding.policy_cohort,
+            state_namespace=binding.state_namespace,
+            rehearsal_id=binding.rehearsal_id,
         ),
     )
 
