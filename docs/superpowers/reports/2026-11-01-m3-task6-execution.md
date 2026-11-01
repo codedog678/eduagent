@@ -1,8 +1,35 @@
 # M3 Task6 Execution Evidence
 
-Status: implemented, pending independent review. Task7 is not started.
+Status: Task6 independently reviewed and accepted after the corrections below.
+Task7 is not started.
 Branch: `feature/m3-trusted-policy-promotion`.
 Base revision: `5b8c2b7`.
+
+## Independent Review Closure
+
+The first Task6 review found a completed-PostgreSQL-step replay bypass and a
+startup DDL deadlock. Task6 was not accepted on its initial green suite.
+
+- `ed6652641bf64f080914a87edf85cbea9f4fc35e` closes the result-binding bypass.
+  Independent review passed with 216 relevant tests, zero skips and one
+  startup-owned test deselected, plus supplementary worker/outbox and SQLite
+  replay probes. Cached and fresh results now fail closed at execution and
+  repository commit boundaries.
+- `b391d94d6ee4ec2237964caf52a6c429a36807e0` separates explicit migration from
+  ordinary process startup. Independent review passed with 24 real
+  PostgreSQL/Redis startup tests, zero skips, and two CI-settings probes.
+  Startup core and test blobs matched the reviewed commit.
+- The final CI-style distributed/process matrix reports 576 passed, zero
+  skips. The preceding frozen combined backend run reports 1129 passed, zero
+  skips. Counts overlap and are not additive. See the
+  [startup correction report](2026-11-01-m3-schema-startup.md) for commands,
+  source hashes, historical failures and verification boundaries.
+
+Both review findings are closed. Migration still requires drained traffic;
+Docker validation remains static YAML validation. Legacy payloads/results
+remain historical evidence and are not silently rebound. No formal policy
+qualification, model evaluation, Shadow implementation or broader project
+completion is claimed by Task6 acceptance.
 
 ## Implemented Boundaries
 
