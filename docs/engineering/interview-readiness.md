@@ -1,8 +1,9 @@
 # EduAgent 技术面试证据索引
 
 核对日期：2026-11-01。当前索引覆盖已验收的 M1、M2、M3 Tasks1–7，
-以及 `0b2247b` 的演示兼容修复。M3 健康评估正在实现，Policies 页面和
-完整灰度演练尚待验收；最终交付时需重新核对本页与实际代码、运行证据。
+以及 `0b2247b` 的演示兼容修复。Task8 健康评估已实现并冻结于 `b9924dc`，
+完整后端 1350 项通过、失败/错误/跳过均为零，仍待两阶段独立审查。
+Policies 页面和完整灰度演练尚待验收；最终交付时需重新核对本页与实际代码、运行证据。
 
 项目适合从三个问题展开：如何可靠执行 Agent，如何保护学习证据，
 如何判断一项算法修改是否值得发布。每个问题都应能定位到机制、
@@ -17,8 +18,10 @@
 | 超时与取消是否真正释放资源？ | 有界预算、deadline、取消 drain 后释放存储锁 | [并发边界](harness-concurrency-20261029.md)、[Shadow 取消与锁审查](../superpowers/reports/2026-11-01-m3-task7-shadow.md) | 不响应取消的内部任务会持续持锁，不能声称强制终止 |
 | 获得提示后答对能否算掌握？ | 首次独立作答与受助证据分离，回复/测验/学习状态同一 SQLite 事务 | [Tutor Harness 回归](../../python/tests/test_tutor_harness.py)、[L05 原始分析](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/analysis.md) | 学习状态模型与教学效果实验是不同层次 |
 | Judge 输出格式正确是否就可信？ | v3 verdict/reason/criterion/evidence 一致性校验，一次 repair，失败归 unknown；[Judge v3](../../python/evals/optimization/judge_v3.py) | [v3 测试](../../python/tests/evals/test_judge_v3.py)、[评分重放](../../python/evals/optimization/gates.py) | schema 有效不证明语义正确；unknown 不授予资格 |
-| 如何避免新旧策略混跑？ | 受理时固定 policy/deployment/namespace，尝试与专家继承；[policy_assignment](../../python/core/distributed/policy_assignment.py) | [版本固定回归](../../python/tests/distributed/test_policy_pinning.py)、[Task6 审查](../superpowers/reports/2026-11-01-m3-task6-execution.md) | 自动回滚只影响新受理 Run，完整回滚闭环仍待 Task8–10 验收 |
+| 如何避免新旧策略混跑？ | 受理时固定 policy/deployment/namespace，尝试与专家继承；[policy_assignment](../../python/core/distributed/policy_assignment.py) | [版本固定回归](../../python/tests/distributed/test_policy_pinning.py)、[Task6 审查](../superpowers/reports/2026-11-01-m3-task6-execution.md) | 自动回滚只影响新受理 Run；Task8 已有旧/新 Run 回归，完整闭环仍待 Task8–10 验收 |
 | 如何证明候选没有污染主状态？ | 无提交权的 Shadow 执行、专用 store 与 stream、文件锁 | [Shadow 回归](../../python/tests/distributed/test_shadow_worker.py)、[Task7 审查及 JUnit](../superpowers/reports/2026-11-01-m3-task7-shadow.md) | 隔离执行证明工程边界，不能证明候选改善教学质量 |
+| 缺少费用或结构判定时能否晋级？ | 全尝试账本、真实判定分子/分母、缺失证据 HOLD；[policy_health](../../python/core/distributed/policy_health.py) | [Task8 实现与冻结测试](../superpowers/reports/2026-11-01-m3-task8-health.md)、[健康回归](../../python/tests/distributed/test_policy_health.py) | fixture 的 Decimal 费用只检验算法；实际费用缺失保持 unknown；独立审查尚未完成 |
+| 两个 evaluator 同时回滚怎么办？ | 同事务冻结观察集合、锁定 head、CAS 更新、审计与 Outbox；旧硬违规不被滚动窗口淘汰 | [Task8 完整 JUnit](../../python/tests/distributed/evidence/2026-11-01-m3-task8-full.xml)、[并发与迟到回归](../../python/tests/distributed/test_policy_health.py) | 1350 项含 38 项 integration、793 项 distributed；当前不能替代完整多进程受控演练 |
 
 ```mermaid
 flowchart LR
@@ -81,7 +84,7 @@ flowchart LR
 
 | 项目 | 当前事实 | 完成所需证据 |
 | --- | --- | --- |
-| 健康与自动回滚 | Task8 实现中 | 冻结观察集合、Decimal/p95、分布匹配、等锁与双 evaluator 测试及两轮独立审查 |
+| 健康与自动回滚 | Task8 `b9924dc`，定向 407 / 完整后端 1350 项通过，均无跳过；独立规格审查进行中 | 独立规格审查通过后再做代码审查；审查发现的缺口需修复、补证据并复审 |
 | Policies 只读界面 | Task9 尚待实现 | 脱敏分页 API、Trace 版本关联、桌面/移动端 Playwright 与生产 build |
 | 真实基础设施闭环 | Task10 尚待实现 | 两 Run Worker、Shadow、health 进程；强杀接管、签名故障、旧/新 Run 与迟到观察的证据 |
 | 正式模型资格 | 现有开发重放与历史评测不满足 Judge v3 资格 | 合格 campaign、独立校准、正式留出与真实模型账本；缺项须记录实际前提，不能生成假回执 |
