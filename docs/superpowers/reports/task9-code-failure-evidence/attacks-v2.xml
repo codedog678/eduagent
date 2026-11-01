@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="21" time="1.596" timestamp="2026-11-01T22:19:59.375852+00:00" hostname="HL41657YW6"><testcase classname="" name="test_current_health_gate_must_not_borrow_previous_deployment_pass" time="0.424" /><testcase classname="" name="test_historical_health_gate_must_not_be_replaced_by_new_deployment" time="0.341"><failure message="RuntimeError: coroutine raised StopIteration">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x109b1fbd0&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x109cf2e10&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x109972bd0&gt;)
+
+    async def test_historical_health_gate_must_not_be_replaced_by_new_deployment(health_repo):
+        repo, _, _ = health_repo
+        old, current, _, _, receipts = await health_pair(health_repo, current_healthy=True)
+        original = next(r for r in receipts if r.details["deployment_id"] == old.deployment_id)
+&gt;       newer = next(r for r in receipts if r.details["deployment_id"] == current.deployment_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+/tmp/m3-task9-code-20261102-5TNycP/test_code_attacks.py:67: StopIteration
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;Coroutine test_historical_health_gate_must_not_be_replaced_by_new_deployment&gt;
+
+    def runtest(self) -&gt; None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        runner = self._request.getfixturevalue(runner_fixture_id)
+        context = contextvars.copy_context()
+        synchronized_obj = _synchronize_coroutine(
+            getattr(*self._synchronization_target_attr), runner, context
+        )
+        with MonkeyPatch.context() as c:
+            c.setattr(*self._synchronization_target_attr, synchronized_obj)
+&gt;           super().runtest()
+
+../../eduagent/.venv/lib/python3.11/site-packages/pytest_asyncio/plugin.py:469: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/pytest_asyncio/plugin.py:716: in inner
+    runner.run(coro, context=context)
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_UnixSelectorEventLoop running=False closed=False debug=False&gt;
+future = &lt;Task finished name='Task-65' coro=&lt;test_historical_health_gate_must_not_be_replaced_by_new_deployment() done, defined at /tmp/m3-task9-code-20261102-5TNycP/test_code_attacks.py:63&gt; exception=RuntimeError('coroutine raised StopIteration')&gt;
+
+    def run_until_complete(self, future):
+        """Run until the Future is done.
+    
+        If the argument is a coroutine, it is wrapped in a Task.
+    
+        WARNING: It would be disastrous to call run_until_complete()
+        with the same coroutine twice -- it would wrap it in two
+        different Tasks and that can't be good.
+    
+        Return the Future's result, or raise its exception.
+        """
+        self._check_closed()
+        self._check_running()
+    
+        new_task = not futures.isfuture(future)
+        future = tasks.ensure_future(future, loop=self)
+        if new_task:
+            # An exception is raised if the future didn't complete, so there
+            # is no need to log the "destroy pending task" message
+            future._log_destroy_pending = False
+    
+        future.add_done_callback(_run_until_complete_cb)
+        try:
+            self.run_forever()
+        except:
+            if new_task and future.done() and not future.cancelled():
+                # The coroutine raised a BaseException. Consume the exception
+                # to not log a warning, the caller doesn't have access to the
+                # local task.
+                future.exception()
+            raise
+        finally:
+            future.remove_done_callback(_run_until_complete_cb)
+        if not future.done():
+            raise RuntimeError('Event loop stopped before Future completed.')
+    
+&gt;       return future.result()
+               ^^^^^^^^^^^^^^^
+E       RuntimeError: coroutine raised StopIteration
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/asyncio/base_events.py:654: RuntimeError</failure></testcase><testcase classname="" name="test_cursor_typed_extremes_and_noncanonical_base64[/ops/policies/deployments]" time="0.127" /><testcase classname="" name="test_cursor_typed_extremes_and_noncanonical_base64[/ops/policies/health-windows]" time="0.121" /><testcase classname="" name="test_cursor_typed_extremes_and_noncanonical_base64[/ops/policies/audit]" time="0.125" /><testcase classname="" name="test_all_duplicate_empty_and_overflow_queries_before_io[/ops/policies/deployments]" time="0.116" /><testcase classname="" name="test_all_duplicate_empty_and_overflow_queries_before_io[/ops/policies/health-windows]" time="0.115" /><testcase classname="" name="test_all_duplicate_empty_and_overflow_queries_before_io[/ops/policies/audit]" time="0.139" /><testcase classname="" name="test_numeric_poison_is_null_not_echoed[True]" time="0.000" /><testcase classname="" name="test_numeric_poison_is_null_not_echoed[False]" time="0.000" /><testcase classname="" name="test_numeric_poison_is_null_not_echoed[value2]" time="0.000" /><testcase classname="" name="test_numeric_poison_is_null_not_echoed[value3]" time="0.000" /><testcase classname="" name="test_numeric_poison_is_null_not_echoed[NaN]" time="0.000" /><testcase classname="" name="test_numeric_poison_is_null_not_echoed[Infinity]" time="0.000" /><testcase classname="" name="test_numeric_poison_is_null_not_echoed[-Infinity]" time="0.000" /><testcase classname="" name="test_numeric_poison_is_null_not_echoed[-1]" time="0.000" /><testcase classname="" name="test_numeric_poison_is_null_not_echoed[1.2.3]" time="0.000" /><testcase classname="" name="test_numeric_poison_is_null_not_echoed[&lt;script&gt;private-anything&lt;/script&gt;]" time="0.000" /><testcase classname="" name="test_numeric_poison_is_null_not_echoed[1; SELECT 1]" time="0.000" /><testcase classname="" name="test_numeric_poison_is_null_not_echoed[\u202e123]" time="0.000" /><testcase classname="" name="test_finite_numbers_and_missing_fields_are_distinct" time="0.000" /></testsuite></testsuites>

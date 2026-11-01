@@ -1,0 +1,1847 @@
+........................................................................ [  4%]
+........................................................................ [  8%]
+........................................................................ [ 12%]
+........................................................................ [ 17%]
+........................................................................ [ 21%]
+........................................................................ [ 25%]
+........................................................................ [ 29%]
+........................................................................ [ 34%]
+..................................F..................................... [ 38%]
+........................................................................ [ 42%]
+........................................................................ [ 47%]
+........................................................................ [ 51%]
+........................................................................ [ 55%]
+........................................................................ [ 59%]
+............FFFFFFFFFFFFF.FFFF.......................................... [ 64%]
+........................................................................ [ 68%]
+........................................................................ [ 72%]
+........................................................................ [ 76%]
+.......................EEEE............................................. [ 81%]
+........................................................................ [ 85%]
+........................................................................ [ 89%]
+........................................................................ [ 94%]
+........................................................................ [ 98%]
+............................                                             [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_killed_expert_worker_gets_higher_token_and_one_result _
+
+    @pytest_asyncio.fixture
+    async def expert_broker():
+        redis_url = os.getenv("DISTRIBUTED_TEST_REDIS_URL")
+        if not redis_url:
+            pytest.skip("DISTRIBUTED_TEST_REDIS_URL is not configured")
+        client = Redis.from_url(redis_url, decode_responses=True)
+        suffix = uuid4().hex
+        broker = RedisStreamBroker(
+            client,
+            f"test:experts:process:{suffix}",
+            f"test-expert-workers-{suffix}",
+        )
+>       await broker.reset_for_tests()
+
+tests/integration/test_expert_failover.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x110d84d90>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:experts:process:aba07a063bb8447fb6b33e19069ebe07')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:experts:process:aba07a063bb8447fb6b33e19069ebe07' = <core.distributed.broker.RedisStreamBroker object at 0x110d84d90>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_____ ERROR at setup of test_killed_parent_makes_late_result_parent_stale ______
+
+    @pytest_asyncio.fixture
+    async def expert_broker():
+        redis_url = os.getenv("DISTRIBUTED_TEST_REDIS_URL")
+        if not redis_url:
+            pytest.skip("DISTRIBUTED_TEST_REDIS_URL is not configured")
+        client = Redis.from_url(redis_url, decode_responses=True)
+        suffix = uuid4().hex
+        broker = RedisStreamBroker(
+            client,
+            f"test:experts:process:{suffix}",
+            f"test-expert-workers-{suffix}",
+        )
+>       await broker.reset_for_tests()
+
+tests/integration/test_expert_failover.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x110be5c90>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:experts:process:dd5bc1e966f641588c7d16675c49e0dd')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:experts:process:dd5bc1e966f641588c7d16675c49e0dd' = <core.distributed.broker.RedisStreamBroker object at 0x110be5c90>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ ERROR at setup of test_duplicate_redis_messages_produce_one_accepted_result __
+
+    @pytest_asyncio.fixture
+    async def expert_broker():
+        redis_url = os.getenv("DISTRIBUTED_TEST_REDIS_URL")
+        if not redis_url:
+            pytest.skip("DISTRIBUTED_TEST_REDIS_URL is not configured")
+        client = Redis.from_url(redis_url, decode_responses=True)
+        suffix = uuid4().hex
+        broker = RedisStreamBroker(
+            client,
+            f"test:experts:process:{suffix}",
+            f"test-expert-workers-{suffix}",
+        )
+>       await broker.reset_for_tests()
+
+tests/integration/test_expert_failover.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x111d21450>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:experts:process:28986e610adc49eaa423c5c8c20a22ee')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:experts:process:28986e610adc49eaa423c5c8c20a22ee' = <core.distributed.broker.RedisStreamBroker object at 0x111d21450>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_______ ERROR at setup of test_cancel_waiting_parent_rejects_late_draft ________
+
+    @pytest_asyncio.fixture
+    async def expert_broker():
+        redis_url = os.getenv("DISTRIBUTED_TEST_REDIS_URL")
+        if not redis_url:
+            pytest.skip("DISTRIBUTED_TEST_REDIS_URL is not configured")
+        client = Redis.from_url(redis_url, decode_responses=True)
+        suffix = uuid4().hex
+        broker = RedisStreamBroker(
+            client,
+            f"test:experts:process:{suffix}",
+            f"test-expert-workers-{suffix}",
+        )
+>       await broker.reset_for_tests()
+
+tests/integration/test_expert_failover.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x1120a1dd0>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:experts:process:f6b2143e15da482ba61888443042afea')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:experts:process:f6b2143e15da482ba61888443042afea' = <core.distributed.broker.RedisStreamBroker object at 0x1120a1dd0>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+=================================== FAILURES ===================================
+__________ test_dispatch_routes_rehearsal_retry_and_deployment_events __________
+
+assignment_repo = <core.distributed.repository.DistributedRunRepository object at 0x10fdb3010>
+broker = <core.distributed.broker.RedisStreamBroker object at 0x10fe3ffd0>
+
+    async def test_dispatch_routes_rehearsal_retry_and_deployment_events(assignment_repo, broker):
+        from core.distributed.broker import RedisStreamBroker
+        from core.distributed.dispatcher import OutboxDispatcher
+        from core.distributed.telemetry import DurableTracer
+        repo = assignment_repo
+        rehearsal = RedisStreamBroker(broker.redis, broker.stream + ":rehearsal", "rehearsal")
+        control = RedisStreamBroker(broker.redis, broker.stream + ":control", "control")
+        row = await candidate_head(repo)
+        run = await repo.accept(spec("prod"))
+        candidate, _ = await repo.accept_with_replay(spec("candidate"), rehearsal_token=token_for(row, "candidate"))
+        claim = await repo.claim(candidate.id, "worker", 30)
+        await repo.fail(candidate.id, claim.fencing_token, "retry", retryable=True)
+        async with repo.session_factory() as session, session.begin():
+            await PromotionRepository(repo.session_factory).freeze_if_current(session, row.deployment_id, row.version)
+            session.add(DistributedOutbox(event_key="future-topic", topic="future.unhandled",
+                payload={}, created_at=NOW, publish_attempts=0))
+        dispatcher = OutboxDispatcher(repo, broker, tracer=DurableTracer(repo),
+            rehearsal_broker=rehearsal, deployment_broker=control)
+        try:
+            assert await dispatcher.dispatch_once() == 4
+            assert await dispatcher.dispatch_once() == 0
+            prod_messages = await broker.read("prod", 10, 10)
+            rehearsal_messages = await rehearsal.read("rehearsal", 10, 10)
+            control_messages = await control.read("control", 10, 10)
+            assert [item.payload["run_id"] for item in prod_messages] == [run.id]
+            assert [item.payload["run_id"] for item in rehearsal_messages] == [candidate.id, candidate.id]
+            assert len(control_messages) == 1 and "run_id" not in control_messages[0].payload
+            async with repo.session_factory() as session:
+                pending = list(await session.scalars(select(DistributedOutbox).where(DistributedOutbox.published_at.is_(None))))
+                assert [item.topic for item in pending] == ["future.unhandled"]
+                assert pending[0].publish_attempts == 0
+        finally:
+>           await rehearsal.reset_for_tests()
+
+tests/distributed/test_policy_assignment.py:390: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x10fbc4390>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:runs:1cf932c4e3df46d4a1ecf490674c9c4a:rehearsal')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:runs:1cf932c4e3df46d4a1ecf490674c9c4a:rehearsal' = <core.distributed.broker.RedisStreamBroker object at 0x10fbc4390>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+________ test_current_schema_startup_executes_no_ddl_or_database_writes ________
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x10eb0be80>, 'startup_0cf8e7022e274e6c8aeba2c3a77d9657')
+
+    @pytest.mark.asyncio
+    async def test_current_schema_startup_executes_no_ddl_or_database_writes(startup_engine):
+        engine, schema = startup_engine
+        runtime, original_engine = configured_runtime(engine, schema)
+        statements = []
+    
+        def observe(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", observe)
+        try:
+            await runtime.start()
+            assert await runtime.health() == {
+                "status": "ok", "mode": "distributed-control-plane",
+                "postgres": "ok", "redis": "ok",
+            }
+            assert statements
+            assert all(sql.startswith(("SELECT", "SET TRANSACTION READ ONLY"))
+                       for sql in statements), statements
+        finally:
+            event.remove(engine.sync_engine, "before_cursor_execute", observe)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x112866190>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:2e4ba01a75094b4194e0606d1c6cf360')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:2e4ba01a75094b4194e0606d1c6cf360' = <core.distributed.broker.RedisStreamBroker object at 0x112866190>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_missing_or_stale_marker_rejects_without_database_writes[missing_table-distributed] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x1103bd800>, 'startup_856d3b8493de40df8715f55192cabc06')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e66fa90>
+runtime_kind = 'distributed', marker_state = 'missing_table'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("runtime_kind", ["distributed", "promotion"])
+    @pytest.mark.parametrize("marker_state", [
+        "missing_table", "missing_row", "stale_version", "stale_hash",
+        "changed_runtime_version", "changed_runtime_hash",
+    ])
+    async def test_missing_or_stale_marker_rejects_without_database_writes(
+        startup_engine, monkeypatch, runtime_kind, marker_state,
+    ):
+        engine, schema = startup_engine
+        async with engine.begin() as connection:
+            if marker_state == "missing_table":
+                await connection.execute(text("DROP TABLE distributed_schema_version"))
+            elif marker_state == "missing_row":
+                await connection.execute(text("DELETE FROM distributed_schema_version"))
+            elif marker_state == "stale_version":
+                await connection.execute(text("UPDATE distributed_schema_version SET version = 0"))
+            elif marker_state == "stale_hash":
+                await connection.execute(text(
+                    "UPDATE distributed_schema_version SET schema_hash = :hash"
+                ), {"hash": "0" * 64})
+        if marker_state == "changed_runtime_version":
+            monkeypatch.setattr(runtime_module, "SCHEMA_VERSION", 999)
+        elif marker_state == "changed_runtime_hash":
+            monkeypatch.setattr(runtime_module, "schema_contract_hash", lambda: "0" * 64)
+        runtime, original_engine = configured_runtime(engine, schema)
+        if runtime_kind == "promotion":
+            target = runtime_module.PromotionCommandRuntime(engine, None, None, None)
+        else:
+            target = runtime
+        statements = []
+    
+        def observe(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", observe)
+        try:
+            with pytest.raises(runtime_module.SchemaVersionMismatch, match="drain.*migrate"):
+                await target.start()
+            assert statements
+            assert all(sql.startswith(("SELECT", "SET TRANSACTION READ ONLY"))
+                       for sql in statements), statements
+            assert not await runtime.broker.redis.exists(runtime.broker.stream)
+        finally:
+            event.remove(engine.sync_engine, "before_cursor_execute", observe)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x1128bde90>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:ddc1e8480348490ebc7d30513997367e')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:ddc1e8480348490ebc7d30513997367e' = <core.distributed.broker.RedisStreamBroker object at 0x1128bde90>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_missing_or_stale_marker_rejects_without_database_writes[missing_table-promotion] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x10f0a1000>, 'startup_88111fd1b2ef4fc2ac6a1dac4e9a2772')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11099f290>
+runtime_kind = 'promotion', marker_state = 'missing_table'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("runtime_kind", ["distributed", "promotion"])
+    @pytest.mark.parametrize("marker_state", [
+        "missing_table", "missing_row", "stale_version", "stale_hash",
+        "changed_runtime_version", "changed_runtime_hash",
+    ])
+    async def test_missing_or_stale_marker_rejects_without_database_writes(
+        startup_engine, monkeypatch, runtime_kind, marker_state,
+    ):
+        engine, schema = startup_engine
+        async with engine.begin() as connection:
+            if marker_state == "missing_table":
+                await connection.execute(text("DROP TABLE distributed_schema_version"))
+            elif marker_state == "missing_row":
+                await connection.execute(text("DELETE FROM distributed_schema_version"))
+            elif marker_state == "stale_version":
+                await connection.execute(text("UPDATE distributed_schema_version SET version = 0"))
+            elif marker_state == "stale_hash":
+                await connection.execute(text(
+                    "UPDATE distributed_schema_version SET schema_hash = :hash"
+                ), {"hash": "0" * 64})
+        if marker_state == "changed_runtime_version":
+            monkeypatch.setattr(runtime_module, "SCHEMA_VERSION", 999)
+        elif marker_state == "changed_runtime_hash":
+            monkeypatch.setattr(runtime_module, "schema_contract_hash", lambda: "0" * 64)
+        runtime, original_engine = configured_runtime(engine, schema)
+        if runtime_kind == "promotion":
+            target = runtime_module.PromotionCommandRuntime(engine, None, None, None)
+        else:
+            target = runtime
+        statements = []
+    
+        def observe(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", observe)
+        try:
+            with pytest.raises(runtime_module.SchemaVersionMismatch, match="drain.*migrate"):
+                await target.start()
+            assert statements
+            assert all(sql.startswith(("SELECT", "SET TRANSACTION READ ONLY"))
+                       for sql in statements), statements
+            assert not await runtime.broker.redis.exists(runtime.broker.stream)
+        finally:
+            event.remove(engine.sync_engine, "before_cursor_execute", observe)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x112922290>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:b37c6f1624194cfa827c993e4e25894c')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:b37c6f1624194cfa827c993e4e25894c' = <core.distributed.broker.RedisStreamBroker object at 0x112922290>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_missing_or_stale_marker_rejects_without_database_writes[missing_row-distributed] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x112890740>, 'startup_a4b48c0da9964754ad7ae2d5708ea821')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112896c10>
+runtime_kind = 'distributed', marker_state = 'missing_row'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("runtime_kind", ["distributed", "promotion"])
+    @pytest.mark.parametrize("marker_state", [
+        "missing_table", "missing_row", "stale_version", "stale_hash",
+        "changed_runtime_version", "changed_runtime_hash",
+    ])
+    async def test_missing_or_stale_marker_rejects_without_database_writes(
+        startup_engine, monkeypatch, runtime_kind, marker_state,
+    ):
+        engine, schema = startup_engine
+        async with engine.begin() as connection:
+            if marker_state == "missing_table":
+                await connection.execute(text("DROP TABLE distributed_schema_version"))
+            elif marker_state == "missing_row":
+                await connection.execute(text("DELETE FROM distributed_schema_version"))
+            elif marker_state == "stale_version":
+                await connection.execute(text("UPDATE distributed_schema_version SET version = 0"))
+            elif marker_state == "stale_hash":
+                await connection.execute(text(
+                    "UPDATE distributed_schema_version SET schema_hash = :hash"
+                ), {"hash": "0" * 64})
+        if marker_state == "changed_runtime_version":
+            monkeypatch.setattr(runtime_module, "SCHEMA_VERSION", 999)
+        elif marker_state == "changed_runtime_hash":
+            monkeypatch.setattr(runtime_module, "schema_contract_hash", lambda: "0" * 64)
+        runtime, original_engine = configured_runtime(engine, schema)
+        if runtime_kind == "promotion":
+            target = runtime_module.PromotionCommandRuntime(engine, None, None, None)
+        else:
+            target = runtime
+        statements = []
+    
+        def observe(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", observe)
+        try:
+            with pytest.raises(runtime_module.SchemaVersionMismatch, match="drain.*migrate"):
+                await target.start()
+            assert statements
+            assert all(sql.startswith(("SELECT", "SET TRANSACTION READ ONLY"))
+                       for sql in statements), statements
+            assert not await runtime.broker.redis.exists(runtime.broker.stream)
+        finally:
+            event.remove(engine.sync_engine, "before_cursor_execute", observe)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x112969990>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:2c70a64548144118aac516ef7d2b1988')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:2c70a64548144118aac516ef7d2b1988' = <core.distributed.broker.RedisStreamBroker object at 0x112969990>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_missing_or_stale_marker_rejects_without_database_writes[missing_row-promotion] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x1128ebb80>, 'startup_ec6920d764e94765b6bc13063eb37151')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1129cb550>
+runtime_kind = 'promotion', marker_state = 'missing_row'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("runtime_kind", ["distributed", "promotion"])
+    @pytest.mark.parametrize("marker_state", [
+        "missing_table", "missing_row", "stale_version", "stale_hash",
+        "changed_runtime_version", "changed_runtime_hash",
+    ])
+    async def test_missing_or_stale_marker_rejects_without_database_writes(
+        startup_engine, monkeypatch, runtime_kind, marker_state,
+    ):
+        engine, schema = startup_engine
+        async with engine.begin() as connection:
+            if marker_state == "missing_table":
+                await connection.execute(text("DROP TABLE distributed_schema_version"))
+            elif marker_state == "missing_row":
+                await connection.execute(text("DELETE FROM distributed_schema_version"))
+            elif marker_state == "stale_version":
+                await connection.execute(text("UPDATE distributed_schema_version SET version = 0"))
+            elif marker_state == "stale_hash":
+                await connection.execute(text(
+                    "UPDATE distributed_schema_version SET schema_hash = :hash"
+                ), {"hash": "0" * 64})
+        if marker_state == "changed_runtime_version":
+            monkeypatch.setattr(runtime_module, "SCHEMA_VERSION", 999)
+        elif marker_state == "changed_runtime_hash":
+            monkeypatch.setattr(runtime_module, "schema_contract_hash", lambda: "0" * 64)
+        runtime, original_engine = configured_runtime(engine, schema)
+        if runtime_kind == "promotion":
+            target = runtime_module.PromotionCommandRuntime(engine, None, None, None)
+        else:
+            target = runtime
+        statements = []
+    
+        def observe(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", observe)
+        try:
+            with pytest.raises(runtime_module.SchemaVersionMismatch, match="drain.*migrate"):
+                await target.start()
+            assert statements
+            assert all(sql.startswith(("SELECT", "SET TRANSACTION READ ONLY"))
+                       for sql in statements), statements
+            assert not await runtime.broker.redis.exists(runtime.broker.stream)
+        finally:
+            event.remove(engine.sync_engine, "before_cursor_execute", observe)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x1129d9590>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:ad1917c5635f4516a753a212d51e16ce')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:ad1917c5635f4516a753a212d51e16ce' = <core.distributed.broker.RedisStreamBroker object at 0x1129d9590>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_missing_or_stale_marker_rejects_without_database_writes[stale_version-distributed] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x1129bb900>, 'startup_e714a5e3ba3044309aa795ccf5e3f277')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1129fb550>
+runtime_kind = 'distributed', marker_state = 'stale_version'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("runtime_kind", ["distributed", "promotion"])
+    @pytest.mark.parametrize("marker_state", [
+        "missing_table", "missing_row", "stale_version", "stale_hash",
+        "changed_runtime_version", "changed_runtime_hash",
+    ])
+    async def test_missing_or_stale_marker_rejects_without_database_writes(
+        startup_engine, monkeypatch, runtime_kind, marker_state,
+    ):
+        engine, schema = startup_engine
+        async with engine.begin() as connection:
+            if marker_state == "missing_table":
+                await connection.execute(text("DROP TABLE distributed_schema_version"))
+            elif marker_state == "missing_row":
+                await connection.execute(text("DELETE FROM distributed_schema_version"))
+            elif marker_state == "stale_version":
+                await connection.execute(text("UPDATE distributed_schema_version SET version = 0"))
+            elif marker_state == "stale_hash":
+                await connection.execute(text(
+                    "UPDATE distributed_schema_version SET schema_hash = :hash"
+                ), {"hash": "0" * 64})
+        if marker_state == "changed_runtime_version":
+            monkeypatch.setattr(runtime_module, "SCHEMA_VERSION", 999)
+        elif marker_state == "changed_runtime_hash":
+            monkeypatch.setattr(runtime_module, "schema_contract_hash", lambda: "0" * 64)
+        runtime, original_engine = configured_runtime(engine, schema)
+        if runtime_kind == "promotion":
+            target = runtime_module.PromotionCommandRuntime(engine, None, None, None)
+        else:
+            target = runtime
+        statements = []
+    
+        def observe(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", observe)
+        try:
+            with pytest.raises(runtime_module.SchemaVersionMismatch, match="drain.*migrate"):
+                await target.start()
+            assert statements
+            assert all(sql.startswith(("SELECT", "SET TRANSACTION READ ONLY"))
+                       for sql in statements), statements
+            assert not await runtime.broker.redis.exists(runtime.broker.stream)
+        finally:
+            event.remove(engine.sync_engine, "before_cursor_execute", observe)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x112a45510>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:a5368f7a7cbf4712be63267152504fce')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:a5368f7a7cbf4712be63267152504fce' = <core.distributed.broker.RedisStreamBroker object at 0x112a45510>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_missing_or_stale_marker_rejects_without_database_writes[stale_version-promotion] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x1129a1a40>, 'startup_3434efb7b8ea41aa9b94de2353ba2dd7')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1129bc450>
+runtime_kind = 'promotion', marker_state = 'stale_version'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("runtime_kind", ["distributed", "promotion"])
+    @pytest.mark.parametrize("marker_state", [
+        "missing_table", "missing_row", "stale_version", "stale_hash",
+        "changed_runtime_version", "changed_runtime_hash",
+    ])
+    async def test_missing_or_stale_marker_rejects_without_database_writes(
+        startup_engine, monkeypatch, runtime_kind, marker_state,
+    ):
+        engine, schema = startup_engine
+        async with engine.begin() as connection:
+            if marker_state == "missing_table":
+                await connection.execute(text("DROP TABLE distributed_schema_version"))
+            elif marker_state == "missing_row":
+                await connection.execute(text("DELETE FROM distributed_schema_version"))
+            elif marker_state == "stale_version":
+                await connection.execute(text("UPDATE distributed_schema_version SET version = 0"))
+            elif marker_state == "stale_hash":
+                await connection.execute(text(
+                    "UPDATE distributed_schema_version SET schema_hash = :hash"
+                ), {"hash": "0" * 64})
+        if marker_state == "changed_runtime_version":
+            monkeypatch.setattr(runtime_module, "SCHEMA_VERSION", 999)
+        elif marker_state == "changed_runtime_hash":
+            monkeypatch.setattr(runtime_module, "schema_contract_hash", lambda: "0" * 64)
+        runtime, original_engine = configured_runtime(engine, schema)
+        if runtime_kind == "promotion":
+            target = runtime_module.PromotionCommandRuntime(engine, None, None, None)
+        else:
+            target = runtime
+        statements = []
+    
+        def observe(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", observe)
+        try:
+            with pytest.raises(runtime_module.SchemaVersionMismatch, match="drain.*migrate"):
+                await target.start()
+            assert statements
+            assert all(sql.startswith(("SELECT", "SET TRANSACTION READ ONLY"))
+                       for sql in statements), statements
+            assert not await runtime.broker.redis.exists(runtime.broker.stream)
+        finally:
+            event.remove(engine.sync_engine, "before_cursor_execute", observe)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x112ad1dd0>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:86fd0541c8064e0296f08eab8f6941f5')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:86fd0541c8064e0296f08eab8f6941f5' = <core.distributed.broker.RedisStreamBroker object at 0x112ad1dd0>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_missing_or_stale_marker_rejects_without_database_writes[stale_hash-distributed] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x112a7c940>, 'startup_bec14a65ae8d493c9cc6bb598d956754')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112a23590>
+runtime_kind = 'distributed', marker_state = 'stale_hash'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("runtime_kind", ["distributed", "promotion"])
+    @pytest.mark.parametrize("marker_state", [
+        "missing_table", "missing_row", "stale_version", "stale_hash",
+        "changed_runtime_version", "changed_runtime_hash",
+    ])
+    async def test_missing_or_stale_marker_rejects_without_database_writes(
+        startup_engine, monkeypatch, runtime_kind, marker_state,
+    ):
+        engine, schema = startup_engine
+        async with engine.begin() as connection:
+            if marker_state == "missing_table":
+                await connection.execute(text("DROP TABLE distributed_schema_version"))
+            elif marker_state == "missing_row":
+                await connection.execute(text("DELETE FROM distributed_schema_version"))
+            elif marker_state == "stale_version":
+                await connection.execute(text("UPDATE distributed_schema_version SET version = 0"))
+            elif marker_state == "stale_hash":
+                await connection.execute(text(
+                    "UPDATE distributed_schema_version SET schema_hash = :hash"
+                ), {"hash": "0" * 64})
+        if marker_state == "changed_runtime_version":
+            monkeypatch.setattr(runtime_module, "SCHEMA_VERSION", 999)
+        elif marker_state == "changed_runtime_hash":
+            monkeypatch.setattr(runtime_module, "schema_contract_hash", lambda: "0" * 64)
+        runtime, original_engine = configured_runtime(engine, schema)
+        if runtime_kind == "promotion":
+            target = runtime_module.PromotionCommandRuntime(engine, None, None, None)
+        else:
+            target = runtime
+        statements = []
+    
+        def observe(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", observe)
+        try:
+            with pytest.raises(runtime_module.SchemaVersionMismatch, match="drain.*migrate"):
+                await target.start()
+            assert statements
+            assert all(sql.startswith(("SELECT", "SET TRANSACTION READ ONLY"))
+                       for sql in statements), statements
+            assert not await runtime.broker.redis.exists(runtime.broker.stream)
+        finally:
+            event.remove(engine.sync_engine, "before_cursor_execute", observe)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x112b3de90>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:75f6fd437baf44cc8e4937868737c7c3')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:75f6fd437baf44cc8e4937868737c7c3' = <core.distributed.broker.RedisStreamBroker object at 0x112b3de90>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_missing_or_stale_marker_rejects_without_database_writes[stale_hash-promotion] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x110c1b1c0>, 'startup_3eca8c5e253f4a2f987c9df5adce1e1c')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112b58ad0>
+runtime_kind = 'promotion', marker_state = 'stale_hash'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("runtime_kind", ["distributed", "promotion"])
+    @pytest.mark.parametrize("marker_state", [
+        "missing_table", "missing_row", "stale_version", "stale_hash",
+        "changed_runtime_version", "changed_runtime_hash",
+    ])
+    async def test_missing_or_stale_marker_rejects_without_database_writes(
+        startup_engine, monkeypatch, runtime_kind, marker_state,
+    ):
+        engine, schema = startup_engine
+        async with engine.begin() as connection:
+            if marker_state == "missing_table":
+                await connection.execute(text("DROP TABLE distributed_schema_version"))
+            elif marker_state == "missing_row":
+                await connection.execute(text("DELETE FROM distributed_schema_version"))
+            elif marker_state == "stale_version":
+                await connection.execute(text("UPDATE distributed_schema_version SET version = 0"))
+            elif marker_state == "stale_hash":
+                await connection.execute(text(
+                    "UPDATE distributed_schema_version SET schema_hash = :hash"
+                ), {"hash": "0" * 64})
+        if marker_state == "changed_runtime_version":
+            monkeypatch.setattr(runtime_module, "SCHEMA_VERSION", 999)
+        elif marker_state == "changed_runtime_hash":
+            monkeypatch.setattr(runtime_module, "schema_contract_hash", lambda: "0" * 64)
+        runtime, original_engine = configured_runtime(engine, schema)
+        if runtime_kind == "promotion":
+            target = runtime_module.PromotionCommandRuntime(engine, None, None, None)
+        else:
+            target = runtime
+        statements = []
+    
+        def observe(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", observe)
+        try:
+            with pytest.raises(runtime_module.SchemaVersionMismatch, match="drain.*migrate"):
+                await target.start()
+            assert statements
+            assert all(sql.startswith(("SELECT", "SET TRANSACTION READ ONLY"))
+                       for sql in statements), statements
+            assert not await runtime.broker.redis.exists(runtime.broker.stream)
+        finally:
+            event.remove(engine.sync_engine, "before_cursor_execute", observe)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x112ba9d10>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:68b87475fb344683a4b41c89f3caf397')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:68b87475fb344683a4b41c89f3caf397' = <core.distributed.broker.RedisStreamBroker object at 0x112ba9d10>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_missing_or_stale_marker_rejects_without_database_writes[changed_runtime_version-distributed] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x112a9f8c0>, 'startup_2cf031795a07474eb9c8f3542f00fd34')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112b04e10>
+runtime_kind = 'distributed', marker_state = 'changed_runtime_version'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("runtime_kind", ["distributed", "promotion"])
+    @pytest.mark.parametrize("marker_state", [
+        "missing_table", "missing_row", "stale_version", "stale_hash",
+        "changed_runtime_version", "changed_runtime_hash",
+    ])
+    async def test_missing_or_stale_marker_rejects_without_database_writes(
+        startup_engine, monkeypatch, runtime_kind, marker_state,
+    ):
+        engine, schema = startup_engine
+        async with engine.begin() as connection:
+            if marker_state == "missing_table":
+                await connection.execute(text("DROP TABLE distributed_schema_version"))
+            elif marker_state == "missing_row":
+                await connection.execute(text("DELETE FROM distributed_schema_version"))
+            elif marker_state == "stale_version":
+                await connection.execute(text("UPDATE distributed_schema_version SET version = 0"))
+            elif marker_state == "stale_hash":
+                await connection.execute(text(
+                    "UPDATE distributed_schema_version SET schema_hash = :hash"
+                ), {"hash": "0" * 64})
+        if marker_state == "changed_runtime_version":
+            monkeypatch.setattr(runtime_module, "SCHEMA_VERSION", 999)
+        elif marker_state == "changed_runtime_hash":
+            monkeypatch.setattr(runtime_module, "schema_contract_hash", lambda: "0" * 64)
+        runtime, original_engine = configured_runtime(engine, schema)
+        if runtime_kind == "promotion":
+            target = runtime_module.PromotionCommandRuntime(engine, None, None, None)
+        else:
+            target = runtime
+        statements = []
+    
+        def observe(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", observe)
+        try:
+            with pytest.raises(runtime_module.SchemaVersionMismatch, match="drain.*migrate"):
+                await target.start()
+            assert statements
+            assert all(sql.startswith(("SELECT", "SET TRANSACTION READ ONLY"))
+                       for sql in statements), statements
+            assert not await runtime.broker.redis.exists(runtime.broker.stream)
+        finally:
+            event.remove(engine.sync_engine, "before_cursor_execute", observe)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x112b39cd0>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:135ce6c3b26542a9ac9734c4f5fb76fb')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:135ce6c3b26542a9ac9734c4f5fb76fb' = <core.distributed.broker.RedisStreamBroker object at 0x112b39cd0>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_missing_or_stale_marker_rejects_without_database_writes[changed_runtime_version-promotion] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x112b9ad80>, 'startup_1ec4c645dab64eaabc2b6ff3dc185f53')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112b43b50>
+runtime_kind = 'promotion', marker_state = 'changed_runtime_version'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("runtime_kind", ["distributed", "promotion"])
+    @pytest.mark.parametrize("marker_state", [
+        "missing_table", "missing_row", "stale_version", "stale_hash",
+        "changed_runtime_version", "changed_runtime_hash",
+    ])
+    async def test_missing_or_stale_marker_rejects_without_database_writes(
+        startup_engine, monkeypatch, runtime_kind, marker_state,
+    ):
+        engine, schema = startup_engine
+        async with engine.begin() as connection:
+            if marker_state == "missing_table":
+                await connection.execute(text("DROP TABLE distributed_schema_version"))
+            elif marker_state == "missing_row":
+                await connection.execute(text("DELETE FROM distributed_schema_version"))
+            elif marker_state == "stale_version":
+                await connection.execute(text("UPDATE distributed_schema_version SET version = 0"))
+            elif marker_state == "stale_hash":
+                await connection.execute(text(
+                    "UPDATE distributed_schema_version SET schema_hash = :hash"
+                ), {"hash": "0" * 64})
+        if marker_state == "changed_runtime_version":
+            monkeypatch.setattr(runtime_module, "SCHEMA_VERSION", 999)
+        elif marker_state == "changed_runtime_hash":
+            monkeypatch.setattr(runtime_module, "schema_contract_hash", lambda: "0" * 64)
+        runtime, original_engine = configured_runtime(engine, schema)
+        if runtime_kind == "promotion":
+            target = runtime_module.PromotionCommandRuntime(engine, None, None, None)
+        else:
+            target = runtime
+        statements = []
+    
+        def observe(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", observe)
+        try:
+            with pytest.raises(runtime_module.SchemaVersionMismatch, match="drain.*migrate"):
+                await target.start()
+            assert statements
+            assert all(sql.startswith(("SELECT", "SET TRANSACTION READ ONLY"))
+                       for sql in statements), statements
+            assert not await runtime.broker.redis.exists(runtime.broker.stream)
+        finally:
+            event.remove(engine.sync_engine, "before_cursor_execute", observe)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x1129f9e10>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:cfb0fa7da16940b88a4f22f6fe6b5c56')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:cfb0fa7da16940b88a4f22f6fe6b5c56' = <core.distributed.broker.RedisStreamBroker object at 0x1129f9e10>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_missing_or_stale_marker_rejects_without_database_writes[changed_runtime_hash-distributed] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x112a4ec00>, 'startup_cfb85c6ac8af4508a4cc822c337da7cd')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112bc7d90>
+runtime_kind = 'distributed', marker_state = 'changed_runtime_hash'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("runtime_kind", ["distributed", "promotion"])
+    @pytest.mark.parametrize("marker_state", [
+        "missing_table", "missing_row", "stale_version", "stale_hash",
+        "changed_runtime_version", "changed_runtime_hash",
+    ])
+    async def test_missing_or_stale_marker_rejects_without_database_writes(
+        startup_engine, monkeypatch, runtime_kind, marker_state,
+    ):
+        engine, schema = startup_engine
+        async with engine.begin() as connection:
+            if marker_state == "missing_table":
+                await connection.execute(text("DROP TABLE distributed_schema_version"))
+            elif marker_state == "missing_row":
+                await connection.execute(text("DELETE FROM distributed_schema_version"))
+            elif marker_state == "stale_version":
+                await connection.execute(text("UPDATE distributed_schema_version SET version = 0"))
+            elif marker_state == "stale_hash":
+                await connection.execute(text(
+                    "UPDATE distributed_schema_version SET schema_hash = :hash"
+                ), {"hash": "0" * 64})
+        if marker_state == "changed_runtime_version":
+            monkeypatch.setattr(runtime_module, "SCHEMA_VERSION", 999)
+        elif marker_state == "changed_runtime_hash":
+            monkeypatch.setattr(runtime_module, "schema_contract_hash", lambda: "0" * 64)
+        runtime, original_engine = configured_runtime(engine, schema)
+        if runtime_kind == "promotion":
+            target = runtime_module.PromotionCommandRuntime(engine, None, None, None)
+        else:
+            target = runtime
+        statements = []
+    
+        def observe(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", observe)
+        try:
+            with pytest.raises(runtime_module.SchemaVersionMismatch, match="drain.*migrate"):
+                await target.start()
+            assert statements
+            assert all(sql.startswith(("SELECT", "SET TRANSACTION READ ONLY"))
+                       for sql in statements), statements
+            assert not await runtime.broker.redis.exists(runtime.broker.stream)
+        finally:
+            event.remove(engine.sync_engine, "before_cursor_execute", observe)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x1128f4e10>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:a0fb97a7c04f4c42a1a5b7b862644b45')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:a0fb97a7c04f4c42a1a5b7b862644b45' = <core.distributed.broker.RedisStreamBroker object at 0x1128f4e10>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_missing_or_stale_marker_rejects_without_database_writes[changed_runtime_hash-promotion] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x112b599c0>, 'startup_ff0065fa4e444738bf72b29069a71620')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112a4cfd0>
+runtime_kind = 'promotion', marker_state = 'changed_runtime_hash'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("runtime_kind", ["distributed", "promotion"])
+    @pytest.mark.parametrize("marker_state", [
+        "missing_table", "missing_row", "stale_version", "stale_hash",
+        "changed_runtime_version", "changed_runtime_hash",
+    ])
+    async def test_missing_or_stale_marker_rejects_without_database_writes(
+        startup_engine, monkeypatch, runtime_kind, marker_state,
+    ):
+        engine, schema = startup_engine
+        async with engine.begin() as connection:
+            if marker_state == "missing_table":
+                await connection.execute(text("DROP TABLE distributed_schema_version"))
+            elif marker_state == "missing_row":
+                await connection.execute(text("DELETE FROM distributed_schema_version"))
+            elif marker_state == "stale_version":
+                await connection.execute(text("UPDATE distributed_schema_version SET version = 0"))
+            elif marker_state == "stale_hash":
+                await connection.execute(text(
+                    "UPDATE distributed_schema_version SET schema_hash = :hash"
+                ), {"hash": "0" * 64})
+        if marker_state == "changed_runtime_version":
+            monkeypatch.setattr(runtime_module, "SCHEMA_VERSION", 999)
+        elif marker_state == "changed_runtime_hash":
+            monkeypatch.setattr(runtime_module, "schema_contract_hash", lambda: "0" * 64)
+        runtime, original_engine = configured_runtime(engine, schema)
+        if runtime_kind == "promotion":
+            target = runtime_module.PromotionCommandRuntime(engine, None, None, None)
+        else:
+            target = runtime
+        statements = []
+    
+        def observe(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement.strip().upper())
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", observe)
+        try:
+            with pytest.raises(runtime_module.SchemaVersionMismatch, match="drain.*migrate"):
+                await target.start()
+            assert statements
+            assert all(sql.startswith(("SELECT", "SET TRANSACTION READ ONLY"))
+                       for sql in statements), statements
+            assert not await runtime.broker.redis.exists(runtime.broker.stream)
+        finally:
+            event.remove(engine.sync_engine, "before_cursor_execute", observe)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x1128686d0>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:f7b35c6a77e742c9a37a76798ec06b2b')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:f7b35c6a77e742c9a37a76798ec06b2b' = <core.distributed.broker.RedisStreamBroker object at 0x1128686d0>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+____ test_hot_start_while_real_expert_terminal_poll_holds_job_lock[runtime] ____
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x1128d2a80>, 'startup_ae3d1f6d28b54e2f9542f3c9c6deda0c')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112950a50>
+startup_kind = 'runtime'
+tmp_path = PosixPath('/private/tmp/m3-task9-code-20261102-5TNycP/tmp/full/test_hot_start_while_real_expe0')
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("startup_kind", ["runtime", "cli", "shadow-worker", "shadow-reaper"])
+    async def test_hot_start_while_real_expert_terminal_poll_holds_job_lock(
+        startup_engine, monkeypatch, startup_kind, tmp_path,
+    ):
+        engine, schema = startup_engine
+        factory = async_sessionmaker(engine, expire_on_commit=False)
+        repository = DistributedRunRepository(factory)
+        expert_repository = ExpertJobRepository(factory)
+        parent = await repository.accept(spec(request_id=f"hot-start-{uuid4().hex}"))
+        claim = await repository.claim(parent.id, "parent-worker", lease_seconds=120)
+        job, _ = await expert_repository.create_or_replay(request_for(claim))
+        identity_read = asyncio.Event()
+        proceed_to_parent = asyncio.Event()
+        poll_pid = None
+        original_identity = expert_repository._job_identity
+    
+        async def paused_identity(session, job_id):
+            nonlocal poll_pid
+            identity = await original_identity(session, job_id)
+            poll_pid = await session.scalar(text("SELECT pg_backend_pid()"))
+            identity_read.set()
+            await proceed_to_parent.wait()
+            return identity
+    
+        monkeypatch.setattr(expert_repository, "_job_identity", paused_identity)
+        runtime, original_engine = configured_runtime(engine, schema)
+        blocker = await engine.connect()
+        transaction = await blocker.begin()
+        await blocker.execute(
+            text("SELECT id FROM distributed_runs WHERE id = :id FOR UPDATE"),
+            {"id": parent.id},
+        )
+        poll = asyncio.create_task(expert_repository.terminal(job.id, claim.fencing_token))
+        startup = None
+        process = None
+        worker_id = f"schema-hot-{uuid4().hex}"
+        process_type = startup_kind if startup_kind.startswith("shadow-") else "rehearsal-worker"
+        try:
+            await asyncio.wait_for(identity_read.wait(), 5)
+            if startup_kind == "runtime":
+                startup = asyncio.create_task(runtime.start())
+            else:
+                process = await asyncio.create_subprocess_exec(
+                    sys.executable, "-c",
+                    "import runpy; from functools import partial; "
+                    "from sqlalchemy.ext.asyncio import create_async_engine; "
+                    "from core.distributed import runtime; "
+                    "runtime.create_async_engine = partial(create_async_engine, "
+                    f"connect_args={{'server_settings': {{'search_path': {schema!r}}}}}); "
+                    "runpy.run_module('core.distributed.cli', run_name='__main__')",
+                    process_type,
+                    env={
+                        **os.environ,
+                        "PYTHONPATH": str(Path(__file__).parents[2]),
+                        "DISTRIBUTED_ENABLED": "true",
+                        "DISTRIBUTED_EXPERTS_ENABLED": "true",
+                        "DISTRIBUTED_DATABASE_URL": engine.url.render_as_string(
+                            hide_password=False
+                        ),
+                        "DISTRIBUTED_REDIS_URL": os.environ["DISTRIBUTED_TEST_REDIS_URL"],
+                        "DISTRIBUTED_WORKER_ID": worker_id,
+                        "DISTRIBUTED_STREAM": runtime.broker.stream,
+                        "DISTRIBUTED_CONSUMER_GROUP": runtime.broker.group,
+                        "PROMOTION_REHEARSAL_STREAM": runtime.rehearsal_broker.stream,
+                        "PROMOTION_REHEARSAL_CONSUMER_GROUP": runtime.rehearsal_broker.group,
+                        "EXPERT_STREAM": runtime.expert_broker.stream,
+                        "EXPERT_CONSUMER_GROUP": runtime.expert_broker.group,
+                        "LLM_PROVIDER": "template",
+                        "MEMORY_WORKER_ENABLED": "false",
+                        "PROMOTION_REHEARSAL_STORE_ROOT": str(tmp_path / "shadow-only"),
+                    },
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+    
+            async def ready_or_ddl_wait():
+                async with engine.connect() as connection:
+                    ddl_wait = await connection.scalar(text(
+                        "SELECT EXISTS (SELECT 1 FROM pg_locks "
+                        "WHERE relation = 'distributed_runs'::regclass "
+                        "AND mode = 'AccessExclusiveLock' AND NOT granted)"
+                    ))
+                    registered = await connection.scalar(text(
+                        "SELECT EXISTS (SELECT 1 FROM distributed_worker_registry "
+                        "WHERE process_type = :type AND status = 'running')"
+                    ), {"type": process_type})
+                return ddl_wait or registered or (startup is not None and startup.done())
+    
+            await wait_until(ready_or_ddl_wait)
+            proceed_to_parent.set()
+    
+            async def poll_waiting_on_parent():
+                async with engine.connect() as connection:
+                    return await connection.scalar(text(
+                        "SELECT EXISTS (SELECT 1 FROM pg_stat_activity "
+                        "WHERE pid = :pid AND wait_event_type = 'Lock')"
+                    ), {"pid": poll_pid})
+    
+            await wait_until(poll_waiting_on_parent)
+            if startup is not None:
+                await asyncio.wait_for(startup, 5)
+            else:
+                async def registered_or_exited():
+                    if process.returncode is not None:
+                        stderr = (await process.stderr.read()).decode()
+                        pytest.fail(f"CLI exited {process.returncode}: {stderr}")
+                    async with engine.connect() as connection:
+                        return await connection.scalar(text(
+                            "SELECT EXISTS (SELECT 1 FROM distributed_worker_registry "
+                            "WHERE status = 'running' AND process_type = :type)"
+                        ), {"type": process_type})
+                await wait_until(registered_or_exited)
+                assert process.returncode is None
+            assert not poll.done()
+            await transaction.rollback()
+            assert await asyncio.wait_for(poll, 5) is None
+        finally:
+            proceed_to_parent.set()
+            if transaction.is_active:
+                await transaction.rollback()
+            await blocker.close()
+            if process is not None and process.returncode is None:
+                process.terminate()
+                await asyncio.wait_for(process.communicate(), 5)
+            for task in (startup, poll):
+                if task is not None:
+                    if not task.done():
+                        task.cancel()
+                    await asyncio.gather(task, return_exceptions=True)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:306: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x10fb87d10>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:73b9ff589f33420cb30f41c39eed808a')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:73b9ff589f33420cb30f41c39eed808a' = <core.distributed.broker.RedisStreamBroker object at 0x10fb87d10>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+______ test_hot_start_while_real_expert_terminal_poll_holds_job_lock[cli] ______
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x1100ac740>, 'startup_c545e0ace11e49cf8e2bace426efc87e')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111cfc750>
+startup_kind = 'cli'
+tmp_path = PosixPath('/private/tmp/m3-task9-code-20261102-5TNycP/tmp/full/test_hot_start_while_real_expe1')
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("startup_kind", ["runtime", "cli", "shadow-worker", "shadow-reaper"])
+    async def test_hot_start_while_real_expert_terminal_poll_holds_job_lock(
+        startup_engine, monkeypatch, startup_kind, tmp_path,
+    ):
+        engine, schema = startup_engine
+        factory = async_sessionmaker(engine, expire_on_commit=False)
+        repository = DistributedRunRepository(factory)
+        expert_repository = ExpertJobRepository(factory)
+        parent = await repository.accept(spec(request_id=f"hot-start-{uuid4().hex}"))
+        claim = await repository.claim(parent.id, "parent-worker", lease_seconds=120)
+        job, _ = await expert_repository.create_or_replay(request_for(claim))
+        identity_read = asyncio.Event()
+        proceed_to_parent = asyncio.Event()
+        poll_pid = None
+        original_identity = expert_repository._job_identity
+    
+        async def paused_identity(session, job_id):
+            nonlocal poll_pid
+            identity = await original_identity(session, job_id)
+            poll_pid = await session.scalar(text("SELECT pg_backend_pid()"))
+            identity_read.set()
+            await proceed_to_parent.wait()
+            return identity
+    
+        monkeypatch.setattr(expert_repository, "_job_identity", paused_identity)
+        runtime, original_engine = configured_runtime(engine, schema)
+        blocker = await engine.connect()
+        transaction = await blocker.begin()
+        await blocker.execute(
+            text("SELECT id FROM distributed_runs WHERE id = :id FOR UPDATE"),
+            {"id": parent.id},
+        )
+        poll = asyncio.create_task(expert_repository.terminal(job.id, claim.fencing_token))
+        startup = None
+        process = None
+        worker_id = f"schema-hot-{uuid4().hex}"
+        process_type = startup_kind if startup_kind.startswith("shadow-") else "rehearsal-worker"
+        try:
+            await asyncio.wait_for(identity_read.wait(), 5)
+            if startup_kind == "runtime":
+                startup = asyncio.create_task(runtime.start())
+            else:
+                process = await asyncio.create_subprocess_exec(
+                    sys.executable, "-c",
+                    "import runpy; from functools import partial; "
+                    "from sqlalchemy.ext.asyncio import create_async_engine; "
+                    "from core.distributed import runtime; "
+                    "runtime.create_async_engine = partial(create_async_engine, "
+                    f"connect_args={{'server_settings': {{'search_path': {schema!r}}}}}); "
+                    "runpy.run_module('core.distributed.cli', run_name='__main__')",
+                    process_type,
+                    env={
+                        **os.environ,
+                        "PYTHONPATH": str(Path(__file__).parents[2]),
+                        "DISTRIBUTED_ENABLED": "true",
+                        "DISTRIBUTED_EXPERTS_ENABLED": "true",
+                        "DISTRIBUTED_DATABASE_URL": engine.url.render_as_string(
+                            hide_password=False
+                        ),
+                        "DISTRIBUTED_REDIS_URL": os.environ["DISTRIBUTED_TEST_REDIS_URL"],
+                        "DISTRIBUTED_WORKER_ID": worker_id,
+                        "DISTRIBUTED_STREAM": runtime.broker.stream,
+                        "DISTRIBUTED_CONSUMER_GROUP": runtime.broker.group,
+                        "PROMOTION_REHEARSAL_STREAM": runtime.rehearsal_broker.stream,
+                        "PROMOTION_REHEARSAL_CONSUMER_GROUP": runtime.rehearsal_broker.group,
+                        "EXPERT_STREAM": runtime.expert_broker.stream,
+                        "EXPERT_CONSUMER_GROUP": runtime.expert_broker.group,
+                        "LLM_PROVIDER": "template",
+                        "MEMORY_WORKER_ENABLED": "false",
+                        "PROMOTION_REHEARSAL_STORE_ROOT": str(tmp_path / "shadow-only"),
+                    },
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+    
+            async def ready_or_ddl_wait():
+                async with engine.connect() as connection:
+                    ddl_wait = await connection.scalar(text(
+                        "SELECT EXISTS (SELECT 1 FROM pg_locks "
+                        "WHERE relation = 'distributed_runs'::regclass "
+                        "AND mode = 'AccessExclusiveLock' AND NOT granted)"
+                    ))
+                    registered = await connection.scalar(text(
+                        "SELECT EXISTS (SELECT 1 FROM distributed_worker_registry "
+                        "WHERE process_type = :type AND status = 'running')"
+                    ), {"type": process_type})
+                return ddl_wait or registered or (startup is not None and startup.done())
+    
+            await wait_until(ready_or_ddl_wait)
+            proceed_to_parent.set()
+    
+            async def poll_waiting_on_parent():
+                async with engine.connect() as connection:
+                    return await connection.scalar(text(
+                        "SELECT EXISTS (SELECT 1 FROM pg_stat_activity "
+                        "WHERE pid = :pid AND wait_event_type = 'Lock')"
+                    ), {"pid": poll_pid})
+    
+            await wait_until(poll_waiting_on_parent)
+            if startup is not None:
+                await asyncio.wait_for(startup, 5)
+            else:
+                async def registered_or_exited():
+                    if process.returncode is not None:
+                        stderr = (await process.stderr.read()).decode()
+                        pytest.fail(f"CLI exited {process.returncode}: {stderr}")
+                    async with engine.connect() as connection:
+                        return await connection.scalar(text(
+                            "SELECT EXISTS (SELECT 1 FROM distributed_worker_registry "
+                            "WHERE status = 'running' AND process_type = :type)"
+                        ), {"type": process_type})
+                await wait_until(registered_or_exited)
+                assert process.returncode is None
+            assert not poll.done()
+            await transaction.rollback()
+            assert await asyncio.wait_for(poll, 5) is None
+        finally:
+            proceed_to_parent.set()
+            if transaction.is_active:
+                await transaction.rollback()
+            await blocker.close()
+            if process is not None and process.returncode is None:
+                process.terminate()
+                await asyncio.wait_for(process.communicate(), 5)
+            for task in (startup, poll):
+                if task is not None:
+                    if not task.done():
+                        task.cancel()
+                    await asyncio.gather(task, return_exceptions=True)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:306: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x10f972750>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:661c06a125e84da7b363ee9e82586d89')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:661c06a125e84da7b363ee9e82586d89' = <core.distributed.broker.RedisStreamBroker object at 0x10f972750>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_hot_start_while_real_expert_terminal_poll_holds_job_lock[shadow-worker] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x10fcea380>, 'startup_ab14020c4ed14d9fadc4071b086340b7')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ffd4e10>
+startup_kind = 'shadow-worker'
+tmp_path = PosixPath('/private/tmp/m3-task9-code-20261102-5TNycP/tmp/full/test_hot_start_while_real_expe2')
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("startup_kind", ["runtime", "cli", "shadow-worker", "shadow-reaper"])
+    async def test_hot_start_while_real_expert_terminal_poll_holds_job_lock(
+        startup_engine, monkeypatch, startup_kind, tmp_path,
+    ):
+        engine, schema = startup_engine
+        factory = async_sessionmaker(engine, expire_on_commit=False)
+        repository = DistributedRunRepository(factory)
+        expert_repository = ExpertJobRepository(factory)
+        parent = await repository.accept(spec(request_id=f"hot-start-{uuid4().hex}"))
+        claim = await repository.claim(parent.id, "parent-worker", lease_seconds=120)
+        job, _ = await expert_repository.create_or_replay(request_for(claim))
+        identity_read = asyncio.Event()
+        proceed_to_parent = asyncio.Event()
+        poll_pid = None
+        original_identity = expert_repository._job_identity
+    
+        async def paused_identity(session, job_id):
+            nonlocal poll_pid
+            identity = await original_identity(session, job_id)
+            poll_pid = await session.scalar(text("SELECT pg_backend_pid()"))
+            identity_read.set()
+            await proceed_to_parent.wait()
+            return identity
+    
+        monkeypatch.setattr(expert_repository, "_job_identity", paused_identity)
+        runtime, original_engine = configured_runtime(engine, schema)
+        blocker = await engine.connect()
+        transaction = await blocker.begin()
+        await blocker.execute(
+            text("SELECT id FROM distributed_runs WHERE id = :id FOR UPDATE"),
+            {"id": parent.id},
+        )
+        poll = asyncio.create_task(expert_repository.terminal(job.id, claim.fencing_token))
+        startup = None
+        process = None
+        worker_id = f"schema-hot-{uuid4().hex}"
+        process_type = startup_kind if startup_kind.startswith("shadow-") else "rehearsal-worker"
+        try:
+            await asyncio.wait_for(identity_read.wait(), 5)
+            if startup_kind == "runtime":
+                startup = asyncio.create_task(runtime.start())
+            else:
+                process = await asyncio.create_subprocess_exec(
+                    sys.executable, "-c",
+                    "import runpy; from functools import partial; "
+                    "from sqlalchemy.ext.asyncio import create_async_engine; "
+                    "from core.distributed import runtime; "
+                    "runtime.create_async_engine = partial(create_async_engine, "
+                    f"connect_args={{'server_settings': {{'search_path': {schema!r}}}}}); "
+                    "runpy.run_module('core.distributed.cli', run_name='__main__')",
+                    process_type,
+                    env={
+                        **os.environ,
+                        "PYTHONPATH": str(Path(__file__).parents[2]),
+                        "DISTRIBUTED_ENABLED": "true",
+                        "DISTRIBUTED_EXPERTS_ENABLED": "true",
+                        "DISTRIBUTED_DATABASE_URL": engine.url.render_as_string(
+                            hide_password=False
+                        ),
+                        "DISTRIBUTED_REDIS_URL": os.environ["DISTRIBUTED_TEST_REDIS_URL"],
+                        "DISTRIBUTED_WORKER_ID": worker_id,
+                        "DISTRIBUTED_STREAM": runtime.broker.stream,
+                        "DISTRIBUTED_CONSUMER_GROUP": runtime.broker.group,
+                        "PROMOTION_REHEARSAL_STREAM": runtime.rehearsal_broker.stream,
+                        "PROMOTION_REHEARSAL_CONSUMER_GROUP": runtime.rehearsal_broker.group,
+                        "EXPERT_STREAM": runtime.expert_broker.stream,
+                        "EXPERT_CONSUMER_GROUP": runtime.expert_broker.group,
+                        "LLM_PROVIDER": "template",
+                        "MEMORY_WORKER_ENABLED": "false",
+                        "PROMOTION_REHEARSAL_STORE_ROOT": str(tmp_path / "shadow-only"),
+                    },
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+    
+            async def ready_or_ddl_wait():
+                async with engine.connect() as connection:
+                    ddl_wait = await connection.scalar(text(
+                        "SELECT EXISTS (SELECT 1 FROM pg_locks "
+                        "WHERE relation = 'distributed_runs'::regclass "
+                        "AND mode = 'AccessExclusiveLock' AND NOT granted)"
+                    ))
+                    registered = await connection.scalar(text(
+                        "SELECT EXISTS (SELECT 1 FROM distributed_worker_registry "
+                        "WHERE process_type = :type AND status = 'running')"
+                    ), {"type": process_type})
+                return ddl_wait or registered or (startup is not None and startup.done())
+    
+            await wait_until(ready_or_ddl_wait)
+            proceed_to_parent.set()
+    
+            async def poll_waiting_on_parent():
+                async with engine.connect() as connection:
+                    return await connection.scalar(text(
+                        "SELECT EXISTS (SELECT 1 FROM pg_stat_activity "
+                        "WHERE pid = :pid AND wait_event_type = 'Lock')"
+                    ), {"pid": poll_pid})
+    
+            await wait_until(poll_waiting_on_parent)
+            if startup is not None:
+                await asyncio.wait_for(startup, 5)
+            else:
+                async def registered_or_exited():
+                    if process.returncode is not None:
+                        stderr = (await process.stderr.read()).decode()
+                        pytest.fail(f"CLI exited {process.returncode}: {stderr}")
+                    async with engine.connect() as connection:
+                        return await connection.scalar(text(
+                            "SELECT EXISTS (SELECT 1 FROM distributed_worker_registry "
+                            "WHERE status = 'running' AND process_type = :type)"
+                        ), {"type": process_type})
+                await wait_until(registered_or_exited)
+                assert process.returncode is None
+            assert not poll.done()
+            await transaction.rollback()
+            assert await asyncio.wait_for(poll, 5) is None
+        finally:
+            proceed_to_parent.set()
+            if transaction.is_active:
+                await transaction.rollback()
+            await blocker.close()
+            if process is not None and process.returncode is None:
+                process.terminate()
+                await asyncio.wait_for(process.communicate(), 5)
+            for task in (startup, poll):
+                if task is not None:
+                    if not task.done():
+                        task.cancel()
+                    await asyncio.gather(task, return_exceptions=True)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:306: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x1105b3510>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:73559350cd5644fc9904c780319d5522')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:73559350cd5644fc9904c780319d5522' = <core.distributed.broker.RedisStreamBroker object at 0x1105b3510>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+_ test_hot_start_while_real_expert_terminal_poll_holds_job_lock[shadow-reaper] _
+
+startup_engine = (<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x111cb7b00>, 'startup_3d7b9588748746ff934593236b5e427a')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111e49f90>
+startup_kind = 'shadow-reaper'
+tmp_path = PosixPath('/private/tmp/m3-task9-code-20261102-5TNycP/tmp/full/test_hot_start_while_real_expe3')
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("startup_kind", ["runtime", "cli", "shadow-worker", "shadow-reaper"])
+    async def test_hot_start_while_real_expert_terminal_poll_holds_job_lock(
+        startup_engine, monkeypatch, startup_kind, tmp_path,
+    ):
+        engine, schema = startup_engine
+        factory = async_sessionmaker(engine, expire_on_commit=False)
+        repository = DistributedRunRepository(factory)
+        expert_repository = ExpertJobRepository(factory)
+        parent = await repository.accept(spec(request_id=f"hot-start-{uuid4().hex}"))
+        claim = await repository.claim(parent.id, "parent-worker", lease_seconds=120)
+        job, _ = await expert_repository.create_or_replay(request_for(claim))
+        identity_read = asyncio.Event()
+        proceed_to_parent = asyncio.Event()
+        poll_pid = None
+        original_identity = expert_repository._job_identity
+    
+        async def paused_identity(session, job_id):
+            nonlocal poll_pid
+            identity = await original_identity(session, job_id)
+            poll_pid = await session.scalar(text("SELECT pg_backend_pid()"))
+            identity_read.set()
+            await proceed_to_parent.wait()
+            return identity
+    
+        monkeypatch.setattr(expert_repository, "_job_identity", paused_identity)
+        runtime, original_engine = configured_runtime(engine, schema)
+        blocker = await engine.connect()
+        transaction = await blocker.begin()
+        await blocker.execute(
+            text("SELECT id FROM distributed_runs WHERE id = :id FOR UPDATE"),
+            {"id": parent.id},
+        )
+        poll = asyncio.create_task(expert_repository.terminal(job.id, claim.fencing_token))
+        startup = None
+        process = None
+        worker_id = f"schema-hot-{uuid4().hex}"
+        process_type = startup_kind if startup_kind.startswith("shadow-") else "rehearsal-worker"
+        try:
+            await asyncio.wait_for(identity_read.wait(), 5)
+            if startup_kind == "runtime":
+                startup = asyncio.create_task(runtime.start())
+            else:
+                process = await asyncio.create_subprocess_exec(
+                    sys.executable, "-c",
+                    "import runpy; from functools import partial; "
+                    "from sqlalchemy.ext.asyncio import create_async_engine; "
+                    "from core.distributed import runtime; "
+                    "runtime.create_async_engine = partial(create_async_engine, "
+                    f"connect_args={{'server_settings': {{'search_path': {schema!r}}}}}); "
+                    "runpy.run_module('core.distributed.cli', run_name='__main__')",
+                    process_type,
+                    env={
+                        **os.environ,
+                        "PYTHONPATH": str(Path(__file__).parents[2]),
+                        "DISTRIBUTED_ENABLED": "true",
+                        "DISTRIBUTED_EXPERTS_ENABLED": "true",
+                        "DISTRIBUTED_DATABASE_URL": engine.url.render_as_string(
+                            hide_password=False
+                        ),
+                        "DISTRIBUTED_REDIS_URL": os.environ["DISTRIBUTED_TEST_REDIS_URL"],
+                        "DISTRIBUTED_WORKER_ID": worker_id,
+                        "DISTRIBUTED_STREAM": runtime.broker.stream,
+                        "DISTRIBUTED_CONSUMER_GROUP": runtime.broker.group,
+                        "PROMOTION_REHEARSAL_STREAM": runtime.rehearsal_broker.stream,
+                        "PROMOTION_REHEARSAL_CONSUMER_GROUP": runtime.rehearsal_broker.group,
+                        "EXPERT_STREAM": runtime.expert_broker.stream,
+                        "EXPERT_CONSUMER_GROUP": runtime.expert_broker.group,
+                        "LLM_PROVIDER": "template",
+                        "MEMORY_WORKER_ENABLED": "false",
+                        "PROMOTION_REHEARSAL_STORE_ROOT": str(tmp_path / "shadow-only"),
+                    },
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+    
+            async def ready_or_ddl_wait():
+                async with engine.connect() as connection:
+                    ddl_wait = await connection.scalar(text(
+                        "SELECT EXISTS (SELECT 1 FROM pg_locks "
+                        "WHERE relation = 'distributed_runs'::regclass "
+                        "AND mode = 'AccessExclusiveLock' AND NOT granted)"
+                    ))
+                    registered = await connection.scalar(text(
+                        "SELECT EXISTS (SELECT 1 FROM distributed_worker_registry "
+                        "WHERE process_type = :type AND status = 'running')"
+                    ), {"type": process_type})
+                return ddl_wait or registered or (startup is not None and startup.done())
+    
+            await wait_until(ready_or_ddl_wait)
+            proceed_to_parent.set()
+    
+            async def poll_waiting_on_parent():
+                async with engine.connect() as connection:
+                    return await connection.scalar(text(
+                        "SELECT EXISTS (SELECT 1 FROM pg_stat_activity "
+                        "WHERE pid = :pid AND wait_event_type = 'Lock')"
+                    ), {"pid": poll_pid})
+    
+            await wait_until(poll_waiting_on_parent)
+            if startup is not None:
+                await asyncio.wait_for(startup, 5)
+            else:
+                async def registered_or_exited():
+                    if process.returncode is not None:
+                        stderr = (await process.stderr.read()).decode()
+                        pytest.fail(f"CLI exited {process.returncode}: {stderr}")
+                    async with engine.connect() as connection:
+                        return await connection.scalar(text(
+                            "SELECT EXISTS (SELECT 1 FROM distributed_worker_registry "
+                            "WHERE status = 'running' AND process_type = :type)"
+                        ), {"type": process_type})
+                await wait_until(registered_or_exited)
+                assert process.returncode is None
+            assert not poll.done()
+            await transaction.rollback()
+            assert await asyncio.wait_for(poll, 5) is None
+        finally:
+            proceed_to_parent.set()
+            if transaction.is_active:
+                await transaction.rollback()
+            await blocker.close()
+            if process is not None and process.returncode is None:
+                process.terminate()
+                await asyncio.wait_for(process.communicate(), 5)
+            for task in (startup, poll):
+                if task is not None:
+                    if not task.done():
+                        task.cancel()
+                    await asyncio.gather(task, return_exceptions=True)
+>           await cleanup_runtime(runtime, original_engine)
+
+tests/distributed/test_runtime_schema_startup.py:306: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_runtime_schema_startup.py:75: in cleanup_runtime
+    await broker.reset_for_tests()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.broker.RedisStreamBroker object at 0x11221c550>
+
+    async def own_reset(self):
+        import re
+>       assert re.fullmatch(r"test:(?:runs|experts):[0-9a-f]{32}", self.stream), "not an own test stream"
+E       AssertionError: not an own test stream
+E       assert None
+E        +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:49bb887ec56f46aca7de57bcb480d168')
+E        +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+E        +    and   'test:schema:runs:49bb887ec56f46aca7de57bcb480d168' = <core.distributed.broker.RedisStreamBroker object at 0x11221c550>.stream
+
+/tmp/m3-task9-code-20261102-5TNycP/safety.py:28: AssertionError
+=============================== warnings summary ===============================
+tests/v2/test_agent_base.py:8
+  /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/v2/test_agent_base.py:8: PytestCollectionWarning: cannot collect test class 'TestAgent' because it has a __init__ constructor (from: tests/v2/test_agent_base.py)
+    class TestAgent(BaseAgent):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/distributed/test_policy_assignment.py::test_dispatch_routes_rehearsal_retry_and_deployment_events - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:runs:1cf932c4e3df46d4a1ecf490674c9c4a:rehearsal')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:runs:1cf932c4e3df46d4a1ecf490674c9c4a:rehearsal' = <core.distributed.broker.RedisStreamBroker object at 0x10fbc4390>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_current_schema_startup_executes_no_ddl_or_database_writes - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:2e4ba01a75094b4194e0606d1c6cf360')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:2e4ba01a75094b4194e0606d1c6cf360' = <core.distributed.broker.RedisStreamBroker object at 0x112866190>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_missing_or_stale_marker_rejects_without_database_writes[missing_table-distributed] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:ddc1e8480348490ebc7d30513997367e')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:ddc1e8480348490ebc7d30513997367e' = <core.distributed.broker.RedisStreamBroker object at 0x1128bde90>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_missing_or_stale_marker_rejects_without_database_writes[missing_table-promotion] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:b37c6f1624194cfa827c993e4e25894c')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:b37c6f1624194cfa827c993e4e25894c' = <core.distributed.broker.RedisStreamBroker object at 0x112922290>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_missing_or_stale_marker_rejects_without_database_writes[missing_row-distributed] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:2c70a64548144118aac516ef7d2b1988')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:2c70a64548144118aac516ef7d2b1988' = <core.distributed.broker.RedisStreamBroker object at 0x112969990>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_missing_or_stale_marker_rejects_without_database_writes[missing_row-promotion] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:ad1917c5635f4516a753a212d51e16ce')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:ad1917c5635f4516a753a212d51e16ce' = <core.distributed.broker.RedisStreamBroker object at 0x1129d9590>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_missing_or_stale_marker_rejects_without_database_writes[stale_version-distributed] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:a5368f7a7cbf4712be63267152504fce')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:a5368f7a7cbf4712be63267152504fce' = <core.distributed.broker.RedisStreamBroker object at 0x112a45510>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_missing_or_stale_marker_rejects_without_database_writes[stale_version-promotion] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:86fd0541c8064e0296f08eab8f6941f5')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:86fd0541c8064e0296f08eab8f6941f5' = <core.distributed.broker.RedisStreamBroker object at 0x112ad1dd0>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_missing_or_stale_marker_rejects_without_database_writes[stale_hash-distributed] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:75f6fd437baf44cc8e4937868737c7c3')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:75f6fd437baf44cc8e4937868737c7c3' = <core.distributed.broker.RedisStreamBroker object at 0x112b3de90>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_missing_or_stale_marker_rejects_without_database_writes[stale_hash-promotion] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:68b87475fb344683a4b41c89f3caf397')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:68b87475fb344683a4b41c89f3caf397' = <core.distributed.broker.RedisStreamBroker object at 0x112ba9d10>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_missing_or_stale_marker_rejects_without_database_writes[changed_runtime_version-distributed] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:135ce6c3b26542a9ac9734c4f5fb76fb')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:135ce6c3b26542a9ac9734c4f5fb76fb' = <core.distributed.broker.RedisStreamBroker object at 0x112b39cd0>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_missing_or_stale_marker_rejects_without_database_writes[changed_runtime_version-promotion] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:cfb0fa7da16940b88a4f22f6fe6b5c56')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:cfb0fa7da16940b88a4f22f6fe6b5c56' = <core.distributed.broker.RedisStreamBroker object at 0x1129f9e10>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_missing_or_stale_marker_rejects_without_database_writes[changed_runtime_hash-distributed] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:a0fb97a7c04f4c42a1a5b7b862644b45')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:a0fb97a7c04f4c42a1a5b7b862644b45' = <core.distributed.broker.RedisStreamBroker object at 0x1128f4e10>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_missing_or_stale_marker_rejects_without_database_writes[changed_runtime_hash-promotion] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:f7b35c6a77e742c9a37a76798ec06b2b')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:f7b35c6a77e742c9a37a76798ec06b2b' = <core.distributed.broker.RedisStreamBroker object at 0x1128686d0>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_hot_start_while_real_expert_terminal_poll_holds_job_lock[runtime] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:73b9ff589f33420cb30f41c39eed808a')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:73b9ff589f33420cb30f41c39eed808a' = <core.distributed.broker.RedisStreamBroker object at 0x10fb87d10>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_hot_start_while_real_expert_terminal_poll_holds_job_lock[cli] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:661c06a125e84da7b363ee9e82586d89')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:661c06a125e84da7b363ee9e82586d89' = <core.distributed.broker.RedisStreamBroker object at 0x10f972750>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_hot_start_while_real_expert_terminal_poll_holds_job_lock[shadow-worker] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:73559350cd5644fc9904c780319d5522')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:73559350cd5644fc9904c780319d5522' = <core.distributed.broker.RedisStreamBroker object at 0x1105b3510>.stream
+FAILED tests/distributed/test_runtime_schema_startup.py::test_hot_start_while_real_expert_terminal_poll_holds_job_lock[shadow-reaper] - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:schema:runs:49bb887ec56f46aca7de57bcb480d168')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:schema:runs:49bb887ec56f46aca7de57bcb480d168' = <core.distributed.broker.RedisStreamBroker object at 0x11221c550>.stream
+ERROR tests/integration/test_expert_failover.py::test_killed_expert_worker_gets_higher_token_and_one_result - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:experts:process:aba07a063bb8447fb6b33e19069ebe07')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:experts:process:aba07a063bb8447fb6b33e19069ebe07' = <core.distributed.broker.RedisStreamBroker object at 0x110d84d90>.stream
+ERROR tests/integration/test_expert_failover.py::test_killed_parent_makes_late_result_parent_stale - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:experts:process:dd5bc1e966f641588c7d16675c49e0dd')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:experts:process:dd5bc1e966f641588c7d16675c49e0dd' = <core.distributed.broker.RedisStreamBroker object at 0x110be5c90>.stream
+ERROR tests/integration/test_expert_failover.py::test_duplicate_redis_messages_produce_one_accepted_result - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:experts:process:28986e610adc49eaa423c5c8c20a22ee')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:experts:process:28986e610adc49eaa423c5c8c20a22ee' = <core.distributed.broker.RedisStreamBroker object at 0x111d21450>.stream
+ERROR tests/integration/test_expert_failover.py::test_cancel_waiting_parent_rejects_late_draft - AssertionError: not an own test stream
+assert None
+ +  where None = <function fullmatch at 0x106b80360>('test:(?:runs|experts):[0-9a-f]{32}', 'test:experts:process:f6b2143e15da482ba61888443042afea')
+ +    where <function fullmatch at 0x106b80360> = <module 're' from '/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/re/__init__.py'>.fullmatch
+ +    and   'test:experts:process:f6b2143e15da482ba61888443042afea' = <core.distributed.broker.RedisStreamBroker object at 0x1120a1dd0>.stream
+18 failed, 1662 passed, 1 warning, 4 errors in 327.75s (0:05:27)

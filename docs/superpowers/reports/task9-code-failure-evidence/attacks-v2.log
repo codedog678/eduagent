@@ -1,0 +1,87 @@
+.F...................                                                    [100%]
+=================================== FAILURES ===================================
+______ test_historical_health_gate_must_not_be_replaced_by_new_deployment ______
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109b1fbd0>, <core.distributed.promotion_repository....ionRepository object at 0x109cf2e10>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x109972bd0>)
+
+    async def test_historical_health_gate_must_not_be_replaced_by_new_deployment(health_repo):
+        repo, _, _ = health_repo
+        old, current, _, _, receipts = await health_pair(health_repo, current_healthy=True)
+        original = next(r for r in receipts if r.details["deployment_id"] == old.deployment_id)
+>       newer = next(r for r in receipts if r.details["deployment_id"] == current.deployment_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+/tmp/m3-task9-code-20261102-5TNycP/test_code_attacks.py:67: StopIteration
+
+The above exception was the direct cause of the following exception:
+
+self = <Coroutine test_historical_health_gate_must_not_be_replaced_by_new_deployment>
+
+    def runtest(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        runner = self._request.getfixturevalue(runner_fixture_id)
+        context = contextvars.copy_context()
+        synchronized_obj = _synchronize_coroutine(
+            getattr(*self._synchronization_target_attr), runner, context
+        )
+        with MonkeyPatch.context() as c:
+            c.setattr(*self._synchronization_target_attr, synchronized_obj)
+>           super().runtest()
+
+../../eduagent/.venv/lib/python3.11/site-packages/pytest_asyncio/plugin.py:469: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/pytest_asyncio/plugin.py:716: in inner
+    runner.run(coro, context=context)
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_UnixSelectorEventLoop running=False closed=False debug=False>
+future = <Task finished name='Task-65' coro=<test_historical_health_gate_must_not_be_replaced_by_new_deployment() done, defined at /tmp/m3-task9-code-20261102-5TNycP/test_code_attacks.py:63> exception=RuntimeError('coroutine raised StopIteration')>
+
+    def run_until_complete(self, future):
+        """Run until the Future is done.
+    
+        If the argument is a coroutine, it is wrapped in a Task.
+    
+        WARNING: It would be disastrous to call run_until_complete()
+        with the same coroutine twice -- it would wrap it in two
+        different Tasks and that can't be good.
+    
+        Return the Future's result, or raise its exception.
+        """
+        self._check_closed()
+        self._check_running()
+    
+        new_task = not futures.isfuture(future)
+        future = tasks.ensure_future(future, loop=self)
+        if new_task:
+            # An exception is raised if the future didn't complete, so there
+            # is no need to log the "destroy pending task" message
+            future._log_destroy_pending = False
+    
+        future.add_done_callback(_run_until_complete_cb)
+        try:
+            self.run_forever()
+        except:
+            if new_task and future.done() and not future.cancelled():
+                # The coroutine raised a BaseException. Consume the exception
+                # to not log a warning, the caller doesn't have access to the
+                # local task.
+                future.exception()
+            raise
+        finally:
+            future.remove_done_callback(_run_until_complete_cb)
+        if not future.done():
+            raise RuntimeError('Event loop stopped before Future completed.')
+    
+>       return future.result()
+               ^^^^^^^^^^^^^^^
+E       RuntimeError: coroutine raised StopIteration
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/asyncio/base_events.py:654: RuntimeError
+=========================== short test summary info ============================
+FAILED ::test_historical_health_gate_must_not_be_replaced_by_new_deployment - RuntimeError: coroutine raised StopIteration
+1 failed, 20 passed in 1.60s
