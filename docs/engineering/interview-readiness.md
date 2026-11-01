@@ -6,7 +6,7 @@
 新的独立规格复审通过，但代码审查复现权限观测与晋级事务之间的并发漏洞，
 并发修复冻结于 `4c9b204`：定向 469 / 完整后端 1412 项通过，
 父侧已核验 XML 与源码摘要；新的独立规格复审通过（469 项矩阵与 19 个探测），
-独立代码验收尚待完成。
+但代码审查又复现异常退出时跳过存储权限检查，修复与重新验收尚待完成。
 Policies 页面和完整灰度演练尚待验收；最终交付时需重新核对本页与实际代码、运行证据。
 
 项目适合从三个问题展开：如何可靠执行 Agent，如何保护学习证据，
@@ -25,7 +25,7 @@ Policies 页面和完整灰度演练尚待验收；最终交付时需重新核�
 | 如何避免新旧策略混跑？ | 受理时固定 policy/deployment/namespace，尝试与专家继承；[policy_assignment](../../python/core/distributed/policy_assignment.py) | [版本固定回归](../../python/tests/distributed/test_policy_pinning.py)、[Task6 审查](../superpowers/reports/2026-11-01-m3-task6-execution.md) | 自动回滚只影响新受理 Run；Task8 已有旧/新 Run 回归，完整闭环仍待 Task8–10 验收 |
 | 如何证明候选没有污染主状态？ | 无提交权的 Shadow 执行、专用 store 与 stream、文件锁 | [Shadow 回归](../../python/tests/distributed/test_shadow_worker.py)、[Task7 审查及 JUnit](../superpowers/reports/2026-11-01-m3-task7-shadow.md) | 隔离执行证明工程边界，不能证明候选改善教学质量 |
 | 缺少费用或结构判定时能否晋级？ | 全尝试账本、真实判定分子/分母、缺失证据 HOLD；[policy_health](../../python/core/distributed/policy_health.py) | [Task8 实现与冻结测试](../superpowers/reports/2026-11-01-m3-task8-health.md)、[健康回归](../../python/tests/distributed/test_policy_health.py) | fixture 的 Decimal 费用只检验算法；实际费用缺失保持 unknown；代码审查 FAIL，不能声称完整发布链已验收 |
-| 两个 evaluator 同时回滚怎么办？ | 同事务冻结观察集合、锁定 head、CAS 更新、审计与 Outbox；观测发布共享 head 锁，已消费前序硬违规不被滚动窗口淘汰 | [Task8 并发修复完整 JUnit](../../python/tests/distributed/evidence/2026-11-01-m3-task8-p1-full.xml)、[真实发布交错回归](../../python/tests/distributed/test_policy_health_publication.py) | 完整后端 1412 项、独立规格复审通过；新的独立代码验收与完整多进程受控演练尚待完成 |
+| 两个 evaluator 同时回滚怎么办？ | 同事务冻结观察集合、锁定 head、CAS 更新、审计与 Outbox；观测发布共享 head 锁，已消费前序硬违规不被滚动窗口淘汰 | [Task8 并发修复完整 JUnit](../../python/tests/distributed/evidence/2026-11-01-m3-task8-p1-full.xml)、[真实发布交错回归](../../python/tests/distributed/test_policy_health_publication.py) | 完整后端 1412 项、独立规格复审通过；异常退出权限缺口使最新 CODE FAIL，完整多进程受控演练尚待完成 |
 
 ```mermaid
 flowchart LR
@@ -91,7 +91,7 @@ flowchart LR
 
 | 项目 | 当前事实 | 完成所需证据 |
 | --- | --- | --- |
-| 健康与自动回滚 | Task8 原[代码审查](../superpowers/reports/2026-11-01-m3-task8-code-review.md) FAIL；P1 修复冻结 `4c9b204`，定向 469、完整 1412 项通过；新的独立规格复审通过 | 完成新的独立代码审查，通过后才验收 |
+| 健康与自动回滚 | Task8 发布锁修复冻结 `4c9b204`，完整 1412 项及独立规格复审通过；最新[代码审查](../superpowers/reports/2026-11-01-m3-task8-code-review.md) FAIL，异常退出会遗漏真实存储越界 | 修复关闭前的异常权限检查，补真实 candidate/Shadow 回归，再顺序独立审查 |
 | Policies 只读界面 | Task9 尚待实现 | 脱敏分页 API、Trace 版本关联、桌面/移动端 Playwright 与生产 build |
 | 真实基础设施闭环 | Task10 尚待实现 | 两 Run Worker、Shadow、health 进程；强杀接管、签名故障、旧/新 Run 与迟到观察的证据 |
 | 正式模型资格 | 现有开发重放与历史评测不满足 Judge v3 资格 | 合格 campaign、独立校准、正式留出与真实模型账本；缺项须记录实际前提，不能生成假回执 |
