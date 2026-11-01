@@ -648,6 +648,183 @@ class PromotionRepository(ShadowRepositoryMixin):
         return row
 
     @staticmethod
+    async def _validated_health_window(
+        session, *, artifact, deployment, gate_type, receipt,
+    ):
+        """Validate frozen evidence, not just the receipt's claimed status."""
+        from .policy_health import _observation, evaluate_window, observation_key, same_distribution
+
+        cohort = "shadow" if gate_type == "shadow_health" else "candidate"
+        if (
+            receipt is None or receipt.status != "passed"
+            or deployment.state != ("shadow" if cohort == "shadow" else "canary")
+            or receipt.gate_type != gate_type or receipt.policy_hash != artifact.policy_hash
+            or artifact.policy_hash != deployment.candidate_policy_hash
+            or receipt.protocol_hash != artifact.protocol_hash
+            or receipt.runtime_hash != artifact.runtime_hash
+            or receipt.source_revision != artifact.source_revision
+            or receipt.data_role != artifact.data_role
+            or receipt.issuer != "policy-health"
+            or receipt.model_identity != "server-policy-health-v1"
+            or not isinstance(receipt.details, dict)
+        ):
+            return None
+        try:
+            thresholds = PolicyThresholds.model_validate(deployment.thresholds)
+            details = receipt.details
+            window_id = details.get("window_id")
+            if not isinstance(window_id, str) or len(window_id) != 64:
+                return None
+            window = await session.get(PolicyHealthWindowRecord, window_id)
+            if window is None or window.decision != "pass" or window.triggered_thresholds:
+                return None
+            keys = window.observation_keys
+            if not isinstance(keys, dict) or set(keys) != {"candidate", "stable"}:
+                return None
+            for label, minimum in (("candidate", thresholds.candidate_min_runs),
+                                   ("stable", thresholds.stable_min_runs)):
+                if (not isinstance(keys[label], list)
+                    or not minimum <= len(keys[label]) <= thresholds.window_max_runs
+                    or any(not isinstance(key, str) or len(key) != 64 for key in keys[label])
+                    or len(set(keys[label])) != len(keys[label])):
+                    return None
+            flat = keys["candidate"] + keys["stable"]
+            identity = {
+                "deployment_id": deployment.deployment_id,
+                "deployment_version": deployment.version,
+                "metric_contract_version": 1, "thresholds_hash": thresholds.digest,
+                "observation_keys": keys,
+            }
+            if (
+                thresholds.digest != deployment.thresholds_hash
+                or canonical_hash({key: details.get(key) for key in identity}) != canonical_hash(identity)
+                or details.get("gate_cohort") != cohort
+                or window.window_id != canonical_hash(identity)
+                or window.deployment_id != deployment.deployment_id
+                or window.deployment_version != deployment.version
+                or window.metric_contract_version != 1
+                or window.thresholds_hash != thresholds.digest
+                or window.observation_start_key != flat[0]
+                or window.observation_end_key != flat[-1]
+                or details.get("candidate_stats") != window.candidate_stats
+                or details.get("stable_stats") != window.stable_stats
+                or receipt.evidence_hash != canonical_hash(details)
+                or receipt.sample_count != len(keys["candidate"])
+                or receipt.issued_at < window.evaluated_at
+            ):
+                return None
+            records = (await session.scalars(select(PolicyObservationRecord).where(
+                PolicyObservationRecord.observation_key.in_(flat)
+            ).limit(2 * thresholds.window_max_runs))).all()
+            by_key = {row.observation_key: row for row in records}
+            if len(by_key) != len(flat):
+                return None
+            candidate = [_observation(by_key[key]) for key in keys["candidate"]]
+            stable = [_observation(by_key[key]) for key in keys["stable"]]
+            for rows, expected_cohort, policy_hash in (
+                (candidate, cohort, deployment.candidate_policy_hash),
+                (stable, "stable", deployment.stable_policy_hash),
+            ):
+                if rows != sorted(rows, key=lambda row: (row.observed_at, row.observation_key)):
+                    return None
+                if any(
+                    str(row.deployment_id) != deployment.deployment_id
+                    or row.cohort != expected_cohort or row.policy_hash != policy_hash
+                    or row.metric_contract_version != 1
+                    or row.observation_key != observation_key(
+                        row.run_id, row.deployment_id, row.cohort, row.metric_contract_version)
+                    or row.observed_at > window.evaluated_at
+                    or by_key[row.observation_key].created_at > window.evaluated_at
+                    for row in rows
+                ):
+                    return None
+            if cohort == "shadow":
+                if {row.run_id for row in candidate} != {row.run_id for row in stable}:
+                    return None
+            elif (
+                not same_distribution(candidate, stable)
+                or any(row.state_namespace == "production" for row in candidate + stable)
+            ):
+                return None
+            result = evaluate_window(candidate, stable, thresholds)
+            if (
+                result.decision != "pass"
+                or result.candidate_stats != window.candidate_stats
+                or result.stable_stats != window.stable_stats
+                or any(row.cost is None for row in candidate + stable)
+                or receipt.cost != sum((row.cost for row in candidate + stable), Decimal(0))
+            ):
+                return None
+            return window
+        except (ValueError, TypeError, KeyError, InvalidOperation):
+            return None
+
+    async def active_health_baseline(self, session, deployment):
+        """Use only the Canary window actually consumed by this activation."""
+        if deployment.environment != "rehearsal":
+            return []
+        canary = await session.scalar(select(PolicyDeploymentRecord).where(
+            PolicyDeploymentRecord.environment == deployment.environment,
+            PolicyDeploymentRecord.version == deployment.version - 1,
+            PolicyDeploymentRecord.state == "canary",
+            PolicyDeploymentRecord.candidate_policy_hash == deployment.candidate_policy_hash,
+            PolicyDeploymentRecord.stable_policy_hash == deployment.stable_policy_hash,
+            PolicyDeploymentRecord.thresholds_hash == deployment.thresholds_hash,
+        ))
+        if canary is None or canary.created_at > deployment.created_at:
+            return []
+        audit = await session.scalar(select(PolicyAuditEventRecord).where(
+            PolicyAuditEventRecord.command_id == deployment.command_id,
+            PolicyAuditEventRecord.deployment_id == deployment.deployment_id,
+            PolicyAuditEventRecord.event_type == "promotion_transitioned",
+        ))
+        approval = await session.scalar(select(PolicyGateReceiptRecord).where(
+            PolicyGateReceiptRecord.policy_hash == deployment.candidate_policy_hash,
+            PolicyGateReceiptRecord.gate_type == "promotion_approval",
+            PolicyGateReceiptRecord.details["command_id"].as_string() == deployment.command_id,
+        ).limit(1))
+        if audit is None or approval is None or not isinstance(approval.details, dict):
+            return []
+        details = approval.details
+        if (
+            approval.status != "passed" or approval.evidence_hash != canonical_hash(details)
+            or approval.issued_at != deployment.created_at
+            or details.get("command_hash") != audit.details.get("command_hash")
+            or audit.details.get("from_state") != "canary"
+            or audit.details.get("from_version") != canary.version
+            or audit.details.get("to_state") != "active"
+            or audit.details.get("to_version") != deployment.version
+            or details.get("canary_deployment_id") != canary.deployment_id
+            or details.get("canary_deployment_version") != canary.version
+            or details.get("canary_thresholds_hash") != canary.thresholds_hash
+            or details.get("actor") != deployment.actor or details.get("reason") != deployment.reason
+        ):
+            return []
+        receipt_id = details.get("canary_health_receipt_id")
+        if not isinstance(receipt_id, str):
+            return []
+        receipt = await session.get(PolicyGateReceiptRecord, receipt_id)
+        artifact = await session.get(PolicyArtifactRecord, deployment.candidate_policy_hash)
+        if (
+            receipt is None or artifact is None or receipt.issued_at > deployment.created_at
+            or receipt.evidence_hash != details.get("canary_health_evidence_hash")
+            or approval.protocol_hash != artifact.protocol_hash
+            or approval.runtime_hash != artifact.runtime_hash
+            or approval.source_revision != artifact.source_revision
+        ):
+            return []
+        window = await self._validated_health_window(
+            session, artifact=artifact, deployment=canary, gate_type="canary_health", receipt=receipt)
+        if window is None:
+            return []
+        return list((await session.scalars(select(PolicyObservationRecord).where(
+            PolicyObservationRecord.observation_key.in_(window.observation_keys["stable"]),
+            PolicyObservationRecord.observed_at >= canary.created_at,
+            PolicyObservationRecord.observed_at <= deployment.created_at,
+            PolicyObservationRecord.created_at <= deployment.created_at,
+        ).limit(PolicyThresholds.model_validate(deployment.thresholds).window_max_runs))).all())
+
+    @staticmethod
     async def _bound_gate_receipts(
         session: AsyncSession,
         *,
@@ -688,7 +865,7 @@ class PromotionRepository(ShadowRepositoryMixin):
                     PolicyHealthWindowRecord.metric_contract_version == 1,
                 ).order_by(PolicyHealthWindowRecord.evaluated_at.desc(),
                            PolicyHealthWindowRecord.window_id.desc()).limit(1))
-                if hard_failure is not None or (latest_window is not None and latest_window.decision != "pass"):
+                if hard_failure is not None or latest_window is None or latest_window.decision != "pass":
                     missing.append(gate_type)
                     continue
                 query = query.where(
@@ -712,7 +889,12 @@ class PromotionRepository(ShadowRepositoryMixin):
                     PolicyGateReceiptRecord.receipt_id.desc(),
                 ).limit(1)
             )
-            if receipt is None or receipt.status != "passed":
+            valid_health = True
+            if gate_type in {"shadow_health", "canary_health"} and receipt is not None:
+                frozen = await PromotionRepository._validated_health_window(
+                    session, artifact=artifact, deployment=deployment, gate_type=gate_type, receipt=receipt)
+                valid_health = frozen is not None and frozen.window_id == latest_window.window_id
+            if receipt is None or receipt.status != "passed" or not valid_health:
                 missing.append(gate_type)
             else:
                 rows[gate_type] = receipt

@@ -18,6 +18,8 @@ from core.distributed.promotion_models import (
     PolicyDeploymentRecord,
     PolicyEnvironmentHeadRecord,
     PolicyGateReceiptRecord,
+    PolicyHealthWindowRecord,
+    PolicyObservationRecord,
     RehearsalTokenNonceRecord,
 )
 from core.distributed.promotion_repository import (
@@ -717,6 +719,8 @@ async def _registered(repository, *, command_id="register-for-transition"):
 
 
 async def _add_gate(repository, gate_type, *, overrides=None):
+    if gate_type in {"shadow_health", "canary_health"}:
+        return await _add_health_gate(repository, gate_type, overrides=overrides)
     material = qualification_material()
     artifact = material.artifact
     values = {
@@ -752,6 +756,71 @@ async def _add_gate(repository, gate_type, *, overrides=None):
     values.update(overrides or {})
     async with repository.session_factory() as session, session.begin():
         session.add(PolicyGateReceiptRecord(**values))
+    return values
+
+
+async def _add_health_gate(repository, gate_type, *, overrides=None):
+    """Persist real frozen windows for command tests, never receipt-only passes."""
+    from core.distributed.models import DistributedRun
+    from core.distributed.policy_health import PolicyHealthEvaluator, observation_key
+    from tests.distributed.test_policy_health import sample
+
+    overrides = dict(overrides or {})
+    head = await repository.get_head("rehearsal")
+    source_id = overrides.get("details", {}).get("deployment_id", str(head.deployment_id))
+    async with repository.session_factory() as session, session.begin():
+        source = await session.get(PolicyDeploymentRecord, source_id)
+        if source is None:
+            source = await session.get(PolicyDeploymentRecord, str(head.deployment_id))
+        cohort = "shadow" if gate_type == "shadow_health" else "candidate"
+        existing = await session.scalar(select(PolicyHealthWindowRecord).where(
+            PolicyHealthWindowRecord.deployment_id == source.deployment_id,
+            PolicyHealthWindowRecord.decision == "pass",
+        ).order_by(PolicyHealthWindowRecord.evaluated_at.desc()).limit(1))
+        for i in range(0 if existing is not None else 20):
+            parent_id = str(uuid4())
+            session.add(DistributedRun(
+                id=parent_id, learner_id="health-fixture", request_id=parent_id,
+                operation="learning_task", input_hash="a" * 64, payload={},
+                status="completed", trace_id="c" * 32, deployment_id=source.deployment_id,
+                effective_policy_hash=source.stable_policy_hash, policy_cohort="stable",
+                assignment_key_hash="a" * 64, assignment_reason="test_fixture",
+                state_namespace="rehearsal-health", created_at=NOW, updated_at=NOW,
+            ))
+            await session.flush()
+            for label in (cohort, "stable"):
+                values = sample(i, "stable" if label == "stable" else "candidate").model_dump(mode="python")
+                values.update(
+                    run_id=parent_id, deployment_id=source.deployment_id, cohort=label,
+                    observation_key=observation_key(parent_id, source.deployment_id, label, 1),
+                    policy_hash=source.stable_policy_hash if label == "stable" else source.candidate_policy_hash,
+                    observed_at=NOW + timedelta(hours=3, seconds=i),
+                )
+                session.add(PolicyObservationRecord(**values, created_at=NOW))
+    window = await PolicyHealthEvaluator(repository).evaluate(source.deployment_id)
+    assert window.decision == "pass"
+    async with repository.session_factory() as session, session.begin():
+        receipt = await session.scalar(select(PolicyGateReceiptRecord).where(
+            PolicyGateReceiptRecord.details["window_id"].as_string() == window.window_id))
+        values = {column.name: copy.deepcopy(getattr(receipt, column.name))
+                  for column in PolicyGateReceiptRecord.__table__.columns}
+        # Issuance offsets keep explicit latest-status scenarios ordered after evaluation.
+        for field in ("issued_at", "created_at"):
+            if field in overrides:
+                overrides[field] = values[field] + (overrides[field] - (NOW + timedelta(hours=4)))
+        if overrides:
+            if existing is None:
+                await session.delete(receipt)
+                await session.flush()
+            values["receipt_id"] = str(uuid4())
+            if "details" in overrides:
+                overrides["details"] = {**values["details"], **overrides["details"]}
+            values.update(overrides)
+            values["details"] = {**values["details"], "fixture_marker": str(uuid4())}
+            values["evidence_hash"] = canonical_hash(values["details"])
+            if "issued_at" not in overrides:
+                values["issued_at"] += timedelta(seconds=1)
+            session.add(PolicyGateReceiptRecord(**values))
     return values
 
 
@@ -1210,7 +1279,6 @@ async def test_shadow_health_latest_is_scoped_to_exact_deployment_binding(
         DeploymentState.SHADOW,
     )
     exact = {
-        "window_id": "shadow-current-window",
         "deployment_id": str(shadow.deployment_id),
         "deployment_version": shadow.version,
         "thresholds_hash": shadow.thresholds_hash,

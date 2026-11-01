@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="21" skipped="0" tests="40" time="14.964" timestamp="2026-11-01T11:24:52.987792+00:00" hostname="HL41657YW6"><testcase classname="tests.distributed.test_policy_health_corrections" name="test_migrated_two_hundred_unbound_terminals_do_not_starve_recovery[run]" time="0.371"><failure message="sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column &quot;deployment_id&quot; of relation &quot;distributed_runs&quot; violates not-null constraint&#10;DETAIL:  Failing row contains (376ed15b-857b-4a2f-abd9-bbda5b1d4bc3, legacy, legacy-0, learning_task, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, {}, completed, cccccccccccccccccccccccccccccccc, null, null, null, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, null, null, null, null, null, null, none, 0, 2026-11-01 08:00:00+08, 2026-11-01 08:00:00+08).&#10;[SQL: INSERT INTO distributed_runs (id, learner_id, request_id, operation, input_hash, payload, status, trace_id, error_code, deployment_id, effective_policy_hash, policy_cohort, assignment_key_hash, assignment_reason, state_namespace, rehearsal_id, attemp ... 67988 characters truncated ... 5::TIMESTAMP WITH TIME ZONE) RETURNING distributed_runs.rehearsal_fault_profile, distributed_runs.id]&#10;[parameters: ('376ed15b-857b-4a2f-abd9-bbda5b1d4bc3', 'legacy', 'legacy-0', 'learning_task', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '{}', 'completed', 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None, None, None, None, None, 0, datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), 'ec11fd42-e1e3-4ee6-84a7-fb80cd817997', 'legacy', 'legacy-1', 'learning_task', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '{}', 'completed', 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None, None, None, None, None, 0, datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), 'd72528dc-8faa-4f48-9a84-52d2d0d16ce0', 'legacy', 'legacy-2', 'learning_task', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '{}', 'completed', 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None ... 3795 parameters truncated ... 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None, None, None, None, None, 0, datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), 'ba0a94b6-6c16-49c7-9994-9f4831cc5f6c', 'legacy', 'legacy-203', 'learning_task', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '{}', 'completed', 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None, None, None, None, None, 0, datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), 'c7d497c4-6227-44b3-ac91-23f557be118c', 'legacy', 'legacy-204', 'learning_task', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '{}', 'completed', 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None, None, None, None, None, 0, datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)">../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: in _prepare_and_execute
+    self._rows = deque(await prepared_stmt.fetch(*parameters))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+asyncpg/protocol/protocol.pyx:205: in bind_execute
+    ???
+E   asyncpg.exceptions.NotNullViolationError: null value in column "deployment_id" of relation "distributed_runs" violates not-null constraint
+E   DETAIL:  Failing row contains (376ed15b-857b-4a2f-abd9-bbda5b1d4bc3, legacy, legacy-0, learning_task, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, {}, completed, cccccccccccccccccccccccccccccccc, null, null, null, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, null, null, null, null, null, null, none, 0, 2026-11-01 08:00:00+08, 2026-11-01 08:00:00+08).
+
+The above exception was the direct cause of the following exception:
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2127: in _exec_insertmany_context
+    dialect.do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
+    raise translated_error from error
+E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column "deployment_id" of relation "distributed_runs" violates not-null constraint
+E   DETAIL:  Failing row contains (376ed15b-857b-4a2f-abd9-bbda5b1d4bc3, legacy, legacy-0, learning_task, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, {}, completed, cccccccccccccccccccccccccccccccc, null, null, null, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, null, null, null, null, null, null, none, 0, 2026-11-01 08:00:00+08, 2026-11-01 08:00:00+08).
+
+The above exception was the direct cause of the following exception:
+tests/distributed/test_policy_health_corrections.py:32: in test_migrated_two_hundred_unbound_terminals_do_not_starve_recovery
+    async with repo.session_factory() as session, session.begin():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1886: in __aexit__
+    await greenlet_spawn(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/util.py:147: in __exit__
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/util.py:145: in __exit__
+    self.commit()
+&lt;string&gt;:2: in commit
+    ???
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1315: in commit
+    self._prepare_impl()
+&lt;string&gt;:2: in _prepare_impl
+    ???
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1290: in _prepare_impl
+    self.session.flush()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4352: in flush
+    self._flush(objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4487: in _flush
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4448: in _flush
+    flush_context.execute()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1144: in _emit_insert_statements
+    result = connection.execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1421: in execute
+    return meth(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1643: in _execute_clauseelement
+    ret = self._execute_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
+    return self._exec_insertmany_context(dialect, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2135: in _exec_insertmany_context
+    self._handle_dbapi_exception(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2127: in _exec_insertmany_context
+    dialect.do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
+    raise translated_error from error
+E   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column "deployment_id" of relation "distributed_runs" violates not-null constraint
+E   DETAIL:  Failing row contains (376ed15b-857b-4a2f-abd9-bbda5b1d4bc3, legacy, legacy-0, learning_task, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, {}, completed, cccccccccccccccccccccccccccccccc, null, null, null, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, null, null, null, null, null, null, none, 0, 2026-11-01 08:00:00+08, 2026-11-01 08:00:00+08).
+E   [SQL: INSERT INTO distributed_runs (id, learner_id, request_id, operation, input_hash, payload, status, trace_id, error_code, deployment_id, effective_policy_hash, policy_cohort, assignment_key_hash, assignment_reason, state_namespace, rehearsal_id, attemp ... 67988 characters truncated ... 5::TIMESTAMP WITH TIME ZONE) RETURNING distributed_runs.rehearsal_fault_profile, distributed_runs.id]
+E   [parameters: ('376ed15b-857b-4a2f-abd9-bbda5b1d4bc3', 'legacy', 'legacy-0', 'learning_task', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '{}', 'completed', 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None, None, None, None, None, 0, datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), 'ec11fd42-e1e3-4ee6-84a7-fb80cd817997', 'legacy', 'legacy-1', 'learning_task', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '{}', 'completed', 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None, None, None, None, None, 0, datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), 'd72528dc-8faa-4f48-9a84-52d2d0d16ce0', 'legacy', 'legacy-2', 'learning_task', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '{}', 'completed', 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None ... 3795 parameters truncated ... 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None, None, None, None, None, 0, datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), 'ba0a94b6-6c16-49c7-9994-9f4831cc5f6c', 'legacy', 'legacy-203', 'learning_task', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '{}', 'completed', 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None, None, None, None, None, 0, datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), 'c7d497c4-6227-44b3-ac91-23f557be118c', 'legacy', 'legacy-204', 'learning_task', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '{}', 'completed', 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None, None, None, None, None, 0, datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]
+E   (Background on this error at: https://sqlalche.me/e/20/gkpj)</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_migrated_two_hundred_unbound_terminals_do_not_starve_recovery[shadow]" time="0.199"><failure message="sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column &quot;deployment_id&quot; of relation &quot;distributed_runs&quot; violates not-null constraint&#10;DETAIL:  Failing row contains (e15cb842-d9fa-4944-8aa4-3496c8b45bb9, legacy, legacy-0, learning_task, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, {}, completed, cccccccccccccccccccccccccccccccc, null, null, null, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, null, null, null, null, null, null, none, 0, 2026-11-01 08:00:00+08, 2026-11-01 08:00:00+08).&#10;[SQL: INSERT INTO distributed_runs (id, learner_id, request_id, operation, input_hash, payload, status, trace_id, error_code, deployment_id, effective_policy_hash, policy_cohort, assignment_key_hash, assignment_reason, state_namespace, rehearsal_id, attempt_count, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::JSON, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::VARCHAR, $12::VARCHAR, $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::VARCHAR, $17::INTEGER, $18::TIMESTAMP WITH TIME ZONE, $19::TIMESTAMP WITH TIME ZONE) RETURNING distributed_runs.rehearsal_fault_profile]&#10;[parameters: ('e15cb842-d9fa-4944-8aa4-3496c8b45bb9', 'legacy', 'legacy-0', 'learning_task', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '{}', 'completed', 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None, None, None, None, None, 0, datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)">../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: in _prepare_and_execute
+    self._rows = deque(await prepared_stmt.fetch(*parameters))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+asyncpg/protocol/protocol.pyx:205: in bind_execute
+    ???
+E   asyncpg.exceptions.NotNullViolationError: null value in column "deployment_id" of relation "distributed_runs" violates not-null constraint
+E   DETAIL:  Failing row contains (e15cb842-d9fa-4944-8aa4-3496c8b45bb9, legacy, legacy-0, learning_task, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, {}, completed, cccccccccccccccccccccccccccccccc, null, null, null, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, null, null, null, null, null, null, none, 0, 2026-11-01 08:00:00+08, 2026-11-01 08:00:00+08).
+
+The above exception was the direct cause of the following exception:
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
+    raise translated_error from error
+E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column "deployment_id" of relation "distributed_runs" violates not-null constraint
+E   DETAIL:  Failing row contains (e15cb842-d9fa-4944-8aa4-3496c8b45bb9, legacy, legacy-0, learning_task, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, {}, completed, cccccccccccccccccccccccccccccccc, null, null, null, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, null, null, null, null, null, null, none, 0, 2026-11-01 08:00:00+08, 2026-11-01 08:00:00+08).
+
+The above exception was the direct cause of the following exception:
+tests/distributed/test_policy_health_corrections.py:42: in test_migrated_two_hundred_unbound_terminals_do_not_starve_recovery
+    await session.flush()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:786: in flush
+    await greenlet_spawn(self.sync_session.flush, objects=objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4352: in flush
+    self._flush(objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4487: in _flush
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4448: in _flush
+    flush_context.execute()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1234: in _emit_insert_statements
+    result = connection.execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1421: in execute
+    return meth(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1643: in _execute_clauseelement
+    ret = self._execute_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1848: in _execute_context
+    return self._exec_single_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
+    raise translated_error from error
+E   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.NotNullViolationError'&gt;: null value in column "deployment_id" of relation "distributed_runs" violates not-null constraint
+E   DETAIL:  Failing row contains (e15cb842-d9fa-4944-8aa4-3496c8b45bb9, legacy, legacy-0, learning_task, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, {}, completed, cccccccccccccccccccccccccccccccc, null, null, null, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, null, null, null, null, null, null, none, 0, 2026-11-01 08:00:00+08, 2026-11-01 08:00:00+08).
+E   [SQL: INSERT INTO distributed_runs (id, learner_id, request_id, operation, input_hash, payload, status, trace_id, error_code, deployment_id, effective_policy_hash, policy_cohort, assignment_key_hash, assignment_reason, state_namespace, rehearsal_id, attempt_count, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::JSON, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::VARCHAR, $12::VARCHAR, $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::VARCHAR, $17::INTEGER, $18::TIMESTAMP WITH TIME ZONE, $19::TIMESTAMP WITH TIME ZONE) RETURNING distributed_runs.rehearsal_fault_profile]
+E   [parameters: ('e15cb842-d9fa-4944-8aa4-3496c8b45bb9', 'legacy', 'legacy-0', 'learning_task', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '{}', 'completed', 'cccccccccccccccccccccccccccccccc', None, None, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', None, None, None, None, None, 0, datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]
+E   (Background on this error at: https://sqlalche.me/e/20/gkpj)</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_fifty_twenty_proportional_distribution_qualifies[False-False]" time="0.358"><failure message="AssertionError: assert 'hold' == 'pass'&#10;  &#10;  - pass&#10;  + hold">tests/distributed/test_policy_health_corrections.py:92: in test_fifty_twenty_proportional_distribution_qualifies
+    assert window.decision == ("fail" if bad else "pass")
+E   AssertionError: assert 'hold' == 'pass'
+E     
+E     - pass
+E     + hold</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_fifty_twenty_proportional_distribution_qualifies[False-True]" time="0.323"><failure message="AssertionError: assert 'hold' == 'fail'&#10;  &#10;  - fail&#10;  + hold">tests/distributed/test_policy_health_corrections.py:92: in test_fifty_twenty_proportional_distribution_qualifies
+    assert window.decision == ("fail" if bad else "pass")
+E   AssertionError: assert 'hold' == 'fail'
+E     
+E     - fail
+E     + hold</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_fifty_twenty_proportional_distribution_qualifies[True-False]" time="0.318"><failure message="AssertionError: assert 'hold' == 'pass'&#10;  &#10;  - pass&#10;  + hold">tests/distributed/test_policy_health_corrections.py:92: in test_fifty_twenty_proportional_distribution_qualifies
+    assert window.decision == ("fail" if bad else "pass")
+E   AssertionError: assert 'hold' == 'pass'
+E     
+E     - pass
+E     + hold</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_fifty_twenty_proportional_distribution_qualifies[True-True]" time="0.336"><failure message="AssertionError: assert 'hold' == 'fail'&#10;  &#10;  - fail&#10;  + hold">tests/distributed/test_policy_health_corrections.py:92: in test_fifty_twenty_proportional_distribution_qualifies
+    assert window.decision == ("fail" if bad else "pass")
+E   AssertionError: assert 'hold' == 'fail'
+E     
+E     - fail
+E     + hold</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_proportional_shortage_mismatch_or_missing_bucket_holds[19-15]" time="0.318" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_proportional_shortage_mismatch_or_missing_bucket_holds[20-15]" time="0.324" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_proportional_shortage_mismatch_or_missing_bucket_holds[20-20]" time="0.315" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[missing_window]" time="0.261"><failure message="sqlalchemy.exc.DBAPIError: (sqlalchemy.dialects.postgresql.asyncpg.Error) &lt;class 'asyncpg.exceptions.RaiseError'&gt;: policy_health_windows is append-only&#10;[SQL: DELETE FROM policy_health_windows WHERE policy_health_windows.window_id = $1::VARCHAR]&#10;[parameters: ('218f6f1d50d31deccb44965e4f3b3f61242b567b53cbbb6d0bbb8a3691b924c7',)]&#10;(Background on this error at: https://sqlalche.me/e/20/dbapi)">../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: in _prepare_and_execute
+    self._rows = deque(await prepared_stmt.fetch(*parameters))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+asyncpg/protocol/protocol.pyx:205: in bind_execute
+    ???
+E   asyncpg.exceptions.RaiseError: policy_health_windows is append-only
+
+The above exception was the direct cause of the following exception:
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
+    raise translated_error from error
+E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.Error: &lt;class 'asyncpg.exceptions.RaiseError'&gt;: policy_health_windows is append-only
+
+The above exception was the direct cause of the following exception:
+tests/distributed/test_policy_health_corrections.py:158: in test_forged_or_inconsistent_health_receipt_is_not_consumable
+    await session.flush()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:786: in flush
+    await greenlet_spawn(self.sync_session.flush, objects=objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4352: in flush
+    self._flush(objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4487: in _flush
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4448: in _flush
+    flush_context.execute()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:678: in execute
+    util.preloaded.orm_persistence.delete_obj(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:194: in delete_obj
+    _emit_delete_statements(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1472: in _emit_delete_statements
+    c = connection.execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1421: in execute
+    return meth(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1643: in _execute_clauseelement
+    ret = self._execute_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1848: in _execute_context
+    return self._exec_single_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
+    raise translated_error from error
+E   sqlalchemy.exc.DBAPIError: (sqlalchemy.dialects.postgresql.asyncpg.Error) &lt;class 'asyncpg.exceptions.RaiseError'&gt;: policy_health_windows is append-only
+E   [SQL: DELETE FROM policy_health_windows WHERE policy_health_windows.window_id = $1::VARCHAR]
+E   [parameters: ('218f6f1d50d31deccb44965e4f3b3f61242b567b53cbbb6d0bbb8a3691b924c7',)]
+E   (Background on this error at: https://sqlalche.me/e/20/dbapi)</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[window_id]" time="0.343"><failure message="AssertionError: assert ([] == ['canary_health']&#10;  &#10;  Right contains one more item: 'canary_health'&#10;  &#10;  Full diff:&#10;  + []&#10;  - [&#10;  -     'canary_health',&#10;  - ])">tests/distributed/test_policy_health_corrections.py:166: in test_forged_or_inconsistent_health_receipt_is_not_consumable
+    assert missing == ["canary_health"] and not bound
+E   AssertionError: assert ([] == ['canary_health']
+E     
+E     Right contains one more item: 'canary_health'
+E     
+E     Full diff:
+E     + []
+E     - [
+E     -     'canary_health',
+E     - ])</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[metric_contract_version]" time="0.302"><failure message="AssertionError: assert ([] == ['canary_health']&#10;  &#10;  Right contains one more item: 'canary_health'&#10;  &#10;  Full diff:&#10;  + []&#10;  - [&#10;  -     'canary_health',&#10;  - ])">tests/distributed/test_policy_health_corrections.py:166: in test_forged_or_inconsistent_health_receipt_is_not_consumable
+    assert missing == ["canary_health"] and not bound
+E   AssertionError: assert ([] == ['canary_health']
+E     
+E     Right contains one more item: 'canary_health'
+E     
+E     Full diff:
+E     + []
+E     - [
+E     -     'canary_health',
+E     - ])</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[observation_keys]" time="0.286"><failure message="AssertionError: assert ([] == ['canary_health']&#10;  &#10;  Right contains one more item: 'canary_health'&#10;  &#10;  Full diff:&#10;  + []&#10;  - [&#10;  -     'canary_health',&#10;  - ])">tests/distributed/test_policy_health_corrections.py:166: in test_forged_or_inconsistent_health_receipt_is_not_consumable
+    assert missing == ["canary_health"] and not bound
+E   AssertionError: assert ([] == ['canary_health']
+E     
+E     Right contains one more item: 'canary_health'
+E     
+E     Full diff:
+E     + []
+E     - [
+E     -     'canary_health',
+E     - ])</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[candidate_stats]" time="0.259"><failure message="AssertionError: assert ([] == ['canary_health']&#10;  &#10;  Right contains one more item: 'canary_health'&#10;  &#10;  Full diff:&#10;  + []&#10;  - [&#10;  -     'canary_health',&#10;  - ])">tests/distributed/test_policy_health_corrections.py:166: in test_forged_or_inconsistent_health_receipt_is_not_consumable
+    assert missing == ["canary_health"] and not bound
+E   AssertionError: assert ([] == ['canary_health']
+E     
+E     Right contains one more item: 'canary_health'
+E     
+E     Full diff:
+E     + []
+E     - [
+E     -     'canary_health',
+E     - ])</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[stable_stats]" time="0.289"><failure message="AssertionError: assert ([] == ['canary_health']&#10;  &#10;  Right contains one more item: 'canary_health'&#10;  &#10;  Full diff:&#10;  + []&#10;  - [&#10;  -     'canary_health',&#10;  - ])">tests/distributed/test_policy_health_corrections.py:166: in test_forged_or_inconsistent_health_receipt_is_not_consumable
+    assert missing == ["canary_health"] and not bound
+E   AssertionError: assert ([] == ['canary_health']
+E     
+E     Right contains one more item: 'canary_health'
+E     
+E     Full diff:
+E     + []
+E     - [
+E     -     'canary_health',
+E     - ])</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[evidence_hash]" time="0.270"><failure message="AssertionError: assert ([] == ['canary_health']&#10;  &#10;  Right contains one more item: 'canary_health'&#10;  &#10;  Full diff:&#10;  + []&#10;  - [&#10;  -     'canary_health',&#10;  - ])">tests/distributed/test_policy_health_corrections.py:166: in test_forged_or_inconsistent_health_receipt_is_not_consumable
+    assert missing == ["canary_health"] and not bound
+E   AssertionError: assert ([] == ['canary_health']
+E     
+E     Right contains one more item: 'canary_health'
+E     
+E     Full diff:
+E     + []
+E     - [
+E     -     'canary_health',
+E     - ])</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[deployment_version]" time="0.281" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[thresholds_hash]" time="0.270" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[sample_count]" time="0.285"><failure message="AssertionError: assert ([] == ['canary_health']&#10;  &#10;  Right contains one more item: 'canary_health'&#10;  &#10;  Full diff:&#10;  + []&#10;  - [&#10;  -     'canary_health',&#10;  - ])">tests/distributed/test_policy_health_corrections.py:166: in test_forged_or_inconsistent_health_receipt_is_not_consumable
+    assert missing == ["canary_health"] and not bound
+E   AssertionError: assert ([] == ['canary_health']
+E     
+E     Right contains one more item: 'canary_health'
+E     
+E     Full diff:
+E     + []
+E     - [
+E     -     'canary_health',
+E     - ])</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[cost]" time="0.287"><failure message="AssertionError: assert ([] == ['canary_health']&#10;  &#10;  Right contains one more item: 'canary_health'&#10;  &#10;  Full diff:&#10;  + []&#10;  - [&#10;  -     'canary_health',&#10;  - ])">tests/distributed/test_policy_health_corrections.py:166: in test_forged_or_inconsistent_health_receipt_is_not_consumable
+    assert missing == ["canary_health"] and not bound
+E   AssertionError: assert ([] == ['canary_health']
+E     
+E     Right contains one more item: 'canary_health'
+E     
+E     Full diff:
+E     + []
+E     - [
+E     -     'canary_health',
+E     - ])</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[gate_type]" time="0.319" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[protocol_hash]" time="0.282" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[runtime_hash]" time="0.305" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[source_revision]" time="0.313" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[window_decision]" time="0.295" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[window_keys]" time="0.290"><failure message="AssertionError: assert ([] == ['canary_health']&#10;  &#10;  Right contains one more item: 'canary_health'&#10;  &#10;  Full diff:&#10;  + []&#10;  - [&#10;  -     'canary_health',&#10;  - ])">tests/distributed/test_policy_health_corrections.py:166: in test_forged_or_inconsistent_health_receipt_is_not_consumable
+    assert missing == ["canary_health"] and not bound
+E   AssertionError: assert ([] == ['canary_health']
+E     
+E     Right contains one more item: 'canary_health'
+E     
+E     Full diff:
+E     + []
+E     - [
+E     -     'canary_health',
+E     - ])</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[window_stats]" time="0.301"><failure message="AssertionError: assert ([] == ['canary_health']&#10;  &#10;  Right contains one more item: 'canary_health'&#10;  &#10;  Full diff:&#10;  + []&#10;  - [&#10;  -     'canary_health',&#10;  - ])">tests/distributed/test_policy_health_corrections.py:166: in test_forged_or_inconsistent_health_receipt_is_not_consumable
+    assert missing == ["canary_health"] and not bound
+E   AssertionError: assert ([] == ['canary_health']
+E     
+E     Right contains one more item: 'canary_health'
+E     
+E     Full diff:
+E     + []
+E     - [
+E     -     'canary_health',
+E     - ])</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_forged_or_inconsistent_health_receipt_is_not_consumable[window_contract]" time="0.327"><failure message="AssertionError: assert ([] == ['canary_health']&#10;  &#10;  Right contains one more item: 'canary_health'&#10;  &#10;  Full diff:&#10;  + []&#10;  - [&#10;  -     'canary_health',&#10;  - ])">tests/distributed/test_policy_health_corrections.py:166: in test_forged_or_inconsistent_health_receipt_is_not_consumable
+    assert missing == ["canary_health"] and not bound
+E   AssertionError: assert ([] == ['canary_health']
+E     
+E     Right contains one more item: 'canary_health'
+E     
+E     Full diff:
+E     + []
+E     - [
+E     -     'canary_health',
+E     - ])</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_real_canary_to_active_historical_baseline_and_old_new_pinning[False]" time="0.385"><failure message="TypeError: Object of type UUID is not JSON serializable">tests/distributed/test_policy_health_corrections.py:199: in test_real_canary_to_active_historical_baseline_and_old_new_pinning
+    accepted, _ = await admitted(fixture, "active-old", cohort="candidate")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/distributed/test_policy_health.py:238: in admitted
+    return await repo.accept_with_replay(spec(name), rehearsal_token=token_for(
+tests/distributed/test_policy_assignment.py:132: in token_for
+    return signed(claims(request_id, deployment_id=row.deployment_id,
+tests/distributed/test_policy_assignment.py:34: in signed
+    body = json.dumps(values, ensure_ascii=False, sort_keys=True,
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/__init__.py:238: in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:258: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:180: in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+E   TypeError: Object of type UUID is not JSON serializable</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_real_canary_to_active_historical_baseline_and_old_new_pinning[True]" time="0.379"><failure message="TypeError: Object of type UUID is not JSON serializable">tests/distributed/test_policy_health_corrections.py:199: in test_real_canary_to_active_historical_baseline_and_old_new_pinning
+    accepted, _ = await admitted(fixture, "active-old", cohort="candidate")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/distributed/test_policy_health.py:238: in admitted
+    return await repo.accept_with_replay(spec(name), rehearsal_token=token_for(
+tests/distributed/test_policy_assignment.py:132: in token_for
+    return signed(claims(request_id, deployment_id=row.deployment_id,
+tests/distributed/test_policy_assignment.py:34: in signed
+    body = json.dumps(values, ensure_ascii=False, sort_keys=True,
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/__init__.py:238: in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:258: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:180: in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+E   TypeError: Object of type UUID is not JSON serializable</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_active_never_uses_unqualified_historical_baseline[unrelated_deployment]" time="0.411"><failure message="AssertionError: assert 'pass' == 'hold'&#10;  &#10;  - hold&#10;  + pass">tests/distributed/test_policy_health_corrections.py:268: in test_active_never_uses_unqualified_historical_baseline
+    assert (await PolicyHealthEvaluator(promotion).evaluate(active.deployment_id)).decision == "hold"
+E   AssertionError: assert 'pass' == 'hold'
+E     
+E     - hold
+E     + pass</failure></testcase><testcase classname="tests.distributed.test_policy_health_corrections" name="test_active_never_uses_unqualified_historical_baseline[production]" time="0.379" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_active_never_uses_unqualified_historical_baseline[wrong_stable_policy]" time="0.390" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_active_never_uses_unqualified_historical_baseline[wrong_rehearsal]" time="0.390" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_active_never_uses_unqualified_historical_baseline[wrong_operation]" time="0.430" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_active_never_uses_unqualified_historical_baseline[wrong_contract]" time="0.430" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_active_never_uses_unqualified_historical_baseline[future_observation]" time="0.411" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_active_never_uses_unqualified_historical_baseline[late_persistence]" time="0.396" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_active_never_uses_unqualified_historical_baseline[missing_approval]" time="0.361" /><testcase classname="tests.distributed.test_policy_health_corrections" name="test_active_never_uses_unqualified_historical_baseline[forged_approval]" time="0.453" /></testsuite></testsuites>

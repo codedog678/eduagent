@@ -1,6 +1,102 @@
 # M3 Task8: Health Gates and Transactional Rollback
 
+## Fresh SPEC Corrections and Current Freeze
+
+This section supersedes the original implementation freeze below. The independent
+SPEC review failed despite the original 407/1350 green tests; those tests did not
+cover recovery starvation, legitimate Active baselines, full receipt/window
+consumption validation, or unequal-count proportional windows. The original
+review file and qualification-prerequisite report are parent-owned and unchanged.
+This correction is Task8 only, not Task9, Task10, or independent review approval.
+
+- Implementation base: `b9924dc`; approved correction follows docs-only parent
+  `172bcb9` (including `e52c05d` and `86ceca2`).
+- Recovery SQL excludes SQL/JSON-null bindings before the bounded limit, for
+  both primary and Shadow. Unknown legacy hashes remain non-executable; no
+  binding, usage, or release eligibility is fabricated. The regression creates
+  205 old unbound terminals, performs two actual PostgreSQL migrations including
+  unknown-hash artifact backfill, and proves newer valid terminals recover
+  without repeated zero-persistence polls.
+- Canary compares the last 50 candidates against a stable pool bounded to 50.
+  It selects the largest qualified exact-proportion baseline deterministically,
+  choosing newest rows within each rehearsal/operation bucket. Integer
+  cross-multiplication enforces equal distributions, not equal sample counts.
+  50/20 one-bucket and 40/10 versus 16/4 two-bucket samples qualify. Missing
+  buckets, incompatible proportions, or fewer than 20 stable Runs hold.
+- Active never accepts stable observations assigned to the Active deployment.
+  It uses only stable keys from the passing predecessor Canary window actually
+  consumed by the immutable activation approval. It replays receipt/window
+  evidence and checks predecessor environment, candidate/stable policies,
+  thresholds, audit/approval binding, rehearsal/operation/contract and observed
+  and persisted chronology before activation. No global historical or
+  production-stable query substitutes for this evidence.
+- Receipt consumption requires an existing persisted passing window, complete
+  canonical identity and evidence hashes, exact keys, aggregates, gate cohort,
+  artifact protocol/runtime/source, version, thresholds, sample count and cost.
+  It reloads bounded observations, recomputes aggregates/decision, and checks
+  identity and chronology. The latest non-pass window and lifetime confirmed
+  permission event still block consumption. Shadow retains strict paired parents.
+- Real command-chain fixtures exercise healthy Canary-to-Active and strict
+  equal-threshold latency rollback under 100% Active candidate assignment,
+  including old candidate pinning and new stable assignment after rollback.
+- Unknown cost/decisions, lifetime hard events, immutable pinning, lock fencing,
+  typed actual SQLite permission diagnostics, schema checks/read-only startup
+  and bounded metrics are unchanged and covered by the final targeted matrix.
+
+Correction content digest (four owned Python files, sorted repository paths):
+`d4e4f774402a8e9249f0623e544f9e28498a0ce461bf2e38b1759a41fb96dd91`.
+
+```bash
+shasum -a 256 \
+  python/core/distributed/policy_health.py \
+  python/core/distributed/promotion_repository.py \
+  python/tests/distributed/test_policy_health_corrections.py \
+  python/tests/distributed/test_promotion_repository.py | shasum -a 256
+```
+
+| Correction Round | Observed Result | Evidence |
+| --- | --- | --- |
+| Initial RED probe | 19 pass / 21 fail, 14.97 s; exit 1 | `2026-11-01-m3-task8-corrections-red.xml` / `.log`; includes fixture NULL-constraint, pending-delete flush and UUID setup errors, not all feature reproductions. Preserved unchanged. |
+| Fixture-corrected RED | 19 pass / 21 fail, 14.83 s; exit 1 | `2026-11-01-m3-task8-corrections-repro-red.xml` / `.log`; recovery repeats `[200,200,200]` primary or `[400,400,400]` primary/Shadow with zero persisted. Active admission still encountered incompatible fixture fixed-components. |
+| Active feature RED | 0 pass / 2 fail, 1.48 s; exit 1 | `2026-11-01-m3-task8-active-repro-red.xml` / `.log`; after fixing the artifact fixture, legitimate healthy and threshold-failing Active windows both hold against unchanged production code. |
+| Development impact | 193 pass / 7 fail, 37.64 s | Original 40 correction cases green; older command-test helper still assumed receipt-only evidence. Fixture helper now creates real persisted windows; validator not weakened. |
+| Scoped GREEN | 200 pass, 36.14 s; exit 0 | Correction, health and promotion suites; development result before ten additional edge cases. |
+| Frozen targeted GREEN | 457 pass / 0 fail/error/skip, 91.68 s; exit 0 | `2026-11-01-m3-task8-corrections-targeted.xml` / `.log`; XML time 91.676 s. Includes all 50 new correction cases. |
+| Frozen full backend GREEN | 1400 pass / 0 fail/error/skip, 258.60 s; exit 0 | `2026-11-01-m3-task8-corrections-full.xml` / `.log`; XML time 258.590 s. Same pre-existing `TestAgent` collection warning. |
+
+No runtime/test edits occurred between the frozen targeted and full runs. Each
+run used a new unique database, PostgreSQL 16 at `127.0.0.1:55432`, Redis
+`127.0.0.1:56379/0`, the existing main `.venv/bin/python`, absolute m3 Python
+`PYTHONPATH`, and `TZ=UTC`. The database variable was
+`DISTRIBUTED_TEST_DATABASE_URL`, not `DATABASE_URL`. Each invocation created
+and dropped its own database with the PostgreSQL 16 Homebrew executables and
+an `EXIT` trap. Final catalog verification found no databases for any correction
+run prefixes. No parent processes/databases were managed.
+
+Final targeted command is the original 15-file matrix below plus
+`tests/distributed/test_policy_health_corrections.py`; output names have suffix
+`corrections-targeted`. Full command remains `python -m pytest tests -q
+--tb=short`, with suffix `corrections-full`. Evidence remains under
+`python/tests/distributed/evidence/`.
+
+| Correction XML | SHA-256 |
+| --- | --- |
+| `2026-11-01-m3-task8-corrections-red.xml` | `e4d6343ffa0ab2f93e357e17b7e3826bd02fa99ce6297fb85f5dc195f6c5369c` |
+| `2026-11-01-m3-task8-corrections-repro-red.xml` | `8385bf5a2892afc166d5ec3f5cad8dd1e3b732a840a453ddb5cf715a87719fd7` |
+| `2026-11-01-m3-task8-active-repro-red.xml` | `d045575dbdc75f3fc2f159609f5082105b9b2cd3b29f41b893388aa3eca1fac1` |
+| `2026-11-01-m3-task8-corrections-targeted.xml` | `2d78fb32edc1bfa41b17be0ae839588ff291fca45ccbf9f8873aac39580521aa` |
+| `2026-11-01-m3-task8-corrections-full.xml` | `444d6a82f721b46ac82c72c47a6eab3d816366534292c05f8b52b4dffb1d5f86` |
+
+These are deterministic engineering fixtures: no provider/model requests,
+installation, Docker verification, push, or real release qualification occurred.
+The formal JudgeV3 qualification chain is missing; configured credentials in
+the primary workspace are not the blocker. Parent independent fresh SPEC then
+CODE reviews remain pending. Broad M3 completion is not claimed.
+
 ## Scope and Freeze Identity
+
+Historical original implementation evidence follows; it is not the current
+correction freeze or proof that the four fresh SPEC failures were absent.
 
 - Task8 implementation only. No Task9 Ops/UI work, deployment, live model evaluation, installation or push.
 - Isolated worktree: `eduagent-m3`, branch `feature/m3-trusted-policy-promotion`.
@@ -13,7 +109,7 @@
 The digest covers the 23 changed/new runtime Python files and five changed/new test files, ordered by repository-relative path. After checkout of the Task8 commit, reproduce with:
 
 ```bash
-git show --pretty='' --name-only HEAD -- '*.py' | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256
+git show --pretty='' --name-only b9924dc -- '*.py' | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256
 ```
 
 The report and XML/log evidence are excluded from this content digest. Final commit identity is the commit containing this report; no self-referential commit hash is embedded here.
@@ -26,7 +122,7 @@ The report and XML/log evidence are excluded from this content digest. Final com
 | Identity | Canonical hash of `{run_id, deployment_id, cohort, metric_contract_version}`. Terminal retries create one final observation; paired Shadow and stable primary share parent Run ID but coexist. |
 | Recovery | Poll PostgreSQL for missing observations using full deployment/cohort/contract identity; Redis terminal notification is not required for recovery. |
 | Shadow | Stable primary and Shadow must match parent Run IDs and immutable deployment. Shadow isolation maps to `isolated`, not an invented permission grant; absent structured evidence maps to `unavailable`. |
-| Canary/Active | Same immutable deployment, stable policy, rehearsal, operation distribution and metric contract; production stable cannot substitute for rehearsal stable. Incomplete matched windows hold. |
+| Canary/Active | Canary uses same-deployment stable; Active uses only the gate-pinned predecessor Canary baseline. Same stable policy, rehearsal/operation distribution and metric contract; production stable cannot substitute. Missing qualified distributions hold, not unequal counts alone. |
 | Window | Sort by `(observed_at, observation_key)`, select the last 50 candidates, select bounded matched baselines and freeze exact keys, aggregates, threshold identity and deterministic window ID. |
 | Arithmetic | Decimal mean cost and nearest-rank p95; relative increase uses frozen epsilon. Equal-to-maximum fails. Ordinary guardrails require at least 20 candidate and 20 matched stable Runs. |
 | Missing evidence | Unknown cost or structured counts hold, never zero/pass. A separately known failure at qualified sample size still fails; confirmed permission failure is immediate regardless of missing evidence or baseline. |

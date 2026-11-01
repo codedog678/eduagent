@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from decimal import Decimal, ROUND_CEILING
 from uuid import UUID, uuid4
 
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select, text, tuple_
 from sqlalchemy.dialects.postgresql import insert
 
 from .contracts import RunStatus, canonical_hash
@@ -134,6 +134,37 @@ def _observation(row):
     })
 
 
+def same_distribution(candidate, stable):
+    if not candidate or not stable or any(row.rehearsal_id is None for row in candidate + stable):
+        return False
+    c = Counter((row.rehearsal_id, row.operation) for row in candidate)
+    s = Counter((row.rehearsal_id, row.operation) for row in stable)
+    return c.keys() == s.keys() and all(
+        c[bucket] * len(stable) == s[bucket] * len(candidate) for bucket in c
+    )
+
+
+def proportional_baseline(candidate, pool, thresholds):
+    """Largest bounded exact-ratio baseline; newest rows win within each bucket."""
+    if not candidate or any(row.rehearsal_id is None for row in candidate):
+        return [], False
+    needed = Counter((row.rehearsal_id, row.operation) for row in candidate)
+    buckets = {bucket: [] for bucket in needed}
+    for row in sorted(pool, key=lambda row: (row.observed_at, row.observation_key), reverse=True):
+        bucket = (row.rehearsal_id, row.operation)
+        if bucket in buckets:
+            buckets[bucket].append(row)
+    for total in range(min(len(pool), thresholds.window_max_runs), thresholds.stable_min_runs - 1, -1):
+        if any(count * total % len(candidate) for count in needed.values()):
+            continue
+        sizes = {bucket: count * total // len(candidate) for bucket, count in needed.items()}
+        if all(len(buckets[bucket]) >= size for bucket, size in sizes.items()):
+            selected = [row for bucket, size in sizes.items() for row in buckets[bucket][:size]]
+            return sorted(selected, key=lambda row: (row.observed_at, row.observation_key)), True
+    # Preserve bounded diagnostic samples, but do not evaluate normal failures on them.
+    return sorted(pool, key=lambda row: (row.observed_at, row.observation_key)), False
+
+
 class PolicyObservationRecorder:
     def __init__(self, session_factory, *, metrics=None):
         self.session_factory, self.metrics = session_factory, metrics
@@ -249,6 +280,7 @@ class PolicyObservationRecorder:
         async with self.session_factory() as session:
             runs = (await session.scalars(select(DistributedRun.id).where(
                 DistributedRun.status.in_(["completed", "terminal_failed", "exhausted"]),
+                func.json_typeof(DistributedRun.policy_binding) == "object",
                 ~select(PolicyObservationRecord.observation_key).where(
                     PolicyObservationRecord.run_id == DistributedRun.id,
                     PolicyObservationRecord.cohort == DistributedRun.policy_cohort,
@@ -258,13 +290,18 @@ class PolicyObservationRecorder:
             ).order_by(DistributedRun.updated_at, DistributedRun.id).limit(limit))).all()
             shadows = (await session.scalars(select(PolicyShadowExecutionRecord.shadow_id).where(
                 PolicyShadowExecutionRecord.status.in_(["completed", "failed", "exhausted"]),
+                func.json_typeof(PolicyShadowExecutionRecord.policy_binding) == "object",
+                select(DistributedRun.id).where(
+                    DistributedRun.id == PolicyShadowExecutionRecord.parent_run_id,
+                ).exists(),
                 ~select(PolicyObservationRecord.observation_key).where(
                     PolicyObservationRecord.run_id == PolicyShadowExecutionRecord.parent_run_id,
                     PolicyObservationRecord.deployment_id == PolicyShadowExecutionRecord.deployment_id,
                     PolicyObservationRecord.cohort == "shadow",
                     PolicyObservationRecord.metric_contract_version == 1,
                 ).exists(),
-            ).order_by(PolicyShadowExecutionRecord.updated_at).limit(limit))).all()
+            ).order_by(PolicyShadowExecutionRecord.updated_at,
+                       PolicyShadowExecutionRecord.shadow_id).limit(limit))).all()
         for run_id in runs:
             await self.record_run(run_id)
         for shadow_id in shadows:
@@ -304,10 +341,16 @@ class PolicyHealthEvaluator:
                 PolicyObservationRecord.metric_contract_version == 1,
             )
             ordering = (PolicyObservationRecord.observed_at.desc(), PolicyObservationRecord.observation_key.desc())
-            candidate = [_observation(row) for row in (await session.scalars(query.where(
+            candidate_query = query.where(
                 PolicyObservationRecord.cohort == cohort,
                 PolicyObservationRecord.policy_hash == deployment.candidate_policy_hash,
-            ).order_by(*ordering).limit(thresholds.window_max_runs))).all()][::-1]
+            )
+            if deployment.state == "active":
+                candidate_query = candidate_query.where(
+                    PolicyObservationRecord.observed_at >= deployment.created_at,
+                )
+            candidate = [_observation(row) for row in (await session.scalars(
+                candidate_query.order_by(*ordering).limit(thresholds.window_max_runs))).all()][::-1]
             # 硬违规不受滚动窗口淘汰；有界查询冻结最早的权威违规键。
             hard_failure = await session.scalar(query.where(
                 PolicyObservationRecord.cohort == cohort,
@@ -325,22 +368,24 @@ class PolicyHealthEvaluator:
                 stable = [_observation(row) for row in (await session.scalars(baseline_query.where(
                     PolicyObservationRecord.run_id.in_([str(parent) for parent in parents]),
                 ).order_by(*ordering).limit(thresholds.window_max_runs))).all()][::-1]
+                matched = len(stable) == len(candidate)
             else:
-                # 按候选窗口的真实操作分布选同演练基线，不混用生产 stable。
-                needed = Counter((row.rehearsal_id, row.operation) for row in candidate)
-                stable = []
-                for (rehearsal_id, operation), count in sorted(needed.items(), key=lambda item: str(item[0])):
-                    if rehearsal_id is None:
-                        continue
-                    stable.extend(_observation(row) for row in (await session.scalars(
+                needed = {(row.rehearsal_id, row.operation) for row in candidate
+                          if row.rehearsal_id is not None}
+                if deployment.state == "active":
+                    pool = await self.repository.active_health_baseline(session, deployment)
+                    pool = [_observation(row) for row in pool]
+                else:
+                    pool = [_observation(row) for row in (await session.scalars(
                         baseline_query.where(
-                            PolicyObservationRecord.rehearsal_id == rehearsal_id,
-                            PolicyObservationRecord.operation == operation,
-                        ).order_by(*ordering).limit(count)
-                    )).all())
-                stable.sort(key=lambda row: (row.observed_at, row.observation_key))
+                            tuple_(PolicyObservationRecord.rehearsal_id,
+                                   PolicyObservationRecord.operation).in_(list(needed)),
+                            PolicyObservationRecord.state_namespace != "production",
+                        ).order_by(*ordering).limit(thresholds.window_max_runs)
+                    )).all()][::-1]
+                stable, matched = proportional_baseline(candidate, pool, thresholds)
             result = evaluate_window(candidate, stable, thresholds)
-            if len(stable) != len(candidate):
+            if not matched:
                 unqualified = evaluate_window(candidate, [], thresholds)
                 reasons = unqualified.reasons + ["matched_window_incomplete"]
                 result = WindowEvaluation(
@@ -388,6 +433,7 @@ class PolicyHealthEvaluator:
                 artifact = await session.get(PolicyArtifactRecord, deployment.candidate_policy_hash)
                 gate = "shadow_health" if cohort == "shadow" else "canary_health"
                 details = {**identity, "window_id": window_id,
+                           "gate_cohort": cohort,
                            "candidate_stats": result.candidate_stats, "stable_stats": result.stable_stats}
                 if artifact.evidence_bindings.get("evidence_role") == "test_fixture":
                     details.update(evidence_role="test_fixture", release_eligible=False)
