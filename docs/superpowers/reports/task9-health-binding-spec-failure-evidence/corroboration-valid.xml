@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="1.311" timestamp="2026-11-01T23:29:52.858925+00:00" hostname="HL41657YW6"><testcase classname="" name="test_genuine_command_chain_malformed_latest_does_not_restore_green" time="0.553"><failure message="AssertionError: assert not [{'receipt_id': '8b88482b-489d-4b91-99f4-e9ff7400f738', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10d5ec590&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10d4857d0&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10d83c8d0&gt;)
+
+    async def test_genuine_command_chain_malformed_latest_does_not_restore_green(health_repo):
+        repo, active, original, newer = await genuine_malformed_latest(health_repo)
+        body = (await OpsQueries(repo.session_factory).get_policy_deployment(
+            str(active.deployment_id))).model_dump(mode="json")
+        (OWN / "corroboration-genuine.json").write_text(json.dumps({
+            "role": "synthetic real command/evaluator chain; no model requests",
+            "original_approval": original, "newer_malformed_approval": newer,
+            "body": body}, indent=2) + "\n")
+&gt;       assert not [r for r in body["gate_receipts"] if r["health_source"]]
+E       AssertionError: assert not [{'receipt_id': '8b88482b-489d-4b91-99f4-e9ff7400f738', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_corroboration.py:42: AssertionError</failure></testcase><testcase classname="" name="test_frozen_metadata_disagreement_with_authority_is_unavailable[sample_count]" time="0.309"><failure message="AttributeError: 'PolicyHealthWindowRecord' object has no attribute 'model_dump'">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10d99dd50&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10d7d6cd0&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10d6a2950&gt;)
+field = 'sample_count'
+
+    @pytest.mark.parametrize("field", ["sample_count", "cost"])
+    async def test_frozen_metadata_disagreement_with_authority_is_unavailable(health_repo, field):
+        repo, promotion, deployment = health_repo
+        await fill_window(health_repo)
+        window = await PolicyHealthEvaluator(promotion).evaluate(deployment.deployment_id)
+        async with repo.session_factory() as session:
+            original = await session.scalar(select(PolicyGateReceiptRecord))
+            artifact = await session.get(PolicyArtifactRecord, deployment.candidate_policy_hash)
+            positive = await PromotionRepository._validated_health_window(
+                session, artifact=artifact, deployment=deployment,
+                gate_type="canary_health", receipt=original)
+            assert positive is not None
+        latest_id = await append_receipt(repo, original, **{field: 0})
+        async with repo.session_factory() as session:
+            latest = await session.get(PolicyGateReceiptRecord, latest_id)
+            validated = await PromotionRepository._validated_health_window(
+                session, artifact=artifact, deployment=deployment,
+                gate_type="canary_health", receipt=latest)
+            assert validated is None
+        body = (await OpsQueries(repo.session_factory).get_policy_deployment(
+            deployment.deployment_id)).model_dump(mode="json")
+        (OWN / ("corroboration-" + field + ".json")).write_text(json.dumps({
+            "role": "synthetic engineering; original evidence authentic evaluator",
+            "original_sample_count": original.sample_count,
+            "original_cost": str(original.cost), "original_id": original.receipt_id,
+&gt;           "latest_id": latest_id, "window": window.model_dump(mode="json"),
+                                              ^^^^^^^^^^^^^^^^^
+            "authority_before": "valid", "authority_after": "unavailable",
+            "body": body}, indent=2) + "\n")
+E       AttributeError: 'PolicyHealthWindowRecord' object has no attribute 'model_dump'
+
+/tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_corroboration.py:70: AttributeError</failure></testcase><testcase classname="" name="test_frozen_metadata_disagreement_with_authority_is_unavailable[cost]" time="0.303"><failure message="AttributeError: 'PolicyHealthWindowRecord' object has no attribute 'model_dump'">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10d75be90&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10dd14090&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10de1c090&gt;)
+field = 'cost'
+
+    @pytest.mark.parametrize("field", ["sample_count", "cost"])
+    async def test_frozen_metadata_disagreement_with_authority_is_unavailable(health_repo, field):
+        repo, promotion, deployment = health_repo
+        await fill_window(health_repo)
+        window = await PolicyHealthEvaluator(promotion).evaluate(deployment.deployment_id)
+        async with repo.session_factory() as session:
+            original = await session.scalar(select(PolicyGateReceiptRecord))
+            artifact = await session.get(PolicyArtifactRecord, deployment.candidate_policy_hash)
+            positive = await PromotionRepository._validated_health_window(
+                session, artifact=artifact, deployment=deployment,
+                gate_type="canary_health", receipt=original)
+            assert positive is not None
+        latest_id = await append_receipt(repo, original, **{field: 0})
+        async with repo.session_factory() as session:
+            latest = await session.get(PolicyGateReceiptRecord, latest_id)
+            validated = await PromotionRepository._validated_health_window(
+                session, artifact=artifact, deployment=deployment,
+                gate_type="canary_health", receipt=latest)
+            assert validated is None
+        body = (await OpsQueries(repo.session_factory).get_policy_deployment(
+            deployment.deployment_id)).model_dump(mode="json")
+        (OWN / ("corroboration-" + field + ".json")).write_text(json.dumps({
+            "role": "synthetic engineering; original evidence authentic evaluator",
+            "original_sample_count": original.sample_count,
+            "original_cost": str(original.cost), "original_id": original.receipt_id,
+&gt;           "latest_id": latest_id, "window": window.model_dump(mode="json"),
+                                              ^^^^^^^^^^^^^^^^^
+            "authority_before": "valid", "authority_after": "unavailable",
+            "body": body}, indent=2) + "\n")
+E       AttributeError: 'PolicyHealthWindowRecord' object has no attribute 'model_dump'
+
+/tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_corroboration.py:70: AttributeError</failure></testcase></testsuite></testsuites>

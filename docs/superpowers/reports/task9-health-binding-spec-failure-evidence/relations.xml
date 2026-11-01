@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="11" failures="0" skipped="0" tests="11" time="1.078" timestamp="2026-11-01T23:21:33.449792+00:00" hostname="HL41657YW6"><testcase classname="" name="test_exact_active_relation_fails_closed[valid]" time="0.000"><error message="failed on setup with &quot;file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87&#10;  @pytest.mark.parametrize(&quot;breakage&quot;, [&#10;      &quot;valid&quot;, &quot;matching_wrong_command_hash&quot;, &quot;audit_missing_required&quot;, &quot;audit_wrong_actor&quot;,&#10;      &quot;approval_wrong_issuer&quot;, &quot;approval_wrong_model&quot;, &quot;approval_wrong_role&quot;,&#10;      &quot;approval_malformed_latest&quot;,&#10;  ])&#10;  async def test_exact_active_relation_fails_closed(health_repo, breakage):&#10;[+31 more lines; full report in element text]">file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87
+  @pytest.mark.parametrize("breakage", [
+      "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+      "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+      "approval_malformed_latest",
+  ])
+  async def test_exact_active_relation_fails_closed(health_repo, breakage):
+      repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+      queries = OpsQueries(repo.session_factory)
+      app = create_app()
+      app.state.distributed = SimpleNamespace(
+          ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+      async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+          response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+      assert response.status_code == 200
+      body = response.json()
+      health = [r for r in body["gate_receipts"] if r["health_source"]]
+      (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+          "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+          "breakage": breakage, "actual_command_hash": actual_hash,
+          "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+      assert bool(health) == (breakage == "valid"), (
+          "broken approval/audit binding must not be labelled consumed-chain passed")
+file /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py, line 183
+  @pytest_asyncio.fixture
+  async def health_repo(raw_repo):
+      await migrate_schema(raw_repo.session_factory.kw["bind"])
+      raw_repo.policy_assigner = assigner(
+          runtime_hash="f" * 64, source_revision="test-source", allow_fault_injection=True,
+          settings_obj=SimpleNamespace(promotion_injected_latency_seconds=.05),
+      )
+      deployment = await candidate_head(raw_repo, state="canary", traffic=5000)
+      return raw_repo, PromotionRepository(raw_repo.session_factory), deployment
+E       fixture 'raw_repo' not found
+&gt;       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, health_repo, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py:183</error></testcase><testcase classname="" name="test_exact_active_relation_fails_closed[matching_wrong_command_hash]" time="0.000"><error message="failed on setup with &quot;file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87&#10;  @pytest.mark.parametrize(&quot;breakage&quot;, [&#10;      &quot;valid&quot;, &quot;matching_wrong_command_hash&quot;, &quot;audit_missing_required&quot;, &quot;audit_wrong_actor&quot;,&#10;      &quot;approval_wrong_issuer&quot;, &quot;approval_wrong_model&quot;, &quot;approval_wrong_role&quot;,&#10;      &quot;approval_malformed_latest&quot;,&#10;  ])&#10;  async def test_exact_active_relation_fails_closed(health_repo, breakage):&#10;[+31 more lines; full report in element text]">file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87
+  @pytest.mark.parametrize("breakage", [
+      "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+      "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+      "approval_malformed_latest",
+  ])
+  async def test_exact_active_relation_fails_closed(health_repo, breakage):
+      repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+      queries = OpsQueries(repo.session_factory)
+      app = create_app()
+      app.state.distributed = SimpleNamespace(
+          ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+      async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+          response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+      assert response.status_code == 200
+      body = response.json()
+      health = [r for r in body["gate_receipts"] if r["health_source"]]
+      (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+          "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+          "breakage": breakage, "actual_command_hash": actual_hash,
+          "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+      assert bool(health) == (breakage == "valid"), (
+          "broken approval/audit binding must not be labelled consumed-chain passed")
+file /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py, line 183
+  @pytest_asyncio.fixture
+  async def health_repo(raw_repo):
+      await migrate_schema(raw_repo.session_factory.kw["bind"])
+      raw_repo.policy_assigner = assigner(
+          runtime_hash="f" * 64, source_revision="test-source", allow_fault_injection=True,
+          settings_obj=SimpleNamespace(promotion_injected_latency_seconds=.05),
+      )
+      deployment = await candidate_head(raw_repo, state="canary", traffic=5000)
+      return raw_repo, PromotionRepository(raw_repo.session_factory), deployment
+E       fixture 'raw_repo' not found
+&gt;       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, health_repo, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py:183</error></testcase><testcase classname="" name="test_exact_active_relation_fails_closed[audit_missing_required]" time="0.000"><error message="failed on setup with &quot;file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87&#10;  @pytest.mark.parametrize(&quot;breakage&quot;, [&#10;      &quot;valid&quot;, &quot;matching_wrong_command_hash&quot;, &quot;audit_missing_required&quot;, &quot;audit_wrong_actor&quot;,&#10;      &quot;approval_wrong_issuer&quot;, &quot;approval_wrong_model&quot;, &quot;approval_wrong_role&quot;,&#10;      &quot;approval_malformed_latest&quot;,&#10;  ])&#10;  async def test_exact_active_relation_fails_closed(health_repo, breakage):&#10;[+31 more lines; full report in element text]">file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87
+  @pytest.mark.parametrize("breakage", [
+      "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+      "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+      "approval_malformed_latest",
+  ])
+  async def test_exact_active_relation_fails_closed(health_repo, breakage):
+      repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+      queries = OpsQueries(repo.session_factory)
+      app = create_app()
+      app.state.distributed = SimpleNamespace(
+          ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+      async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+          response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+      assert response.status_code == 200
+      body = response.json()
+      health = [r for r in body["gate_receipts"] if r["health_source"]]
+      (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+          "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+          "breakage": breakage, "actual_command_hash": actual_hash,
+          "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+      assert bool(health) == (breakage == "valid"), (
+          "broken approval/audit binding must not be labelled consumed-chain passed")
+file /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py, line 183
+  @pytest_asyncio.fixture
+  async def health_repo(raw_repo):
+      await migrate_schema(raw_repo.session_factory.kw["bind"])
+      raw_repo.policy_assigner = assigner(
+          runtime_hash="f" * 64, source_revision="test-source", allow_fault_injection=True,
+          settings_obj=SimpleNamespace(promotion_injected_latency_seconds=.05),
+      )
+      deployment = await candidate_head(raw_repo, state="canary", traffic=5000)
+      return raw_repo, PromotionRepository(raw_repo.session_factory), deployment
+E       fixture 'raw_repo' not found
+&gt;       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, health_repo, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py:183</error></testcase><testcase classname="" name="test_exact_active_relation_fails_closed[audit_wrong_actor]" time="0.000"><error message="failed on setup with &quot;file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87&#10;  @pytest.mark.parametrize(&quot;breakage&quot;, [&#10;      &quot;valid&quot;, &quot;matching_wrong_command_hash&quot;, &quot;audit_missing_required&quot;, &quot;audit_wrong_actor&quot;,&#10;      &quot;approval_wrong_issuer&quot;, &quot;approval_wrong_model&quot;, &quot;approval_wrong_role&quot;,&#10;      &quot;approval_malformed_latest&quot;,&#10;  ])&#10;  async def test_exact_active_relation_fails_closed(health_repo, breakage):&#10;[+31 more lines; full report in element text]">file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87
+  @pytest.mark.parametrize("breakage", [
+      "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+      "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+      "approval_malformed_latest",
+  ])
+  async def test_exact_active_relation_fails_closed(health_repo, breakage):
+      repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+      queries = OpsQueries(repo.session_factory)
+      app = create_app()
+      app.state.distributed = SimpleNamespace(
+          ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+      async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+          response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+      assert response.status_code == 200
+      body = response.json()
+      health = [r for r in body["gate_receipts"] if r["health_source"]]
+      (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+          "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+          "breakage": breakage, "actual_command_hash": actual_hash,
+          "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+      assert bool(health) == (breakage == "valid"), (
+          "broken approval/audit binding must not be labelled consumed-chain passed")
+file /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py, line 183
+  @pytest_asyncio.fixture
+  async def health_repo(raw_repo):
+      await migrate_schema(raw_repo.session_factory.kw["bind"])
+      raw_repo.policy_assigner = assigner(
+          runtime_hash="f" * 64, source_revision="test-source", allow_fault_injection=True,
+          settings_obj=SimpleNamespace(promotion_injected_latency_seconds=.05),
+      )
+      deployment = await candidate_head(raw_repo, state="canary", traffic=5000)
+      return raw_repo, PromotionRepository(raw_repo.session_factory), deployment
+E       fixture 'raw_repo' not found
+&gt;       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, health_repo, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py:183</error></testcase><testcase classname="" name="test_exact_active_relation_fails_closed[approval_wrong_issuer]" time="0.000"><error message="failed on setup with &quot;file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87&#10;  @pytest.mark.parametrize(&quot;breakage&quot;, [&#10;      &quot;valid&quot;, &quot;matching_wrong_command_hash&quot;, &quot;audit_missing_required&quot;, &quot;audit_wrong_actor&quot;,&#10;      &quot;approval_wrong_issuer&quot;, &quot;approval_wrong_model&quot;, &quot;approval_wrong_role&quot;,&#10;      &quot;approval_malformed_latest&quot;,&#10;  ])&#10;  async def test_exact_active_relation_fails_closed(health_repo, breakage):&#10;[+31 more lines; full report in element text]">file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87
+  @pytest.mark.parametrize("breakage", [
+      "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+      "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+      "approval_malformed_latest",
+  ])
+  async def test_exact_active_relation_fails_closed(health_repo, breakage):
+      repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+      queries = OpsQueries(repo.session_factory)
+      app = create_app()
+      app.state.distributed = SimpleNamespace(
+          ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+      async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+          response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+      assert response.status_code == 200
+      body = response.json()
+      health = [r for r in body["gate_receipts"] if r["health_source"]]
+      (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+          "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+          "breakage": breakage, "actual_command_hash": actual_hash,
+          "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+      assert bool(health) == (breakage == "valid"), (
+          "broken approval/audit binding must not be labelled consumed-chain passed")
+file /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py, line 183
+  @pytest_asyncio.fixture
+  async def health_repo(raw_repo):
+      await migrate_schema(raw_repo.session_factory.kw["bind"])
+      raw_repo.policy_assigner = assigner(
+          runtime_hash="f" * 64, source_revision="test-source", allow_fault_injection=True,
+          settings_obj=SimpleNamespace(promotion_injected_latency_seconds=.05),
+      )
+      deployment = await candidate_head(raw_repo, state="canary", traffic=5000)
+      return raw_repo, PromotionRepository(raw_repo.session_factory), deployment
+E       fixture 'raw_repo' not found
+&gt;       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, health_repo, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py:183</error></testcase><testcase classname="" name="test_exact_active_relation_fails_closed[approval_wrong_model]" time="0.000"><error message="failed on setup with &quot;file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87&#10;  @pytest.mark.parametrize(&quot;breakage&quot;, [&#10;      &quot;valid&quot;, &quot;matching_wrong_command_hash&quot;, &quot;audit_missing_required&quot;, &quot;audit_wrong_actor&quot;,&#10;      &quot;approval_wrong_issuer&quot;, &quot;approval_wrong_model&quot;, &quot;approval_wrong_role&quot;,&#10;      &quot;approval_malformed_latest&quot;,&#10;  ])&#10;  async def test_exact_active_relation_fails_closed(health_repo, breakage):&#10;[+31 more lines; full report in element text]">file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87
+  @pytest.mark.parametrize("breakage", [
+      "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+      "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+      "approval_malformed_latest",
+  ])
+  async def test_exact_active_relation_fails_closed(health_repo, breakage):
+      repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+      queries = OpsQueries(repo.session_factory)
+      app = create_app()
+      app.state.distributed = SimpleNamespace(
+          ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+      async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+          response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+      assert response.status_code == 200
+      body = response.json()
+      health = [r for r in body["gate_receipts"] if r["health_source"]]
+      (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+          "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+          "breakage": breakage, "actual_command_hash": actual_hash,
+          "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+      assert bool(health) == (breakage == "valid"), (
+          "broken approval/audit binding must not be labelled consumed-chain passed")
+file /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py, line 183
+  @pytest_asyncio.fixture
+  async def health_repo(raw_repo):
+      await migrate_schema(raw_repo.session_factory.kw["bind"])
+      raw_repo.policy_assigner = assigner(
+          runtime_hash="f" * 64, source_revision="test-source", allow_fault_injection=True,
+          settings_obj=SimpleNamespace(promotion_injected_latency_seconds=.05),
+      )
+      deployment = await candidate_head(raw_repo, state="canary", traffic=5000)
+      return raw_repo, PromotionRepository(raw_repo.session_factory), deployment
+E       fixture 'raw_repo' not found
+&gt;       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, health_repo, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py:183</error></testcase><testcase classname="" name="test_exact_active_relation_fails_closed[approval_wrong_role]" time="0.000"><error message="failed on setup with &quot;file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87&#10;  @pytest.mark.parametrize(&quot;breakage&quot;, [&#10;      &quot;valid&quot;, &quot;matching_wrong_command_hash&quot;, &quot;audit_missing_required&quot;, &quot;audit_wrong_actor&quot;,&#10;      &quot;approval_wrong_issuer&quot;, &quot;approval_wrong_model&quot;, &quot;approval_wrong_role&quot;,&#10;      &quot;approval_malformed_latest&quot;,&#10;  ])&#10;  async def test_exact_active_relation_fails_closed(health_repo, breakage):&#10;[+31 more lines; full report in element text]">file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87
+  @pytest.mark.parametrize("breakage", [
+      "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+      "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+      "approval_malformed_latest",
+  ])
+  async def test_exact_active_relation_fails_closed(health_repo, breakage):
+      repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+      queries = OpsQueries(repo.session_factory)
+      app = create_app()
+      app.state.distributed = SimpleNamespace(
+          ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+      async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+          response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+      assert response.status_code == 200
+      body = response.json()
+      health = [r for r in body["gate_receipts"] if r["health_source"]]
+      (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+          "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+          "breakage": breakage, "actual_command_hash": actual_hash,
+          "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+      assert bool(health) == (breakage == "valid"), (
+          "broken approval/audit binding must not be labelled consumed-chain passed")
+file /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py, line 183
+  @pytest_asyncio.fixture
+  async def health_repo(raw_repo):
+      await migrate_schema(raw_repo.session_factory.kw["bind"])
+      raw_repo.policy_assigner = assigner(
+          runtime_hash="f" * 64, source_revision="test-source", allow_fault_injection=True,
+          settings_obj=SimpleNamespace(promotion_injected_latency_seconds=.05),
+      )
+      deployment = await candidate_head(raw_repo, state="canary", traffic=5000)
+      return raw_repo, PromotionRepository(raw_repo.session_factory), deployment
+E       fixture 'raw_repo' not found
+&gt;       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, health_repo, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py:183</error></testcase><testcase classname="" name="test_exact_active_relation_fails_closed[approval_malformed_latest]" time="0.000"><error message="failed on setup with &quot;file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87&#10;  @pytest.mark.parametrize(&quot;breakage&quot;, [&#10;      &quot;valid&quot;, &quot;matching_wrong_command_hash&quot;, &quot;audit_missing_required&quot;, &quot;audit_wrong_actor&quot;,&#10;      &quot;approval_wrong_issuer&quot;, &quot;approval_wrong_model&quot;, &quot;approval_wrong_role&quot;,&#10;      &quot;approval_malformed_latest&quot;,&#10;  ])&#10;  async def test_exact_active_relation_fails_closed(health_repo, breakage):&#10;[+31 more lines; full report in element text]">file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 87
+  @pytest.mark.parametrize("breakage", [
+      "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+      "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+      "approval_malformed_latest",
+  ])
+  async def test_exact_active_relation_fails_closed(health_repo, breakage):
+      repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+      queries = OpsQueries(repo.session_factory)
+      app = create_app()
+      app.state.distributed = SimpleNamespace(
+          ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+      async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+          response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+      assert response.status_code == 200
+      body = response.json()
+      health = [r for r in body["gate_receipts"] if r["health_source"]]
+      (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+          "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+          "breakage": breakage, "actual_command_hash": actual_hash,
+          "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+      assert bool(health) == (breakage == "valid"), (
+          "broken approval/audit binding must not be labelled consumed-chain passed")
+file /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py, line 183
+  @pytest_asyncio.fixture
+  async def health_repo(raw_repo):
+      await migrate_schema(raw_repo.session_factory.kw["bind"])
+      raw_repo.policy_assigner = assigner(
+          runtime_hash="f" * 64, source_revision="test-source", allow_fault_injection=True,
+          settings_obj=SimpleNamespace(promotion_injected_latency_seconds=.05),
+      )
+      deployment = await candidate_head(raw_repo, state="canary", traffic=5000)
+      return raw_repo, PromotionRepository(raw_repo.session_factory), deployment
+E       fixture 'raw_repo' not found
+&gt;       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, health_repo, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py:183</error></testcase><testcase classname="" name="test_health_receipt_summary_matches_frozen_source[sample_count]" time="0.000"><error message="failed on setup with &quot;file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 111&#10;  @pytest.mark.parametrize(&quot;field&quot;, [&quot;sample_count&quot;, &quot;cost&quot;])&#10;  async def test_health_receipt_summary_matches_frozen_source(health_repo, field):&#10;      repo, promotion, deployment = health_repo&#10;      await fill_window(health_repo)&#10;      await PolicyHealthEvaluator(promotion).evaluate(deployment.deployment_id)&#10;      async with repo.session_factory() as session:&#10;[+22 more lines; full report in element text]">file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 111
+  @pytest.mark.parametrize("field", ["sample_count", "cost"])
+  async def test_health_receipt_summary_matches_frozen_source(health_repo, field):
+      repo, promotion, deployment = health_repo
+      await fill_window(health_repo)
+      await PolicyHealthEvaluator(promotion).evaluate(deployment.deployment_id)
+      async with repo.session_factory() as session:
+          original = await session.scalar(select(PolicyGateReceiptRecord))
+      await append_receipt(repo, original, **{field: 0})
+      body = (await OpsQueries(repo.session_factory).get_policy_deployment(
+          deployment.deployment_id)).model_dump(mode="json")
+      (OWN / ("summary-" + field + ".json")).write_text(json.dumps(body, indent=2) + "\n")
+      assert not [r for r in body["gate_receipts"] if r["health_source"]], (
+          "inconsistent latest receipt metadata must not get green source attribution")
+file /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py, line 183
+  @pytest_asyncio.fixture
+  async def health_repo(raw_repo):
+      await migrate_schema(raw_repo.session_factory.kw["bind"])
+      raw_repo.policy_assigner = assigner(
+          runtime_hash="f" * 64, source_revision="test-source", allow_fault_injection=True,
+          settings_obj=SimpleNamespace(promotion_injected_latency_seconds=.05),
+      )
+      deployment = await candidate_head(raw_repo, state="canary", traffic=5000)
+      return raw_repo, PromotionRepository(raw_repo.session_factory), deployment
+E       fixture 'raw_repo' not found
+&gt;       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, health_repo, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py:183</error></testcase><testcase classname="" name="test_health_receipt_summary_matches_frozen_source[cost]" time="0.000"><error message="failed on setup with &quot;file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 111&#10;  @pytest.mark.parametrize(&quot;field&quot;, [&quot;sample_count&quot;, &quot;cost&quot;])&#10;  async def test_health_receipt_summary_matches_frozen_source(health_repo, field):&#10;      repo, promotion, deployment = health_repo&#10;      await fill_window(health_repo)&#10;      await PolicyHealthEvaluator(promotion).evaluate(deployment.deployment_id)&#10;      async with repo.session_factory() as session:&#10;[+22 more lines; full report in element text]">file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 111
+  @pytest.mark.parametrize("field", ["sample_count", "cost"])
+  async def test_health_receipt_summary_matches_frozen_source(health_repo, field):
+      repo, promotion, deployment = health_repo
+      await fill_window(health_repo)
+      await PolicyHealthEvaluator(promotion).evaluate(deployment.deployment_id)
+      async with repo.session_factory() as session:
+          original = await session.scalar(select(PolicyGateReceiptRecord))
+      await append_receipt(repo, original, **{field: 0})
+      body = (await OpsQueries(repo.session_factory).get_policy_deployment(
+          deployment.deployment_id)).model_dump(mode="json")
+      (OWN / ("summary-" + field + ".json")).write_text(json.dumps(body, indent=2) + "\n")
+      assert not [r for r in body["gate_receipts"] if r["health_source"]], (
+          "inconsistent latest receipt metadata must not get green source attribution")
+file /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py, line 183
+  @pytest_asyncio.fixture
+  async def health_repo(raw_repo):
+      await migrate_schema(raw_repo.session_factory.kw["bind"])
+      raw_repo.policy_assigner = assigner(
+          runtime_hash="f" * 64, source_revision="test-source", allow_fault_injection=True,
+          settings_obj=SimpleNamespace(promotion_injected_latency_seconds=.05),
+      )
+      deployment = await candidate_head(raw_repo, state="canary", traffic=5000)
+      return raw_repo, PromotionRepository(raw_repo.session_factory), deployment
+E       fixture 'raw_repo' not found
+&gt;       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, health_repo, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py:183</error></testcase><testcase classname="" name="test_valid_real_chain_is_not_hidden" time="0.000"><error message="failed on setup with &quot;file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 126&#10;  async def test_valid_real_chain_is_not_hidden(health_repo):&#10;      fixture, _, _ = await real_active_fixture(health_repo, command_prefix=&quot;positive-&quot; + uuid4().hex)&#10;      repo, _, active = fixture&#10;      detail = await OpsQueries(repo.session_factory).get_policy_deployment(str(active.deployment_id))&#10;      health = [r for r in detail.gate_receipts if r.health_source]&#10;[+17 more lines; full report in element text]">file /tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py, line 126
+  async def test_valid_real_chain_is_not_hidden(health_repo):
+      fixture, _, _ = await real_active_fixture(health_repo, command_prefix="positive-" + uuid4().hex)
+      repo, _, active = fixture
+      detail = await OpsQueries(repo.session_factory).get_policy_deployment(str(active.deployment_id))
+      health = [r for r in detail.gate_receipts if r.health_source]
+      assert {r.gate_type for r in health} == {"shadow_health", "canary_health"}
+      assert all(r.health_source.relation == "consumed_chain" and r.status == "passed" for r in health)
+file /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py, line 183
+  @pytest_asyncio.fixture
+  async def health_repo(raw_repo):
+      await migrate_schema(raw_repo.session_factory.kw["bind"])
+      raw_repo.policy_assigner = assigner(
+          runtime_hash="f" * 64, source_revision="test-source", allow_fault_injection=True,
+          settings_obj=SimpleNamespace(promotion_injected_latency_seconds=.05),
+      )
+      deployment = await candidate_head(raw_repo, state="canary", traffic=5000)
+      return raw_repo, PromotionRepository(raw_repo.session_factory), deployment
+E       fixture 'raw_repo' not found
+&gt;       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, health_repo, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/distributed/test_policy_health.py:183</error></testcase></testsuite></testsuites>

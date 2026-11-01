@@ -1,0 +1,29 @@
+INFO:     Started server process [82291]
+INFO:     Waiting for application startup.
+ERROR:    Traceback (most recent call last):
+  File "/Users/bytedance/Documents/trae_projects/eduagent-m3/python/core/distributed/ops_queries.py", line 294, in _policy_arguments
+    if str(UUID(deployment_id)) != deployment_id:
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/uuid.py", line 175, in __init__
+    hex = hex.replace('urn:', '').replace('uuid:', '')
+          ^^^^^^^^^^^
+AttributeError: 'UUID' object has no attribute 'replace'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/starlette/routing.py", line 661, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/Users/bytedance/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/live_server.py", line 59, in lifespan
+    public["detail"] = (await queries.get_policy_deployment(public["id"])).model_dump(mode="json")
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/bytedance/Documents/trae_projects/eduagent-m3/python/core/distributed/ops_queries.py", line 329, in get_policy_deployment
+    self._policy_arguments(1, deployment_id=deployment_id)
+  File "/Users/bytedance/Documents/trae_projects/eduagent-m3/python/core/distributed/ops_queries.py", line 297, in _policy_arguments
+    raise InvalidOpsCursor("invalid deployment identity") from exc
+core.distributed.ops_queries.InvalidOpsCursor: invalid deployment identity
+
+ERROR:    Application startup failed. Exiting.

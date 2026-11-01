@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="11" time="6.311" timestamp="2026-11-01T23:22:38.699035+00:00" hostname="HL41657YW6"><testcase classname="" name="test_exact_active_relation_fails_closed[valid]" time="0.566" /><testcase classname="" name="test_exact_active_relation_fails_closed[matching_wrong_command_hash]" time="0.510"><failure message="AssertionError: broken approval/audit binding must not be labelled consumed-chain passed&#10;assert True == ('matching_wrong_command_hash' == 'valid'&#10; +  where True = bool([{'receipt_id': '8f23f794-0c0d-46e0-8544-90a07c032e7b', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])&#10;  &#10;  - valid&#10;  + matching_wrong_command_hash)">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10dfb6450&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10e6316d0&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e0db450&gt;)
+breakage = 'matching_wrong_command_hash'
+
+    @pytest.mark.parametrize("breakage", [
+        "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+        "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+        "approval_malformed_latest",
+    ])
+    async def test_exact_active_relation_fails_closed(health_repo, breakage):
+        repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+        queries = OpsQueries(repo.session_factory)
+        app = create_app()
+        app.state.distributed = SimpleNamespace(
+            ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+        assert response.status_code == 200
+        body = response.json()
+        health = [r for r in body["gate_receipts"] if r["health_source"]]
+        (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+            "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+            "breakage": breakage, "actual_command_hash": actual_hash,
+            "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+&gt;       assert bool(health) == (breakage == "valid"), (
+            "broken approval/audit binding must not be labelled consumed-chain passed")
+E       AssertionError: broken approval/audit binding must not be labelled consumed-chain passed
+E       assert True == ('matching_wrong_command_hash' == 'valid'
+E        +  where True = bool([{'receipt_id': '8f23f794-0c0d-46e0-8544-90a07c032e7b', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])
+E         
+E         - valid
+E         + matching_wrong_command_hash)
+
+/tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py:107: AssertionError</failure></testcase><testcase classname="" name="test_exact_active_relation_fails_closed[audit_missing_required]" time="0.508"><failure message="AssertionError: broken approval/audit binding must not be labelled consumed-chain passed&#10;assert True == ('audit_missing_required' == 'valid'&#10; +  where True = bool([{'receipt_id': '72412f33-45fe-4751-b30a-6f884b51c4bf', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])&#10;  &#10;  - valid&#10;  + audit_missing_required)">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10e83ef10&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10e648050&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e64c510&gt;)
+breakage = 'audit_missing_required'
+
+    @pytest.mark.parametrize("breakage", [
+        "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+        "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+        "approval_malformed_latest",
+    ])
+    async def test_exact_active_relation_fails_closed(health_repo, breakage):
+        repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+        queries = OpsQueries(repo.session_factory)
+        app = create_app()
+        app.state.distributed = SimpleNamespace(
+            ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+        assert response.status_code == 200
+        body = response.json()
+        health = [r for r in body["gate_receipts"] if r["health_source"]]
+        (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+            "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+            "breakage": breakage, "actual_command_hash": actual_hash,
+            "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+&gt;       assert bool(health) == (breakage == "valid"), (
+            "broken approval/audit binding must not be labelled consumed-chain passed")
+E       AssertionError: broken approval/audit binding must not be labelled consumed-chain passed
+E       assert True == ('audit_missing_required' == 'valid'
+E        +  where True = bool([{'receipt_id': '72412f33-45fe-4751-b30a-6f884b51c4bf', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])
+E         
+E         - valid
+E         + audit_missing_required)
+
+/tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py:107: AssertionError</failure></testcase><testcase classname="" name="test_exact_active_relation_fails_closed[audit_wrong_actor]" time="0.521"><failure message="AssertionError: broken approval/audit binding must not be labelled consumed-chain passed&#10;assert True == ('audit_wrong_actor' == 'valid'&#10; +  where True = bool([{'receipt_id': 'da2c53c2-e4bb-485e-aa40-d4556bfa4c4b', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])&#10;  &#10;  - valid&#10;  + audit_wrong_actor)">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10ea33710&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10e6880d0&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10da78390&gt;)
+breakage = 'audit_wrong_actor'
+
+    @pytest.mark.parametrize("breakage", [
+        "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+        "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+        "approval_malformed_latest",
+    ])
+    async def test_exact_active_relation_fails_closed(health_repo, breakage):
+        repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+        queries = OpsQueries(repo.session_factory)
+        app = create_app()
+        app.state.distributed = SimpleNamespace(
+            ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+        assert response.status_code == 200
+        body = response.json()
+        health = [r for r in body["gate_receipts"] if r["health_source"]]
+        (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+            "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+            "breakage": breakage, "actual_command_hash": actual_hash,
+            "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+&gt;       assert bool(health) == (breakage == "valid"), (
+            "broken approval/audit binding must not be labelled consumed-chain passed")
+E       AssertionError: broken approval/audit binding must not be labelled consumed-chain passed
+E       assert True == ('audit_wrong_actor' == 'valid'
+E        +  where True = bool([{'receipt_id': 'da2c53c2-e4bb-485e-aa40-d4556bfa4c4b', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])
+E         
+E         - valid
+E         + audit_wrong_actor)
+
+/tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py:107: AssertionError</failure></testcase><testcase classname="" name="test_exact_active_relation_fails_closed[approval_wrong_issuer]" time="0.459"><failure message="AssertionError: broken approval/audit binding must not be labelled consumed-chain passed&#10;assert True == ('approval_wrong_issuer' == 'valid'&#10; +  where True = bool([{'receipt_id': 'bbc84ed9-09dc-4276-89de-1e46b5948cbb', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])&#10;  &#10;  - valid&#10;  + approval_wrong_issuer)">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10dd4b290&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10e2a3890&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e0dc0d0&gt;)
+breakage = 'approval_wrong_issuer'
+
+    @pytest.mark.parametrize("breakage", [
+        "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+        "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+        "approval_malformed_latest",
+    ])
+    async def test_exact_active_relation_fails_closed(health_repo, breakage):
+        repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+        queries = OpsQueries(repo.session_factory)
+        app = create_app()
+        app.state.distributed = SimpleNamespace(
+            ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+        assert response.status_code == 200
+        body = response.json()
+        health = [r for r in body["gate_receipts"] if r["health_source"]]
+        (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+            "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+            "breakage": breakage, "actual_command_hash": actual_hash,
+            "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+&gt;       assert bool(health) == (breakage == "valid"), (
+            "broken approval/audit binding must not be labelled consumed-chain passed")
+E       AssertionError: broken approval/audit binding must not be labelled consumed-chain passed
+E       assert True == ('approval_wrong_issuer' == 'valid'
+E        +  where True = bool([{'receipt_id': 'bbc84ed9-09dc-4276-89de-1e46b5948cbb', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])
+E         
+E         - valid
+E         + approval_wrong_issuer)
+
+/tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py:107: AssertionError</failure></testcase><testcase classname="" name="test_exact_active_relation_fails_closed[approval_wrong_model]" time="0.494"><failure message="AssertionError: broken approval/audit binding must not be labelled consumed-chain passed&#10;assert True == ('approval_wrong_model' == 'valid'&#10; +  where True = bool([{'receipt_id': 'fca653e7-7536-4e78-a987-d08beb19ec47', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])&#10;  &#10;  - valid&#10;  + approval_wrong_model)">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10e8c9dd0&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10eb346d0&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e733210&gt;)
+breakage = 'approval_wrong_model'
+
+    @pytest.mark.parametrize("breakage", [
+        "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+        "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+        "approval_malformed_latest",
+    ])
+    async def test_exact_active_relation_fails_closed(health_repo, breakage):
+        repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+        queries = OpsQueries(repo.session_factory)
+        app = create_app()
+        app.state.distributed = SimpleNamespace(
+            ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+        assert response.status_code == 200
+        body = response.json()
+        health = [r for r in body["gate_receipts"] if r["health_source"]]
+        (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+            "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+            "breakage": breakage, "actual_command_hash": actual_hash,
+            "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+&gt;       assert bool(health) == (breakage == "valid"), (
+            "broken approval/audit binding must not be labelled consumed-chain passed")
+E       AssertionError: broken approval/audit binding must not be labelled consumed-chain passed
+E       assert True == ('approval_wrong_model' == 'valid'
+E        +  where True = bool([{'receipt_id': 'fca653e7-7536-4e78-a987-d08beb19ec47', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])
+E         
+E         - valid
+E         + approval_wrong_model)
+
+/tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py:107: AssertionError</failure></testcase><testcase classname="" name="test_exact_active_relation_fails_closed[approval_wrong_role]" time="0.784"><failure message="AssertionError: broken approval/audit binding must not be labelled consumed-chain passed&#10;assert True == ('approval_wrong_role' == 'valid'&#10; +  where True = bool([{'receipt_id': '8f3e5ec6-f6ed-4947-813d-5acf4c777293', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])&#10;  &#10;  - valid&#10;  + approval_wrong_role)">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10ec80490&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10ec85410&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10ed175d0&gt;)
+breakage = 'approval_wrong_role'
+
+    @pytest.mark.parametrize("breakage", [
+        "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+        "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+        "approval_malformed_latest",
+    ])
+    async def test_exact_active_relation_fails_closed(health_repo, breakage):
+        repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+        queries = OpsQueries(repo.session_factory)
+        app = create_app()
+        app.state.distributed = SimpleNamespace(
+            ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+        assert response.status_code == 200
+        body = response.json()
+        health = [r for r in body["gate_receipts"] if r["health_source"]]
+        (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+            "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+            "breakage": breakage, "actual_command_hash": actual_hash,
+            "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+&gt;       assert bool(health) == (breakage == "valid"), (
+            "broken approval/audit binding must not be labelled consumed-chain passed")
+E       AssertionError: broken approval/audit binding must not be labelled consumed-chain passed
+E       assert True == ('approval_wrong_role' == 'valid'
+E        +  where True = bool([{'receipt_id': '8f3e5ec6-f6ed-4947-813d-5acf4c777293', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])
+E         
+E         - valid
+E         + approval_wrong_role)
+
+/tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py:107: AssertionError</failure></testcase><testcase classname="" name="test_exact_active_relation_fails_closed[approval_malformed_latest]" time="0.579"><failure message="AssertionError: broken approval/audit binding must not be labelled consumed-chain passed&#10;assert True == ('approval_malformed_latest' == 'valid'&#10; +  where True = bool([{'receipt_id': 'b263fc27-a552-4baf-ab3d-4f151ef095e8', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])&#10;  &#10;  - valid&#10;  + approval_malformed_latest)">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10ed19dd0&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10ee57990&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10eb2c550&gt;)
+breakage = 'approval_malformed_latest'
+
+    @pytest.mark.parametrize("breakage", [
+        "valid", "matching_wrong_command_hash", "audit_missing_required", "audit_wrong_actor",
+        "approval_wrong_issuer", "approval_wrong_model", "approval_wrong_role",
+        "approval_malformed_latest",
+    ])
+    async def test_exact_active_relation_fails_closed(health_repo, breakage):
+        repo, active, actual_hash, stored_hash = await synthetic_active(health_repo, breakage)
+        queries = OpsQueries(repo.session_factory)
+        app = create_app()
+        app.state.distributed = SimpleNamespace(
+            ops_queries=queries, settings=SimpleNamespace(ops_api_token=""))
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/ops/policies/deployments/" + active.deployment_id)
+        assert response.status_code == 200
+        body = response.json()
+        health = [r for r in body["gate_receipts"] if r["health_source"]]
+        (OWN / ("relation-" + breakage + ".json")).write_text(json.dumps({
+            "role": "synthetic engineering only; append-only real PG and evaluator; model calls zero",
+            "breakage": breakage, "actual_command_hash": actual_hash,
+            "stored_command_hash": stored_hash, "body": body}, indent=2) + "\n")
+&gt;       assert bool(health) == (breakage == "valid"), (
+            "broken approval/audit binding must not be labelled consumed-chain passed")
+E       AssertionError: broken approval/audit binding must not be labelled consumed-chain passed
+E       assert True == ('approval_malformed_latest' == 'valid'
+E        +  where True = bool([{'receipt_id': 'b263fc27-a552-4baf-ab3d-4f151ef095e8', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])
+E         
+E         - valid
+E         + approval_malformed_latest)
+
+/tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py:107: AssertionError</failure></testcase><testcase classname="" name="test_health_receipt_summary_matches_frozen_source[sample_count]" time="0.446"><failure message="AssertionError: inconsistent latest receipt metadata must not get green source attribution&#10;assert not [{'receipt_id': '28864359-388a-4a47-b42a-959a2529e93a', 'policy_hash': '219b5f3225563451287e3c83d075096223f2150fb6d21f8ffa6e7f80af6782a8', 'gate_type': 'canary_health', 'status': 'passed', ...}]">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10ece5490&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10e1ff5d0&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e07f510&gt;)
+field = 'sample_count'
+
+    @pytest.mark.parametrize("field", ["sample_count", "cost"])
+    async def test_health_receipt_summary_matches_frozen_source(health_repo, field):
+        repo, promotion, deployment = health_repo
+        await fill_window(health_repo)
+        await PolicyHealthEvaluator(promotion).evaluate(deployment.deployment_id)
+        async with repo.session_factory() as session:
+            original = await session.scalar(select(PolicyGateReceiptRecord))
+        await append_receipt(repo, original, **{field: 0})
+        body = (await OpsQueries(repo.session_factory).get_policy_deployment(
+            deployment.deployment_id)).model_dump(mode="json")
+        (OWN / ("summary-" + field + ".json")).write_text(json.dumps(body, indent=2) + "\n")
+&gt;       assert not [r for r in body["gate_receipts"] if r["health_source"]], (
+            "inconsistent latest receipt metadata must not get green source attribution")
+E       AssertionError: inconsistent latest receipt metadata must not get green source attribution
+E       assert not [{'receipt_id': '28864359-388a-4a47-b42a-959a2529e93a', 'policy_hash': '219b5f3225563451287e3c83d075096223f2150fb6d21f8ffa6e7f80af6782a8', 'gate_type': 'canary_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py:122: AssertionError</failure></testcase><testcase classname="" name="test_health_receipt_summary_matches_frozen_source[cost]" time="0.561"><failure message="AssertionError: inconsistent latest receipt metadata must not get green source attribution&#10;assert not [{'receipt_id': '71c2494a-a1be-4644-8d0c-c7dd6bd1f3f6', 'policy_hash': '624cc31339e937292bc000f72570f2bbcee9ae6d92df81d156c00b324586eb1b', 'gate_type': 'canary_health', 'status': 'passed', ...}]">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10e12b4d0&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10dfd1150&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e90ef90&gt;)
+field = 'cost'
+
+    @pytest.mark.parametrize("field", ["sample_count", "cost"])
+    async def test_health_receipt_summary_matches_frozen_source(health_repo, field):
+        repo, promotion, deployment = health_repo
+        await fill_window(health_repo)
+        await PolicyHealthEvaluator(promotion).evaluate(deployment.deployment_id)
+        async with repo.session_factory() as session:
+            original = await session.scalar(select(PolicyGateReceiptRecord))
+        await append_receipt(repo, original, **{field: 0})
+        body = (await OpsQueries(repo.session_factory).get_policy_deployment(
+            deployment.deployment_id)).model_dump(mode="json")
+        (OWN / ("summary-" + field + ".json")).write_text(json.dumps(body, indent=2) + "\n")
+&gt;       assert not [r for r in body["gate_receipts"] if r["health_source"]], (
+            "inconsistent latest receipt metadata must not get green source attribution")
+E       AssertionError: inconsistent latest receipt metadata must not get green source attribution
+E       assert not [{'receipt_id': '71c2494a-a1be-4644-8d0c-c7dd6bd1f3f6', 'policy_hash': '624cc31339e937292bc000f72570f2bbcee9ae6d92df81d156c00b324586eb1b', 'gate_type': 'canary_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-spec-feca62c7-189a-4708-b334-5456f6d79d93/test_spec_relations.py:122: AssertionError</failure></testcase><testcase classname="" name="test_valid_real_chain_is_not_hidden" time="0.692" /></testsuite></testsuites>
