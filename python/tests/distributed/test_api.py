@@ -1,16 +1,17 @@
 import os
+from uuid import uuid4
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from api.distributed_main import create_app
 from config.settings import settings
 from core.distributed.metrics import DistributedMetrics
-from core.distributed.models import DistributedBase
 from core.distributed.repository import DistributedRunRepository
-from core.distributed.runtime import DistributedRuntime
+from core.distributed.runtime import DistributedRuntime, migrate_schema
 
 pytestmark = pytest.mark.distributed_integration
 
@@ -53,9 +54,13 @@ async def distributed_app():
     url = os.getenv("DISTRIBUTED_TEST_DATABASE_URL")
     if not url:
         pytest.skip("DISTRIBUTED_TEST_DATABASE_URL is not configured")
-    engine = create_async_engine(url)
-    async with engine.begin() as conn:
-        await conn.run_sync(DistributedBase.metadata.drop_all)
+    schema = f"api_startup_{uuid4().hex}"
+    admin = create_async_engine(url)
+    engine = create_async_engine(
+        url, connect_args={"server_settings": {"search_path": schema}}
+    )
+    async with admin.begin() as conn:
+        await conn.execute(text(f'CREATE SCHEMA "{schema}"'))
     factory = async_sessionmaker(engine, expire_on_commit=False)
     runtime = DistributedRuntime(
         engine,
@@ -68,9 +73,16 @@ async def distributed_app():
         ),
     )
     app = create_app(lambda: runtime)
-    async with app.router.lifespan_context(app):
-        yield app
-    assert runtime.broker.closed
+    try:
+        await migrate_schema(engine)
+        async with app.router.lifespan_context(app):
+            yield app
+        assert runtime.broker.closed
+    finally:
+        await engine.dispose()
+        async with admin.begin() as conn:
+            await conn.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
+        await admin.dispose()
 
 
 @pytest_asyncio.fixture

@@ -12,7 +12,7 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 from redis.asyncio import Redis
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from core.distributed.broker import RedisRunBroker, RedisStreamBroker
@@ -30,8 +30,9 @@ from core.distributed.expert_reaper import ExpertReaper
 from core.distributed.expert_repository import ExpertJobRepository
 from core.distributed.models import DistributedBase
 from core.distributed.repository import DistributedRunRepository
+from core.distributed.runtime import migrate_schema
 from core.distributed.worker import RunWorker
-from tests.distributed.helpers import bootstrap_production, business_result, spec
+from tests.distributed.helpers import business_result, spec
 from tests.distributed.test_expert_repository import parent_claim, request_for
 
 pytestmark = pytest.mark.distributed_integration
@@ -46,15 +47,18 @@ async def repo():
         pytest.skip("DISTRIBUTED_TEST_DATABASE_URL is not configured")
     engine = create_async_engine(database_url)
     async with engine.begin() as connection:
+        await connection.execute(text("DROP TABLE IF EXISTS distributed_schema_version"))
         await connection.run_sync(DistributedBase.metadata.drop_all)
-        await connection.run_sync(DistributedBase.metadata.create_all)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     repository = DistributedRunRepository(factory)
-    await bootstrap_production(repository)
-    yield repository
-    async with engine.begin() as connection:
-        await connection.run_sync(DistributedBase.metadata.drop_all)
-    await engine.dispose()
+    try:
+        await migrate_schema(engine)
+        yield repository
+    finally:
+        async with engine.begin() as connection:
+            await connection.execute(text("DROP TABLE IF EXISTS distributed_schema_version"))
+            await connection.run_sync(DistributedBase.metadata.drop_all)
+        await engine.dispose()
 
 
 @pytest_asyncio.fixture
@@ -333,7 +337,7 @@ async def test_killed_parent_makes_late_result_parent_stale(
         pause_before_result=5,
     )
     try:
-        # Finish startup DDL before exercising live parent/expert fencing.
+        # Wait for worker readiness before exercising live parent/expert fencing.
         await wait_until(
             lambda: _worker_registered(
                 repo, "expert-parent-stale", process=worker,

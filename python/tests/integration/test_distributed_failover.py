@@ -10,6 +10,7 @@ from uuid import uuid4
 
 import pytest
 from redis.asyncio import Redis
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from core.distributed.broker import RedisRunBroker
@@ -18,7 +19,8 @@ from core.distributed.dispatcher import OutboxDispatcher
 from core.distributed.models import DistributedBase
 from core.distributed.reaper import LeaseReaper
 from core.distributed.repository import DistributedRunRepository
-from tests.distributed.helpers import bootstrap_production, spec
+from core.distributed.runtime import migrate_schema
+from tests.distributed.helpers import spec
 
 pytestmark = pytest.mark.distributed_integration
 
@@ -112,9 +114,9 @@ async def test_killed_worker_is_fenced_and_second_worker_replays_once(
 
     try:
         async with engine.begin() as connection:
+            await connection.execute(text("DROP TABLE IF EXISTS distributed_schema_version"))
             await connection.run_sync(DistributedBase.metadata.drop_all)
-            await connection.run_sync(DistributedBase.metadata.create_all)
-        await bootstrap_production(repository)
+        await migrate_schema(engine)
         await broker.ensure_group()
 
         run = await repository.accept(spec(request_id="kill-recover"))
@@ -180,5 +182,6 @@ async def test_killed_worker_is_fenced_and_second_worker_replays_once(
         await redis.delete(stream)
         await redis.aclose()
         async with engine.begin() as connection:
+            await connection.execute(text("DROP TABLE IF EXISTS distributed_schema_version"))
             await connection.run_sync(DistributedBase.metadata.drop_all)
         await engine.dispose()

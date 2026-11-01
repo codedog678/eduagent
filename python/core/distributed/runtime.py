@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from contextlib import suppress
 from datetime import UTC, datetime
+import inspect
 import json
 from typing import TYPE_CHECKING
 
 from redis.asyncio import Redis
 from sqlalchemy import text
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.schema import CreateIndex, CreateTable
 
 from config.settings import settings
 from core.policy_store import (
@@ -78,13 +81,7 @@ class DistributedRuntime:
         self.expert_repository = self._build_expert_repository()
 
     async def start(self) -> None:
-        async with self.engine.begin() as conn:
-            await conn.run_sync(DistributedBase.metadata.create_all)
-            await upgrade_m1_schema(
-                conn,
-                self.settings.distributed_attempt_timeout_seconds,
-            )
-            await upgrade_m3_schema(conn)
+        await check_schema_version(self.engine)
         await self.broker.ensure_group()
         await self.rehearsal_broker.ensure_group()
         await self.deployment_broker.ensure_group()
@@ -831,6 +828,86 @@ async def upgrade_m3_schema(connection) -> None:
     )
 
 
+SCHEMA_VERSION = 3
+SCHEMA_MIGRATION_LOCK = 0x4544554D33534348
+
+
+def schema_contract_hash() -> str:
+    """Bind the marker to ORM DDL and the existing explicit upgrade functions."""
+    dialect = postgresql.dialect()
+    tables = sorted(DistributedBase.metadata.tables.values(), key=lambda table: table.name)
+    return canonical_hash({
+        "version": SCHEMA_VERSION,
+        "tables": [str(CreateTable(table).compile(dialect=dialect)) for table in tables],
+        "indexes": sorted(
+            str(CreateIndex(index).compile(dialect=dialect))
+            for table in tables for index in table.indexes
+        ),
+        "upgrades": [
+            inspect.getsource(upgrade_m1_schema),
+            inspect.getsource(upgrade_m3_schema),
+        ],
+        "builtin_policy": BUILTIN_POLICY_HASH,
+        "thresholds": DEFAULT_POLICY_THRESHOLDS_HASH,
+    })
+
+
+class SchemaVersionMismatch(RuntimeError):
+    pass
+
+
+async def check_schema_version(engine) -> None:
+    """Normal startup is read-only and never repairs a missing/stale marker."""
+    message = (
+        "distributed schema marker is missing or incompatible; drain API traffic "
+        "and workers, then run python -m core.distributed.cli migrate"
+    )
+    async with engine.begin() as connection:
+        if connection.dialect.name != "postgresql":
+            raise SchemaVersionMismatch("distributed schema requires PostgreSQL")
+        await connection.execute(text("SET TRANSACTION READ ONLY"))
+        marker = await connection.scalar(text(
+            "SELECT to_regclass(format('%I.distributed_schema_version', current_schema()))"
+        ))
+        if marker is None:
+            raise SchemaVersionMismatch(message)
+        row = (await connection.execute(text(
+            "SELECT version, schema_hash FROM distributed_schema_version WHERE id = 1"
+        ))).one_or_none()
+        if row is None or tuple(row) != (SCHEMA_VERSION, schema_contract_hash()):
+            raise SchemaVersionMismatch(message)
+
+
+async def migrate_schema(
+    engine,
+    parent_timeout_seconds: float = settings.distributed_attempt_timeout_seconds,
+) -> None:
+    """One-shot transactional migration; all API traffic/workers must be drained."""
+    async with engine.begin() as connection:
+        if connection.dialect.name != "postgresql":
+            raise RuntimeError("distributed schema migration requires PostgreSQL")
+        await connection.execute(
+            text("SELECT pg_advisory_xact_lock(:key)"),
+            {"key": SCHEMA_MIGRATION_LOCK},
+        )
+        await connection.run_sync(DistributedBase.metadata.create_all)
+        await upgrade_m1_schema(connection, parent_timeout_seconds)
+        await upgrade_m3_schema(connection)
+        # Publish the authoritative marker only after every upgrade succeeds.
+        await connection.execute(text(
+            "CREATE TABLE IF NOT EXISTS distributed_schema_version ("
+            "id SMALLINT PRIMARY KEY CHECK (id = 1), "
+            "version INTEGER NOT NULL, schema_hash VARCHAR(64) NOT NULL, "
+            "migrated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp())"
+        ))
+        await connection.execute(text(
+            "INSERT INTO distributed_schema_version (id, version, schema_hash) "
+            "VALUES (1, :version, :schema_hash) ON CONFLICT (id) DO UPDATE SET "
+            "version = EXCLUDED.version, schema_hash = EXCLUDED.schema_hash, "
+            "migrated_at = clock_timestamp()"
+        ), {"version": SCHEMA_VERSION, "schema_hash": schema_contract_hash()})
+
+
 class PromotionCommandRuntime:
     """Database-only runtime for the isolated promotion command CLI."""
 
@@ -841,9 +918,7 @@ class PromotionCommandRuntime:
         self.token_issuer = token_issuer
 
     async def start(self) -> None:
-        async with self.engine.begin() as connection:
-            await connection.run_sync(DistributedBase.metadata.create_all)
-            await upgrade_m3_schema(connection)
+        await check_schema_version(self.engine)
 
     async def close(self) -> None:
         await self.engine.dispose()

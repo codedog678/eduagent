@@ -98,6 +98,8 @@ services:
         MEMORY_WORKER_ENABLED: "false"
       OPS_API_TOKEN: ${OPS_API_TOKEN:-local-ops-console}
     depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
@@ -116,6 +118,18 @@ services:
       retries: 30
       start_period: 5s
 
+  distributed-migrate:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "migrate"]
+    environment: *distributed-env
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   run-dispatcher:
     profiles: ["distributed"]
     build:
@@ -124,6 +138,8 @@ services:
     command: ["python", "-m", "core.distributed.cli", "dispatcher"]
     environment: *distributed-env
     depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
       distributed-api:
         condition: service_healthy
 
@@ -135,6 +151,8 @@ services:
     command: ["python", "-m", "core.distributed.cli", "reaper"]
     environment: *distributed-env
     depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
       distributed-api:
         condition: service_healthy
 
@@ -152,6 +170,8 @@ services:
     volumes:
       - distributed_harnessdata:/app/data
     depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
       distributed-api:
         condition: service_healthy
 
@@ -168,6 +188,8 @@ services:
     volumes:
       - distributed_harnessdata:/app/data
     depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
       distributed-api:
         condition: service_healthy
 
@@ -179,6 +201,8 @@ services:
     command: ["python", "-m", "core.distributed.cli", "expert-dispatcher"]
     environment: *distributed-env
     depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
       distributed-api:
         condition: service_healthy
 
@@ -195,6 +219,8 @@ services:
     volumes:
       - rehearsal_harnessdata:/app/rehearsal
     depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
       distributed-api:
         condition: service_healthy
 
@@ -211,6 +237,8 @@ services:
     volumes:
       - rehearsal_harnessdata:/app/rehearsal
     depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
       distributed-api:
         condition: service_healthy
 
@@ -222,6 +250,8 @@ services:
     command: ["python", "-m", "core.distributed.cli", "expert-reaper"]
     environment: *distributed-env
     depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
       distributed-api:
         condition: service_healthy
 
@@ -237,6 +267,8 @@ services:
       EXPERT_WORKER_ROLES: Assessment,Curriculum,Tutor
       EXPERT_DEMO_PAUSE_BEFORE_RESULT_SECONDS: ${EXPERT_DEMO_PAUSE_BEFORE_RESULT_SECONDS:-0}
     depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
       distributed-api:
         condition: service_healthy
 
@@ -251,6 +283,8 @@ services:
       EXPERT_WORKER_ID: expert-b
       EXPERT_WORKER_ROLES: Assessment,Curriculum,Tutor
     depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
       distributed-api:
         condition: service_healthy
 

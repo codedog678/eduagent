@@ -227,6 +227,8 @@ def test_promotion_settings_require_distributed_mode_and_redacted_secrets():
     with pytest.raises(ValidationError, match="distributed run plane"):
         Settings(
             _env_file=None,
+            distributed_enabled=False,
+            distributed_experts_enabled=False,
             promotion_enabled=True,
             promotion_rehearsal_secret="r" * 32,
             promotion_assignment_secret="a" * 32,
@@ -238,6 +240,7 @@ def test_promotion_settings_require_distributed_mode_and_redacted_secrets():
         Settings(
             _env_file=None,
             distributed_enabled=True,
+            distributed_experts_enabled=False,
             promotion_enabled=True,
             promotion_rehearsal_secret=secret,
             promotion_assignment_secret="short",
@@ -249,6 +252,7 @@ def test_promotion_settings_require_distributed_mode_and_redacted_secrets():
     settings = Settings(
         _env_file=None,
         distributed_enabled=True,
+        distributed_experts_enabled=False,
         promotion_enabled=True,
         promotion_rehearsal_secret="r" * 32,
         promotion_assignment_secret="a" * 32,
@@ -349,6 +353,7 @@ def test_promotion_settings_require_authenticated_command_principal():
         Settings(
             _env_file=None,
             distributed_enabled=True,
+            distributed_experts_enabled=False,
             promotion_enabled=True,
             promotion_rehearsal_secret="r" * 32,
             promotion_assignment_secret="a" * 32,
@@ -358,6 +363,7 @@ def test_promotion_settings_require_authenticated_command_principal():
     configured = Settings(
         _env_file=None,
         distributed_enabled=True,
+        distributed_experts_enabled=False,
         promotion_enabled=True,
         promotion_rehearsal_secret="r" * 32,
         promotion_assignment_secret="a" * 32,

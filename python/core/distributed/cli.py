@@ -6,10 +6,12 @@ import os
 import socket
 from uuid import uuid4
 
+from sqlalchemy.ext.asyncio import create_async_engine
+
 from config.settings import settings
 from core.distributed.executor import LearningTaskExecutor
 from core.distributed.expert_contracts import ExpertRole
-from core.distributed.runtime import build_runtime
+from core.distributed.runtime import build_runtime, migrate_schema
 
 
 def expert_roles(value: str) -> set[ExpertRole]:
@@ -33,6 +35,10 @@ def parser() -> argparse.ArgumentParser:
         description="EduAgent distributed run-plane process",
     )
     subcommands = value.add_subparsers(dest="command", required=True)
+    subcommands.add_parser(
+        "migrate",
+        help="one-shot schema migration; drain API traffic and workers first",
+    )
     subcommands.add_parser("dispatcher", help="publish production, rehearsal and deployment topics to isolated streams")
     subcommands.add_parser("worker")
     subcommands.add_parser("rehearsal-worker")
@@ -44,6 +50,13 @@ def parser() -> argparse.ArgumentParser:
 
 
 async def run_forever(command: str) -> None:
+    if command == "migrate":
+        engine = create_async_engine(settings.effective_distributed_database_url)
+        try:
+            await migrate_schema(engine, settings.distributed_attempt_timeout_seconds)
+        finally:
+            await engine.dispose()
+        return
     if command.startswith("expert-") and not settings.distributed_experts_enabled:
         raise RuntimeError(
             "expert processes require DISTRIBUTED_EXPERTS_ENABLED=true"

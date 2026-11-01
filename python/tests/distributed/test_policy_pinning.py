@@ -406,7 +406,9 @@ async def test_pending_plan_and_history_validate_trusted_pin(tmp_path, source, m
 
 
 async def test_runtime_starts_dedicated_groups_and_routes_worker(repo, broker):
-    from core.distributed.runtime import DistributedRuntime
+    from sqlalchemy import text
+
+    from core.distributed.runtime import DistributedRuntime, migrate_schema
     from tests.distributed.test_worker import ImmediateExecutor
 
     settings_obj = settings.model_copy(update={
@@ -420,6 +422,7 @@ async def test_runtime_starts_dedicated_groups_and_routes_worker(repo, broker):
         settings_obj=settings_obj,
     )
     try:
+        await migrate_schema(runtime.engine)
         await runtime.start()
         groups = await broker.redis.xinfo_groups(runtime.rehearsal_broker.stream)
         assert groups[0]["name"] == "rehearsal-test"
@@ -434,3 +437,6 @@ async def test_runtime_starts_dedicated_groups_and_routes_worker(repo, broker):
         assert dispatcher.routes["run.rehearsal.accepted"] is runtime.rehearsal_broker
     finally:
         await broker.redis.delete(runtime.rehearsal_broker.stream, runtime.deployment_broker.stream)
+        # The startup marker is raw DDL, outside raw_repo's ORM drop_all.
+        async with runtime.engine.begin() as connection:
+            await connection.execute(text("DROP TABLE IF EXISTS distributed_schema_version"))

@@ -259,3 +259,10 @@ Manual staged-patch scope and secret review found no added credentials or
 secret material. `git diff --cached --check` passed. Only the twelve owned
 source/test paths listed above and this Task6 report are included; parallel
 startup files and tests are excluded.
+
+The separately authorized startup follow-up is documented in
+[M3 Schema Startup Correction](2026-11-01-m3-schema-startup.md). It replaces
+normal runtime startup DDL with a read-only schema marker check and explicit
+drained migration, and corrects the startup-dependent fixtures for combined
+verification. The historical runs and pending independent-review status above
+are unchanged. Compose startup is not a claim of online migration safety.
