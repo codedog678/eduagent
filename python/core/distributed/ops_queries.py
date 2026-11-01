@@ -341,6 +341,7 @@ class OpsQueries:
                 func.row_number().over(
                     partition_by=PolicyGateReceiptRecord.gate_type,
                     order_by=(PolicyGateReceiptRecord.issued_at.desc(),
+                              PolicyGateReceiptRecord.created_at.desc(),
                               PolicyGateReceiptRecord.receipt_id.desc()),
                 ).label("rank"),
             ).join(

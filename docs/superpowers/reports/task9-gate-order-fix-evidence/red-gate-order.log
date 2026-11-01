@@ -1,0 +1,241 @@
+synthetic_gate_tie created_at failed authority_missing ['formal_holdout'] ops {'receipt_id': 'ffffffff-ffff-ffff-ffff-ffffffffffff', 'policy_hash': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'gate_type': 'formal_holdout', 'status': 'passed', 'evidence_hash': '7777777777777777777777777777777777777777777777777777777777777777', 'sample_count': 20, 'cost': '0.10000000', 'issuer': 'redacted', 'issued_at': '2026-10-30T00:00:00Z'}
+Fsynthetic_gate_tie created_at unknown authority_missing ['formal_holdout'] ops {'receipt_id': 'ffffffff-ffff-ffff-ffff-ffffffffffff', 'policy_hash': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'gate_type': 'formal_holdout', 'status': 'passed', 'evidence_hash': '7777777777777777777777777777777777777777777777777777777777777777', 'sample_count': 20, 'cost': '0.10000000', 'issuer': 'redacted', 'issued_at': '2026-10-30T00:00:00Z'}
+Fsynthetic_gate_tie receipt_id failed authority_missing ['formal_holdout'] ops {'receipt_id': 'ffffffff-ffff-ffff-ffff-ffffffffffff', 'policy_hash': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'gate_type': 'formal_holdout', 'status': 'failed', 'evidence_hash': '8888888888888888888888888888888888888888888888888888888888888888', 'sample_count': 20, 'cost': '0.10000000', 'issuer': 'redacted', 'issued_at': '2026-10-30T00:00:00Z'}
+Fsynthetic_gate_tie receipt_id unknown authority_missing ['formal_holdout'] ops {'receipt_id': 'ffffffff-ffff-ffff-ffff-ffffffffffff', 'policy_hash': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'gate_type': 'formal_holdout', 'status': 'unknown', 'evidence_hash': '8888888888888888888888888888888888888888888888888888888888888888', 'sample_count': 20, 'cost': '0.10000000', 'issuer': 'redacted', 'issued_at': '2026-10-30T00:00:00Z'}
+F....F
+=================================== FAILURES ===================================
+_______ test_gate_tie_order_matches_publish_authority[created_at-failed] _______
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x10b75d2d0>, app=<fastapi.applications.FastAPI object at 0x10b617110>, ...tEventRecord object at 0x10b5b4990>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b73a0d0>])
+status = 'failed', tie_key = 'created_at'
+
+    @pytest.mark.parametrize("status", ["failed", "unknown"])
+    @pytest.mark.parametrize("tie_key", ["created_at", "receipt_id"])
+    async def test_gate_tie_order_matches_publish_authority(policy_ops, status, tie_key):
+        high_id = "ffffffff-ffff-ffff-ffff-ffffffffffff"
+        low_id = "00000000-0000-0000-0000-000000000001"
+        old_id, new_id = (high_id, low_id) if tie_key == "created_at" else (low_id, high_id)
+        new_created = NOW + timedelta(minutes=1) if tie_key == "created_at" else NOW
+        async with policy_ops.repo.session_factory() as session, session.begin():
+            session.add_all([
+                _external_gate_receipt(old_id, "passed", NOW, "7" * 64),
+                _external_gate_receipt(new_id, status, new_created, "8" * 64),
+            ])
+        async with policy_ops.repo.session_factory() as session:
+            artifact = await session.get(PolicyArtifactRecord, "b" * 64)
+            missing, accepted = await PromotionRepository._bound_gate_receipts(
+                session, artifact=artifact, required={"formal_holdout"}, health_bindings={},
+            )
+        assert missing == ["formal_holdout"] and accepted == {}
+        path = f"{PATHS[0]}/{policy_ops.deployments[1].deployment_id}"
+        response = await policy_ops.client.get(path)
+        assert response.status_code == 200
+        shown = next(r for r in response.json()["gate_receipts"] if r["gate_type"] == "formal_holdout")
+        print("synthetic_gate_tie", tie_key, status, "authority_missing", missing, "ops", shown)
+>       assert shown["status"] == status
+E       AssertionError: assert 'passed' == 'failed'
+E         
+E         - failed
+E         + passed
+
+tests/distributed/test_promotion_ops_api.py:278: AssertionError
+______ test_gate_tie_order_matches_publish_authority[created_at-unknown] _______
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x10b7a4b90>, app=<fastapi.applications.FastAPI object at 0x10b62cc50>, ...tEventRecord object at 0x10b6b1f90>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b80fbd0>])
+status = 'unknown', tie_key = 'created_at'
+
+    @pytest.mark.parametrize("status", ["failed", "unknown"])
+    @pytest.mark.parametrize("tie_key", ["created_at", "receipt_id"])
+    async def test_gate_tie_order_matches_publish_authority(policy_ops, status, tie_key):
+        high_id = "ffffffff-ffff-ffff-ffff-ffffffffffff"
+        low_id = "00000000-0000-0000-0000-000000000001"
+        old_id, new_id = (high_id, low_id) if tie_key == "created_at" else (low_id, high_id)
+        new_created = NOW + timedelta(minutes=1) if tie_key == "created_at" else NOW
+        async with policy_ops.repo.session_factory() as session, session.begin():
+            session.add_all([
+                _external_gate_receipt(old_id, "passed", NOW, "7" * 64),
+                _external_gate_receipt(new_id, status, new_created, "8" * 64),
+            ])
+        async with policy_ops.repo.session_factory() as session:
+            artifact = await session.get(PolicyArtifactRecord, "b" * 64)
+            missing, accepted = await PromotionRepository._bound_gate_receipts(
+                session, artifact=artifact, required={"formal_holdout"}, health_bindings={},
+            )
+        assert missing == ["formal_holdout"] and accepted == {}
+        path = f"{PATHS[0]}/{policy_ops.deployments[1].deployment_id}"
+        response = await policy_ops.client.get(path)
+        assert response.status_code == 200
+        shown = next(r for r in response.json()["gate_receipts"] if r["gate_type"] == "formal_holdout")
+        print("synthetic_gate_tie", tie_key, status, "authority_missing", missing, "ops", shown)
+>       assert shown["status"] == status
+E       AssertionError: assert 'passed' == 'unknown'
+E         
+E         - unknown
+E         + passed
+
+tests/distributed/test_promotion_ops_api.py:278: AssertionError
+_______ test_gate_tie_order_matches_publish_authority[receipt_id-failed] _______
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x10b4c2090>, app=<fastapi.applications.FastAPI object at 0x10b6ba550>, ...tEventRecord object at 0x10b541dd0>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b42c4d0>])
+status = 'failed', tie_key = 'receipt_id'
+
+    @pytest.mark.parametrize("status", ["failed", "unknown"])
+    @pytest.mark.parametrize("tie_key", ["created_at", "receipt_id"])
+    async def test_gate_tie_order_matches_publish_authority(policy_ops, status, tie_key):
+        high_id = "ffffffff-ffff-ffff-ffff-ffffffffffff"
+        low_id = "00000000-0000-0000-0000-000000000001"
+        old_id, new_id = (high_id, low_id) if tie_key == "created_at" else (low_id, high_id)
+        new_created = NOW + timedelta(minutes=1) if tie_key == "created_at" else NOW
+        async with policy_ops.repo.session_factory() as session, session.begin():
+            session.add_all([
+                _external_gate_receipt(old_id, "passed", NOW, "7" * 64),
+                _external_gate_receipt(new_id, status, new_created, "8" * 64),
+            ])
+        async with policy_ops.repo.session_factory() as session:
+            artifact = await session.get(PolicyArtifactRecord, "b" * 64)
+            missing, accepted = await PromotionRepository._bound_gate_receipts(
+                session, artifact=artifact, required={"formal_holdout"}, health_bindings={},
+            )
+        assert missing == ["formal_holdout"] and accepted == {}
+        path = f"{PATHS[0]}/{policy_ops.deployments[1].deployment_id}"
+        response = await policy_ops.client.get(path)
+        assert response.status_code == 200
+        shown = next(r for r in response.json()["gate_receipts"] if r["gate_type"] == "formal_holdout")
+        print("synthetic_gate_tie", tie_key, status, "authority_missing", missing, "ops", shown)
+        assert shown["status"] == status
+        assert shown["receipt_id"] == new_id
+        # A later append may restore pass even when its UUID sorts below the old pass.
+        restored_id = "00000000-0000-0000-0000-000000000002"
+        async with policy_ops.repo.session_factory() as session, session.begin():
+            session.add(_external_gate_receipt(
+                restored_id, "passed", NOW + timedelta(minutes=2), "9" * 64,
+            ))
+        async with policy_ops.repo.session_factory() as session:
+            missing, accepted = await PromotionRepository._bound_gate_receipts(
+                session, artifact=artifact, required={"formal_holdout"}, health_bindings={},
+            )
+        assert missing == [] and accepted["formal_holdout"].receipt_id == restored_id
+        restored = next(r for r in (await policy_ops.client.get(path)).json()["gate_receipts"]
+                        if r["gate_type"] == "formal_holdout")
+>       assert restored["status"] == "passed" and restored["receipt_id"] == restored_id
+E       AssertionError: assert ('failed' == 'passed'
+E         
+E         - passed
+E         + failed)
+
+tests/distributed/test_promotion_ops_api.py:293: AssertionError
+______ test_gate_tie_order_matches_publish_authority[receipt_id-unknown] _______
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x10b4d6950>, app=<fastapi.applications.FastAPI object at 0x10b753b10>, ...tEventRecord object at 0x10b4f45d0>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b4fd210>])
+status = 'unknown', tie_key = 'receipt_id'
+
+    @pytest.mark.parametrize("status", ["failed", "unknown"])
+    @pytest.mark.parametrize("tie_key", ["created_at", "receipt_id"])
+    async def test_gate_tie_order_matches_publish_authority(policy_ops, status, tie_key):
+        high_id = "ffffffff-ffff-ffff-ffff-ffffffffffff"
+        low_id = "00000000-0000-0000-0000-000000000001"
+        old_id, new_id = (high_id, low_id) if tie_key == "created_at" else (low_id, high_id)
+        new_created = NOW + timedelta(minutes=1) if tie_key == "created_at" else NOW
+        async with policy_ops.repo.session_factory() as session, session.begin():
+            session.add_all([
+                _external_gate_receipt(old_id, "passed", NOW, "7" * 64),
+                _external_gate_receipt(new_id, status, new_created, "8" * 64),
+            ])
+        async with policy_ops.repo.session_factory() as session:
+            artifact = await session.get(PolicyArtifactRecord, "b" * 64)
+            missing, accepted = await PromotionRepository._bound_gate_receipts(
+                session, artifact=artifact, required={"formal_holdout"}, health_bindings={},
+            )
+        assert missing == ["formal_holdout"] and accepted == {}
+        path = f"{PATHS[0]}/{policy_ops.deployments[1].deployment_id}"
+        response = await policy_ops.client.get(path)
+        assert response.status_code == 200
+        shown = next(r for r in response.json()["gate_receipts"] if r["gate_type"] == "formal_holdout")
+        print("synthetic_gate_tie", tie_key, status, "authority_missing", missing, "ops", shown)
+        assert shown["status"] == status
+        assert shown["receipt_id"] == new_id
+        # A later append may restore pass even when its UUID sorts below the old pass.
+        restored_id = "00000000-0000-0000-0000-000000000002"
+        async with policy_ops.repo.session_factory() as session, session.begin():
+            session.add(_external_gate_receipt(
+                restored_id, "passed", NOW + timedelta(minutes=2), "9" * 64,
+            ))
+        async with policy_ops.repo.session_factory() as session:
+            missing, accepted = await PromotionRepository._bound_gate_receipts(
+                session, artifact=artifact, required={"formal_holdout"}, health_bindings={},
+            )
+        assert missing == [] and accepted["formal_holdout"].receipt_id == restored_id
+        restored = next(r for r in (await policy_ops.client.get(path)).json()["gate_receipts"]
+                        if r["gate_type"] == "formal_holdout")
+>       assert restored["status"] == "passed" and restored["receipt_id"] == restored_id
+E       AssertionError: assert ('unknown' == 'passed'
+E         
+E         - passed
+E         + unknown)
+
+tests/distributed/test_promotion_ops_api.py:293: AssertionError
+______ test_gate_order_excludes_unbound_or_future_pass[future_issued_at] _______
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x10b66a990>, app=<fastapi.applications.FastAPI object at 0x10b4c0450>, ...tEventRecord object at 0x10b5af1d0>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b5baa90>])
+invalid_binding = 'future_issued_at'
+
+    @pytest.mark.parametrize("invalid_binding", [
+        "policy_hash", "protocol_hash", "runtime_hash", "source_revision", "future_issued_at",
+    ])
+    async def test_gate_order_excludes_unbound_or_future_pass(policy_ops, invalid_binding):
+        changes = {"issued_at": datetime.now(UTC) + timedelta(days=1)} if invalid_binding == "future_issued_at" else {
+            invalid_binding: "wrong-source" if invalid_binding == "source_revision" else "a" * 64,
+        }
+        valid_id = "00000000-0000-0000-0000-000000000001"
+        async with policy_ops.repo.session_factory() as session, session.begin():
+            session.add_all([
+                _external_gate_receipt(valid_id, "failed", NOW, "7" * 64),
+                _external_gate_receipt(
+                    "ffffffff-ffff-ffff-ffff-ffffffffffff", "passed",
+                    NOW + timedelta(minutes=1), "8" * 64, **changes,
+                ),
+            ])
+        async with policy_ops.repo.session_factory() as session:
+            artifact = await session.get(PolicyArtifactRecord, "b" * 64)
+            missing, accepted = await PromotionRepository._bound_gate_receipts(
+                session, artifact=artifact, required={"formal_holdout"}, health_bindings={},
+            )
+>       assert missing == ["formal_holdout"] and accepted == {}
+E       AssertionError: assert ([] == ['formal_holdout']
+E         
+E         Right contains one more item: 'formal_holdout'
+E         
+E         Full diff:
+E         + []
+E         - [
+E         -     'formal_holdout',
+E         - ])
+
+tests/distributed/test_promotion_ops_api.py:317: AssertionError
+=========================== short test summary info ============================
+FAILED tests/distributed/test_promotion_ops_api.py::test_gate_tie_order_matches_publish_authority[created_at-failed] - AssertionError: assert 'passed' == 'failed'
+  
+  - failed
+  + passed
+FAILED tests/distributed/test_promotion_ops_api.py::test_gate_tie_order_matches_publish_authority[created_at-unknown] - AssertionError: assert 'passed' == 'unknown'
+  
+  - unknown
+  + passed
+FAILED tests/distributed/test_promotion_ops_api.py::test_gate_tie_order_matches_publish_authority[receipt_id-failed] - AssertionError: assert ('failed' == 'passed'
+  
+  - passed
+  + failed)
+FAILED tests/distributed/test_promotion_ops_api.py::test_gate_tie_order_matches_publish_authority[receipt_id-unknown] - AssertionError: assert ('unknown' == 'passed'
+  
+  - passed
+  + unknown)
+FAILED tests/distributed/test_promotion_ops_api.py::test_gate_order_excludes_unbound_or_future_pass[future_issued_at] - AssertionError: assert ([] == ['formal_holdout']
+  
+  Right contains one more item: 'formal_holdout'
+  
+  Full diff:
+  + []
+  - [
+  -     'formal_holdout',
+  - ])
+5 failed, 4 passed, 68 deselected in 2.46s

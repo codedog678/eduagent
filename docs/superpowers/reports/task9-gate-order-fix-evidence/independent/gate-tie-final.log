@@ -1,0 +1,53 @@
+gate_verifier_missing= ['formal_holdout'] gate_verifier_accepted= []
+ops_display= {'receipt_id': 'ffffffff-ffff-ffff-ffff-ffffffffffff', 'policy_hash': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'gate_type': 'formal_holdout', 'status': 'passed', 'evidence_hash': '7777777777777777777777777777777777777777777777777777777777777777', 'sample_count': 20, 'cost': '0.10000000', 'issuer': 'redacted', 'issued_at': '2026-10-30T00:00:00Z'}
+F
+=================================== FAILURES ===================================
+_ test_newer_failed_receipt_with_same_issued_at_invalidates_older_pass_in_ops __
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x10d810990>, app=<fastapi.applications.FastAPI object at 0x10d2fe210>, ...tEventRecord object at 0x10d7da410>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10d7e6250>])
+
+    async def test_newer_failed_receipt_with_same_issued_at_invalidates_older_pass_in_ops(policy_ops):
+        receipts = [
+            ("ffffffff-ffff-ffff-ffff-ffffffffffff", "passed", NOW, "7" * 64),
+            ("00000000-0000-0000-0000-000000000001", "failed", NOW + timedelta(seconds=60), "8" * 64),
+        ]
+        async with policy_ops.repo.session_factory() as session, session.begin():
+            for receipt_id, status, created_at, evidence_hash in receipts:
+                session.add(PolicyGateReceiptRecord(
+                    receipt_id=receipt_id, policy_hash="b" * 64, gate_type="formal_holdout",
+                    status=status, evidence_hash=evidence_hash, protocol_hash="b" * 64,
+                    runtime_hash="b" * 64, source_revision="test", model_identity="test-fixture",
+                    data_role="holdout_validated", sample_count=20, cost=Decimal(".1"),
+                    details={"evidence_role": "test_fixture", "release_eligible": False},
+                    issuer="test-fixture", issued_at=NOW, created_at=created_at,
+                ))
+        async with policy_ops.repo.session_factory() as session:
+            artifact = await session.get(PolicyArtifactRecord, "b" * 64)
+            missing, accepted = await PromotionRepository._bound_gate_receipts(
+                session, artifact=artifact, required={"formal_holdout"}, health_bindings={},
+            )
+        response = await policy_ops.client.get(
+            f"{PATHS[0]}/{policy_ops.deployments[1].deployment_id}",
+        )
+        assert response.status_code == 200
+        shown = next(r for r in response.json()["gate_receipts"] if r["gate_type"] == "formal_holdout")
+        print("gate_verifier_missing=", missing, "gate_verifier_accepted=", list(accepted))
+        print("ops_display=", shown)
+        assert missing == ["formal_holdout"] and accepted == {}
+>       assert shown["status"] == "failed", (
+            "Ops displays older passed receipt while authoritative gate rejects the newer failed receipt"
+        )
+E       AssertionError: Ops displays older passed receipt while authoritative gate rejects the newer failed receipt
+E       assert 'passed' == 'failed'
+E         
+E         - failed
+E         + passed
+
+/tmp/m3-task9-spec-independent/test_gate_tie.py:42: AssertionError
+=========================== short test summary info ============================
+FAILED ::test_newer_failed_receipt_with_same_issued_at_invalidates_older_pass_in_ops - AssertionError: Ops displays older passed receipt while authoritative gate rejects the newer failed receipt
+assert 'passed' == 'failed'
+  
+  - failed
+  + passed
+1 failed in 0.84s

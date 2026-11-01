@@ -1,0 +1,1062 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: gate-tie.spec.ts >> Ops must display newer failed external receipt, not green older pass
+- Location: live-e2e/gate-tie.spec.ts:7:1
+
+# Error details
+
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator: getByRole('region', { name: '策略版本详情' }).locator('.ant-table-row').filter({ hasText: 'formal_holdout' }).getByText('failed', { exact: true })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" getByRole('region', { name: '策略版本详情' }).locator('.ant-table-row').filter({ hasText: 'formal_holdout' }).getByText('failed', { exact: true }) with timeout 5000ms
+  - waiting for getByRole('region', { name: '策略版本详情' }).locator('.ant-table-row').filter({ hasText: 'formal_holdout' }).getByText('failed', { exact: true })
+
+```
+
+```yaml
+- banner:
+  - link "EduAgent Ops 首页":
+    - /url: "#/runs"
+    - strong: EduAgent Ops
+    - text: 只读运行面板
+  - navigation "Ops 导航":
+    - link "Runs":
+      - /url: "#/runs"
+    - link "Trace":
+      - /url: "#/runs"
+    - link "Workers":
+      - /url: "#/workers"
+    - link "Policies":
+      - /url: "#/policies"
+  - button "锁定控制台并清除会话 token":
+    - img
+    - text: 锁定
+- main:
+  - text: OPERATIONS
+  - heading "Policies" [level=1]
+  - text: Read only
+  - region "Policies 只读证据":
+    - text: 全部环境
+    - combobox "策略环境"
+    - img "down"
+    - text: 全部状态
+    - combobox "策略状态"
+    - img "down"
+    - button "重置":
+      - img
+      - text: 重置
+    - button "刷新":
+      - img
+      - text: 刷新
+    - tablist:
+      - tab "部署" [selected]
+      - tab "健康窗口"
+      - tab "审计时间线"
+    - tabpanel "部署"
+    - region "策略证据列表":
+      - table:
+        - rowgroup:
+          - row "Deployment 环境 / 版本 状态 当前部署 Stable / Candidate Candidate 流量 Cohort 运行数 创建时间":
+            - columnheader "Deployment"
+            - columnheader "环境 / 版本"
+            - columnheader "状态"
+            - columnheader "当前部署"
+            - columnheader "Stable / Candidate"
+            - columnheader "Candidate 流量"
+            - columnheader "Cohort 运行数"
+            - columnheader "创建时间"
+        - rowgroup:
+          - row "查看策略 0fef60f5-a561-4374-bfde-c833a588d0da rehearsal 版本 3 rolled_back current 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 1 · C 0 · Shadow 0 2026/11/2 05:23:01":
+            - cell "查看策略 0fef60f5-a561-4374-bfde-c833a588d0da":
+              - link "查看策略 0fef60f5-a561-4374-bfde-c833a588d0da":
+                - /url: "#/policies/0fef60f5-a561-4374-bfde-c833a588d0da"
+                - code: 0fef60f5-a561-4374-bfde-c833a588d0da
+            - cell "rehearsal 版本 3":
+              - text: rehearsal
+              - strong: 版本 3
+            - cell "rolled_back"
+            - cell "current 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 1 · C 0 · Shadow 0"
+            - cell "2026/11/2 05:23:01"
+          - row "查看策略 00000000-0000-0000-0000-000000000002 rehearsal 版本 1 registered historical 当前版本 3 S 778de32838c9 C 不可用 0% S 0 · C 0 · Shadow 0 2026/11/2 05:23:01":
+            - cell "查看策略 00000000-0000-0000-0000-000000000002":
+              - link "查看策略 00000000-0000-0000-0000-000000000002":
+                - /url: "#/policies/00000000-0000-0000-0000-000000000002"
+                - code: 00000000-0000-0000-0000-000000000002
+            - cell "rehearsal 版本 1":
+              - text: rehearsal
+              - strong: 版本 1
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 不可用":
+              - code: S 778de32838c9
+              - code: C 不可用
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/2 05:23:01"
+          - row "查看策略 00000000-0000-0000-0000-000000000001 production 版本 1 registered current 当前版本 1 S 778de32838c9 C 不可用 0% S 40 · C 0 · Shadow 0 2026/11/2 05:23:01":
+            - cell "查看策略 00000000-0000-0000-0000-000000000001":
+              - link "查看策略 00000000-0000-0000-0000-000000000001":
+                - /url: "#/policies/00000000-0000-0000-0000-000000000001"
+                - code: 00000000-0000-0000-0000-000000000001
+            - cell "production 版本 1":
+              - text: production
+              - strong: 版本 1
+            - cell "registered"
+            - cell "current 当前版本 1"
+            - cell "S 778de32838c9 C 不可用":
+              - code: S 778de32838c9
+              - code: C 不可用
+            - cell "0%"
+            - cell "S 40 · C 0 · Shadow 0"
+            - cell "2026/11/2 05:23:01"
+          - row "查看策略 f7fd3632-67ba-442f-b712-1d874718da6d rehearsal 版本 40 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 f7fd3632-67ba-442f-b712-1d874718da6d":
+              - link "查看策略 f7fd3632-67ba-442f-b712-1d874718da6d":
+                - /url: "#/policies/f7fd3632-67ba-442f-b712-1d874718da6d"
+                - code: f7fd3632-67ba-442f-b712-1d874718da6d
+            - cell "rehearsal 版本 40":
+              - text: rehearsal
+              - strong: 版本 40
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 f05e5f90-78a6-47e0-9552-b05f62dce602 rehearsal 版本 30 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 f05e5f90-78a6-47e0-9552-b05f62dce602":
+              - link "查看策略 f05e5f90-78a6-47e0-9552-b05f62dce602":
+                - /url: "#/policies/f05e5f90-78a6-47e0-9552-b05f62dce602"
+                - code: f05e5f90-78a6-47e0-9552-b05f62dce602
+            - cell "rehearsal 版本 30":
+              - text: rehearsal
+              - strong: 版本 30
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 e4af6548-35c4-41ff-8eb1-0e96a67714d8 rehearsal 版本 8 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 e4af6548-35c4-41ff-8eb1-0e96a67714d8":
+              - link "查看策略 e4af6548-35c4-41ff-8eb1-0e96a67714d8":
+                - /url: "#/policies/e4af6548-35c4-41ff-8eb1-0e96a67714d8"
+                - code: e4af6548-35c4-41ff-8eb1-0e96a67714d8
+            - cell "rehearsal 版本 8":
+              - text: rehearsal
+              - strong: 版本 8
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 e396e771-f675-4a51-a9e2-eb2c9ee8a2c6 rehearsal 版本 31 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 e396e771-f675-4a51-a9e2-eb2c9ee8a2c6":
+              - link "查看策略 e396e771-f675-4a51-a9e2-eb2c9ee8a2c6":
+                - /url: "#/policies/e396e771-f675-4a51-a9e2-eb2c9ee8a2c6"
+                - code: e396e771-f675-4a51-a9e2-eb2c9ee8a2c6
+            - cell "rehearsal 版本 31":
+              - text: rehearsal
+              - strong: 版本 31
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 e27807a9-6110-4b7e-af2c-52eb702c503c rehearsal 版本 21 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 e27807a9-6110-4b7e-af2c-52eb702c503c":
+              - link "查看策略 e27807a9-6110-4b7e-af2c-52eb702c503c":
+                - /url: "#/policies/e27807a9-6110-4b7e-af2c-52eb702c503c"
+                - code: e27807a9-6110-4b7e-af2c-52eb702c503c
+            - cell "rehearsal 版本 21":
+              - text: rehearsal
+              - strong: 版本 21
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 dd2d6e7d-9531-4739-9662-9ca435093a81 rehearsal 版本 34 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 dd2d6e7d-9531-4739-9662-9ca435093a81":
+              - link "查看策略 dd2d6e7d-9531-4739-9662-9ca435093a81":
+                - /url: "#/policies/dd2d6e7d-9531-4739-9662-9ca435093a81"
+                - code: dd2d6e7d-9531-4739-9662-9ca435093a81
+            - cell "rehearsal 版本 34":
+              - text: rehearsal
+              - strong: 版本 34
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 d9df6d19-ad55-4152-abeb-b67eeec0da45 rehearsal 版本 42 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 d9df6d19-ad55-4152-abeb-b67eeec0da45":
+              - link "查看策略 d9df6d19-ad55-4152-abeb-b67eeec0da45":
+                - /url: "#/policies/d9df6d19-ad55-4152-abeb-b67eeec0da45"
+                - code: d9df6d19-ad55-4152-abeb-b67eeec0da45
+            - cell "rehearsal 版本 42":
+              - text: rehearsal
+              - strong: 版本 42
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 d8fa7738-c93d-4b97-9da5-791a96f9e3c3 rehearsal 版本 45 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 d8fa7738-c93d-4b97-9da5-791a96f9e3c3":
+              - link "查看策略 d8fa7738-c93d-4b97-9da5-791a96f9e3c3":
+                - /url: "#/policies/d8fa7738-c93d-4b97-9da5-791a96f9e3c3"
+                - code: d8fa7738-c93d-4b97-9da5-791a96f9e3c3
+            - cell "rehearsal 版本 45":
+              - text: rehearsal
+              - strong: 版本 45
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 d8a73ddd-431c-43c1-ba53-9751ebe9e6ff rehearsal 版本 6 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 d8a73ddd-431c-43c1-ba53-9751ebe9e6ff":
+              - link "查看策略 d8a73ddd-431c-43c1-ba53-9751ebe9e6ff":
+                - /url: "#/policies/d8a73ddd-431c-43c1-ba53-9751ebe9e6ff"
+                - code: d8a73ddd-431c-43c1-ba53-9751ebe9e6ff
+            - cell "rehearsal 版本 6":
+              - text: rehearsal
+              - strong: 版本 6
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 d2ef7f00-a247-4ffe-ada0-8e56f7be31f1 rehearsal 版本 12 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 d2ef7f00-a247-4ffe-ada0-8e56f7be31f1":
+              - link "查看策略 d2ef7f00-a247-4ffe-ada0-8e56f7be31f1":
+                - /url: "#/policies/d2ef7f00-a247-4ffe-ada0-8e56f7be31f1"
+                - code: d2ef7f00-a247-4ffe-ada0-8e56f7be31f1
+            - cell "rehearsal 版本 12":
+              - text: rehearsal
+              - strong: 版本 12
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 cb199245-6f79-4448-80e0-a88f055b1a7c rehearsal 版本 28 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 cb199245-6f79-4448-80e0-a88f055b1a7c":
+              - link "查看策略 cb199245-6f79-4448-80e0-a88f055b1a7c":
+                - /url: "#/policies/cb199245-6f79-4448-80e0-a88f055b1a7c"
+                - code: cb199245-6f79-4448-80e0-a88f055b1a7c
+            - cell "rehearsal 版本 28":
+              - text: rehearsal
+              - strong: 版本 28
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 ca82c9f5-182b-4b03-97b6-0a3de84b91c3 rehearsal 版本 19 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 ca82c9f5-182b-4b03-97b6-0a3de84b91c3":
+              - link "查看策略 ca82c9f5-182b-4b03-97b6-0a3de84b91c3":
+                - /url: "#/policies/ca82c9f5-182b-4b03-97b6-0a3de84b91c3"
+                - code: ca82c9f5-182b-4b03-97b6-0a3de84b91c3
+            - cell "rehearsal 版本 19":
+              - text: rehearsal
+              - strong: 版本 19
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 c6e5141c-456f-40fe-ab01-fb1d7e247e02 rehearsal 版本 47 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 c6e5141c-456f-40fe-ab01-fb1d7e247e02":
+              - link "查看策略 c6e5141c-456f-40fe-ab01-fb1d7e247e02":
+                - /url: "#/policies/c6e5141c-456f-40fe-ab01-fb1d7e247e02"
+                - code: c6e5141c-456f-40fe-ab01-fb1d7e247e02
+            - cell "rehearsal 版本 47":
+              - text: rehearsal
+              - strong: 版本 47
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 c6452d2b-6af7-4f4b-86af-2d27d2ede726 rehearsal 版本 23 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 c6452d2b-6af7-4f4b-86af-2d27d2ede726":
+              - link "查看策略 c6452d2b-6af7-4f4b-86af-2d27d2ede726":
+                - /url: "#/policies/c6452d2b-6af7-4f4b-86af-2d27d2ede726"
+                - code: c6452d2b-6af7-4f4b-86af-2d27d2ede726
+            - cell "rehearsal 版本 23":
+              - text: rehearsal
+              - strong: 版本 23
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 c5fb8f45-c71b-4796-be87-9bd00caf19fa rehearsal 版本 9 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 c5fb8f45-c71b-4796-be87-9bd00caf19fa":
+              - link "查看策略 c5fb8f45-c71b-4796-be87-9bd00caf19fa":
+                - /url: "#/policies/c5fb8f45-c71b-4796-be87-9bd00caf19fa"
+                - code: c5fb8f45-c71b-4796-be87-9bd00caf19fa
+            - cell "rehearsal 版本 9":
+              - text: rehearsal
+              - strong: 版本 9
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 c36417a9-dba7-4d6d-a550-831ba6bd119c rehearsal 版本 4 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 c36417a9-dba7-4d6d-a550-831ba6bd119c":
+              - link "查看策略 c36417a9-dba7-4d6d-a550-831ba6bd119c":
+                - /url: "#/policies/c36417a9-dba7-4d6d-a550-831ba6bd119c"
+                - code: c36417a9-dba7-4d6d-a550-831ba6bd119c
+            - cell "rehearsal 版本 4":
+              - text: rehearsal
+              - strong: 版本 4
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 c2f9cdee-fd46-4aba-8c3e-0e6d6fb9d4d5 rehearsal 版本 49 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 c2f9cdee-fd46-4aba-8c3e-0e6d6fb9d4d5":
+              - link "查看策略 c2f9cdee-fd46-4aba-8c3e-0e6d6fb9d4d5":
+                - /url: "#/policies/c2f9cdee-fd46-4aba-8c3e-0e6d6fb9d4d5"
+                - code: c2f9cdee-fd46-4aba-8c3e-0e6d6fb9d4d5
+            - cell "rehearsal 版本 49":
+              - text: rehearsal
+              - strong: 版本 49
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 c0dc69aa-69e1-4367-a5dd-8749b6584f79 rehearsal 版本 48 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 c0dc69aa-69e1-4367-a5dd-8749b6584f79":
+              - link "查看策略 c0dc69aa-69e1-4367-a5dd-8749b6584f79":
+                - /url: "#/policies/c0dc69aa-69e1-4367-a5dd-8749b6584f79"
+                - code: c0dc69aa-69e1-4367-a5dd-8749b6584f79
+            - cell "rehearsal 版本 48":
+              - text: rehearsal
+              - strong: 版本 48
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 bd672b39-d40f-4ee7-a24a-f30c457fc54e rehearsal 版本 55 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 bd672b39-d40f-4ee7-a24a-f30c457fc54e":
+              - link "查看策略 bd672b39-d40f-4ee7-a24a-f30c457fc54e":
+                - /url: "#/policies/bd672b39-d40f-4ee7-a24a-f30c457fc54e"
+                - code: bd672b39-d40f-4ee7-a24a-f30c457fc54e
+            - cell "rehearsal 版本 55":
+              - text: rehearsal
+              - strong: 版本 55
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 b952a59d-06fb-4344-af93-638f7f7c9402 rehearsal 版本 10 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 b952a59d-06fb-4344-af93-638f7f7c9402":
+              - link "查看策略 b952a59d-06fb-4344-af93-638f7f7c9402":
+                - /url: "#/policies/b952a59d-06fb-4344-af93-638f7f7c9402"
+                - code: b952a59d-06fb-4344-af93-638f7f7c9402
+            - cell "rehearsal 版本 10":
+              - text: rehearsal
+              - strong: 版本 10
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 b895c14c-b29a-4762-878b-67185215a64c rehearsal 版本 46 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 b895c14c-b29a-4762-878b-67185215a64c":
+              - link "查看策略 b895c14c-b29a-4762-878b-67185215a64c":
+                - /url: "#/policies/b895c14c-b29a-4762-878b-67185215a64c"
+                - code: b895c14c-b29a-4762-878b-67185215a64c
+            - cell "rehearsal 版本 46":
+              - text: rehearsal
+              - strong: 版本 46
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 b746dfab-c8ac-4f5a-af78-400a994c68bb rehearsal 版本 16 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 b746dfab-c8ac-4f5a-af78-400a994c68bb":
+              - link "查看策略 b746dfab-c8ac-4f5a-af78-400a994c68bb":
+                - /url: "#/policies/b746dfab-c8ac-4f5a-af78-400a994c68bb"
+                - code: b746dfab-c8ac-4f5a-af78-400a994c68bb
+            - cell "rehearsal 版本 16":
+              - text: rehearsal
+              - strong: 版本 16
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 b3cb6ad4-aae6-48f3-9263-b99efdbc3e76 rehearsal 版本 38 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 b3cb6ad4-aae6-48f3-9263-b99efdbc3e76":
+              - link "查看策略 b3cb6ad4-aae6-48f3-9263-b99efdbc3e76":
+                - /url: "#/policies/b3cb6ad4-aae6-48f3-9263-b99efdbc3e76"
+                - code: b3cb6ad4-aae6-48f3-9263-b99efdbc3e76
+            - cell "rehearsal 版本 38":
+              - text: rehearsal
+              - strong: 版本 38
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 b100a3fe-473a-4c90-9159-5d033c581720 rehearsal 版本 26 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 b100a3fe-473a-4c90-9159-5d033c581720":
+              - link "查看策略 b100a3fe-473a-4c90-9159-5d033c581720":
+                - /url: "#/policies/b100a3fe-473a-4c90-9159-5d033c581720"
+                - code: b100a3fe-473a-4c90-9159-5d033c581720
+            - cell "rehearsal 版本 26":
+              - text: rehearsal
+              - strong: 版本 26
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 a7e5a80a-4ebe-4d9f-ab66-6a74d14004a0 rehearsal 版本 15 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 a7e5a80a-4ebe-4d9f-ab66-6a74d14004a0":
+              - link "查看策略 a7e5a80a-4ebe-4d9f-ab66-6a74d14004a0":
+                - /url: "#/policies/a7e5a80a-4ebe-4d9f-ab66-6a74d14004a0"
+                - code: a7e5a80a-4ebe-4d9f-ab66-6a74d14004a0
+            - cell "rehearsal 版本 15":
+              - text: rehearsal
+              - strong: 版本 15
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 9b8344a6-d244-4f22-81b9-b138981bb164 rehearsal 版本 17 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 9b8344a6-d244-4f22-81b9-b138981bb164":
+              - link "查看策略 9b8344a6-d244-4f22-81b9-b138981bb164":
+                - /url: "#/policies/9b8344a6-d244-4f22-81b9-b138981bb164"
+                - code: 9b8344a6-d244-4f22-81b9-b138981bb164
+            - cell "rehearsal 版本 17":
+              - text: rehearsal
+              - strong: 版本 17
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 95700c0e-9429-4fc1-b106-b0ff96071c23 rehearsal 版本 32 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 95700c0e-9429-4fc1-b106-b0ff96071c23":
+              - link "查看策略 95700c0e-9429-4fc1-b106-b0ff96071c23":
+                - /url: "#/policies/95700c0e-9429-4fc1-b106-b0ff96071c23"
+                - code: 95700c0e-9429-4fc1-b106-b0ff96071c23
+            - cell "rehearsal 版本 32":
+              - text: rehearsal
+              - strong: 版本 32
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 7fa9d920-039f-457e-9771-572766e13d83 rehearsal 版本 41 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 7fa9d920-039f-457e-9771-572766e13d83":
+              - link "查看策略 7fa9d920-039f-457e-9771-572766e13d83":
+                - /url: "#/policies/7fa9d920-039f-457e-9771-572766e13d83"
+                - code: 7fa9d920-039f-457e-9771-572766e13d83
+            - cell "rehearsal 版本 41":
+              - text: rehearsal
+              - strong: 版本 41
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 6deeac20-d45c-4566-88a3-f4105a184e1c rehearsal 版本 54 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 6deeac20-d45c-4566-88a3-f4105a184e1c":
+              - link "查看策略 6deeac20-d45c-4566-88a3-f4105a184e1c":
+                - /url: "#/policies/6deeac20-d45c-4566-88a3-f4105a184e1c"
+                - code: 6deeac20-d45c-4566-88a3-f4105a184e1c
+            - cell "rehearsal 版本 54":
+              - text: rehearsal
+              - strong: 版本 54
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 631efa87-bed3-4975-a9c5-1a47752d161c rehearsal 版本 5 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 631efa87-bed3-4975-a9c5-1a47752d161c":
+              - link "查看策略 631efa87-bed3-4975-a9c5-1a47752d161c":
+                - /url: "#/policies/631efa87-bed3-4975-a9c5-1a47752d161c"
+                - code: 631efa87-bed3-4975-a9c5-1a47752d161c
+            - cell "rehearsal 版本 5":
+              - text: rehearsal
+              - strong: 版本 5
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 5f5af3b2-b657-4e29-9a55-c7b7f122a2dd rehearsal 版本 52 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 5f5af3b2-b657-4e29-9a55-c7b7f122a2dd":
+              - link "查看策略 5f5af3b2-b657-4e29-9a55-c7b7f122a2dd":
+                - /url: "#/policies/5f5af3b2-b657-4e29-9a55-c7b7f122a2dd"
+                - code: 5f5af3b2-b657-4e29-9a55-c7b7f122a2dd
+            - cell "rehearsal 版本 52":
+              - text: rehearsal
+              - strong: 版本 52
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 5e0f02cf-3f7f-4035-a6b4-cd722202dd1d rehearsal 版本 39 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 5e0f02cf-3f7f-4035-a6b4-cd722202dd1d":
+              - link "查看策略 5e0f02cf-3f7f-4035-a6b4-cd722202dd1d":
+                - /url: "#/policies/5e0f02cf-3f7f-4035-a6b4-cd722202dd1d"
+                - code: 5e0f02cf-3f7f-4035-a6b4-cd722202dd1d
+            - cell "rehearsal 版本 39":
+              - text: rehearsal
+              - strong: 版本 39
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 58f6b78b-8a83-4006-b559-04f33c3756fd rehearsal 版本 43 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 58f6b78b-8a83-4006-b559-04f33c3756fd":
+              - link "查看策略 58f6b78b-8a83-4006-b559-04f33c3756fd":
+                - /url: "#/policies/58f6b78b-8a83-4006-b559-04f33c3756fd"
+                - code: 58f6b78b-8a83-4006-b559-04f33c3756fd
+            - cell "rehearsal 版本 43":
+              - text: rehearsal
+              - strong: 版本 43
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 56ecb751-44db-430f-8dae-cf19a724f959 rehearsal 版本 2 canary historical 当前版本 3 S 778de32838c9 C 4e2118085a43 50% S 0 · C 1 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 56ecb751-44db-430f-8dae-cf19a724f959":
+              - link "查看策略 56ecb751-44db-430f-8dae-cf19a724f959":
+                - /url: "#/policies/56ecb751-44db-430f-8dae-cf19a724f959"
+                - code: 56ecb751-44db-430f-8dae-cf19a724f959
+            - cell "rehearsal 版本 2":
+              - text: rehearsal
+              - strong: 版本 2
+            - cell "canary"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "50%"
+            - cell "S 0 · C 1 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 53280aa3-45a0-4dc7-890a-729261ef70b4 rehearsal 版本 11 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 53280aa3-45a0-4dc7-890a-729261ef70b4":
+              - link "查看策略 53280aa3-45a0-4dc7-890a-729261ef70b4":
+                - /url: "#/policies/53280aa3-45a0-4dc7-890a-729261ef70b4"
+                - code: 53280aa3-45a0-4dc7-890a-729261ef70b4
+            - cell "rehearsal 版本 11":
+              - text: rehearsal
+              - strong: 版本 11
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 4d8998e0-1cc1-42d9-acad-5dab370ab899 rehearsal 版本 37 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 4d8998e0-1cc1-42d9-acad-5dab370ab899":
+              - link "查看策略 4d8998e0-1cc1-42d9-acad-5dab370ab899":
+                - /url: "#/policies/4d8998e0-1cc1-42d9-acad-5dab370ab899"
+                - code: 4d8998e0-1cc1-42d9-acad-5dab370ab899
+            - cell "rehearsal 版本 37":
+              - text: rehearsal
+              - strong: 版本 37
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 49accd00-a8ae-48e5-990f-1f8c487645d8 rehearsal 版本 25 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 49accd00-a8ae-48e5-990f-1f8c487645d8":
+              - link "查看策略 49accd00-a8ae-48e5-990f-1f8c487645d8":
+                - /url: "#/policies/49accd00-a8ae-48e5-990f-1f8c487645d8"
+                - code: 49accd00-a8ae-48e5-990f-1f8c487645d8
+            - cell "rehearsal 版本 25":
+              - text: rehearsal
+              - strong: 版本 25
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 4996250a-d79d-4c7a-bfc5-db7b11debcea rehearsal 版本 20 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 4996250a-d79d-4c7a-bfc5-db7b11debcea":
+              - link "查看策略 4996250a-d79d-4c7a-bfc5-db7b11debcea":
+                - /url: "#/policies/4996250a-d79d-4c7a-bfc5-db7b11debcea"
+                - code: 4996250a-d79d-4c7a-bfc5-db7b11debcea
+            - cell "rehearsal 版本 20":
+              - text: rehearsal
+              - strong: 版本 20
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 44762e63-5a9a-4930-b185-7ed66df60496 rehearsal 版本 7 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 44762e63-5a9a-4930-b185-7ed66df60496":
+              - link "查看策略 44762e63-5a9a-4930-b185-7ed66df60496":
+                - /url: "#/policies/44762e63-5a9a-4930-b185-7ed66df60496"
+                - code: 44762e63-5a9a-4930-b185-7ed66df60496
+            - cell "rehearsal 版本 7":
+              - text: rehearsal
+              - strong: 版本 7
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 4208d485-5923-4ac6-bdab-1b06d9b770a9 rehearsal 版本 18 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 4208d485-5923-4ac6-bdab-1b06d9b770a9":
+              - link "查看策略 4208d485-5923-4ac6-bdab-1b06d9b770a9":
+                - /url: "#/policies/4208d485-5923-4ac6-bdab-1b06d9b770a9"
+                - code: 4208d485-5923-4ac6-bdab-1b06d9b770a9
+            - cell "rehearsal 版本 18":
+              - text: rehearsal
+              - strong: 版本 18
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 3d605c40-cb7d-405b-8415-2ebc8fa7c0b9 rehearsal 版本 13 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 3d605c40-cb7d-405b-8415-2ebc8fa7c0b9":
+              - link "查看策略 3d605c40-cb7d-405b-8415-2ebc8fa7c0b9":
+                - /url: "#/policies/3d605c40-cb7d-405b-8415-2ebc8fa7c0b9"
+                - code: 3d605c40-cb7d-405b-8415-2ebc8fa7c0b9
+            - cell "rehearsal 版本 13":
+              - text: rehearsal
+              - strong: 版本 13
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 3844ab61-30a5-427b-9533-ad130d9c0dc8 rehearsal 版本 53 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 3844ab61-30a5-427b-9533-ad130d9c0dc8":
+              - link "查看策略 3844ab61-30a5-427b-9533-ad130d9c0dc8":
+                - /url: "#/policies/3844ab61-30a5-427b-9533-ad130d9c0dc8"
+                - code: 3844ab61-30a5-427b-9533-ad130d9c0dc8
+            - cell "rehearsal 版本 53":
+              - text: rehearsal
+              - strong: 版本 53
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 347e7c79-8be2-4e8e-bb80-c1f081e869c7 rehearsal 版本 33 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 347e7c79-8be2-4e8e-bb80-c1f081e869c7":
+              - link "查看策略 347e7c79-8be2-4e8e-bb80-c1f081e869c7":
+                - /url: "#/policies/347e7c79-8be2-4e8e-bb80-c1f081e869c7"
+                - code: 347e7c79-8be2-4e8e-bb80-c1f081e869c7
+            - cell "rehearsal 版本 33":
+              - text: rehearsal
+              - strong: 版本 33
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 3034c5a5-9581-456a-90cb-ed780d3e51d8 rehearsal 版本 22 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 3034c5a5-9581-456a-90cb-ed780d3e51d8":
+              - link "查看策略 3034c5a5-9581-456a-90cb-ed780d3e51d8":
+                - /url: "#/policies/3034c5a5-9581-456a-90cb-ed780d3e51d8"
+                - code: 3034c5a5-9581-456a-90cb-ed780d3e51d8
+            - cell "rehearsal 版本 22":
+              - text: rehearsal
+              - strong: 版本 22
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 24686896-7473-4cf8-b8f7-61cfd929c9bc rehearsal 版本 51 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 24686896-7473-4cf8-b8f7-61cfd929c9bc":
+              - link "查看策略 24686896-7473-4cf8-b8f7-61cfd929c9bc":
+                - /url: "#/policies/24686896-7473-4cf8-b8f7-61cfd929c9bc"
+                - code: 24686896-7473-4cf8-b8f7-61cfd929c9bc
+            - cell "rehearsal 版本 51":
+              - text: rehearsal
+              - strong: 版本 51
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 22ad634f-b73f-4f44-97a3-63f8f9373c4d rehearsal 版本 35 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 22ad634f-b73f-4f44-97a3-63f8f9373c4d":
+              - link "查看策略 22ad634f-b73f-4f44-97a3-63f8f9373c4d":
+                - /url: "#/policies/22ad634f-b73f-4f44-97a3-63f8f9373c4d"
+                - code: 22ad634f-b73f-4f44-97a3-63f8f9373c4d
+            - cell "rehearsal 版本 35":
+              - text: rehearsal
+              - strong: 版本 35
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+          - row "查看策略 2231b4bf-25aa-435a-b75c-e4e27b0e53cb rehearsal 版本 24 registered historical 当前版本 3 S 778de32838c9 C 4e2118085a43 0% S 0 · C 0 · Shadow 0 2026/11/1 08:00:00":
+            - cell "查看策略 2231b4bf-25aa-435a-b75c-e4e27b0e53cb":
+              - link "查看策略 2231b4bf-25aa-435a-b75c-e4e27b0e53cb":
+                - /url: "#/policies/2231b4bf-25aa-435a-b75c-e4e27b0e53cb"
+                - code: 2231b4bf-25aa-435a-b75c-e4e27b0e53cb
+            - cell "rehearsal 版本 24":
+              - text: rehearsal
+              - strong: 版本 24
+            - cell "registered"
+            - cell "historical 当前版本 3"
+            - cell "S 778de32838c9 C 4e2118085a43":
+              - code: S 778de32838c9
+              - code: C 4e2118085a43
+            - cell "0%"
+            - cell "S 0 · C 0 · Shadow 0"
+            - cell "2026/11/1 08:00:00"
+    - button "上一页" [disabled]:
+      - img
+      - text: 上一页
+    - text: 第 1 页
+    - button "下一页":
+      - text: 下一页
+      - img
+    - region "策略版本详情":
+      - heading "策略版本详情" [level=3]
+      - link "关闭详情":
+        - /url: "#/policies"
+      - table:
+        - rowgroup:
+          - row "Deployment 56ecb751-44db-430f-8dae-cf19a724f959":
+            - rowheader "Deployment"
+            - cell "56ecb751-44db-430f-8dae-cf19a724f959":
+              - code: 56ecb751-44db-430f-8dae-cf19a724f959
+          - row "环境 / 版本 rehearsal · 版本 2 canary":
+            - rowheader "环境 / 版本"
+            - cell "rehearsal · 版本 2 canary"
+          - row "当前部署 查看策略 0fef60f5-a561-4374-bfde-c833a588d0da · 当前版本 3":
+            - rowheader "当前部署"
+            - cell "查看策略 0fef60f5-a561-4374-bfde-c833a588d0da · 当前版本 3":
+              - link "查看策略 0fef60f5-a561-4374-bfde-c833a588d0da":
+                - /url: "#/policies/0fef60f5-a561-4374-bfde-c833a588d0da"
+                - code: 0fef60f5-a561-4374-bfde-c833a588d0da
+              - text: · 当前版本 3
+          - row "Stable hash 778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9":
+            - rowheader "Stable hash"
+            - cell "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9":
+              - code: 778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9
+          - row "Candidate hash 4e2118085a4309ad28af9cc319177118243b35e57de0691afb4e662e1166fbdd":
+            - rowheader "Candidate hash"
+            - cell "4e2118085a4309ad28af9cc319177118243b35e57de0691afb4e662e1166fbdd":
+              - code: 4e2118085a4309ad28af9cc319177118243b35e57de0691afb4e662e1166fbdd
+          - row "流量 / Cohort 50% candidate · Stable 0 / Candidate 1 / Shadow 0":
+            - rowheader "流量 / Cohort"
+            - cell "50% candidate · Stable 0 / Candidate 1 / Shadow 0"
+          - row "Actor / Reason redacted / redacted":
+            - rowheader "Actor / Reason"
+            - cell "redacted / redacted"
+          - row "创建 2026/11/1 08:00:00":
+            - rowheader "创建"
+            - cell "2026/11/1 08:00:00"
+      - paragraph: Actor 和 reason 原文已隐藏；通过事件类型、触发阈值和版本时间关联回滚事实。历史运行不会随当前策略变更。
+      - heading "冻结阈值" [level=3]
+      - term: candidate_min_runs
+      - definition: "20"
+      - term: stable_min_runs
+      - definition: "20"
+      - term: window_max_runs
+      - definition: "50"
+      - term: commit_failure_rate
+      - definition: "0.05"
+      - term: terminal_failure_rate
+      - definition: "0.10"
+      - term: latency_increase_rate
+      - definition: "0.50"
+      - term: mean_cost_increase_rate
+      - definition: "0.30"
+      - term: unknown_rate
+      - definition: "0.10"
+      - term: relative_epsilon
+      - definition: "0.000001"
+      - heading "Gate Receipts" [level=3]
+      - table:
+        - rowgroup:
+          - row "Gate 状态 样本 成本 USD Issuer 签发时间":
+            - columnheader "Gate"
+            - columnheader "状态"
+            - columnheader "样本"
+            - columnheader "成本 USD"
+            - columnheader "Issuer"
+            - columnheader "签发时间"
+        - rowgroup:
+          - row "formal_holdout passed 20 0.10000000 redacted 2026/11/1 08:00:00":
+            - cell "formal_holdout"
+            - cell "passed"
+            - cell "20"
+            - cell "0.10000000"
+            - cell "redacted"
+            - cell "2026/11/1 08:00:00"
+      - heading "最新健康窗口" [level=3]
+      - paragraph: fail 2026/11/2 05:23:01 · 指标协议 v1
+      - paragraph: 触发阈值：commit_failure_rate, terminal_failure_rate。未知指标保持未知，不作为零值。
+      - table:
+        - rowgroup:
+          - row "指标 Candidate Stable":
+            - columnheader "指标"
+            - columnheader "Candidate"
+            - columnheader "Stable"
+        - rowgroup:
+          - row "run_count 20 20":
+            - cell "run_count"
+            - cell "20"
+            - cell "20"
+          - row "commit_failure_rate 1 0":
+            - cell "commit_failure_rate"
+            - cell "1"
+            - cell "0"
+          - row "terminal_failure_rate 1 0":
+            - cell "terminal_failure_rate"
+            - cell "1"
+            - cell "0"
+          - row "p95_latency 1.000000 1.000000":
+            - cell "p95_latency"
+            - cell "1.000000"
+            - cell "1.000000"
+          - row "mean_cost 0.01000000 0.01000000":
+            - cell "mean_cost"
+            - cell "0.01000000"
+            - cell "0.01000000"
+          - row "structured_decision_count 200 200":
+            - cell "structured_decision_count"
+            - cell "200"
+            - cell "200"
+          - row "unknown_decision_count 0 0":
+            - cell "unknown_decision_count"
+            - cell "0"
+            - cell "0"
+          - row "unknown_rate 0 0":
+            - cell "unknown_rate"
+            - cell "0"
+            - cell "0"
+          - row "fault_injected_count 0 0":
+            - cell "fault_injected_count"
+            - cell "0"
+            - cell "0"
+          - row "injected_commit_failure_count 0 0":
+            - cell "injected_commit_failure_count"
+            - cell "0"
+            - cell "0"
+          - row "natural_failure_count 20 0":
+            - cell "natural_failure_count"
+            - cell "20"
+            - cell "0"
+          - row "latency_increase_rate 0 未知":
+            - cell "latency_increase_rate"
+            - cell "0"
+            - cell "未知"
+          - row "mean_cost_increase_rate 0 未知":
+            - cell "mean_cost_increase_rate"
+            - cell "0"
+            - cell "未知"
+      - heading "回滚 / 冻结审计时间线" [level=3]
+      - list:
+        - listitem:
+          - strong: health_rollback
+          - text: 2026/11/2 05:23:01 · rehearsal
+          - link "查看策略 0fef60f5-a561-4374-bfde-c833a588d0da":
+            - /url: "#/policies/0fef60f5-a561-4374-bfde-c833a588d0da"
+            - code: 0fef60f5-a561-4374-bfde-c833a588d0da
+          - text: 失败部署
+          - link "查看策略 56ecb751-44db-430f-8dae-cf19a724f959":
+            - /url: "#/policies/56ecb751-44db-430f-8dae-cf19a724f959"
+            - code: 56ecb751-44db-430f-8dae-cf19a724f959
+          - code: Window e04b2e25282b985e556828867c8dd1b0ef2af34860798605e1c3dd2cdd0314de
+          - text: "actor: redacted · reason: redacted"
+      - paragraph: 展示最近最多 100 条事件；完整分页证据见审计时间线页签。
+```
+
+# Test source
+
+```ts
+  1  | import { readFileSync } from 'node:fs'
+  2  | import { expect, test } from '@playwright/test'
+  3  | 
+  4  | const own = '/tmp/m3-task9-spec-independent'
+  5  | const fixture = JSON.parse(readFileSync(`${own}/live-fixture.json`, 'utf8'))
+  6  | 
+  7  | test('Ops must display newer failed external receipt, not green older pass', async ({ page }, info) => {
+  8  |   await page.goto(`/ops/#/policies/${fixture.old_deployment_id}`)
+  9  |   const detail = page.getByRole('region', { name: '策略版本详情' })
+  10 |   const receipt = detail.locator('.ant-table-row').filter({ hasText: 'formal_holdout' })
+  11 |   await expect(receipt).toHaveCount(1)
+  12 |   await page.screenshot({ path: `${own}/screenshots/gate-tie-${info.project.name}.png`, fullPage: true })
+  13 |   console.log('ACTUAL_GATE_ROW', await receipt.innerText())
+> 14 |   await expect(receipt.getByText('failed', { exact: true })).toBeVisible()
+     |                                                              ^ Error: expect(locator).toBeVisible() failed
+  15 | })
+  16 | 
+```

@@ -1,0 +1,1276 @@
+........................................................................ [ 76%]
+...............FFFF...                                                   [100%]
+=================================== FAILURES ===================================
+____ test_receipt_binding_all_four_dimensions_and_new_failure[policy_hash] _____
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10cca2320>
+operation = 'INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_h...::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)'
+parameters = ('67b1dd0a-d77b-4b9a-a4af-18034f81ed2f', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_h...44444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.UniqueViolationError: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+E   DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+
+asyncpg/protocol/protocol.pyx:205: UniqueViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10d4f0950>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10cd65e50>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10d3ae650>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10d4f3f50>
+parameters = [('67b1dd0a-d77b-4b9a-a4af-18034f81ed2f', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_...4444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10d4d94e0>>
+error = UniqueViolationError('duplicate key value violates unique constraint "uq_policy_gate_evidence"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+E                   DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x10d3ac4d0>, app=<fastapi.applications.FastAPI object at 0x10cccb750>, ...tEventRecord object at 0x10d51ba50>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10d5132d0>])
+dimension = 'policy_hash'
+
+    @pytest.mark.parametrize("dimension", ["policy_hash", "protocol_hash", "runtime_hash", "source_revision"])
+    async def test_receipt_binding_all_four_dimensions_and_new_failure(policy_ops, dimension):
+        fixture = policy_ops
+        async with fixture.repo.session_factory() as s, s.begin():
+            correct = PolicyGateReceiptRecord(
+                receipt_id=str(uuid4()), policy_hash="b" * 64, gate_type="formal_holdout",
+                status="passed", evidence_hash="4" * 64, protocol_hash="b" * 64,
+                runtime_hash="b" * 64, source_revision="test", model_identity=ARBITRARY,
+                data_role="test_fixture", sample_count=27, cost=Decimal(".1"),
+                details={"bland": ARBITRARY}, issuer=ARBITRARY, issued_at=NOW,
+                created_at=NOW,
+            )
+            s.add(correct)
+            mismatch = {name: getattr(correct, name) for name in (
+                "policy_hash", "gate_type", "status", "evidence_hash", "protocol_hash",
+                "runtime_hash", "source_revision", "model_identity", "data_role",
+                "sample_count", "cost", "details", "issuer", "created_at",
+            )}
+            mismatch[dimension] = "a" * 64 if dimension != "source_revision" else ARBITRARY
+            s.add(PolicyGateReceiptRecord(
+                **mismatch, receipt_id=str(uuid4()), issued_at=NOW + timedelta(seconds=10),
+            ))
+        path = f"{PATHS[0]}/{fixture.deployments[CANARY].deployment_id}"
+        response = await fixture.client.get(path)
+        assert response.status_code == 200
+        receipt = next(r for r in response.json()["gate_receipts"] if r["gate_type"] == "formal_holdout")
+        assert receipt["receipt_id"] == correct.receipt_id
+        assert ARBITRARY not in response.text
+>       async with fixture.repo.session_factory() as s, s.begin():
+
+/tmp/m3-task9-spec-independent/test_independent.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1886: in __aexit__
+    await greenlet_spawn(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/util.py:147: in __exit__
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/util.py:145: in __exit__
+    self.commit()
+<string>:2: in commit
+    ???
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1315: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1290: in _prepare_impl
+    self.session.flush()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4352: in flush
+    self._flush(objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4487: in _flush
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4448: in _flush
+    flush_context.execute()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1421: in execute
+    return meth(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1643: in _execute_clauseelement
+    ret = self._execute_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1848: in _execute_context
+    return self._exec_single_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10d4d94e0>>
+error = UniqueViolationError('duplicate key value violates unique constraint "uq_policy_gate_evidence"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+E                   DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+E                   [SQL: INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_hash, source_revision, model_identity, data_role, sample_count, cost, details, issued_at, issuer, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('67b1dd0a-d77b-4b9a-a4af-18034f81ed2f', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'failed', '4444444444444444444444444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'test', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, 20, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc))]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+___ test_receipt_binding_all_four_dimensions_and_new_failure[protocol_hash] ____
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10d42ebc0>
+operation = 'INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_h...::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)'
+seq_of_parameters = [('bf2fff8e-4be4-4747-acce-70d1f4dcbad4', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_...4444444444444444444444444444444444444444444', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', ...)]
+
+    async def _executemany(self, operation, seq_of_parameters):
+        adapt_connection = self._adapt_connection
+    
+        self.description = None
+        async with adapt_connection._execute_mutex:
+            await adapt_connection._check_type_cache_invalidation(
+                self._invalidate_schema_cache_asof
+            )
+    
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            try:
+>               return await self._connection.executemany(
+                    operation, seq_of_parameters
+                )
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:578: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/connection.py:401: in executemany
+    return await self._executemany(command, args, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/connection.py:1997: in _executemany
+    result, _ = await self._do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/connection.py:2033: in _do_execute
+    result = await executor(stmt, None)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.UniqueViolationError: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+E   DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+
+asyncpg/protocol/protocol.pyx:266: UniqueViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10d3db5d0>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10e02fc50>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10d3d9c50>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10d44d2d0>
+parameters = [('bf2fff8e-4be4-4747-acce-70d1f4dcbad4', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_...4444444444444444444444444444444444444444444', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1938: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:949: in do_executemany
+    cursor.executemany(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:590: in executemany
+    return self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:582: in _executemany
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10cc8be20>>
+error = UniqueViolationError('duplicate key value violates unique constraint "uq_policy_gate_evidence"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+E                   DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x10d3c8fd0>, app=<fastapi.applications.FastAPI object at 0x10d41d610>, ...tEventRecord object at 0x10d450d10>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10d44d1d0>])
+dimension = 'protocol_hash'
+
+    @pytest.mark.parametrize("dimension", ["policy_hash", "protocol_hash", "runtime_hash", "source_revision"])
+    async def test_receipt_binding_all_four_dimensions_and_new_failure(policy_ops, dimension):
+        fixture = policy_ops
+>       async with fixture.repo.session_factory() as s, s.begin():
+
+/tmp/m3-task9-spec-independent/test_independent.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1886: in __aexit__
+    await greenlet_spawn(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/util.py:147: in __exit__
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/util.py:145: in __exit__
+    self.commit()
+<string>:2: in commit
+    ???
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1315: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1290: in _prepare_impl
+    self.session.flush()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4352: in flush
+    self._flush(objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4487: in _flush
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4448: in _flush
+    flush_context.execute()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1421: in execute
+    return meth(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1643: in _execute_clauseelement
+    ret = self._execute_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1848: in _execute_context
+    return self._exec_single_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1938: in _exec_single_context
+    self.dialect.do_executemany(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:949: in do_executemany
+    cursor.executemany(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:590: in executemany
+    return self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:582: in _executemany
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10cc8be20>>
+error = UniqueViolationError('duplicate key value violates unique constraint "uq_policy_gate_evidence"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+E                   DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+E                   [SQL: INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_hash, source_revision, model_identity, data_role, sample_count, cost, details, issued_at, issuer, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: [('bf2fff8e-4be4-4747-acce-70d1f4dcbad4', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'passed', '4444444444444444444444444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'test', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc)), ('8a8b7c0d-dab1-4523-875f-b978df521555', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'passed', '4444444444444444444444444444444444444444444444444444444444444444', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'test', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, 10, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc))]]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+____ test_receipt_binding_all_four_dimensions_and_new_failure[runtime_hash] ____
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10d76be20>
+operation = 'INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_h...::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)'
+seq_of_parameters = [('8df964b5-67ac-4ee5-b135-3f17e6a47444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_...4444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', ...)]
+
+    async def _executemany(self, operation, seq_of_parameters):
+        adapt_connection = self._adapt_connection
+    
+        self.description = None
+        async with adapt_connection._execute_mutex:
+            await adapt_connection._check_type_cache_invalidation(
+                self._invalidate_schema_cache_asof
+            )
+    
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            try:
+>               return await self._connection.executemany(
+                    operation, seq_of_parameters
+                )
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:578: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/connection.py:401: in executemany
+    return await self._executemany(command, args, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/connection.py:1997: in _executemany
+    result, _ = await self._do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/connection.py:2033: in _do_execute
+    result = await executor(stmt, None)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.UniqueViolationError: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+E   DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+
+asyncpg/protocol/protocol.pyx:266: UniqueViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10d507450>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10d414a50>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10d505cd0>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10d80d250>
+parameters = [('8df964b5-67ac-4ee5-b135-3f17e6a47444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_...4444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1938: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:949: in do_executemany
+    cursor.executemany(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:590: in executemany
+    return self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:582: in _executemany
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10d4d8130>>
+error = UniqueViolationError('duplicate key value violates unique constraint "uq_policy_gate_evidence"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+E                   DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x10d504810>, app=<fastapi.applications.FastAPI object at 0x10e02cc90>, ...tEventRecord object at 0x10cd12790>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10d80f150>])
+dimension = 'runtime_hash'
+
+    @pytest.mark.parametrize("dimension", ["policy_hash", "protocol_hash", "runtime_hash", "source_revision"])
+    async def test_receipt_binding_all_four_dimensions_and_new_failure(policy_ops, dimension):
+        fixture = policy_ops
+>       async with fixture.repo.session_factory() as s, s.begin():
+
+/tmp/m3-task9-spec-independent/test_independent.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1886: in __aexit__
+    await greenlet_spawn(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/util.py:147: in __exit__
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/util.py:145: in __exit__
+    self.commit()
+<string>:2: in commit
+    ???
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1315: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1290: in _prepare_impl
+    self.session.flush()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4352: in flush
+    self._flush(objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4487: in _flush
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4448: in _flush
+    flush_context.execute()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1421: in execute
+    return meth(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1643: in _execute_clauseelement
+    ret = self._execute_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1848: in _execute_context
+    return self._exec_single_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1938: in _exec_single_context
+    self.dialect.do_executemany(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:949: in do_executemany
+    cursor.executemany(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:590: in executemany
+    return self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:582: in _executemany
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10d4d8130>>
+error = UniqueViolationError('duplicate key value violates unique constraint "uq_policy_gate_evidence"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+E                   DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+E                   [SQL: INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_hash, source_revision, model_identity, data_role, sample_count, cost, details, issued_at, issuer, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: [('8df964b5-67ac-4ee5-b135-3f17e6a47444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'passed', '4444444444444444444444444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'test', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc)), ('8aefb93d-4f67-4c4c-8832-c7142e272156', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'passed', '4444444444444444444444444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'test', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, 10, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc))]]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+__ test_receipt_binding_all_four_dimensions_and_new_failure[source_revision] ___
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10cc6d9c0>
+operation = 'INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_h...::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)'
+seq_of_parameters = [('40b9e1e7-582f-4b8d-a1ed-fbce32f8d005', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_...4444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', ...)]
+
+    async def _executemany(self, operation, seq_of_parameters):
+        adapt_connection = self._adapt_connection
+    
+        self.description = None
+        async with adapt_connection._execute_mutex:
+            await adapt_connection._check_type_cache_invalidation(
+                self._invalidate_schema_cache_asof
+            )
+    
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            try:
+>               return await self._connection.executemany(
+                    operation, seq_of_parameters
+                )
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:578: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/connection.py:401: in executemany
+    return await self._executemany(command, args, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/connection.py:1997: in _executemany
+    result, _ = await self._do_execute(
+../../eduagent/.venv/lib/python3.11/site-packages/asyncpg/connection.py:2033: in _do_execute
+    result = await executor(stmt, None)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.UniqueViolationError: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+E   DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+
+asyncpg/protocol/protocol.pyx:266: UniqueViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10ca30790>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10cc97bd0>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10ca33c90>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10e2e6690>
+parameters = [('40b9e1e7-582f-4b8d-a1ed-fbce32f8d005', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_...4444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1938: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:949: in do_executemany
+    cursor.executemany(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:590: in executemany
+    return self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:582: in _executemany
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10cc8b880>>
+error = UniqueViolationError('duplicate key value violates unique constraint "uq_policy_gate_evidence"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+E                   DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x10d3efe50>, app=<fastapi.applications.FastAPI object at 0x10cea21d0>, ...tEventRecord object at 0x10d23fe90>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10e2e6a50>])
+dimension = 'source_revision'
+
+    @pytest.mark.parametrize("dimension", ["policy_hash", "protocol_hash", "runtime_hash", "source_revision"])
+    async def test_receipt_binding_all_four_dimensions_and_new_failure(policy_ops, dimension):
+        fixture = policy_ops
+>       async with fixture.repo.session_factory() as s, s.begin():
+
+/tmp/m3-task9-spec-independent/test_independent.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1886: in __aexit__
+    await greenlet_spawn(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/util.py:147: in __exit__
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/util.py:145: in __exit__
+    self.commit()
+<string>:2: in commit
+    ???
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1315: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1290: in _prepare_impl
+    self.session.flush()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4352: in flush
+    self._flush(objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4487: in _flush
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4448: in _flush
+    flush_context.execute()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1421: in execute
+    return meth(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1643: in _execute_clauseelement
+    ret = self._execute_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1848: in _execute_context
+    return self._exec_single_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1938: in _exec_single_context
+    self.dialect.do_executemany(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:949: in do_executemany
+    cursor.executemany(statement, parameters)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:590: in executemany
+    return self._adapt_connection.await_(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:582: in _executemany
+    self._handle_exception(error)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10cc8b880>>
+error = UniqueViolationError('duplicate key value violates unique constraint "uq_policy_gate_evidence"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+E                   DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+E                   [SQL: INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_hash, source_revision, model_identity, data_role, sample_count, cost, details, issued_at, issuer, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: [('40b9e1e7-582f-4b8d-a1ed-fbce32f8d005', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'passed', '4444444444444444444444444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'test', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc)), ('eb19fde4-8b0e-40c1-b543-d29e56d69f21', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'passed', '4444444444444444444444444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, 10, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc))]]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+=========================== short test summary info ============================
+FAILED ::test_receipt_binding_all_four_dimensions_and_new_failure[policy_hash] - sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+[SQL: INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_hash, source_revision, model_identity, data_role, sample_count, cost, details, issued_at, issuer, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+[parameters: ('67b1dd0a-d77b-4b9a-a4af-18034f81ed2f', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'failed', '4444444444444444444444444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'test', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, 20, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+FAILED ::test_receipt_binding_all_four_dimensions_and_new_failure[protocol_hash] - sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+[SQL: INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_hash, source_revision, model_identity, data_role, sample_count, cost, details, issued_at, issuer, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+[parameters: [('bf2fff8e-4be4-4747-acce-70d1f4dcbad4', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'passed', '4444444444444444444444444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'test', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc)), ('8a8b7c0d-dab1-4523-875f-b978df521555', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'passed', '4444444444444444444444444444444444444444444444444444444444444444', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'test', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, 10, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc))]]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+FAILED ::test_receipt_binding_all_four_dimensions_and_new_failure[runtime_hash] - sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+[SQL: INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_hash, source_revision, model_identity, data_role, sample_count, cost, details, issued_at, issuer, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+[parameters: [('8df964b5-67ac-4ee5-b135-3f17e6a47444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'passed', '4444444444444444444444444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'test', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc)), ('8aefb93d-4f67-4c4c-8832-c7142e272156', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'passed', '4444444444444444444444444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'test', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, 10, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc))]]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+FAILED ::test_receipt_binding_all_four_dimensions_and_new_failure[source_revision] - sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "uq_policy_gate_evidence"
+DETAIL:  Key (policy_hash, gate_type, evidence_hash)=(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, formal_holdout, 4444444444444444444444444444444444444444444444444444444444444444) already exists.
+[SQL: INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_hash, source_revision, model_identity, data_role, sample_count, cost, details, issued_at, issuer, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+[parameters: [('40b9e1e7-582f-4b8d-a1ed-fbce32f8d005', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'passed', '4444444444444444444444444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'test', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc)), ('eb19fde4-8b0e-40c1-b543-d29e56d69f21', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'formal_holdout', 'passed', '4444444444444444444444444444444444444444444444444444444444444444', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', 'test_fixture', 27, Decimal('0.1'), '{"bland": "violet meadow 7391 <img onerror=alert(1)> \\u6c49\\u5b57 \\ud83e\\uddea"}', datetime.datetime(2026, 10, 30, 0, 0, 10, tzinfo=datetime.timezone.utc), 'violet meadow 7391 <img onerror=alert(1)> 汉字 🧪', datetime.datetime(2026, 10, 30, 0, 0, tzinfo=datetime.timezone.utc))]]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+4 failed, 90 passed in 18.71s

@@ -1,0 +1,15 @@
+Housekeeping attempt; not a product or test failure.
+Command: env PYTHONDONTWRITEBYTECODE=1 /Users/bytedance/Documents/trae_projects/eduagent/.venv/bin/python docs/superpowers/reports/task9-gate-order-fix-evidence/capture-isolation.py cleanup
+Exit: 1
+Traceback (most recent call last):
+  File "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-gate-order-fix-evidence/capture-isolation.py", line 113, in <module>
+    {"frontend": frontend, "cleanup": cleanup}[sys.argv[1]]()
+  File "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-gate-order-fix-evidence/capture-isolation.py", line 79, in cleanup
+    assert all(v == 0 for v in remaining.values()), remaining
+AssertionError: {'test:runs:*': 292, 'test:experts:*': 0, 'eduagent:test:failover:*': 29}
+
+No resource was deleted before this assertion.
+The assertion incorrectly treated shared test prefixes as repair ownership.
+Read-only XINFO follow-up found no nonzero last-generated ID in or after the repair.
+Zero-ID keys cannot establish ownership; all uncertain historical keys remain untouched.
+The corrected cleanup records this limitation and removes only the repair's tmp entries.

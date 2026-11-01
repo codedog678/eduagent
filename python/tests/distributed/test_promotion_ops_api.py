@@ -19,6 +19,7 @@ from core.distributed.models import DistributedRun
 from core.distributed.ops_queries import OpsQueries, encode_cursor
 from core.distributed.promotion_contracts import PolicyThresholds
 from core.distributed.promotion_models import (
+    PolicyArtifactRecord,
     PolicyAuditEventRecord,
     PolicyDeploymentRecord,
     PolicyEnvironmentHeadRecord,
@@ -26,6 +27,7 @@ from core.distributed.promotion_models import (
     PolicyHealthWindowRecord,
     PolicyShadowExecutionRecord,
 )
+from core.distributed.promotion_repository import PromotionRepository
 from tests.distributed.helpers import spec
 from tests.distributed.test_policy_health import (
     admitted, candidate_head, fill_window, health_repo,
@@ -234,6 +236,91 @@ async def test_strict_redacted_policy_projections_and_latest_gate(policy_ops):
         assert '"components"' not in serialized
     page = (await policy_ops.client.get(PATHS[0])).json()
     assert all(len(item["stable_policy_hash"]) == 12 for item in page["items"])
+
+
+def _external_gate_receipt(receipt_id, status, created_at, evidence_hash, **changes):
+    return PolicyGateReceiptRecord(**{
+        "receipt_id": receipt_id, "policy_hash": "b" * 64,
+        "gate_type": "formal_holdout", "status": status,
+        "evidence_hash": evidence_hash, "protocol_hash": "b" * 64,
+        "runtime_hash": "b" * 64, "source_revision": "test",
+        "model_identity": "test-fixture", "data_role": "holdout_validated",
+        "sample_count": 20, "cost": Decimal(".1"),
+        "details": {"evidence_role": "test_fixture", "release_eligible": False},
+        "issuer": "test-fixture", "issued_at": NOW, "created_at": created_at,
+        **changes,
+    })
+
+
+@pytest.mark.parametrize("status", ["failed", "unknown"])
+@pytest.mark.parametrize("tie_key", ["created_at", "receipt_id"])
+async def test_gate_tie_order_matches_publish_authority(policy_ops, status, tie_key):
+    high_id = "ffffffff-ffff-ffff-ffff-ffffffffffff"
+    low_id = "00000000-0000-0000-0000-000000000001"
+    old_id, new_id = (high_id, low_id) if tie_key == "created_at" else (low_id, high_id)
+    new_created = NOW + timedelta(minutes=1) if tie_key == "created_at" else NOW
+    async with policy_ops.repo.session_factory() as session, session.begin():
+        session.add_all([
+            _external_gate_receipt(old_id, "passed", NOW, "7" * 64),
+            _external_gate_receipt(new_id, status, new_created, "8" * 64),
+        ])
+    async with policy_ops.repo.session_factory() as session:
+        artifact = await session.get(PolicyArtifactRecord, "b" * 64)
+        missing, accepted = await PromotionRepository._bound_gate_receipts(
+            session, artifact=artifact, required={"formal_holdout"}, health_bindings={},
+        )
+    assert missing == ["formal_holdout"] and accepted == {}
+    path = f"{PATHS[0]}/{policy_ops.deployments[1].deployment_id}"
+    response = await policy_ops.client.get(path)
+    assert response.status_code == 200
+    shown = next(r for r in response.json()["gate_receipts"] if r["gate_type"] == "formal_holdout")
+    print("synthetic_gate_tie", tie_key, status, "authority_missing", missing, "ops", shown)
+    assert shown["status"] == status
+    assert shown["receipt_id"] == new_id
+    # A later append may restore pass even when its UUID sorts below the old pass.
+    restored_id = "00000000-0000-0000-0000-000000000002"
+    async with policy_ops.repo.session_factory() as session, session.begin():
+        session.add(_external_gate_receipt(
+            restored_id, "passed", NOW + timedelta(minutes=2), "9" * 64,
+        ))
+    async with policy_ops.repo.session_factory() as session:
+        missing, accepted = await PromotionRepository._bound_gate_receipts(
+            session, artifact=artifact, required={"formal_holdout"}, health_bindings={},
+        )
+    assert missing == [] and accepted["formal_holdout"].receipt_id == restored_id
+    restored = next(r for r in (await policy_ops.client.get(path)).json()["gate_receipts"]
+                    if r["gate_type"] == "formal_holdout")
+    assert restored["status"] == "passed" and restored["receipt_id"] == restored_id
+
+
+@pytest.mark.parametrize("invalid_binding", [
+    "policy_hash", "protocol_hash", "runtime_hash", "source_revision", "future_issued_at",
+])
+async def test_gate_order_excludes_unbound_or_future_pass(policy_ops, invalid_binding):
+    changes = {"issued_at": datetime.now(UTC) + timedelta(days=1)} if invalid_binding == "future_issued_at" else {
+        invalid_binding: "wrong-source" if invalid_binding == "source_revision" else "a" * 64,
+    }
+    valid_id = "00000000-0000-0000-0000-000000000001"
+    async with policy_ops.repo.session_factory() as session, session.begin():
+        session.add_all([
+            _external_gate_receipt(valid_id, "failed", NOW, "7" * 64),
+            _external_gate_receipt(
+                "ffffffff-ffff-ffff-ffff-ffffffffffff", "passed",
+                NOW + timedelta(minutes=1), "8" * 64, **changes,
+            ),
+        ])
+    # The private authority helper selects bindings; Ops independently excludes future issuance.
+    if invalid_binding != "future_issued_at":
+        async with policy_ops.repo.session_factory() as session:
+            artifact = await session.get(PolicyArtifactRecord, "b" * 64)
+            missing, accepted = await PromotionRepository._bound_gate_receipts(
+                session, artifact=artifact, required={"formal_holdout"}, health_bindings={},
+            )
+        assert missing == ["formal_holdout"] and accepted == {}
+    response = await policy_ops.client.get(f"{PATHS[0]}/{policy_ops.deployments[1].deployment_id}")
+    assert response.status_code == 200
+    shown = next(r for r in response.json()["gate_receipts"] if r["gate_type"] == "formal_holdout")
+    assert shown["status"] == "failed" and shown["receipt_id"] == valid_id
 
 
 @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
