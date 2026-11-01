@@ -76,6 +76,9 @@ flowchart LR
 具体失败、改动触发计数、固定配置、费用区间和逐条回复见
 [第五轮分析](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/analysis.md)。
 这是历史评分 v2、重复开发场景的单次回归，不能授予当前 Judge v3 发布资格。
+展开 RRF、rerank、发现候选、来源门禁与有界纠错时，可使用
+[算法面试证据卡](agent-algorithm-evidence.md)定位源码；它也列出工具语义评分的
+非盲审阅边界，以及按用户要求暂停的 Agent50 语义审阅状态。
 离线优化历史与独立校准缺口见
 [RSI 核验](../evals/rsi-review-20261027/verification.json)、
 [校准状态](../evals/rsi-review-20261027/calibration-status.json)、
