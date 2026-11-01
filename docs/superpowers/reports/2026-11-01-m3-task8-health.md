@@ -1,5 +1,17 @@
 # M3 Task8: Health Gates and Transactional Rollback
 
+## Independent Acceptance
+
+更新日期：2026-11-02。代码冻结 `5c38e26` 的完整 Task8 已通过新的独立
+SPEC 与 CODE。规格审查独立 692 项矩阵和 32 项探测通过；代码审查独立
+完整后端 1607 项、310.45 秒与 32 项探测、16.08 秒通过，均无失败、
+错误或跳过。实际范围、失败探测修正、摘要和限制见
+[规格记录](2026-11-01-m3-task8-spec-review.md)、
+[代码记录](2026-11-01-m3-task8-code-review.md)及
+[独立完整报告](2026-11-02-m3-task8-code-recovery.md)。
+Task9 可启动；Task10、正式模型资格与整体项目完成仍须另行验证。
+下方所有冻结时的待审状态与历史失败按原文保留。
+
 ## Cleanup Cause Correction Freeze
 
 最新独立结论是 **SPEC FAIL**，不是新的 CODE FAIL 或独立验收通过。
