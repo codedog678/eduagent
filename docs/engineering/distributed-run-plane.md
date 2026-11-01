@@ -87,6 +87,21 @@ docker compose --profile distributed up --build -d
 curl --fail http://localhost:8890/api/health
 ```
 
+Compose 通过一次性的 `distributed-migrate` 建表、升级与写入 schema
+version/hash。API 与 worker 的普通启动只检查该标记，不执行 DDL。
+非 Compose 启动或升级已有数据库时，先停止流量与所有 worker，再在已安装
+`python[dev]` 的解释器环境中执行：
+
+```bash
+cd python
+python -m core.distributed.cli migrate
+```
+
+命令使用配置中的 `DISTRIBUTED_DATABASE_URL`，需要数据库 DDL 权限；
+运行身份无需依靠启动时建表权限。迁移失败不发布新 marker，普通进程遇到
+不匹配版本即拒绝启动。当前实现与真实死锁、迁移回归见
+[启动协议证据](../superpowers/reports/2026-11-01-m3-schema-startup.md)。
+
 真实 PostgreSQL/Redis 集成测试：
 
 ```bash
@@ -105,6 +120,11 @@ python -m pytest tests/distributed tests/integration/test_distributed_failover.p
 ```bash
 python tools/demo_distributed_recovery.py
 ```
+
+该脚本运行真实子进程 pytest，测试会重建目标库中的测试表。应给它独占的
+临时测试数据库，并通过 `DISTRIBUTED_TEST_DATABASE_URL` 与
+`DISTRIBUTED_DATABASE_URL` 指向同一测试库；Redis 测试 URL 也需对应。
+上述 fixture 自行迁移，不要求对业务数据库运行迁移或测试。
 
 运行状态、Trace 与指标：
 

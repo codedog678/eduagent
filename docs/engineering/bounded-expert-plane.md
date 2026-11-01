@@ -175,6 +175,18 @@ python tools/demo_expert_failover.py
 python tools/benchmark_expert_plane.py --requests 30 --concurrency 4
 ```
 
+当前 M3 分支普通进程只检查 PostgreSQL schema version/hash，不执行 DDL。
+Compose 先运行一次 `distributed-migrate`，API、dispatcher、reaper 和 worker
+均依赖迁移成功；非 Compose 启动需先停止流量与 worker，再运行
+`python -m core.distributed.cli migrate`。已有数据库升级也遵循这个顺序。
+[启动协议与等锁故障证据](../superpowers/reports/2026-11-01-m3-schema-startup.md)
+说明该选择如何避免运行中 DDL 与任务锁死锁。
+
+上述两个脚本各自创建并迁移独占临时数据库，要求已安装 `python[dev]`、
+可用 PostgreSQL / Redis 以及数据库创建权限。当前分支的实际命令、端口
+配置、固定执行身份兼容修复和保留的失败日志见
+[M3 演示验证](../superpowers/reports/2026-11-01-m3-demo-startup.md)。
+
 真实基础设施测试：
 
 ```bash
@@ -197,8 +209,9 @@ Redis 和真实子进程门禁在本地通过。CI 的 `compose-smoke` job 在 D
 环境构建完整 profile，提交两次真实 Run，读取 Ops Run/Trace/Expert/Workers，
 并在停止 `expert-worker-a` 后要求第二次 Run 仍完成。运行 JSON、解析后的
 Compose 配置、容器状态和完整日志作为 Actions artifact 留存。Compose 中
-所有分布式 dispatcher、reaper 和 worker 等待 `distributed-api` 完成 schema
-初始化并通过 healthcheck 后启动。
+所有分布式进程等待 `distributed-migrate` 成功；dispatcher、reaper 和 worker
+另外等待 `distributed-api` 通过 healthcheck。API 健康不替代迁移结果，
+启动检查不会自动修复缺失或不匹配的 schema marker。
 
 ## 真实故障证据
 
