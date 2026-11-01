@@ -1,5 +1,173 @@
 # M3 Task8: Health Gates and Transactional Rollback
 
+## Cleanup Cause Correction Freeze
+
+最新独立结论是 **SPEC FAIL**，不是新的 CODE FAIL 或独立验收通过。
+`e432812` 异常退出修复后，独立审查
+`arun_6ae7343451536906a07381f9` 复现 cleanup 包装异常的硬原因链被覆盖；
+父侧 docs-only `59b529e15fd16cb7b229c7ea6170fa8bf0f85695` 已归档该失败。
+有效执行权内，真实 SQLite ATTACH、范围外标记提交和实际 capability check
+产生 `ConfirmedPermissionViolation`，memory-stop/Harness-close 再包装为
+RuntimeError。旧合并代码把包装异常的 cause 换成普通执行失败，candidate
+错误重试或保存普通最后一次失败，Shadow 保存普通失败；实际晋级和 Active
+PASS 仍成功。本节只冻结修复实现与测试，独立 fresh SPEC 再 fresh CODE 尚待进行。
+下方全部旧失败、审查与实现冻结记录原样保留，不代表当前验收状态。
+
+本轮 Task8 清单：
+
+- [x] 读取批准计划 Task8、设计 health/security、历史记录与最新 SPEC P1。
+- [x] 先保存真实 wrapped cleanup RED，修正窗口键断言后保存第二轮 RED。
+- [x] 仅修复 executor 清理合并，不覆盖硬 cause 链；原失败类型保存为 note。
+- [x] 验证 candidate 重试/最后一次、Shadow、晋级拒绝与迟到 Active 回滚。
+- [x] 冻结聚焦、完整影响矩阵和全后端实际 PostgreSQL/Redis 测试及摘要。
+- [x] 清理独占数据库与本轮 pytest 临时目录，暂存精确自有路径，新提交交接。
+- [ ] 父侧顺序启动独立 fresh SPEC、fresh CODE；Task9/10 未实施。
+
+### Runtime and Regression Scope
+
+运行代码仅修改 `python/core/distributed/executor.py` 一处：清理错误的 cause
+链已有硬诊断且原失败非硬诊断时，用 `add_note()` 保存原失败的类型，
+不再赋值 `exc.__cause__`。直接硬异常、嵌套包装及底层硬异常的 cause 均保持
+原值；已经优先保存的执行硬违规不被后续清理替换。只记录异常类型，不记录
+异常正文或私有载荷。初始/成功/异常退出检查、BaseException/取消处理、
+独立清理步骤、Shadow 最后包装与用量传播均不改变。
+
+无新 permission/caller flag、权限通道、Worker/fencing/执行权或发布锁改写。
+`a4691bf` 四项规格修复与 `4c9b204` 共享 head/已消费因果链修复保持不变。
+既有两套 exceptional-exit 测试文件也未修改。
+
+新增 `python/tests/distributed/test_executor_cleanup_cause.py` 共 124 项：
+
+- 72 项直接 executor 回归覆盖 primary/Shadow、ValueError/CancelledError、
+  stop/close/database/usage、直接硬异常和 1/3 层包装、逐节点 cause 身份、
+  原失败 note、已有执行硬异常优先、普通清理对照及后续清理独立尝试。
+  Shadow 不执行 primary usage callback，相关参数验证其原失败仍保留，
+  不把未发生的通知当作越权。
+- 48 项真实 Worker 回归覆盖 candidate `max_attempts=1/3` 和 Shadow，
+  四种清理阶段、直接/单层/三层硬异常与普通对照。candidate 即使可重试次数
+  未耗尽也只保存一次非重试硬终态；Shadow 保持 stable 父结果且清理锁/目录。
+  真实终态观测拒绝实际晋级、health FAIL；普通失败保持 not_applicable/isolated
+  与 unknown-cost HOLD。真实 Harness `run()` 导出零模型/工具/判定计数，
+  实际 usage 持久化；费用仍未知，不伪造 provider 费用。
+- 4 项 stop/close 三层包装迟到回归先省略终态通知，消费原有 passing gates
+  进入 Active 并确认 PASS，再通过实际 recovery 补录硬终态，确认新 FAIL
+  窗口与事务回滚。恢复幂等，旧已受理 candidate 保持固定，新 Run 使用 stable。
+
+硬异常都来自真实 SQLite ATTACH、提交 marker 和实际
+`assert_open_store_capability()`；另一个连接复读 marker，不手工构造权限诊断。
+stop/close 使用尚未关闭的 Harness 连接；database/usage 位于 Harness 关闭后，
+测试用同一固定路径的新真实连接产生其清理检查异常，专门验证合并与诊断
+传播，不声称 executor 新增了关闭后的检查。已有执行硬违规与第二个清理硬
+违规的优先级对照也使用不同真实连接，避免重复 ATTACH 同名别名。
+
+既有回归继续验证异常源 cause、初始 wrong-store、构造失败、不可查询连接、
+外部 executor 取消、锁排空、重复取消与接管。durable 证明均在有效租约内完成。
+取消外层 Worker、Shadow 截止或外部取消后的 drain 仍可能丢弃 executor 诊断，
+本轮不保证这些路径产生持久权限终态；恢复不能补造不存在的终态。
+过期/fenced Worker 不因发现硬违规恢复执行权。直接取消探测只证明 executor
+关闭前报告，不证明强制终止 SDK 或过期 worker 持久诊断。
+
+### Frozen Evidence
+
+| 轮次 | 结果和 pytest 用时 | XML 用时 | 自有证据后缀 |
+| --- | --- | --- | --- |
+| 首轮 RED，运行代码未修改 | 54 fail / 34 pass，7.50 s；含 4 项错误窗口键断言 | 7.496 s | `cause-red` |
+| 校正/扩展 RED，运行代码仍未修改 | 75 fail / 45 pass，19.31 s；无错误/跳过 | 19.306 s | `cause-repro-red` |
+| 冻结聚焦 GREEN | 195 pass，28.44 s；新增 124 + 原异常退出 71 | 28.435 s | `cause-focused` |
+| 冻结完整影响矩阵 GREEN | 692 pass，128.12 s；21 文件 | 128.117 s | `cause-targeted` |
+| 冻结全后端 GREEN | 1607 pass，301.44 s | 301.418 s | `cause-full` |
+
+两轮 RED 退出码 1；三轮 GREEN 退出码 0，均无失败/错误/跳过。
+首轮错误使用 `hard_failures` 查询当前部署窗口；修正为已有 `candidate` 键，
+没有修改 health 实现。校正 RED 扩大到全部清理阶段和 candidate 最后一次/
+允许重试两种设置；75 项失败均为 cause 被改写、note 缺失或硬分类丢失。
+新增四项 Active 恢复回归及 Worker fixture 抽取在修复后、聚焦 GREEN 前完成。
+聚焦/定向/全后端三轮之间没有运行代码或测试修改。全后端只保留已有
+`TestAgent` 带构造函数的 collection warning。
+
+所有原始 `.log`/`.xml` 字节保留于
+`python/tests/distributed/evidence/2026-11-01-m3-task8-<suffix>`，不重写 RED。
+父侧已独立解析前四轮 XML 计数/用时并核验哈希；全后端由本实现者解析核验，
+不声称父侧重复跑过。其旧独立 568 pass/114.73 s、新探测 8 fail/16 pass/
+6.37 s、取消边界 3 pass/2.21 s 仍是原 SPEC FAIL 的证据，不被本轮绿灯覆盖。
+
+每次 pytest 在单独 zsh shell 创建唯一 `task8_cause_<round>_` 数据库，使用
+PostgreSQL 16 `127.0.0.1:55432`、postgres 无密码、Homebrew createdb/dropdb，
+EXIT trap 清理。最终 catalog 查询 `task8_cause_%` 返回零行。Redis 为
+`redis://127.0.0.1:56379/0`，fixture 独占流在 teardown 清理。
+完整运行命令 ID 为 `515b4f9c1867063d3e240e778c56dd58`，已结束、退出码 0。
+
+冻结定向命令，工作目录 `eduagent-m3/python`：
+
+```bash
+zsh -c 'set -o pipefail
+DB="task8_cause_targeted_$(date -u +%Y%m%d%H%M%S)_${RANDOM}"
+/opt/homebrew/opt/postgresql@16/bin/createdb -h 127.0.0.1 -p 55432 -U postgres "$DB" || exit
+trap '\''/opt/homebrew/opt/postgresql@16/bin/dropdb -h 127.0.0.1 -p 55432 -U postgres "$DB"'\'' EXIT
+export DISTRIBUTED_TEST_DATABASE_URL="postgresql+asyncpg://postgres@127.0.0.1:55432/$DB"
+export DISTRIBUTED_TEST_REDIS_URL=redis://127.0.0.1:56379/0
+export PYTHONPATH=/Users/bytedance/Documents/trae_projects/eduagent-m3/python
+export TZ=UTC
+/Users/bytedance/Documents/trae_projects/eduagent/.venv/bin/python -m pytest \
+  tests/distributed/test_policy_health.py \
+  tests/distributed/test_policy_health_corrections.py \
+  tests/distributed/test_policy_health_publication.py \
+  tests/distributed/test_instrumentation.py tests/distributed/test_worker.py \
+  tests/distributed/test_shadow_worker.py tests/distributed/test_shadow_usage.py \
+  tests/distributed/test_policy_assignment.py \
+  tests/distributed/test_promotion_schema_upgrade.py \
+  tests/distributed/test_promotion_repository.py \
+  tests/distributed/test_expert_engine.py tests/distributed/test_expert_repository.py \
+  tests/distributed/test_expert_cli.py tests/distributed/test_runtime_schema_startup.py \
+  tests/distributed/test_schema_migration.py tests/distributed/test_promotion_contracts.py \
+  tests/distributed/test_executor.py tests/distributed/test_policy_pinning.py \
+  tests/distributed/test_executor_exception_health.py \
+  tests/distributed/test_executor_exception_lifecycle.py \
+  tests/distributed/test_executor_cleanup_cause.py -q --tb=short \
+  --junitxml=tests/distributed/evidence/2026-11-01-m3-task8-cause-targeted.xml \
+  2>&1 | tee tests/distributed/evidence/2026-11-01-m3-task8-cause-targeted.log'
+```
+
+全后端使用相同设置的新 `task8_cause_full_` 数据库，测试列表改为 `tests`，
+证据后缀 `cause-full`。聚焦为新 suite 加两套原 exceptional-exit suites。
+两轮 RED 仅新 suite；首轮 `--tb=short`，校正 RED `--tb=line`。
+环境变量为 `DISTRIBUTED_TEST_DATABASE_URL`，不是 `DATABASE_URL`。
+
+### Freeze Identity
+
+实际提交父版本：
+`59b529e15fd16cb7b229c7ea6170fa8bf0f85695`。
+精确 NEW 提交 SHA 在提交后的交接消息给出，不在正文自引用。
+两个自有 Python 文件按 repository-relative 路径排序，组合 SHA-256：
+`c97e321cac16d8948ea4025c86b694d320dc8549ce629155202b03da5a54dd22`。
+
+```bash
+shasum -a 256 \
+  python/core/distributed/executor.py \
+  python/tests/distributed/test_executor_cleanup_cause.py | shasum -a 256
+```
+
+| Python 文件 | SHA-256 |
+| --- | --- |
+| `python/core/distributed/executor.py` | `a94715b44f881fd29b6cfae5b439579937292a07872b93fb73b663d2df932b65` |
+| `python/tests/distributed/test_executor_cleanup_cause.py` | `f75287ea05df8391c9dfe2c0abfb66ba60c907ef5ecba69ec58971e051fc0f1e` |
+
+| 后缀 | XML SHA-256 | Log SHA-256 |
+| --- | --- | --- |
+| `cause-red` | `ed48003bd503b2c88d8e294cb73edee6a79bec69c64383fdaa01833020532795` | `f303438b563847c6d2feaf02cbaaaa9ac492d09b0b06e3f283b9252f865dd18b` |
+| `cause-repro-red` | `fa44a78b78dfe183b183cc430f2984701bd071236ec149467ba640f3f15443ba` | `2d5b9433b4c9e2cab0c587913805b0ea34ea824288dadec4d91037f451f84f3e` |
+| `cause-focused` | `b042f22c2996d37f4ccf26b7d7a339b43a7dbd46eec972fa77a34c45d40f5f1c` | `d455cb250b2d948178cef9011b369c53d03827876f76e735eb81ca213f338477` |
+| `cause-targeted` | `02a619d7f7877da5b0072a52f24d7a0f6a1374bf952874d55eb54264b90f4c5d` | `9df1e5a3d14ac8f36b4a48c79713e534c2fb45ce8f674a689d7cc477e5d106e1` |
+| `cause-full` | `4936a8ed2d8442483d0f6ef408983be7600cbfd9785a74e16a25ef61d09ab86f` | `1f8686ae34703af470c10ae31c79c67666377acb3e309c597c051d2826a9d6f4` |
+
+自有提交范围仅 executor、新测试、本报告顶部追加及十份新证据，共 13 文件。
+父侧 SPEC/CODE/index 报告不编辑、不暂存；primary 工作树只读，保持 clean
+`2ff803c968d64741d149e5a1ce88a823d4d32422`。最终核验 AST、源码/报告空白、
+内容摘要、XML 和提交路径。原始 RED log/XML 的尾随空白保留为采集事实。
+无安装、Docker、外部模型调用、环境/密钥输出、amend、push、Task9/10、
+其它实现者或主分支写入。测试是 fixture、非正式发布资格、非 OS 沙箱，
+不证明学生效果。下方为完整保留的历史记录。
+
 ## Exceptional Exit Correction
 
 Current independent verdict remains **CODE FAIL**. Review

@@ -175,7 +175,8 @@ class LearningTaskExecutor:
                 failure = exc
             elif (server_diagnostic_code(failure) != "ConfirmedPermissionViolation"
                   and server_diagnostic_code(exc) == "ConfirmedPermissionViolation"):
-                exc.__cause__ = failure
+                # 硬违规可能在包装原因链内，原失败只记备注，不能覆盖该链。
+                exc.add_note(f"Executor execution also raised {type(failure).__name__}.")
                 failure = exc
             else:
                 failure.add_note(f"Executor cleanup also raised {type(exc).__name__}.")
