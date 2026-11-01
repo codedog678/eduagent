@@ -80,12 +80,12 @@ class RecordingMetrics:
 
 
 class ImmediateExecutor:
-    async def execute(self, request, authority):
+    async def execute(self, request, authority, binding):
         return {"request_id": request.request_id}
 
 
 class BusyExecutor:
-    async def execute(self, request, authority):
+    async def execute(self, request, authority, binding):
         raise BusinessStoreBusy("business_store_busy")
 
 

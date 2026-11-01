@@ -8,6 +8,7 @@ from core.distributed.executor import (
 from core.harness import LearningHarness
 from core.run_context import active_run
 from tests.distributed.helpers import authority, spec
+from tests.distributed.test_policy_pinning import binding
 
 
 async def test_executor_reuses_existing_harness_request(tmp_path):
@@ -16,8 +17,8 @@ async def test_executor_reuses_existing_harness_request(tmp_path):
     )
     request = spec(request_id="same-request")
 
-    first = await executor.execute(request, authority())
-    second = await executor.execute(request, authority())
+    first = await executor.execute(request, authority(), binding())
+    second = await executor.execute(request, authority(), binding())
 
     assert second == first
     assert first["execution"]["request_id"] == "same-request"
@@ -31,6 +32,7 @@ async def test_executor_classifies_shared_store_lock_contention(tmp_path):
             await LearningTaskExecutor(store_path).execute(
                 spec(),
                 authority(),
+                binding(),
             )
     finally:
         await owner.memory_worker.stop()
@@ -45,7 +47,7 @@ async def test_executor_rejects_unsupported_operation(tmp_path):
     with pytest.raises(ValueError, match="unsupported operation"):
         await LearningTaskExecutor(
             str(tmp_path / "shared.sqlite3")
-        ).execute(request, authority())
+        ).execute(request, authority(), binding())
 
 
 async def test_harness_injects_authority_and_gateway_into_run_context(
@@ -58,6 +60,8 @@ async def test_harness_injects_authority_and_gateway_into_run_context(
         str(tmp_path / "authority.sqlite3"),
         execution_authority=expected_authority,
         expert_gateway=expected_gateway,
+        pinned_policy=binding(),
+        state_namespace="production",
     )
 
     async def operation():

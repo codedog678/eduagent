@@ -21,8 +21,9 @@ class BlockingExecutor:
         self.cancelled = asyncio.Event()
         self.calls = 0
 
-    async def execute(self, request, authority):
+    async def execute(self, request, authority, binding):
         self.authority = authority
+        self.binding = binding
         self.calls += 1
         self.started.set()
         try:
@@ -37,19 +38,20 @@ class ImmediateExecutor:
     def __init__(self):
         self.calls = 0
 
-    async def execute(self, request, authority):
+    async def execute(self, request, authority, binding):
         self.authority = authority
+        self.binding = binding
         self.calls += 1
         return {"request_id": request.request_id}
 
 
 class BusyExecutor:
-    async def execute(self, request, authority):
+    async def execute(self, request, authority, binding):
         raise BusinessStoreBusy("business_store_busy")
 
 
 class ForbiddenExecutor:
-    async def execute(self, request, authority):
+    async def execute(self, request, authority, binding):
         raise PermissionError("forbidden")
 
 
@@ -115,6 +117,8 @@ async def test_inbox_is_observation_not_permission_to_skip(repo, broker):
     assert completed is not None
     assert completed.status == RunStatus.COMPLETED
     assert executor.calls == 1
+    assert executor.binding.model_dump(mode="json") == run.policy_binding
+    executor.authority.validate_binding(executor.binding)
 
 
 async def test_worker_reclaims_pending_delivery(repo, broker):

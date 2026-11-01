@@ -35,6 +35,7 @@ def parser() -> argparse.ArgumentParser:
     subcommands = value.add_subparsers(dest="command", required=True)
     subcommands.add_parser("dispatcher", help="publish production, rehearsal and deployment topics to isolated streams")
     subcommands.add_parser("worker")
+    subcommands.add_parser("rehearsal-worker")
     subcommands.add_parser("reaper")
     subcommands.add_parser("expert-dispatcher")
     subcommands.add_parser("expert-worker")
@@ -55,7 +56,7 @@ async def run_forever(command: str) -> None:
     runtime = build_runtime()
     worker_id = (
         settings.distributed_worker_id
-        if command == "worker" and settings.distributed_worker_id
+        if command in {"worker", "rehearsal-worker"} and settings.distributed_worker_id
         else settings.expert_worker_id
         if command == "expert-worker" and settings.expert_worker_id
         else f"{socket.gethostname()}:{os.getpid()}:{command}"
@@ -67,7 +68,7 @@ async def run_forever(command: str) -> None:
     )
     capabilities = (
         ["learning_task"]
-        if command == "worker"
+        if command in {"worker", "rehearsal-worker"}
         else sorted(role.value.lower() for role in roles)
     )
     heartbeat_seconds = (
@@ -96,14 +97,18 @@ async def run_forever(command: str) -> None:
                     await asyncio.sleep(
                         settings.distributed_heartbeat_seconds,
                     )
-            elif command == "worker":
+            elif command in {"worker", "rehearsal-worker"}:
+                environment = "rehearsal" if command == "rehearsal-worker" else "production"
                 worker = runtime.worker(
                     worker_id,
                     LearningTaskExecutor(
                         settings.harness_store_path,
                         expert_gateway=runtime.expert_gateway(),
+                        allowed_environment=environment,
+                        rehearsal_store_root=settings.promotion_rehearsal_store_root,
                     ),
                     registry_process=registry_process,
+                    allowed_environment=environment,
                 )
                 while True:
                     await worker.run_once()

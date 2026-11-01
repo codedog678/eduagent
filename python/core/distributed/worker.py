@@ -9,6 +9,7 @@ from core.distributed.contracts import RunStatus
 from core.distributed.executor import BusinessStoreBusy
 from core.distributed.expert_contracts import RunExecutionAuthority
 from core.distributed.repository import FencingViolation
+from core.distributed.rehearsal_store import validate_environment
 from core.run_context import RunExhausted
 
 
@@ -32,6 +33,7 @@ class RunWorker:
         tracer=None,
         metrics=None,
         registry_process=None,
+        allowed_environment="production",
     ) -> None:
         if lease_seconds <= 0:
             raise ValueError("lease_seconds must be positive")
@@ -44,6 +46,9 @@ class RunWorker:
         if max_attempts < 1:
             raise ValueError("max_attempts must be positive")
         self.worker_id = worker_id
+        if allowed_environment not in {"production", "rehearsal"}:
+            raise ValueError("invalid allowed environment")
+        self.allowed_environment = allowed_environment
         self.repository = repository
         self.broker = broker
         self.executor = executor
@@ -228,6 +233,7 @@ class RunWorker:
                 run_id,
                 self.worker_id,
                 self.lease_seconds,
+                allowed_environment=self.allowed_environment,
             )
         except FencingViolation:
             await self.broker.ack(message.redis_id)
@@ -239,6 +245,7 @@ class RunWorker:
         execution: asyncio.Task | None = None
         heartbeat: asyncio.Task | None = None
         try:
+            validate_environment(claim.policy_binding, self.allowed_environment)
             async with self._span(
                 run_id,
                 claim.trace_id,
@@ -247,6 +254,11 @@ class RunWorker:
                     "worker.id": self.worker_id,
                     "run.attempt": claim.attempt_count,
                     "run.fencing_token": claim.fencing_token,
+                    "policy.deployment_id": str(claim.policy_binding.deployment_id),
+                    "policy.effective_policy_hash": claim.policy_binding.effective_policy_hash,
+                    "policy.cohort": claim.policy_binding.policy_cohort,
+                    "state.namespace": claim.policy_binding.state_namespace,
+                    "rehearsal.id": claim.policy_binding.rehearsal_id,
                 },
             ) as attempt_span:
                 parent_span_id = getattr(
@@ -295,7 +307,13 @@ class RunWorker:
                                     attempt_number=claim.attempt_count,
                                     worker_id=self.worker_id,
                                     parent_deadline_at=claim.deadline_at,
+                                    deployment_id=claim.policy_binding.deployment_id,
+                                    effective_policy_hash=claim.policy_binding.effective_policy_hash,
+                                    policy_cohort=claim.policy_binding.policy_cohort,
+                                    state_namespace=claim.policy_binding.state_namespace,
+                                    rehearsal_id=claim.policy_binding.rehearsal_id,
                                 ),
+                                claim.policy_binding,
                             )
                         )
                         heartbeat = asyncio.create_task(

@@ -70,8 +70,15 @@ def request_for(
         attempt_number=1,
         worker_id="parent-worker",
         parent_deadline_at=deadline,
+        deployment_id=uuid4(),
+        effective_policy_hash=ctx.effective_policy_hash,
+        policy_cohort="stable",
+        state_namespace="production",
     )
     ctx.execution_authority = authority
+    ctx.deployment_id = authority.deployment_id
+    ctx.policy_cohort = authority.policy_cohort
+    ctx.state_namespace = authority.state_namespace
     records = (
         [
             HistoryRecord(
@@ -99,6 +106,8 @@ def request_for(
             current_input="Review",
             goal=plan.goal,
             effective_policy_hash=ctx.effective_policy_hash,
+            deployment_id=authority.deployment_id,
+            state_namespace=authority.state_namespace,
             practice_policy={
                 "authorized_knowledge_ids": authorized
                 or [ctx.knowledge_id],
@@ -116,6 +125,27 @@ def request_for(
         ),
         authority=authority,
     )
+
+
+@pytest.mark.parametrize("target", ["snapshot", "authority"])
+@pytest.mark.parametrize("field", ["deployment_id", "state_namespace"])
+def test_adopter_rejects_forged_binding_before_adoption(harness, target, field):
+    ctx = parent_context(harness)
+    plan, step = plan_for(ExpertRole.ASSESSMENT)
+    request = request_for(ctx, plan, step, role=ExpertRole.ASSESSMENT)
+    forged = request.model_copy(update={
+        target: getattr(request, target).model_copy(update={
+            field: uuid4() if field == "deployment_id" else "rehearsal-forged",
+        }),
+    })
+    before_sources = list(ctx.source_refs)
+    with pytest.raises(AgentExecutionError, match="expert_result_invalid") as raised:
+        ExpertResultAdopter().adopt(
+            ctx, step, plan, forged,
+            envelope(forged, AssessmentCompleted(status="completed", findings=["Draft"])),
+        )
+    assert raised.value.cause_type == "policy_binding_mismatch"
+    assert ctx.source_refs == before_sources
 
 
 def usage() -> ExpertUsage:

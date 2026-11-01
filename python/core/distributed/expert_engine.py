@@ -97,6 +97,23 @@ class ExpertEngine:
         request: ExpertJobRequest,
         consumed: ExpertUsage | None = None,
     ) -> ExpertTerminalEnvelope:
+        authority, snapshot = request.authority, request.snapshot
+        if authority.execution_mode != snapshot.execution_mode or (
+            authority.execution_mode == "distributed"
+            and (
+                authority.deployment_id is None
+                or authority.effective_policy_hash is None
+                or authority.policy_cohort is None
+                or authority.state_namespace == "local"
+                or any(
+                    getattr(snapshot, name) != getattr(authority, name)
+                    for name in (
+                        "deployment_id", "effective_policy_hash", "state_namespace",
+                    )
+                )
+            )
+        ):
+            raise ValueError("expert execution requires matching policy binding")
         counter = _UsageCounter(self.service)
         executor = SnapshotToolExecutor(request.snapshot, request.role)
         consumed = consumed or ExpertUsage(

@@ -12,6 +12,7 @@ from core.distributed.runtime import DistributedRuntime
     [
         "dispatcher",
         "worker",
+        "rehearsal-worker",
         "reaper",
         "expert-dispatcher",
         "expert-worker",

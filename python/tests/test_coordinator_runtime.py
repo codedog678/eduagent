@@ -132,7 +132,14 @@ def test_distributed_request_hash_is_stable_within_parent_epoch(harness):
         attempt_number=2,
         worker_id="run-worker",
         parent_deadline_at=parent_deadline,
+        deployment_id=uuid4(),
+        effective_policy_hash=ctx.effective_policy_hash,
+        policy_cohort="stable",
+        state_namespace="production",
     )
+    ctx.deployment_id = ctx.execution_authority.deployment_id
+    ctx.policy_cohort = "stable"
+    ctx.state_namespace = "production"
     plan = LearningPlan(goal="review", steps=plan_steps())
     runtime = SpecialistRuntime(ctx, Model(lambda *_: final("a"), ctx))
 
@@ -158,7 +165,14 @@ def test_late_distributed_delegation_gets_fresh_bounded_deadline(
         attempt_number=2,
         worker_id="run-worker",
         parent_deadline_at=parent_deadline,
+        deployment_id=uuid4(),
+        effective_policy_hash=ctx.effective_policy_hash,
+        policy_cohort="stable",
+        state_namespace="production",
     )
+    ctx.deployment_id = ctx.execution_authority.deployment_id
+    ctx.policy_cohort = "stable"
+    ctx.state_namespace = "production"
     monkeypatch.setattr(
         settings,
         "distributed_attempt_timeout_seconds",

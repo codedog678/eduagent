@@ -21,7 +21,7 @@ class AuthorityExecutor:
         self.release = asyncio.Event()
         self.authority = None
 
-    async def execute(self, request, authority):
+    async def execute(self, request, authority, binding):
         self.authority = authority
         self.started.set()
         await self.release.wait()
@@ -34,7 +34,7 @@ class GatewayExecutor:
         self.request = None
         self.envelope = None
 
-    async def execute(self, run_request, authority):
+    async def execute(self, run_request, authority, binding):
         claim = SimpleNamespace(
             run_id=str(authority.distributed_run_id),
             fencing_token=authority.run_fencing_token,
@@ -43,6 +43,7 @@ class GatewayExecutor:
             worker_id=authority.worker_id,
             deadline_at=authority.parent_deadline_at,
             learner_id=run_request.learner_id,
+            policy_binding=binding,
         )
         self.request = request_for(claim)
         self.envelope = await self.gateway.execute(self.request)

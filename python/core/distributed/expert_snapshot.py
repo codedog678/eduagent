@@ -81,7 +81,15 @@ class ExpertSnapshotBuilder:
         self.max_history_records = max_history_records
 
     def freeze(self, ctx, step, plan, authority) -> ExpertSnapshot:
-        del authority  # 权限对象属于作业信封，不复制到学习事实快照。
+        local = authority.execution_mode == "local"
+        if not local and (
+            authority.deployment_id is None
+            or any(getattr(ctx, name, None) != getattr(authority, name) for name in (
+                "deployment_id", "effective_policy_hash", "policy_cohort",
+                "state_namespace", "rehearsal_id",
+            ))
+        ):
+            raise ValueError("snapshot context differs from trusted policy binding")
         role = ExpertRole(getattr(step, "agent", getattr(step, "role", step)))
         stable_memories = public_value(ctx.history.memory.profile(ctx.learner))
         knowledge_context = public_value(
@@ -121,6 +129,9 @@ class ExpertSnapshotBuilder:
             "goal": plan.goal,
             "constraints": list(plan.constraints),
             "effective_policy_hash": ctx.effective_policy_hash,
+            "deployment_id": authority.deployment_id,
+            "state_namespace": authority.state_namespace,
+            "execution_mode": authority.execution_mode,
             "practice_policy": frozen_practice_policy,
             "knowledge_state": ctx.model_state,
             "learner_profile": ctx.profile_state,

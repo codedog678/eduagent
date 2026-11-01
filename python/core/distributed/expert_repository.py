@@ -36,6 +36,7 @@ from .models import (
     DistributedRunAttempt,
     new_id,
 )
+from .repository import DistributedRunRepository
 
 
 ACTIVE_JOB_STATUSES = {
@@ -158,9 +159,6 @@ class ExpertJobRepository:
                 separators=(",", ":"),
             ).encode("utf-8")
         )
-        if payload_bytes > self.max_payload_bytes:
-            raise ExpertBackpressure("expert payload exceeds maximum")
-
         parent_run_id = str(request.authority.distributed_run_id)
         async with self.session_factory() as session, session.begin():
             now = await self._db_now(session)
@@ -191,6 +189,7 @@ class ExpertJobRepository:
                 raise ExpertFencingViolation("parent trace identity is stale")
             if request.learner_id != run.learner_id:
                 raise ExpertFencingViolation("parent learner scope is stale")
+            self._assert_request_binding(run, request)
             if request.authority.parent_deadline_at != attempt.deadline_at:
                 raise ExpertFencingViolation(
                     "parent deadline does not match persisted attempt"
@@ -207,6 +206,8 @@ class ExpertJobRepository:
                 )
             if request.budget.deadline_at <= now:
                 raise ExpertFencingViolation("expert deadline has expired")
+            if payload_bytes > self.max_payload_bytes:
+                raise ExpertBackpressure("expert payload exceeds maximum")
 
             await self._close_old_parent_epochs(
                 session,
@@ -225,6 +226,7 @@ class ExpertJobRepository:
                 .with_for_update()
             )
             if existing is not None:
+                self._assert_job_binding(run, existing)
                 if existing.input_hash != request.input_hash:
                     raise ExpertRequestConflict(
                         "logical key is already bound to different input"
@@ -273,7 +275,9 @@ class ExpertJobRepository:
                 logical_key=request.logical_key,
                 role=request.role.value,
                 input_hash=request.input_hash,
-                policy_hash=request.snapshot.effective_policy_hash,
+                policy_hash=run.effective_policy_hash,
+                deployment_id=run.deployment_id,
+                state_namespace=run.state_namespace,
                 payload=payload,
                 payload_bytes=payload_bytes,
                 status="queued",
@@ -361,6 +365,7 @@ class ExpertJobRepository:
                 session,
                 job_id,
             )
+            self._assert_job_binding(run, job)
             await self._advisory_lock(session, "role", job.role)
             self._assert_parent_authority(
                 run,
@@ -557,6 +562,7 @@ class ExpertJobRepository:
                 token,
                 now,
             )
+            self._assert_job_binding(run, job)
             expert_lease.expires_at = now + timedelta(seconds=lease_seconds)
             expert_lease.updated_at = now
             return ExpertLeaseView(
@@ -774,6 +780,7 @@ class ExpertJobRepository:
                 parent_token,
                 now,
             )
+            self._assert_job_binding(run, job)
             if job.status not in TERMINAL_JOB_STATUSES:
                 return None
             rows = await self._locked_results(session, job_id)
@@ -1115,6 +1122,10 @@ class ExpertJobRepository:
         token: int,
         now: datetime,
     ) -> str | None:
+        try:
+            ExpertJobRepository._assert_job_binding(run, job)
+        except ExpertFencingViolation:
+            return "policy_binding_mismatch"
         if (
             run_lease.fencing_token != job.parent_fencing_token
             or run_lease.owner is None
@@ -1134,6 +1145,39 @@ class ExpertJobRepository:
         ):
             return "expert_token_stale"
         return None
+
+    @staticmethod
+    def _assert_request_binding(run: DistributedRun, request: ExpertJobRequest) -> None:
+        try:
+            binding = DistributedRunRepository._persisted_binding(run)
+            request.authority.validate_binding(binding)
+            snapshot = request.snapshot
+            if (
+                snapshot.execution_mode != "distributed"
+                or snapshot.effective_policy_hash != binding.effective_policy_hash
+                or snapshot.deployment_id != binding.deployment_id
+                or snapshot.state_namespace != binding.state_namespace
+            ):
+                raise ValueError("snapshot binding differs from parent")
+        except (ValueError, RuntimeError) as exc:
+            raise ExpertFencingViolation("expert policy binding differs from parent") from exc
+
+    @staticmethod
+    def _assert_job_binding(run: DistributedRun, job: DistributedExpertJob) -> None:
+        try:
+            request = ExpertJobRequest.model_validate(job.payload)
+            ExpertJobRepository._assert_request_binding(run, request)
+            if (
+                job.deployment_id != run.deployment_id
+                or job.policy_hash != run.effective_policy_hash
+                or job.state_namespace != run.state_namespace
+                or request.input_hash != job.input_hash
+                or str(request.authority.distributed_run_id) != run.id
+                or request.authority.run_fencing_token != job.parent_fencing_token
+            ):
+                raise ValueError("job binding differs from parent")
+        except (ValueError, RuntimeError) as exc:
+            raise ExpertFencingViolation("expert job policy binding differs from parent") from exc
 
     @staticmethod
     def _record_uncertain_attempt(

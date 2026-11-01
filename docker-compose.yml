@@ -182,6 +182,38 @@ services:
       distributed-api:
         condition: service_healthy
 
+  rehearsal-worker-a:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "rehearsal-worker"]
+    environment:
+      <<: *distributed-env
+      DISTRIBUTED_WORKER_ID: rehearsal-worker-a
+      PROMOTION_REHEARSAL_STORE_ROOT: /app/rehearsal
+    volumes:
+      - rehearsal_harnessdata:/app/rehearsal
+    depends_on:
+      distributed-api:
+        condition: service_healthy
+
+  rehearsal-worker-b:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "rehearsal-worker"]
+    environment:
+      <<: *distributed-env
+      DISTRIBUTED_WORKER_ID: rehearsal-worker-b
+      PROMOTION_REHEARSAL_STORE_ROOT: /app/rehearsal
+    volumes:
+      - rehearsal_harnessdata:/app/rehearsal
+    depends_on:
+      distributed-api:
+        condition: service_healthy
+
   expert-reaper:
     profiles: ["distributed"]
     build:
@@ -227,3 +259,4 @@ volumes:
   harnessdata:
   redisdata:
   distributed_harnessdata:
+  rehearsal_harnessdata:

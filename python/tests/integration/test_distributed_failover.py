@@ -18,7 +18,7 @@ from core.distributed.dispatcher import OutboxDispatcher
 from core.distributed.models import DistributedBase
 from core.distributed.reaper import LeaseReaper
 from core.distributed.repository import DistributedRunRepository
-from tests.distributed.helpers import spec
+from tests.distributed.helpers import bootstrap_production, spec
 
 pytestmark = pytest.mark.distributed_integration
 
@@ -114,6 +114,7 @@ async def test_killed_worker_is_fenced_and_second_worker_replays_once(
         async with engine.begin() as connection:
             await connection.run_sync(DistributedBase.metadata.drop_all)
             await connection.run_sync(DistributedBase.metadata.create_all)
+        await bootstrap_production(repository)
         await broker.ensure_group()
 
         run = await repository.accept(spec(request_id="kill-recover"))

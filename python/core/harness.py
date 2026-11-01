@@ -42,7 +42,16 @@ class IssuedQuestion(BaseModel):
 class LearningHarness:
     def __init__(self, orchestrator, path: str, timeout: float = 45,
                  quiz_ttl: float = 86400, queue_timeout: float | None = None,
-                 *, execution_authority=None, expert_gateway=None):
+                 *, execution_authority=None, expert_gateway=None,
+                 pinned_policy=None, state_namespace="local"):
+        if execution_authority is not None and execution_authority.execution_mode == "distributed":
+            if pinned_policy is None:
+                raise ValueError("distributed execution requires trusted policy binding")
+            execution_authority.validate_binding(pinned_policy)
+        if pinned_policy is not None and state_namespace != pinned_policy.state_namespace:
+            raise ValueError("harness namespace differs from trusted policy binding")
+        self.pinned_policy = pinned_policy
+        self.state_namespace = state_namespace
         self.orch = orchestrator
         self.timeout = timeout
         self.quiz_ttl = quiz_ttl
@@ -110,6 +119,13 @@ class LearningHarness:
                      if row else BUILTIN_HASH)
         if len(pins) > 1:
             raise HTTPException(409, "待答任务与练习的策略版本不一致")
+        if self.pinned_policy is not None:
+            if pins and pins != {self.pinned_policy.effective_policy_hash}:
+                raise HTTPException(409, "pending policy differs from trusted binding")
+            return {
+                "policy_hash": self.pinned_policy.effective_policy_hash,
+                "components": self.pinned_policy.components.model_dump(),
+            }
         if settings.policy_loading_enabled:
             from core.versions import policy_runtime_hash
             from evals.live_runner import code_revision
@@ -129,6 +145,8 @@ class LearningHarness:
         return {"policy_hash": current_hash, "components": components}
 
     def observe_policy_health(self, ctx, outcome):
+        if self.pinned_policy is not None:
+            return
         if not settings.policy_loading_enabled:
             return
         try:
@@ -209,7 +227,16 @@ class LearningHarness:
             if row and row[0] != fingerprint:
                 raise HTTPException(409, "request_id 已用于不同内容")
             if row and row[1] == "completed":
-                return json.loads(row[2])
+                result = json.loads(row[2])
+                if self.pinned_policy is not None:
+                    execution = result.get("execution", {})
+                    if any(execution.get(name) != value for name, value in (
+                        ("effective_policy_hash", self.pinned_policy.effective_policy_hash),
+                        ("deployment_id", str(self.pinned_policy.deployment_id)),
+                        ("state_namespace", self.state_namespace),
+                    )):
+                        raise HTTPException(409, "replayed result differs from trusted binding")
+                return result
             self.load(learner)
             if learner not in self.orch.learner_models:
                 if self.orch._db_initialized:
@@ -235,6 +262,10 @@ class LearningHarness:
                 knowledge_graph=self.orch.curriculum.knowledge_graph,
                 input_text=payload.get("text", ""),
                 effective_policy_hash=policy["policy_hash"],
+                deployment_id=self.pinned_policy.deployment_id if self.pinned_policy else None,
+                policy_cohort=self.pinned_policy.policy_cohort if self.pinned_policy else None,
+                state_namespace=self.state_namespace,
+                rehearsal_id=self.pinned_policy.rehearsal_id if self.pinned_policy else None,
                 max_model_calls=settings.coordinator_max_model_calls,
                 max_tool_calls=settings.coordinator_max_tool_calls,
                 execution_authority=self.execution_authority,
@@ -242,6 +273,12 @@ class LearningHarness:
             )
             metadata = runtime_metadata(settings)
             metadata["effective_policy_hash"] = ctx.effective_policy_hash
+            metadata.update(
+                deployment_id=str(ctx.deployment_id) if ctx.deployment_id else None,
+                policy_cohort=ctx.policy_cohort,
+                state_namespace=ctx.state_namespace,
+                rehearsal_id=ctx.rehearsal_id,
+            )
             with self.db:
                 self.db.execute("INSERT OR REPLACE INTO runs "
                                 "(learner,request,fingerprint,status,result,error,updated) "

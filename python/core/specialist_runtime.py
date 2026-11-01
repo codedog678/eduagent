@@ -198,6 +198,8 @@ class SpecialistRuntime:
                 for character in ctx.effective_policy_hash
             )
         ):
+            if ctx.execution_authority is not None:
+                raise ValueError("distributed context has no trusted policy binding")
             ctx.effective_policy_hash = canonical_hash(
                 {"mode": "inline-default-policy"}
             )
@@ -236,6 +238,8 @@ class SpecialistRuntime:
                 "step_id": step.step_id,
                 "role": step.agent,
                 "effective_policy_hash": ctx.effective_policy_hash,
+                "deployment_id": str(ctx.deployment_id) if ctx.deployment_id else None,
+                "state_namespace": ctx.state_namespace,
             }
         )
         now = datetime.now(UTC)
@@ -311,6 +315,8 @@ class SpecialistRuntime:
             attempt_number=1,
             worker_id="inline-parent",
             parent_deadline_at=parent_deadline,
+            execution_mode="local",
+            effective_policy_hash=ctx.effective_policy_hash,
         )
 
     def _charge_usage(

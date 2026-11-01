@@ -24,6 +24,9 @@ class FakeBroker:
     async def ensure_group(self):
         self.group_ready = True
 
+    async def xgroup_create(self, *args, **kwargs):
+        self.group_ready = True
+
     async def ping(self):
         return True
 

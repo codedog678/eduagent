@@ -80,6 +80,8 @@ def request(role=ExpertRole.ASSESSMENT, *, budget_updates=None, snapshot_updates
         "goal": "复习时态",
         "constraints": ["十分钟"],
         "effective_policy_hash": "b" * 64,
+        "deployment_id": UUID("12345678-1234-5678-1234-567812345679"),
+        "state_namespace": "production",
         "practice_policy": {
             "allowed_knowledge_ids": ["grammar_tenses"],
             "required": False,
@@ -126,8 +128,54 @@ def request(role=ExpertRole.ASSESSMENT, *, budget_updates=None, snapshot_updates
             attempt_number=2,
             worker_id="run-worker-1",
             parent_deadline_at=deadline + timedelta(minutes=1),
+            deployment_id=UUID("12345678-1234-5678-1234-567812345679"),
+            effective_policy_hash="b" * 64,
+            policy_cohort="stable",
+            state_namespace="production",
         ),
     )
+
+
+@pytest.mark.parametrize("target,updates", [
+    ("authority", {"deployment_id": None}),
+    ("authority", {"effective_policy_hash": None}),
+    ("authority", {"policy_cohort": None}),
+    ("authority", {"state_namespace": "local"}),
+    ("snapshot", {"deployment_id": None}),
+    ("snapshot", {"state_namespace": "rehearsal-other"}),
+    ("snapshot", {"execution_mode": "local"}),
+])
+async def test_engine_rejects_unbound_or_mismatched_distributed_input(target, updates):
+    original = request()
+    forged = original.model_copy(update={
+        target: getattr(original, target).model_copy(update=updates),
+    })
+    service = Service(final('{"status":"completed","findings":["review"]}'))
+
+    with pytest.raises(ValueError, match="binding"):
+        await ExpertEngine(service, clock=lambda: NOW).execute(forged)
+
+    assert service.calls == []
+
+
+async def test_engine_allows_explicit_local_unbound_input():
+    original = request()
+    local = original.model_copy(update={
+        "authority": original.authority.model_copy(update={
+            "execution_mode": "local", "deployment_id": None,
+            "effective_policy_hash": None, "policy_cohort": None,
+            "state_namespace": "local",
+        }),
+        "snapshot": original.snapshot.model_copy(update={
+            "execution_mode": "local", "deployment_id": None,
+            "state_namespace": "local",
+        }),
+    })
+    service = Service(final('{"status":"completed","findings":["review"]}'))
+
+    result = await ExpertEngine(service, clock=lambda: NOW).execute(local)
+
+    assert result.outcome == "succeeded"
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,7 @@
 import asyncio
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from uuid import UUID
 
 import pytest
 from sqlalchemy import func, select, update
@@ -73,7 +74,9 @@ def request_for(
         knowledge_id="knowledge-1",
         current_input="Explain the concept",
         goal="Assess understanding",
-        effective_policy_hash="a" * 64,
+        effective_policy_hash=claim.policy_binding.effective_policy_hash,
+        deployment_id=claim.policy_binding.deployment_id,
+        state_namespace=claim.policy_binding.state_namespace,
     )
     return ExpertJobRequest(
         logical_key=logical_key,
@@ -99,6 +102,11 @@ def request_for(
             attempt_number=claim.attempt_count,
             worker_id="parent-worker",
             parent_deadline_at=claim.deadline_at,
+            deployment_id=claim.policy_binding.deployment_id,
+            effective_policy_hash=claim.policy_binding.effective_policy_hash,
+            policy_cohort=claim.policy_binding.policy_cohort,
+            state_namespace=claim.policy_binding.state_namespace,
+            rehearsal_id=claim.policy_binding.rehearsal_id,
         ),
     )
 
@@ -153,6 +161,80 @@ async def test_create_is_idempotent_and_hash_conflict_is_rejected(repo, expert_r
     waiting = await repo.get(run.id)
     assert waiting is not None
     assert waiting.status == RunStatus.WAITING_EXPERT
+
+
+@pytest.mark.parametrize("target", ["snapshot", "authority"])
+@pytest.mark.parametrize("field,value", [
+    ("effective_policy_hash", "f" * 64),
+    ("deployment_id", UUID("99999999-9999-9999-9999-999999999999")),
+    ("state_namespace", "rehearsal-forged"),
+])
+async def test_forged_binding_rejected_before_enqueue(repo, expert_repo, target, field, value):
+    run, claim = await parent_claim(repo, f"forged-{target}-{field}")
+    request = request_for(claim)
+    forged = request.model_copy(update={
+        target: getattr(request, target).model_copy(update={field: value}),
+    })
+    with pytest.raises(ExpertFencingViolation, match="binding"):
+        await expert_repo.create_or_replay(forged)
+    async with repo.session_factory() as session:
+        assert await session.scalar(select(func.count()).select_from(DistributedExpertJob)) == 0
+        assert await session.scalar(select(func.count()).select_from(DistributedExpertOutbox)) == 0
+    assert (await repo.get(run.id)).status == RunStatus.RUNNING
+
+
+async def test_job_binding_copied_from_parent(repo, expert_repo):
+    run, claim = await parent_claim(repo, "inherited-binding")
+    job, _ = await expert_repo.create_or_replay(request_for(claim))
+    assert job.deployment_id == run.deployment_id
+    assert job.policy_hash == run.effective_policy_hash
+    assert job.state_namespace == run.state_namespace
+
+
+@pytest.mark.parametrize("field,value", [
+    ("effective_policy_hash", "f" * 64),
+    ("deployment_id", "99999999-9999-9999-9999-999999999999"),
+    ("state_namespace", "rehearsal-forged"),
+])
+async def test_corrupt_payload_binding_rejected_on_result_and_terminal(
+    repo, expert_repo, field, value,
+):
+    _, claim = await parent_claim(repo, f"corrupt-{field}")
+    request = request_for(claim)
+    job, _ = await expert_repo.create_or_replay(request)
+    leased = await expert_repo.claim(job.id, "expert", {ExpertRole.ASSESSMENT}, 30)
+    async with repo.session_factory() as session, session.begin():
+        row = await session.get(DistributedExpertJob, job.id)
+        payload = {**row.payload, "snapshot": {**row.payload["snapshot"], field: value}}
+        row.payload = payload
+    receipt = await expert_repo.submit_result(job.id, "expert", leased.fencing_token, envelope(request))
+    assert not receipt.accepted
+    assert receipt.rejection_code == "policy_binding_mismatch"
+    assert await expert_repo.accepted_result_count(job.id) == 0
+    with pytest.raises(ExpertFencingViolation, match="binding"):
+        await expert_repo.terminal(job.id, claim.fencing_token)
+
+
+async def test_legacy_expert_payload_is_not_rebound_from_backfilled_columns(repo, expert_repo):
+    _, claim = await parent_claim(repo, "legacy-payload")
+    request = request_for(claim)
+    job, _ = await expert_repo.create_or_replay(request)
+    leased = await expert_repo.claim(job.id, "expert", {ExpertRole.ASSESSMENT}, 30)
+    async with repo.session_factory() as session, session.begin():
+        row = await session.get(DistributedExpertJob, job.id)
+        payload = {**row.payload}
+        for target in ("snapshot", "authority"):
+            payload[target] = {key: value for key, value in payload[target].items()
+                               if key not in {"deployment_id", "state_namespace", "execution_mode",
+                                              "policy_cohort", "rehearsal_id"}
+                               and not (target == "authority" and key == "effective_policy_hash")}
+        row.payload = payload
+    result = await expert_repo.submit_result(job.id, "expert", leased.fencing_token, envelope(request))
+    assert not result.accepted
+    assert result.rejection_code == "policy_binding_mismatch"
+    with pytest.raises(ExpertFencingViolation, match="binding"):
+        await expert_repo.terminal(job.id, claim.fencing_token)
+    assert (await expert_repo.get(job.id)).payload == payload
 
 
 async def test_parent_token_and_persisted_deadline_are_authoritative(repo, expert_repo):

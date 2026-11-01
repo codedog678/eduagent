@@ -5,12 +5,17 @@ from types import SimpleNamespace
 import pytest
 
 from core.distributed.expert_contracts import ExpertSnapshot, HistoryRecord
+from tests.distributed.helpers import authority
 from core.distributed.expert_snapshot import ExpertSnapshotBuilder, SnapshotToolExecutor
 from core.llm_service import NativeToolCall
 from core.output_safety import has_secret_shaped_key, public_value
 
 
 NOW = datetime(2026, 10, 30, 8, 0, tzinfo=timezone.utc)
+
+
+def local_authority():
+    return SimpleNamespace(execution_mode="local", deployment_id=None, state_namespace="local")
 
 
 def call(identifier, name, **arguments):
@@ -123,7 +128,7 @@ def test_freeze_builds_bounded_redacted_copy_without_parent_objects():
     snapshot = ExpertSnapshotBuilder(
         max_snapshot_bytes=8_000,
         max_history_bytes=1_000,
-    ).freeze(ctx, SimpleNamespace(agent="Assessment"), plan(), SimpleNamespace())
+    ).freeze(ctx, SimpleNamespace(agent="Assessment"), plan(), local_authority())
     dumped = snapshot.model_dump(mode="json")
     encoded = json.dumps(dumped, ensure_ascii=False).encode()
 
@@ -138,6 +143,28 @@ def test_freeze_builds_bounded_redacted_copy_without_parent_objects():
     assert "hunter2" not in encoded.decode()
     assert ctx.model_state == original_state
     assert "prepare_practice" not in encoded.decode()
+
+
+def test_snapshot_builder_inherits_distributed_context_authority():
+    ctx = context()
+    trusted = authority()
+    for field in (
+        "deployment_id", "effective_policy_hash", "policy_cohort",
+        "state_namespace", "rehearsal_id",
+    ):
+        setattr(ctx, field, getattr(trusted, field))
+    snapshot = ExpertSnapshotBuilder().freeze(
+        ctx, SimpleNamespace(agent="Assessment"), plan(), trusted,
+    )
+    assert snapshot.deployment_id == trusted.deployment_id
+    assert snapshot.state_namespace == trusted.state_namespace
+    assert snapshot.effective_policy_hash == trusted.effective_policy_hash
+    assert snapshot.execution_mode == "distributed"
+    ctx.state_namespace = "rehearsal-forged"
+    with pytest.raises(ValueError, match="binding"):
+        ExpertSnapshotBuilder().freeze(
+            ctx, SimpleNamespace(agent="Assessment"), plan(), trusted,
+        )
 
 
 def test_history_record_accepts_global_memory_scope():
@@ -162,7 +189,7 @@ def test_search_candidate_in_parent_source_refs_is_not_preverified():
         ctx,
         SimpleNamespace(agent="Assessment", depends_on=[]),
         plan(),
-        SimpleNamespace(),
+        local_authority(),
     )
 
     assert "message:a-own" not in snapshot.verified_source_refs
@@ -177,6 +204,7 @@ def snapshot():
         goal="复习时态",
         constraints=["十分钟"],
         effective_policy_hash="b" * 64,
+        execution_mode="local",
         knowledge_state={"mastery": 0.4},
         learner_profile={"goal": "考试"},
         review_queue=[{"knowledge_id": "grammar_tenses"}],

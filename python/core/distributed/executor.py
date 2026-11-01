@@ -9,6 +9,8 @@ from core.distributed.contracts import (
     RunOperation,
 )
 from core.distributed.expert_contracts import RunExecutionAuthority
+from core.distributed.promotion_contracts import Environment, PolicyExecutionBinding
+from core.distributed.rehearsal_store import RehearsalStoreRouter
 from core.harness import LearningHarness
 
 
@@ -21,6 +23,7 @@ class RunExecutor(Protocol):
         self,
         spec: DistributedRunRequest,
         authority: RunExecutionAuthority,
+        binding: PolicyExecutionBinding,
     ) -> dict:
         """Execute one frozen distributed run request."""
 
@@ -31,18 +34,29 @@ class LearningTaskExecutor:
         store_path: str,
         enable_db_logging: bool = False,
         expert_gateway=None,
+        *,
+        allowed_environment: Environment = "production",
+        rehearsal_store_root: str | None = None,
     ) -> None:
         self.store_path = store_path
         self.enable_db_logging = enable_db_logging
         self.expert_gateway = expert_gateway
+        self.store_router = RehearsalStoreRouter(
+            store_path,
+            rehearsal_store_root or settings.promotion_rehearsal_store_root,
+            allowed_environment=allowed_environment,
+        )
 
     async def execute(
         self,
         spec: DistributedRunRequest,
         authority: RunExecutionAuthority,
+        binding: PolicyExecutionBinding,
     ) -> dict:
+        authority.validate_binding(binding)
         if spec.operation != RunOperation.LEARNING_TASK:
             raise ValueError(f"unsupported operation: {spec.operation}")
+        store_path = str(self.store_router.path_for(binding))
 
         orchestrator = AgentOrchestrator(
             enable_db_logging=self.enable_db_logging
@@ -52,11 +66,13 @@ class LearningTaskExecutor:
             try:
                 harness = LearningHarness(
                     orchestrator,
-                    self.store_path,
+                    store_path,
                     settings.harness_timeout_seconds,
                     settings.quiz_ttl_seconds,
                     execution_authority=authority,
                     expert_gateway=self.expert_gateway,
+                    pinned_policy=binding,
+                    state_namespace=binding.state_namespace,
                 )
             except RuntimeError as exc:
                 message = str(exc)

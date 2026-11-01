@@ -18,7 +18,9 @@ def spec(request_id="r1", question="复习"):
     )
 
 
-def authority(worker_id="parent-worker"):
+def authority(worker_id="parent-worker", binding=None):
+    from core.distributed.runtime import BUILTIN_POLICY_HASH, PRODUCTION_DEPLOYMENT_ID
+
     return RunExecutionAuthority(
         distributed_run_id=UUID(
             "12345678-1234-5678-1234-567812345678"
@@ -28,6 +30,11 @@ def authority(worker_id="parent-worker"):
         attempt_number=1,
         worker_id=worker_id,
         parent_deadline_at=datetime.now(UTC) + timedelta(minutes=2),
+        deployment_id=binding.deployment_id if binding else PRODUCTION_DEPLOYMENT_ID,
+        effective_policy_hash=binding.effective_policy_hash if binding else BUILTIN_POLICY_HASH,
+        policy_cohort=binding.policy_cohort if binding else "stable",
+        state_namespace=binding.state_namespace if binding else "production",
+        rehearsal_id=binding.rehearsal_id if binding else None,
     )
 
 

@@ -196,10 +196,19 @@ class DistributedRunRepository:
         run_id: str,
         worker_id: str,
         lease_seconds: float,
+        *,
+        allowed_environment=None,
     ) -> RunClaim:
         async with self.session_factory() as session, session.begin():
             now = await self._db_now(session)
             run, lease = await self._locked_run_and_lease(session, run_id)
+            if allowed_environment is not None:
+                from .rehearsal_store import validate_environment
+
+                try:
+                    validate_environment(self._persisted_binding(run), allowed_environment)
+                except ValueError as exc:
+                    raise FencingViolation(str(exc)) from exc
             allowed = {
                 RunStatus.ACCEPTED,
                 RunStatus.QUEUED,

@@ -18,6 +18,7 @@ from pydantic import (
 from core.tool_executor import PracticeParams
 
 from .contracts import Identifier, canonical_hash
+from .promotion_contracts import PolicyCohort, PolicyExecutionBinding, Sha256
 
 
 def _aware_utc(value: datetime) -> datetime:
@@ -86,6 +87,22 @@ class RunExecutionAuthority(FrozenContract):
     attempt_number: int = Field(ge=1)
     worker_id: Identifier
     parent_deadline_at: UtcDateTime
+    deployment_id: UUID | None = None
+    effective_policy_hash: Sha256 | None = None
+    policy_cohort: PolicyCohort | None = None
+    state_namespace: str = "local"
+    rehearsal_id: str | None = None
+    execution_mode: Literal["distributed", "local"] = "distributed"
+
+    def validate_binding(self, binding: PolicyExecutionBinding) -> None:
+        if self.execution_mode != "distributed" or any(
+            getattr(self, name) != getattr(binding, name)
+            for name in (
+                "deployment_id", "effective_policy_hash", "policy_cohort",
+                "state_namespace", "rehearsal_id",
+            )
+        ):
+            raise ValueError("execution authority differs from trusted policy binding")
 
 
 class ExpertBudget(FrozenContract):
@@ -125,6 +142,9 @@ class ExpertSnapshot(FrozenContract):
     goal: BoundedText
     constraints: list[str] = Field(default_factory=list, max_length=8)
     effective_policy_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    deployment_id: UUID | None = None
+    state_namespace: str = "local"
+    execution_mode: Literal["distributed", "local"] = "distributed"
     practice_policy: dict[str, Any] = Field(default_factory=dict)
     knowledge_state: dict[str, Any] = Field(default_factory=dict)
     learner_profile: dict[str, Any] = Field(default_factory=dict)

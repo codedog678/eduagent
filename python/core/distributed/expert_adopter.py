@@ -137,6 +137,18 @@ class ExpertResultAdopter:
                 self._reject(ctx, request, reason, "expert_result_invalid")
 
         current = getattr(ctx, "execution_authority", None)
+        if request.authority.execution_mode == "distributed" and (
+            request.authority.deployment_id is None
+            or request.snapshot.execution_mode != "distributed"
+            or any(getattr(request.snapshot, name) != getattr(ctx, name, None) for name in (
+                "deployment_id", "effective_policy_hash", "state_namespace",
+            ))
+            or any(getattr(request.authority, name) != getattr(ctx, name, None) for name in (
+                "deployment_id", "effective_policy_hash", "policy_cohort",
+                "state_namespace", "rehearsal_id",
+            ))
+        ):
+            self._reject(ctx, request, "policy_binding_mismatch", "expert_result_invalid")
         if current is not None and current != request.authority:
             self._reject(
                 ctx,
@@ -144,9 +156,7 @@ class ExpertResultAdopter:
                 "parent_authority_stale",
                 "delegate_unavailable",
             )
-        if current is None and not request.authority.worker_id.startswith(
-            "inline-"
-        ):
+        if current is None and request.authority.execution_mode != "local":
             self._reject(
                 ctx,
                 request,

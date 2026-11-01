@@ -26,6 +26,10 @@ class RunContext:
     knowledge_id: str = ""
     conversation: bool = False
     effective_policy_hash: str = ""
+    deployment_id: Any = None
+    policy_cohort: str | None = None
+    state_namespace: str = "local"
+    rehearsal_id: str | None = None
     quiz: dict | None = None
     history: Any = None
     knowledge_graph: Any = None
@@ -83,6 +87,11 @@ class RunContext:
     def record(self, kind: str, agent: str = "Harness", **data):
         self.steps.append({
             "seq": len(self.steps) + 1, "kind": kind, "agent": agent,
+            "deployment_id": str(self.deployment_id) if self.deployment_id else None,
+            "effective_policy_hash": self.effective_policy_hash,
+            "policy_cohort": self.policy_cohort,
+            "state_namespace": self.state_namespace,
+            "rehearsal_id": self.rehearsal_id,
             "timestamp": time.time(), **data,
         })
 

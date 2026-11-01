@@ -86,6 +86,8 @@ class DistributedRuntime:
             )
             await upgrade_m3_schema(conn)
         await self.broker.ensure_group()
+        await self.rehearsal_broker.ensure_group()
+        await self.deployment_broker.ensure_group()
         if self.settings.distributed_experts_enabled:
             await self.expert_broker.ensure_group()
 
@@ -137,13 +139,14 @@ class DistributedRuntime:
         executor,
         *,
         registry_process=None,
+        allowed_environment="production",
     ) -> RunWorker:
         from .worker import RunWorker
 
         return RunWorker(
             worker_id,
             self.repository,
-            self.broker,
+            self.rehearsal_broker if allowed_environment == "rehearsal" else self.broker,
             executor,
             lease_seconds=self.settings.distributed_lease_seconds,
             heartbeat_seconds=self.settings.distributed_heartbeat_seconds,
@@ -154,6 +157,7 @@ class DistributedRuntime:
             tracer=self.tracer,
             metrics=self.metrics,
             registry_process=registry_process,
+            allowed_environment=allowed_environment,
         )
 
     def expert_gateway(self):

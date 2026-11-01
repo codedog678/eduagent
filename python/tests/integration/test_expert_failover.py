@@ -24,13 +24,14 @@ from core.distributed.expert_models import (
     DistributedExpertJob,
     DistributedExpertLease,
     DistributedExpertResult,
+    DistributedWorkerRegistry,
 )
 from core.distributed.expert_reaper import ExpertReaper
 from core.distributed.expert_repository import ExpertJobRepository
 from core.distributed.models import DistributedBase
 from core.distributed.repository import DistributedRunRepository
 from core.distributed.worker import RunWorker
-from tests.distributed.helpers import spec
+from tests.distributed.helpers import bootstrap_production, spec
 from tests.distributed.test_expert_repository import parent_claim, request_for
 
 pytestmark = pytest.mark.distributed_integration
@@ -48,7 +49,9 @@ async def repo():
         await connection.run_sync(DistributedBase.metadata.drop_all)
         await connection.run_sync(DistributedBase.metadata.create_all)
     factory = async_sessionmaker(engine, expire_on_commit=False)
-    yield DistributedRunRepository(factory)
+    repository = DistributedRunRepository(factory)
+    await bootstrap_production(repository)
+    yield repository
     async with engine.begin() as connection:
         await connection.run_sync(DistributedBase.metadata.drop_all)
     await engine.dispose()
@@ -323,18 +326,26 @@ async def test_killed_parent_makes_late_result_parent_stale(
     )
     await run_broker.reset_for_tests()
     await run_broker.ensure_group()
-    run = await repo.accept(spec(request_id="parent-worker-kill"))
-    assert await OutboxDispatcher(
-        repo,
-        run_broker,
-    ).dispatch_once() == 1
-    parent = parent_probe_process(
+    parent = None
+    worker = expert_worker_process(
         expert_broker=expert_broker,
-        run_stream=run_stream,
-        run_group=run_group,
+        worker_id="expert-parent-stale",
+        pause_before_result=5,
     )
-    worker = None
     try:
+        # Finish startup DDL before exercising live parent/expert fencing.
+        await wait_until(
+            lambda: _worker_registered(
+                repo, "expert-parent-stale", process=worker,
+            )
+        )
+        run = await repo.accept(spec(request_id="parent-worker-kill"))
+        assert await OutboxDispatcher(repo, run_broker).dispatch_once() == 1
+        parent = parent_probe_process(
+            expert_broker=expert_broker,
+            run_stream=run_stream,
+            run_group=run_group,
+        )
         job = await wait_until(
             lambda: _job_created_by_probe(
                 repo,
@@ -346,20 +357,27 @@ async def test_killed_parent_makes_late_result_parent_stale(
             expert_repo,
             expert_broker,
         ).dispatch_once() == 1
-        worker = expert_worker_process(
-            expert_broker=expert_broker,
-            worker_id="expert-parent-stale",
-            pause_before_result=5,
-        )
-        await wait_until(
-            lambda: _job_has_status(
-                expert_repo,
-                job.id,
-                "running",
-                process=worker,
-                label="late-result expert worker",
+        try:
+            await wait_until(
+                lambda: _job_has_status(
+                    expert_repo,
+                    job.id,
+                    "running",
+                    process=worker,
+                    label="late-result expert worker",
+                )
             )
-        )
+        except TimeoutError:
+            current_job = await expert_repo.get(job.id)
+            current_run = await repo.get(run.id)
+            parent_lease = await repo.lease(run.id)
+            pytest.fail(
+                f"expert did not start: job={current_job.status}, "
+                f"parent={current_run.status}, error={current_run.error_code}, "
+                f"lease_owner={parent_lease.owner}, "
+                f"lease_expires={parent_lease.expires_at}, "
+                f"pending={await expert_broker.pending_count()}"
+            )
 
         stop_process(parent, kill=True)
         rows = await wait_until(
@@ -469,6 +487,17 @@ async def _job_has_status(
     return (await expert_repo.get(job_id)).status == status
 
 
+async def _worker_registered(repo, worker_id, *, process):
+    assert_running(process, "expert worker startup")
+    async with repo.session_factory() as session:
+        return await session.scalar(
+            select(DistributedWorkerRegistry).where(
+                DistributedWorkerRegistry.worker_id == worker_id,
+                DistributedWorkerRegistry.status == "running",
+            )
+        )
+
+
 async def _accepted_result_exists(
     expert_repo,
     job_id,
@@ -522,7 +551,7 @@ class _ProbeExecutor:
             poll_seconds=0.02,
         )
 
-    async def execute(self, run_request, authority):
+    async def execute(self, run_request, authority, binding):
         claim = SimpleNamespace(
             run_id=str(authority.distributed_run_id),
             request_id=run_request.request_id,
@@ -531,6 +560,7 @@ class _ProbeExecutor:
             trace_id=authority.trace_id,
             attempt_count=authority.attempt_number,
             deadline_at=authority.parent_deadline_at,
+            policy_binding=binding,
         )
         terminal = await self.gateway.execute(request_for(claim))
         return {"expert_outcome": terminal.outcome}
