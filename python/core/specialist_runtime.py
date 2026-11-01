@@ -349,6 +349,9 @@ class SpecialistRuntime:
             provider=usage.provider,
             model=usage.model,
             uncertain=usage.uncertain,
+            observed_model_calls=observed_model,
+            structured_decision_count=usage.structured_decision_count,
+            unknown_decision_count=usage.unknown_decision_count,
         )
 
     def _record_diagnostics(

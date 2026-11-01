@@ -69,8 +69,8 @@ class DeploymentState(StrEnum):
 
 
 class PolicyThresholds(FrozenContract):
-    candidate_min_runs: int = Field(default=20, ge=1, le=10000)
-    stable_min_runs: int = Field(default=20, ge=1, le=10000)
+    candidate_min_runs: int = Field(default=20, ge=20, le=10000)
+    stable_min_runs: int = Field(default=20, ge=20, le=10000)
     window_max_runs: int = Field(default=50, ge=1, le=10000)
     commit_failure_rate: Decimal = Field(
         default=Decimal("0.05"), gt=0, le=1
@@ -168,6 +168,7 @@ class PolicyExecutionBinding(FrozenContract):
     state_namespace: str = Field(min_length=1, max_length=128)
     rehearsal_id: str | None = Field(default=None, max_length=128)
     rehearsal_fault_profile: FaultProfile = "none"
+    injected_latency_seconds: Decimal = Field(default=Decimal("0"), ge=0, le=3600)
 
 
 class PromotionCommand(FrozenContract):
@@ -203,17 +204,36 @@ class PolicyObservation(FrozenContract):
     cohort: PolicyCohort
     state_namespace: str = Field(min_length=1, max_length=128)
     metric_contract_version: Literal[1] = 1
-    terminal_status: str = Field(min_length=1, max_length=32)
+    terminal_status: Literal[
+        "completed", "commit_failed", "terminal_failed", "exhausted",
+        "confirmed_permission_violation",
+    ]
     latency_seconds: Decimal = Field(ge=0)
     input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)
     cost: Decimal | None = Field(default=None, ge=0)
     commit_outcome: Literal["succeeded", "failed", "not_attempted"]
-    permission_outcome: Literal["allowed", "denied", "not_applicable"]
-    structured_result: Literal["valid", "invalid", "unknown", "not_applicable"]
+    permission_outcome: Literal[
+        "allowed", "denied", "not_applicable", "isolated", "confirmed_violation",
+    ]
+    structured_result: Literal["valid", "invalid", "unknown", "not_applicable", "unavailable"]
+    structured_decision_count: int | None = Field(default=None, ge=0)
+    unknown_decision_count: int | None = Field(default=None, ge=0)
+    rehearsal_id: str | None = None
+    operation: str = Field(default="learning_task", min_length=1, max_length=64)
+    server_error_code: str | None = Field(default=None, max_length=128)
     injected: bool = False
+    fault_injected: bool = False
     observed_at: UtcDateTime
     source_trace_id: str = Field(pattern=r"^[0-9a-f]{32}$")
+
+    @model_validator(mode="after")
+    def validate_decisions(self):
+        if (self.unknown_decision_count is not None
+            and (self.structured_decision_count is None
+                 or self.unknown_decision_count > self.structured_decision_count)):
+            raise ValueError("unknown decisions exceed observed decisions")
+        return self
 
 
 class HealthDecision(FrozenContract):

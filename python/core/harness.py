@@ -43,12 +43,14 @@ class LearningHarness:
     def __init__(self, orchestrator, path: str, timeout: float = 45,
                  quiz_ttl: float = 86400, queue_timeout: float | None = None,
                  *, execution_authority=None, expert_gateway=None,
-                 pinned_policy=None, state_namespace="local", shadow_usage_sink=None):
+                 pinned_policy=None, state_namespace="local", shadow_usage_sink=None,
+                 execution_usage_sink=None):
         if shadow_usage_sink is not None and (
             execution_authority is None or execution_authority.execution_mode != "shadow"
         ):
             raise ValueError("shadow usage sink requires isolated authority")
         self.shadow_usage_sink = shadow_usage_sink
+        self.execution_usage_sink = execution_usage_sink
         if pinned_policy is not None and pinned_policy.policy_cohort == "shadow":
             if (execution_authority is None or execution_authority.execution_mode != "shadow"
                 or expert_gateway is not None):
@@ -403,10 +405,14 @@ class LearningHarness:
                 raise HTTPException(503, "本次执行未完成，学习状态已回滚，请重试") from exc
             finally:
                 try:
-                    if self.shadow_usage_sink is not None:
+                    if self.shadow_usage_sink is not None or self.execution_usage_sink is not None:
                         from core.distributed.shadow_usage import summarize_shadow_usage
 
-                        self.shadow_usage_sink(summarize_shadow_usage(ctx))
+                        usage = summarize_shadow_usage(ctx)
+                        if self.shadow_usage_sink is not None:
+                            self.shadow_usage_sink(usage)
+                        if self.execution_usage_sink is not None:
+                            self.execution_usage_sink(usage)
                 finally:
                     active_run.reset(token)
 

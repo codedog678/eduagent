@@ -169,6 +169,12 @@ class PolicyObservationRecord(DistributedBase):
     commit_outcome: Mapped[str] = mapped_column(String(32), nullable=False)
     permission_outcome: Mapped[str] = mapped_column(String(32), nullable=False)
     structured_result: Mapped[str] = mapped_column(String(32), nullable=False)
+    structured_decision_count: Mapped[int | None] = mapped_column(Integer)
+    unknown_decision_count: Mapped[int | None] = mapped_column(Integer)
+    rehearsal_id: Mapped[str | None] = mapped_column(String(128))
+    operation: Mapped[str] = mapped_column(String(64), nullable=False, server_default="learning_task")
+    server_error_code: Mapped[str | None] = mapped_column(String(128))
+    fault_injected: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     injected: Mapped[bool] = mapped_column(Boolean, nullable=False)
     observed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
@@ -184,6 +190,15 @@ class PolicyObservationRecord(DistributedBase):
             "cohort",
             "observed_at",
         ),
+        Index(
+            "ix_policy_observation_health_window",
+            "deployment_id", "cohort", "metric_contract_version", "observed_at", "observation_key",
+        ),
+        Index(
+            "ix_policy_observation_health_bucket",
+            "deployment_id", "cohort", "metric_contract_version", "rehearsal_id", "operation",
+            "observed_at", "observation_key",
+        ),
     )
 
 
@@ -197,6 +212,9 @@ class PolicyHealthWindowRecord(DistributedBase):
         ForeignKey("policy_deployments.deployment_id"), nullable=False
     )
     metric_contract_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    deployment_version: Mapped[int | None] = mapped_column(Integer)
+    thresholds_hash: Mapped[str | None] = mapped_column(String(64))
+    observation_keys: Mapped[dict | None] = mapped_column(JSON)
     observation_start_key: Mapped[str] = mapped_column(String(64), nullable=False)
     observation_end_key: Mapped[str] = mapped_column(String(64), nullable=False)
     candidate_stats: Mapped[dict] = mapped_column(JSON, nullable=False)

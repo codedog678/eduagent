@@ -402,11 +402,14 @@ async def test_usage_is_exact_and_private_reasoning_or_raw_errors_never_escape()
         model_calls=1,
         input_tokens=13,
         output_tokens=5,
+        structured_decision_count=1,
+        unknown_decision_count=0,
     )
     assert success.diagnostics == []
     assert failure.outcome == "failed"
     assert failure.error_code == ExpertErrorCode.PROVIDER_UNAVAILABLE
     assert failure.usage.model_calls == 1
+    assert failure.usage.structured_decision_count == 0
     assert "PRIVATE" not in failure.model_dump_json()
     assert "secret-api-key" not in failure.model_dump_json()
 

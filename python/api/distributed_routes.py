@@ -92,6 +92,7 @@ async def metrics(request: Request):
     runtime.metrics.observe_status_counts(
         await runtime.repository.status_counts()
     )
+    await runtime.metrics.refresh_policy_counts(runtime.session_factory)
     return Response(
         runtime.metrics.render(),
         media_type=CONTENT_TYPE_LATEST,

@@ -1,0 +1,134 @@
+........................................................................ [ 18%]
+.....................................................F...FF............. [ 36%]
+........................................................................ [ 54%]
+........................................................................ [ 72%]
+........................................................................ [ 90%]
+......................................                                   [100%]
+=================================== FAILURES ===================================
+______ test_shadow_usage_consumes_real_kinds_once_and_strips_event_bodies ______
+tests/distributed/test_shadow_usage.py:26: in test_shadow_usage_consumes_real_kinds_once_and_strips_event_bodies
+    assert result == {
+E   AssertionError: assert {'cost': '0.0...ens': 21, ...} == {'cost': '0.0...ens': 21, ...}
+E     
+E     Omitting 5 identical items, use -vv to show
+E     Left contains 3 more items:
+E     {'structured_decision_count': None,
+E      'structured_result': 'unavailable',
+E      'unknown_decision_count': None}
+E     
+E     Full diff:
+E       {
+E           'cost': '0.006',
+E           'input_tokens': 41,
+E           'model_calls': 3,
+E           'output_tokens': 21,
+E     +     'structured_decision_count': None,
+E     +     'structured_result': 'unavailable',
+E           'tool_calls': 2,
+E     +     'unknown_decision_count': None,
+E       }
+________ test_shadow_usage_no_model_calls_does_not_invent_provider_cost ________
+tests/distributed/test_shadow_usage.py:44: in test_shadow_usage_no_model_calls_does_not_invent_provider_cost
+    assert summarize([], model_calls=0, tool_calls=0) == {
+E   AssertionError: assert {'cost': None...kens': 0, ...} == {'cost': None...kens': 0, ...}
+E     
+E     Omitting 5 identical items, use -vv to show
+E     Left contains 3 more items:
+E     {'structured_decision_count': 0,
+E      'structured_result': 'not_applicable',
+E      'unknown_decision_count': 0}
+E     
+E     Full diff:
+E       {
+E           'cost': None,
+E           'input_tokens': 0,
+E           'model_calls': 0,
+E           'output_tokens': 0,
+E     +     'structured_decision_count': 0,
+E     +     'structured_result': 'not_applicable',
+E           'tool_calls': 0,
+E     +     'unknown_decision_count': 0,
+E       }
+__ test_shadow_usage_uncovered_model_attempt_keeps_counts_but_unknown_tokens ___
+tests/distributed/test_shadow_usage.py:54: in test_shadow_usage_uncovered_model_attempt_keeps_counts_but_unknown_tokens
+    assert result == {
+E   AssertionError: assert {'cost': None...s': None, ...} == {'cost': None...s': None, ...}
+E     
+E     Omitting 5 identical items, use -vv to show
+E     Left contains 3 more items:
+E     {'structured_decision_count': 0,
+E      'structured_result': 'not_applicable',
+E      'unknown_decision_count': 0}
+E     
+E     Full diff:
+E       {
+E           'cost': None,
+E           'input_tokens': None,
+E           'model_calls': 2,
+E           'output_tokens': None,
+E     +     'structured_decision_count': 0,
+E     +     'structured_result': 'not_applicable',
+E           'tool_calls': 2,
+E     +     'unknown_decision_count': 0,
+E       }
+=========================== short test summary info ============================
+FAILED tests/distributed/test_shadow_usage.py::test_shadow_usage_consumes_real_kinds_once_and_strips_event_bodies - AssertionError: assert {'cost': '0.0...ens': 21, ...} == {'cost': '0.0...ens': 21, ...}
+  
+  Omitting 5 identical items, use -vv to show
+  Left contains 3 more items:
+  {'structured_decision_count': None,
+   'structured_result': 'unavailable',
+   'unknown_decision_count': None}
+  
+  Full diff:
+    {
+        'cost': '0.006',
+        'input_tokens': 41,
+        'model_calls': 3,
+        'output_tokens': 21,
+  +     'structured_decision_count': None,
+  +     'structured_result': 'unavailable',
+        'tool_calls': 2,
+  +     'unknown_decision_count': None,
+    }
+FAILED tests/distributed/test_shadow_usage.py::test_shadow_usage_no_model_calls_does_not_invent_provider_cost - AssertionError: assert {'cost': None...kens': 0, ...} == {'cost': None...kens': 0, ...}
+  
+  Omitting 5 identical items, use -vv to show
+  Left contains 3 more items:
+  {'structured_decision_count': 0,
+   'structured_result': 'not_applicable',
+   'unknown_decision_count': 0}
+  
+  Full diff:
+    {
+        'cost': None,
+        'input_tokens': 0,
+        'model_calls': 0,
+        'output_tokens': 0,
+  +     'structured_decision_count': 0,
+  +     'structured_result': 'not_applicable',
+        'tool_calls': 0,
+  +     'unknown_decision_count': 0,
+    }
+FAILED tests/distributed/test_shadow_usage.py::test_shadow_usage_uncovered_model_attempt_keeps_counts_but_unknown_tokens - AssertionError: assert {'cost': None...s': None, ...} == {'cost': None...s': None, ...}
+  
+  Omitting 5 identical items, use -vv to show
+  Left contains 3 more items:
+  {'structured_decision_count': 0,
+   'structured_result': 'not_applicable',
+   'unknown_decision_count': 0}
+  
+  Full diff:
+    {
+        'cost': None,
+        'input_tokens': None,
+        'model_calls': 2,
+        'output_tokens': None,
+  +     'structured_decision_count': 0,
+  +     'structured_result': 'not_applicable',
+        'tool_calls': 2,
+  +     'unknown_decision_count': 0,
+    }
+3 failed, 395 passed in 73.99s (0:01:13)
+
+TASK8_FINAL_TARGETED_EXIT=1

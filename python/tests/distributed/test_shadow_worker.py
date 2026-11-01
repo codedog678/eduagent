@@ -883,7 +883,9 @@ async def test_real_executor_stub_provider_usage_reaches_pg_without_bodies(
     assert job.result["output_tokens"] == (None if unknown_tokens or failure == "provider" else 21)
     assert job.result["cost"] is None
     assert float(job.result["latency_seconds"]) >= 0
-    assert job.result["structured_result"] == "unavailable"
+    assert job.result["structured_result"] == "valid"
+    assert job.result["structured_decision_count"] > 0
+    assert job.result["unknown_decision_count"] == 0
     persisted = json.dumps(job.result)
     for raw in ("private stub tutor response", "synthetic private input", "synthetic-unused", "stub-model"):
         assert raw not in persisted

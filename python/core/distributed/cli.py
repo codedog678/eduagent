@@ -44,6 +44,7 @@ def parser() -> argparse.ArgumentParser:
     subcommands.add_parser("rehearsal-worker")
     subcommands.add_parser("shadow-worker")
     subcommands.add_parser("shadow-reaper")
+    subcommands.add_parser("policy-health")
     subcommands.add_parser("reaper")
     subcommands.add_parser("expert-dispatcher")
     subcommands.add_parser("expert-worker")
@@ -63,6 +64,8 @@ async def run_forever(command: str) -> None:
         raise RuntimeError(
             "expert processes require DISTRIBUTED_EXPERTS_ENABLED=true"
         )
+    if command == "policy-health" and not settings.promotion_enabled:
+        raise RuntimeError("policy-health requires PROMOTION_ENABLED=true")
     roles = (
         expert_roles(settings.expert_worker_roles)
         if command == "expert-worker"
@@ -105,6 +108,11 @@ async def run_forever(command: str) -> None:
                 while True:
                     await dispatcher.dispatch_once()
                     await asyncio.sleep(0.25)
+            elif command == "policy-health":
+                process = runtime.policy_health()
+                while True:
+                    await process.poll_once()
+                    await asyncio.sleep(settings.distributed_heartbeat_seconds)
             elif command == "reaper":
                 reaper = runtime.reaper()
                 while True:

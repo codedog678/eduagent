@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import json
 from datetime import datetime
+from decimal import Decimal
 
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -175,4 +176,8 @@ class PolicyAssigner:
             state_namespace="production" if claims is None else claims.namespace,
             rehearsal_id=None if claims is None else claims.rehearsal_id,
             rehearsal_fault_profile=claims.fault_profile if claims and cohort == "candidate" else "none",
+            injected_latency_seconds=(
+                Decimal(str(getattr(self.settings, "promotion_injected_latency_seconds", 0)))
+                if claims and cohort == "candidate" and claims.fault_profile == "latency" else Decimal(0)
+            ),
         )

@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from uuid import UUID, uuid4
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import func, or_, select, text, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -24,6 +24,8 @@ from .promotion_models import (
     PolicyDeploymentRecord,
     PolicyEnvironmentHeadRecord,
     PolicyGateReceiptRecord,
+    PolicyHealthWindowRecord,
+    PolicyObservationRecord,
 )
 from .models import DistributedOutbox
 from .promotion_service import QualificationMaterial
@@ -270,6 +272,66 @@ class PromotionRepository(ShadowRepositoryMixin):
                     f"{environment} head references a missing deployment"
                 )
             return self._deployment(row)
+
+    async def rollback_if_current(self, session, deployment, window) -> bool:
+        """Called inside the frozen-window transaction; never rewrites accepted Runs."""
+        from .promotion_models import PolicyHealthWindowRecord
+
+        await session.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                              {"key": "policy-health:" + deployment.environment})
+        head = await session.scalar(select(PolicyEnvironmentHeadRecord).where(
+            PolicyEnvironmentHeadRecord.environment == deployment.environment
+        ).with_for_update().execution_options(populate_existing=True))
+        frozen = await session.get(PolicyHealthWindowRecord, window.window_id)
+        expected_window_id = canonical_hash({
+            "deployment_id": deployment.deployment_id, "deployment_version": deployment.version,
+            "metric_contract_version": 1, "thresholds_hash": deployment.thresholds_hash,
+            "observation_keys": frozen.observation_keys if frozen is not None else None,
+        })
+        if (head is None or head.current_deployment_id != deployment.deployment_id
+            or head.current_version != deployment.version
+            or deployment.state not in {"canary", "active"} or frozen is None
+            or frozen.decision != "fail" or frozen.deployment_id != deployment.deployment_id
+            or frozen.deployment_version != deployment.version
+            or frozen.thresholds_hash != deployment.thresholds_hash
+            or frozen.metric_contract_version != 1 or frozen.window_id != expected_window_id):
+            return False
+        now = await session.scalar(select(func.clock_timestamp()))
+        command_id = "health-rollback-" + window.window_id
+        row = PolicyDeploymentRecord(
+            deployment_id=str(uuid4()), environment=deployment.environment,
+            version=deployment.version + 1, state="rolled_back",
+            candidate_policy_hash=deployment.candidate_policy_hash,
+            stable_policy_hash=deployment.stable_policy_hash,
+            previous_stable_deployment_id=deployment.previous_stable_deployment_id,
+            traffic_basis_points=0, assignment_salt_id=deployment.assignment_salt_id,
+            thresholds=deployment.thresholds, thresholds_hash=deployment.thresholds_hash,
+            required_receipts=deployment.required_receipts, command_id=command_id,
+            actor="policy-health", reason="health thresholds failed", created_at=now,
+        )
+        session.add(row)
+        await session.flush()
+        cas = await session.execute(update(PolicyEnvironmentHeadRecord).where(
+            PolicyEnvironmentHeadRecord.environment == deployment.environment,
+            PolicyEnvironmentHeadRecord.current_deployment_id == deployment.deployment_id,
+            PolicyEnvironmentHeadRecord.current_version == deployment.version,
+        ).values(current_deployment_id=row.deployment_id, current_version=row.version, updated_at=now))
+        if cas.rowcount != 1:
+            raise PromotionVersionConflict("health rollback CAS failed")
+        session.add(PolicyAuditEventRecord(
+            event_id=str(uuid4()), environment=deployment.environment, deployment_id=row.deployment_id,
+            event_type="health_rollback", command_id=command_id, actor="policy-health",
+            reason=row.reason, details={"window_id": window.window_id,
+                "failed_deployment_id": deployment.deployment_id,
+                "failed_version": deployment.version, "thresholds_hash": deployment.thresholds_hash,
+                "triggered_thresholds": window.triggered_thresholds}, created_at=now,
+        ))
+        session.add(DistributedOutbox(
+            event_key=f"deployment:{row.deployment_id}:changed", topic="policy.deployment.changed",
+            payload={"deployment_id": row.deployment_id, "environment": row.environment,
+                     "version": row.version, "state": row.state}, created_at=now, publish_attempts=0,
+        ))
+        return True
 
     async def get_snapshot(
         self, environment: str, version: int
@@ -608,6 +670,25 @@ class PromotionRepository(ShadowRepositoryMixin):
             if gate_type in {"shadow_health", "canary_health"}:
                 deployment = health_bindings.get(gate_type)
                 if deployment is None:
+                    missing.append(gate_type)
+                    continue
+                hard_failure = await session.scalar(select(PolicyObservationRecord.observation_key).where(
+                    PolicyObservationRecord.deployment_id == deployment.deployment_id,
+                    PolicyObservationRecord.metric_contract_version == 1,
+                    PolicyObservationRecord.cohort == ("shadow" if gate_type == "shadow_health" else "candidate"),
+                    PolicyObservationRecord.policy_hash == artifact.policy_hash,
+                    PolicyObservationRecord.permission_outcome == "confirmed_violation",
+                    PolicyObservationRecord.terminal_status == "confirmed_permission_violation",
+                    PolicyObservationRecord.server_error_code == "ConfirmedPermissionViolation",
+                ).limit(1))
+                latest_window = await session.scalar(select(PolicyHealthWindowRecord).where(
+                    PolicyHealthWindowRecord.deployment_id == deployment.deployment_id,
+                    PolicyHealthWindowRecord.deployment_version == deployment.version,
+                    PolicyHealthWindowRecord.thresholds_hash == deployment.thresholds_hash,
+                    PolicyHealthWindowRecord.metric_contract_version == 1,
+                ).order_by(PolicyHealthWindowRecord.evaluated_at.desc(),
+                           PolicyHealthWindowRecord.window_id.desc()).limit(1))
+                if hard_failure is not None or (latest_window is not None and latest_window.decision != "pass"):
                     missing.append(gate_type)
                     continue
                 query = query.where(

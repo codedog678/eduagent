@@ -26,6 +26,8 @@ def test_shadow_usage_consumes_real_kinds_once_and_strips_event_bodies():
     assert result == {
         "model_calls": 3, "tool_calls": 2,
         "input_tokens": 41, "output_tokens": 21, "cost": "0.006",
+        "structured_decision_count": None, "unknown_decision_count": None,
+        "structured_result": "unavailable",
     }
 
 
@@ -44,6 +46,8 @@ def test_shadow_usage_no_model_calls_does_not_invent_provider_cost():
     assert summarize([], model_calls=0, tool_calls=0) == {
         "model_calls": 0, "tool_calls": 0,
         "input_tokens": 0, "output_tokens": 0, "cost": None,
+        "structured_decision_count": 0, "unknown_decision_count": 0,
+        "structured_result": "not_applicable",
     }
 
 
@@ -54,6 +58,8 @@ def test_shadow_usage_uncovered_model_attempt_keeps_counts_but_unknown_tokens():
     assert result == {
         "model_calls": 2, "tool_calls": 2,
         "input_tokens": None, "output_tokens": None, "cost": None,
+        "structured_decision_count": 0, "unknown_decision_count": 0,
+        "structured_result": "not_applicable",
     }
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Protocol
+from pathlib import Path
 
 from api.orchestrator import AgentOrchestrator
 from config.settings import settings
@@ -10,6 +11,7 @@ from core.distributed.contracts import (
 )
 from core.distributed.expert_contracts import RunExecutionAuthority
 from core.distributed.promotion_contracts import Environment, PolicyExecutionBinding
+from core.distributed.policy_health import ConfirmedPermissionViolation
 from core.distributed.rehearsal_store import RehearsalStoreRouter, ShadowStoreRouter
 from core.harness import LearningHarness
 
@@ -22,6 +24,13 @@ class ShadowExecutionError(RuntimeError):
     def __init__(self, usage):
         super().__init__("shadow execution failed")
         self.usage = usage
+
+
+def assert_open_store_capability(database, expected_path):
+    # 读取已打开连接的服务端 SQLite 元数据，不把拒绝请求当成实际越权。
+    for _, _, filename in database.execute("PRAGMA database_list"):
+        if filename and Path(filename).resolve() != expected_path:
+            raise ConfirmedPermissionViolation("opened database differs from frozen store capability")
 
 
 class RunExecutor(Protocol):
@@ -44,10 +53,12 @@ class LearningTaskExecutor:
         allowed_environment: Environment = "production",
         rehearsal_store_root: str | None = None,
         shadow_store_router: ShadowStoreRouter | None = None,
+        usage_recorder=None,
     ) -> None:
         self.store_path = store_path
         self.enable_db_logging = enable_db_logging
         self.expert_gateway = expert_gateway
+        self.usage_recorder = usage_recorder
         if shadow_store_router is not None:
             if store_path is not None or expert_gateway is not None:
                 raise ValueError("shadow executor cannot receive primary store or durable gateway")
@@ -77,6 +88,7 @@ class LearningTaskExecutor:
         if spec.operation != RunOperation.LEARNING_TASK:
             raise ValueError(f"unsupported operation: {spec.operation}")
         store_path = str(self.store_router.path_for(binding))
+        expected_path = Path(store_path).resolve()
 
         orchestrator = AgentOrchestrator(
             enable_db_logging=self.enable_db_logging
@@ -95,7 +107,9 @@ class LearningTaskExecutor:
                     pinned_policy=binding,
                     state_namespace=binding.state_namespace,
                     shadow_usage_sink=shadow_usage.update if authority.execution_mode == "shadow" else None,
+                    execution_usage_sink=shadow_usage.update if authority.execution_mode != "shadow" else None,
                 )
+                assert_open_store_capability(harness.db, expected_path)
             except RuntimeError as exc:
                 message = str(exc)
                 if (
@@ -109,7 +123,7 @@ class LearningTaskExecutor:
 
             orchestrator.harness = harness
             payload = spec.payload
-            return await harness.converse(
+            result = await harness.converse(
                 spec.learner_id,
                 spec.request_id,
                 payload.knowledge_id,
@@ -119,6 +133,8 @@ class LearningTaskExecutor:
                 payload.quiz_id,
                 kind="task",
             )
+            assert_open_store_capability(harness.db, expected_path)
+            return result
         except Exception as exc:
             if authority.execution_mode == "shadow":
                 raise ShadowExecutionError(shadow_usage) from exc
@@ -128,3 +144,7 @@ class LearningTaskExecutor:
                 await harness.memory_worker.stop()
                 harness.close()
             await orchestrator.close_database()
+            if self.usage_recorder is not None and authority.execution_mode != "shadow":
+                await self.usage_recorder(
+                    str(authority.distributed_run_id), authority.run_fencing_token, shadow_usage,
+                )

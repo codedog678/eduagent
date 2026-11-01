@@ -13,8 +13,24 @@ from pydantic import (
 from .promotion_contracts import (
     DeploymentSnapshot,
     GateReceipt,
+    HealthDecision,
     PolicyArtifact,
 )
+
+
+def health_decision_from_window(window) -> HealthDecision:
+    """Legacy wire 'rollback' means failed health, not proof that a head moved.
+
+    Shadow failures remain historical and do not automatically roll back.
+    Only the evaluator's transactional Canary/Active path can move the head.
+    """
+    return HealthDecision(
+        decision="rollback" if window.decision == "fail" else window.decision,
+        reasons=window.triggered_thresholds,
+        candidate_run_count=window.candidate_stats["run_count"],
+        stable_run_count=window.stable_stats["run_count"],
+        evaluated_at=window.evaluated_at,
+    )
 
 
 class StrictFrozenModel(BaseModel):

@@ -53,6 +53,8 @@ class _UsageCounter:
         self.output_tokens = 0
         self._input_known = True
         self._output_known = True
+        self.structured_decision_count = 0
+        self.unknown_decision_count = 0
         self.provider = str(getattr(service, "provider", "unknown"))[:128] or "unknown"
         self.model = str(getattr(service, "model", "unknown"))[:256] or "unknown"
 
@@ -82,6 +84,8 @@ class _UsageCounter:
             provider=self.provider,
             model=self.model,
             uncertain=not (self._input_known and self._output_known),
+            structured_decision_count=self.structured_decision_count,
+            unknown_decision_count=self.unknown_decision_count,
         )
 
 
@@ -243,7 +247,9 @@ class ExpertEngine:
                         diagnostics,
                     )
                 if not turn.tool_calls:
+                    counter.structured_decision_count += 1
                     if turn.stop_reason not in {"stop", "end_turn"}:
+                        counter.unknown_decision_count += 1
                         code = (
                             ExpertErrorCode.BUDGET_EXHAUSTED
                             if turn.stop_reason in {"length", "max_tokens"}
@@ -262,6 +268,8 @@ class ExpertEngine:
                         executor.verified_source_refs,
                         last_tool_failure,
                     )
+                    if error is not None:
+                        counter.unknown_decision_count += 1
                     if error is not None:
                         diagnostics.append(error[1])
                         can_repair = (

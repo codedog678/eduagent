@@ -12,6 +12,7 @@ from .expert_contracts import RunExecutionAuthority
 from .executor import ShadowExecutionError
 from .models import DistributedRun
 from .policy_assignment import ArtifactUnavailable, PolicyAssigner
+from .policy_health import ConfirmedPermissionViolation, server_diagnostic_code
 from .promotion_contracts import PolicyExecutionBinding
 from .promotion_models import PolicyDeploymentRecord
 from .result_identity import ProtocolIdentityError, validate_business_result
@@ -23,6 +24,7 @@ class ShadowWorker:
         self, worker_id, repository, executor, store_router, *,
         policy_assigner=None, lease_seconds=15, heartbeat_seconds=3,
         attempt_timeout_seconds=300,
+        observation_recorder=None,
     ):
         if not 0 < heartbeat_seconds < lease_seconds or attempt_timeout_seconds <= 0:
             raise ValueError("invalid shadow worker timing")
@@ -31,6 +33,7 @@ class ShadowWorker:
         self.policy_assigner = policy_assigner or PolicyAssigner()
         self.lease_seconds, self.heartbeat_seconds = lease_seconds, heartbeat_seconds
         self.attempt_timeout_seconds = attempt_timeout_seconds
+        self.observation_recorder = observation_recorder
 
     async def _frozen_input(self, job):
         async with self.repository.session_factory() as session:
@@ -98,12 +101,16 @@ class ShadowWorker:
             usage = usage if isinstance(usage, dict) else {}
         except ShadowFencingViolation:
             raise
+        except ConfirmedPermissionViolation:
+            code = "ConfirmedPermissionViolation"
         except ArtifactUnavailable:
             code = "artifact_unavailable"
         except ProtocolIdentityError:
             code = "protocol_identity_invalid"
         except ShadowExecutionError as exc:
-            code, usage = "execution_failed", exc.usage
+            code = ("ConfirmedPermissionViolation" if server_diagnostic_code(exc)
+                    == "ConfirmedPermissionViolation" else "execution_failed")
+            usage = exc.usage
         except ValueError:
             code = "payload_invalid"
         except Exception:
@@ -148,6 +155,9 @@ class ShadowWorker:
                 await self.repository.complete_shadow(
                     job.shadow_id, self.worker_id, job.fencing_token, summary,
                 )
+            if self.observation_recorder is not None:
+                with suppress(Exception):
+                    await self.observation_recorder.record_shadow(job.shadow_id)
             if lock_holder[0] is not None:
                 lock_holder[0].cleanup()
         except ShadowFencingViolation:

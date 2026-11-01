@@ -39,9 +39,15 @@ def redacted_summary(value: dict | None = None, *, status="failed") -> dict:
             summary[name] = str(number) if number.is_finite() and 0 <= number <= Decimal("1e12") else None
         except (ValueError, InvalidOperation):
             summary[name] = None
-    for name in ("input_tokens", "output_tokens", "model_calls", "tool_calls"):
+    for name in ("input_tokens", "output_tokens", "model_calls", "tool_calls",
+                 "structured_decision_count", "unknown_decision_count"):
         raw = value.get(name)
         summary[name] = raw if type(raw) is int and 0 <= raw <= 10**12 else None
+    count, unknown = summary["structured_decision_count"], summary["unknown_decision_count"]
+    if count is not None and unknown is not None and unknown <= count:
+        summary["structured_result"] = "unknown" if unknown else "valid" if count else "not_applicable"
+    else:
+        summary["structured_decision_count"] = summary["unknown_decision_count"] = None
     return summary
 
 
@@ -65,6 +71,7 @@ async def enqueue_shadow_in_transaction(session, parent_run_id):
         "assignment_reason": "frozen_deployment_shadow",
         "state_namespace": f"shadow-{deployment.deployment_id}-{parent.id}",
         "rehearsal_fault_profile": "none",
+        "injected_latency_seconds": "0",
     }
     binding = PolicyExecutionBinding.model_validate(binding)
     now = await session.scalar(select(func.clock_timestamp()))
@@ -152,6 +159,7 @@ class ShadowRepositoryMixin:
         code = error_code if error_code in {
             "execution_failed", "protocol_identity_invalid", "artifact_unavailable",
             "deadline_expired", "cancelled", "payload_invalid",
+            "ConfirmedPermissionViolation",
         } else "execution_failed"
         await self._finish_shadow(shadow_id, worker_id, token, "failed", summary, code)
 

@@ -56,11 +56,12 @@ def test_runtime_builds_separate_expert_transport_and_processes():
     runtime = DistributedRuntime(
         engine=object(),
         session_factory=object(),
-        repository=object(),
+        repository=SimpleNamespace(metrics=None),
         broker=run_broker,
         settings_obj=settings,
     )
 
+    assert runtime.repository.metrics is runtime.metrics
     assert runtime.expert_broker.redis is run_broker.redis
     assert runtime.expert_broker.stream == "test:experts"
     assert runtime.expert_broker.group == "test-expert-workers"

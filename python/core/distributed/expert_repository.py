@@ -1484,6 +1484,8 @@ class ExpertJobRepository:
             provider=usages[-1].provider,
             model=usages[-1].model,
             uncertain=any(item.uncertain for item in usages),
+            structured_decision_count=optional_sum("structured_decision_count"),
+            unknown_decision_count=optional_sum("unknown_decision_count"),
         )
 
     @staticmethod

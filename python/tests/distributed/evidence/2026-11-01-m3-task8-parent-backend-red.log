@@ -1,0 +1,251 @@
+................................F....................................... [  9%]
+..........sssssssssssssssssssssssssssssssssssssssssssssss............... [ 18%]
+..........................s.sssss.....s...............F...FF.......s.s.. [ 28%]
+........................................................................ [ 37%]
+........................................................................ [ 46%]
+........................................................................ [ 56%]
+........................................................................ [ 65%]
+........................................................................ [ 75%]
+........................................................................ [ 84%]
+........................................................................ [ 93%]
+...............................................                          [100%]
+=================================== FAILURES ===================================
+_________ test_runtime_builds_separate_expert_transport_and_processes __________
+
+    def test_runtime_builds_separate_expert_transport_and_processes():
+        run_broker = SimpleNamespace(redis=object())
+        settings = SimpleNamespace(
+            expert_stream="test:experts",
+            expert_consumer_group="test-expert-workers",
+            distributed_outbox_batch_size=7,
+            expert_lease_seconds=9,
+            expert_heartbeat_seconds=2,
+            expert_poll_block_ms=321,
+            expert_demo_pause_before_result_seconds=4,
+            ops_worker_stale_seconds=15,
+            expert_queued_limit_per_role=50,
+            expert_running_limit_per_role=2,
+            expert_queued_payload_bytes_limit=1024,
+            expert_max_payload_bytes=1024,
+            expert_max_job_seconds=120,
+            expert_retry_base_seconds=1,
+            expert_retry_max_seconds=30,
+        )
+>       runtime = DistributedRuntime(
+            engine=object(),
+            session_factory=object(),
+            repository=object(),
+            broker=run_broker,
+            settings_obj=settings,
+        )
+
+tests/distributed/test_expert_cli.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <core.distributed.runtime.DistributedRuntime object at 0x10ec113d0>
+engine = <object object at 0x10eaceb00>
+session_factory = <object object at 0x10eaceb30>
+repository = <object object at 0x10eace2f0>
+broker = namespace(redis=<object object at 0x10eaceb20>)
+
+    def __init__(
+        self,
+        engine,
+        session_factory,
+        repository,
+        broker,
+        *,
+        metrics=None,
+        tracer=None,
+        otel_provider=None,
+        settings_obj=settings,
+    ) -> None:
+        self.engine = engine
+        self.session_factory = session_factory
+        self.repository = repository
+        self.broker = broker
+        self.rehearsal_broker = RedisStreamBroker(
+            broker.redis,
+            getattr(settings_obj, "promotion_rehearsal_stream", "eduagent:rehearsal-runs"),
+            getattr(settings_obj, "promotion_rehearsal_consumer_group", "eduagent-rehearsal-run-workers"),
+        )
+        # Control events have no run_id and never go through a Run worker group.
+        self.deployment_broker = RedisStreamBroker(
+            broker.redis,
+            getattr(settings_obj, "distributed_stream", "eduagent:runs") + ":policy-deployments",
+            "eduagent-policy-deployment-events",
+        )
+        self.expert_broker = RedisStreamBroker(
+            broker.redis,
+            settings_obj.expert_stream,
+            settings_obj.expert_consumer_group,
+        )
+        self.metrics = metrics or DistributedMetrics()
+>       self.repository.metrics = self.metrics
+        ^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'object' object has no attribute 'metrics'
+
+core/distributed/runtime.py:73: AttributeError
+______ test_shadow_usage_consumes_real_kinds_once_and_strips_event_bodies ______
+
+    def test_shadow_usage_consumes_real_kinds_once_and_strips_event_bodies():
+        result = summarize([
+            {"kind": "model_usage", "usage": {"prompt_tokens": 11, "completion_tokens": 5,
+                                            "cost": "0.001", "response": "private"}},
+            {"kind": "after_model", "usage": {"input_tokens": 13, "output_tokens": 7,
+                                            "cost": "0.002"}},
+            {"kind": "expert_usage_charged", "model_calls": 1,
+             "input_tokens": 17, "output_tokens": 9, "estimated_cost_usd": "0.003"},
+            {"kind": "budget_used", "resource": "model", "used": 3},
+            {"kind": "model_turn", "usage": {"input_tokens": 999, "output_tokens": 999}},
+        ])
+>       assert result == {
+            "model_calls": 3, "tool_calls": 2,
+            "input_tokens": 41, "output_tokens": 21, "cost": "0.006",
+        }
+E       AssertionError: assert {'cost': '0.0...ens': 21, ...} == {'cost': '0.0...ens': 21, ...}
+E         
+E         Omitting 5 identical items, use -vv to show
+E         Left contains 3 more items:
+E         {'structured_decision_count': None,
+E          'structured_result': 'unavailable',
+E          'unknown_decision_count': None}
+E         
+E         Full diff:
+E           {
+E               'cost': '0.006',
+E               'input_tokens': 41,
+E               'model_calls': 3,
+E               'output_tokens': 21,
+E         +     'structured_decision_count': None,
+E         +     'structured_result': 'unavailable',
+E               'tool_calls': 2,
+E         +     'unknown_decision_count': None,
+E           }
+
+tests/distributed/test_shadow_usage.py:26: AssertionError
+________ test_shadow_usage_no_model_calls_does_not_invent_provider_cost ________
+
+    def test_shadow_usage_no_model_calls_does_not_invent_provider_cost():
+>       assert summarize([], model_calls=0, tool_calls=0) == {
+            "model_calls": 0, "tool_calls": 0,
+            "input_tokens": 0, "output_tokens": 0, "cost": None,
+        }
+E       AssertionError: assert {'cost': None...kens': 0, ...} == {'cost': None...kens': 0, ...}
+E         
+E         Omitting 5 identical items, use -vv to show
+E         Left contains 3 more items:
+E         {'structured_decision_count': 0,
+E          'structured_result': 'not_applicable',
+E          'unknown_decision_count': 0}
+E         
+E         Full diff:
+E           {
+E               'cost': None,
+E               'input_tokens': 0,
+E               'model_calls': 0,
+E               'output_tokens': 0,
+E         +     'structured_decision_count': 0,
+E         +     'structured_result': 'not_applicable',
+E               'tool_calls': 0,
+E         +     'unknown_decision_count': 0,
+E           }
+
+tests/distributed/test_shadow_usage.py:44: AssertionError
+__ test_shadow_usage_uncovered_model_attempt_keeps_counts_but_unknown_tokens ___
+
+    def test_shadow_usage_uncovered_model_attempt_keeps_counts_but_unknown_tokens():
+        result = summarize([{"kind": "model_usage", "usage": {
+            "input_tokens": 11, "output_tokens": 5, "cost": "0.001",
+        }}], model_calls=2)
+>       assert result == {
+            "model_calls": 2, "tool_calls": 2,
+            "input_tokens": None, "output_tokens": None, "cost": None,
+        }
+E       AssertionError: assert {'cost': None...s': None, ...} == {'cost': None...s': None, ...}
+E         
+E         Omitting 5 identical items, use -vv to show
+E         Left contains 3 more items:
+E         {'structured_decision_count': 0,
+E          'structured_result': 'not_applicable',
+E          'unknown_decision_count': 0}
+E         
+E         Full diff:
+E           {
+E               'cost': None,
+E               'input_tokens': None,
+E               'model_calls': 2,
+E               'output_tokens': None,
+E         +     'structured_decision_count': 0,
+E         +     'structured_result': 'not_applicable',
+E               'tool_calls': 2,
+E         +     'unknown_decision_count': 0,
+E           }
+
+tests/distributed/test_shadow_usage.py:54: AssertionError
+=============================== warnings summary ===============================
+tests/v2/test_agent_base.py:8
+  /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/v2/test_agent_base.py:8: PytestCollectionWarning: cannot collect test class 'TestAgent' because it has a __init__ constructor (from: tests/v2/test_agent_base.py)
+    class TestAgent(BaseAgent):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/distributed/test_expert_cli.py::test_runtime_builds_separate_expert_transport_and_processes - AttributeError: 'object' object has no attribute 'metrics'
+FAILED tests/distributed/test_shadow_usage.py::test_shadow_usage_consumes_real_kinds_once_and_strips_event_bodies - AssertionError: assert {'cost': '0.0...ens': 21, ...} == {'cost': '0.0...ens': 21, ...}
+  
+  Omitting 5 identical items, use -vv to show
+  Left contains 3 more items:
+  {'structured_decision_count': None,
+   'structured_result': 'unavailable',
+   'unknown_decision_count': None}
+  
+  Full diff:
+    {
+        'cost': '0.006',
+        'input_tokens': 41,
+        'model_calls': 3,
+        'output_tokens': 21,
+  +     'structured_decision_count': None,
+  +     'structured_result': 'unavailable',
+        'tool_calls': 2,
+  +     'unknown_decision_count': None,
+    }
+FAILED tests/distributed/test_shadow_usage.py::test_shadow_usage_no_model_calls_does_not_invent_provider_cost - AssertionError: assert {'cost': None...kens': 0, ...} == {'cost': None...kens': 0, ...}
+  
+  Omitting 5 identical items, use -vv to show
+  Left contains 3 more items:
+  {'structured_decision_count': 0,
+   'structured_result': 'not_applicable',
+   'unknown_decision_count': 0}
+  
+  Full diff:
+    {
+        'cost': None,
+        'input_tokens': 0,
+        'model_calls': 0,
+        'output_tokens': 0,
+  +     'structured_decision_count': 0,
+  +     'structured_result': 'not_applicable',
+        'tool_calls': 0,
+  +     'unknown_decision_count': 0,
+    }
+FAILED tests/distributed/test_shadow_usage.py::test_shadow_usage_uncovered_model_attempt_keeps_counts_but_unknown_tokens - AssertionError: assert {'cost': None...s': None, ...} == {'cost': None...s': None, ...}
+  
+  Omitting 5 identical items, use -vv to show
+  Left contains 3 more items:
+  {'structured_decision_count': 0,
+   'structured_result': 'not_applicable',
+   'unknown_decision_count': 0}
+  
+  Full diff:
+    {
+        'cost': None,
+        'input_tokens': None,
+        'model_calls': 2,
+        'output_tokens': None,
+  +     'structured_decision_count': 0,
+  +     'structured_result': 'not_applicable',
+        'tool_calls': 2,
+  +     'unknown_decision_count': 0,
+    }
+4 failed, 707 passed, 56 skipped, 578 deselected, 1 warning in 18.39s

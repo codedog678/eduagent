@@ -70,6 +70,7 @@ class DistributedRuntime:
             settings_obj.expert_consumer_group,
         )
         self.metrics = metrics or DistributedMetrics()
+        self.repository.metrics = self.metrics
         self.tracer = tracer or DurableTracer(repository)
         self.otel_provider = otel_provider
         self.settings = settings_obj
@@ -140,6 +141,7 @@ class DistributedRuntime:
             lease_seconds=self.settings.distributed_lease_seconds,
             heartbeat_seconds=self.settings.distributed_heartbeat_seconds,
             attempt_timeout_seconds=self.settings.distributed_attempt_timeout_seconds,
+            observation_recorder=self.policy_observation_recorder(),
         )
 
     def shadow_reaper(self, store_router):
@@ -157,6 +159,8 @@ class DistributedRuntime:
         allowed_environment="production",
     ) -> RunWorker:
         from .worker import RunWorker
+        if hasattr(executor, "usage_recorder"):
+            executor.usage_recorder = self.repository.record_attempt_usage
 
         return RunWorker(
             worker_id,
@@ -173,6 +177,21 @@ class DistributedRuntime:
             metrics=self.metrics,
             registry_process=registry_process,
             allowed_environment=allowed_environment,
+            observation_recorder=self.policy_observation_recorder(),
+        )
+
+    def policy_observation_recorder(self):
+        from .policy_health import PolicyObservationRecorder
+
+        return PolicyObservationRecorder(self.session_factory, metrics=self.metrics)
+
+    def policy_health(self):
+        from .policy_health import PolicyHealthProcess
+        from .promotion_repository import PromotionRepository
+
+        return PolicyHealthProcess(
+            PromotionRepository(self.session_factory), metrics=self.metrics,
+            enabled=self.settings.promotion_enabled,
         )
 
     def expert_gateway(self):
@@ -359,6 +378,59 @@ DEFAULT_POLICY_THRESHOLDS_HASH = canonical_hash(DEFAULT_POLICY_THRESHOLDS)
 async def upgrade_m3_schema(connection) -> None:
     if connection.dialect.name != "postgresql":
         return
+    old_observation_columns = set((await connection.execute(text(
+        "SELECT column_name FROM information_schema.columns "
+        "WHERE table_schema=current_schema() AND table_name='policy_observations'"
+    ))).scalars())
+    health_columns = {
+        "distributed_run_attempts": {
+            "usage_summary": "JSON", "fault_injected": "BOOLEAN NOT NULL DEFAULT false",
+        },
+        "policy_observations": {
+            "structured_decision_count": "INTEGER", "unknown_decision_count": "INTEGER",
+            "rehearsal_id": "VARCHAR(128)", "operation": "VARCHAR(64) NOT NULL DEFAULT 'learning_task'",
+            "server_error_code": "VARCHAR(128)", "fault_injected": "BOOLEAN NOT NULL DEFAULT false",
+        },
+        "policy_health_windows": {
+            "deployment_version": "INTEGER", "thresholds_hash": "VARCHAR(64)",
+            "observation_keys": "JSON",
+        },
+    }
+    for table, columns in health_columns.items():
+        for name, sql_type in columns.items():
+            await connection.execute(text(
+                f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {name} {sql_type}"
+            ))
+    derived_columns = {
+        "operation": "runs.operation",
+        "rehearsal_id": "runs.rehearsal_id",
+        "fault_injected": "observations.injected",
+        "server_error_code": (
+            "CASE WHEN observations.cohort = 'shadow' THEN "
+            "(SELECT shadows.error_code FROM policy_shadow_executions shadows "
+            "WHERE shadows.parent_run_id=observations.run_id "
+            "AND shadows.deployment_id=observations.deployment_id) ELSE runs.error_code END"
+        ),
+    }
+    added = set(derived_columns) - old_observation_columns
+    if added:
+        # 只在真实旧列缺失时回填权威 PG 字段；同一事务末尾重新安装 append-only。
+        await connection.execute(text(
+            "DROP TRIGGER IF EXISTS trg_policy_observations_append_only ON policy_observations"
+        ))
+        assignments = ", ".join(f"{name}={derived_columns[name]}" for name in sorted(added))
+        await connection.execute(text(
+            f"UPDATE policy_observations observations SET {assignments} "
+            "FROM distributed_runs runs WHERE runs.id=observations.run_id"
+        ))
+    await connection.execute(text(
+        "CREATE INDEX IF NOT EXISTS ix_policy_observation_health_window ON policy_observations "
+        "(deployment_id, cohort, metric_contract_version, observed_at, observation_key)"
+    ))
+    await connection.execute(text(
+        "CREATE INDEX IF NOT EXISTS ix_policy_observation_health_bucket ON policy_observations "
+        "(deployment_id, cohort, metric_contract_version, rehearsal_id, operation, observed_at, observation_key)"
+    ))
 
     run_columns = {
         "deployment_id": "VARCHAR(36)",

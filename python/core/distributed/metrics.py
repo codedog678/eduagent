@@ -115,6 +115,91 @@ class DistributedMetrics:
             buckets=(0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60, 120),
             registry=self.registry,
         )
+        self.policy_assignments = Counter(
+            "eduagent_policy_assignments_total", "Assignments admitted by this process",
+            ("environment", "cohort"), registry=self.registry,
+        )
+        self.policy_gate_decisions = Counter(
+            "eduagent_policy_gate_decisions_total", "Health receipts issued by this process",
+            ("gate", "status"), registry=self.registry,
+        )
+        self.policy_health_decisions = Counter(
+            "eduagent_policy_health_decisions_total", "Frozen windows evaluated by this process",
+            ("environment", "decision"), registry=self.registry,
+        )
+        self.policy_rollbacks = Counter(
+            "eduagent_policy_rollbacks_total", "Health rollbacks committed by this process",
+            ("environment", "trigger"), registry=self.registry,
+        )
+        self.policy_observation_latency = Histogram(
+            "eduagent_policy_observation_latency_seconds", "Terminal observations recorded by this process",
+            ("cohort",), registry=self.registry,
+        )
+        self.policy_observation_cost = Histogram(
+            "eduagent_policy_observation_cost_usd", "Known cost observations recorded by this process",
+            ("cohort",), registry=self.registry,
+        )
+        self.policy_assignment_counts = Gauge(
+            "eduagent_policy_assignments_persisted", "Authoritative PostgreSQL admitted assignments",
+            ("environment", "cohort"), registry=self.registry,
+        )
+        self.policy_health_counts = Gauge(
+            "eduagent_policy_health_windows_persisted", "Authoritative PostgreSQL frozen health windows",
+            ("environment", "decision"), registry=self.registry,
+        )
+        self.policy_gate_counts = Gauge(
+            "eduagent_policy_gate_receipts_persisted", "Authoritative PostgreSQL gate receipts",
+            ("gate", "status"), registry=self.registry,
+        )
+        self.policy_rollback_counts = Gauge(
+            "eduagent_policy_rollbacks_persisted", "Authoritative PostgreSQL health rollbacks",
+            ("environment", "trigger"), registry=self.registry,
+        )
+
+    async def refresh_policy_counts(self, session_factory):
+        from sqlalchemy import func, select
+        from .models import DistributedRun
+        from .promotion_contracts import GateType
+        from typing import get_args
+        from .promotion_models import (
+            PolicyAuditEventRecord, PolicyDeploymentRecord, PolicyGateReceiptRecord,
+            PolicyHealthWindowRecord,
+        )
+
+        async with session_factory() as session:
+            assignments = {(environment, cohort): count for environment, cohort, count in
+                (await session.execute(select(
+                    PolicyDeploymentRecord.environment, DistributedRun.policy_cohort, func.count()
+                ).join(PolicyDeploymentRecord,
+                       DistributedRun.deployment_id == PolicyDeploymentRecord.deployment_id)
+                 .group_by(PolicyDeploymentRecord.environment, DistributedRun.policy_cohort))).all()}
+            windows = {(environment, decision): count for environment, decision, count in
+                (await session.execute(select(
+                    PolicyDeploymentRecord.environment, PolicyHealthWindowRecord.decision, func.count()
+                ).join(PolicyDeploymentRecord,
+                       PolicyHealthWindowRecord.deployment_id == PolicyDeploymentRecord.deployment_id)
+                 .group_by(PolicyDeploymentRecord.environment, PolicyHealthWindowRecord.decision))).all()}
+            gates = {(gate, status): count for gate, status, count in
+                (await session.execute(select(
+                    PolicyGateReceiptRecord.gate_type, PolicyGateReceiptRecord.status, func.count()
+                ).group_by(PolicyGateReceiptRecord.gate_type, PolicyGateReceiptRecord.status))).all()}
+            rollbacks = dict((await session.execute(select(
+                PolicyAuditEventRecord.environment, func.count()
+            ).where(PolicyAuditEventRecord.event_type == "health_rollback")
+             .group_by(PolicyAuditEventRecord.environment))).all())
+        # 固定标签枚举，数据库中的未知值也不得放大 Prometheus 基数。
+        for environment in ("production", "rehearsal"):
+            for cohort in ("stable", "candidate", "shadow"):
+                self.policy_assignment_counts.labels(environment=environment, cohort=cohort).set(
+                    assignments.get((environment, cohort), 0))
+            for decision in ("pass", "hold", "fail"):
+                self.policy_health_counts.labels(environment=environment, decision=decision).set(
+                    windows.get((environment, decision), 0))
+            self.policy_rollback_counts.labels(environment=environment, trigger="health_threshold").set(
+                rollbacks.get(environment, 0))
+        for gate in get_args(GateType):
+            for status in ("passed", "failed", "unknown"):
+                self.policy_gate_counts.labels(gate=gate, status=status).set(gates.get((gate, status), 0))
 
     def render(self) -> bytes:
         return generate_latest(self.registry)

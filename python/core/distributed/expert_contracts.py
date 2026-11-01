@@ -129,6 +129,8 @@ class ExpertUsage(FrozenContract):
     provider: str = Field(min_length=1, max_length=128)
     model: str = Field(min_length=1, max_length=256)
     uncertain: bool = False
+    structured_decision_count: int | None = Field(default=None, ge=0)
+    unknown_decision_count: int | None = Field(default=None, ge=0)
 
 
 class HistoryRecord(FrozenContract):

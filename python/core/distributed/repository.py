@@ -71,6 +71,7 @@ class DistributedRunRepository:
         max_attempts: int = 3,
         parent_timeout_seconds: float = 120,
         policy_assigner: PolicyAssigner | None = None,
+        metrics=None,
     ) -> None:
         if max_attempts < 1:
             raise ValueError("max_attempts must be positive")
@@ -81,6 +82,7 @@ class DistributedRunRepository:
         self.clock = clock or (lambda: datetime.now(UTC))
         self.max_attempts = max_attempts
         self.parent_timeout_seconds = parent_timeout_seconds
+        self.metrics = metrics
 
     async def accept(self, spec: DistributedRunRequest) -> DistributedRun:
         run, _ = await self.accept_with_replay(spec)
@@ -156,7 +158,8 @@ class DistributedRunRepository:
                         payload=spec.payload.model_dump(mode="json"), status=RunStatus.ACCEPTED,
                         trace_id=uuid4().hex, attempt_count=0, created_at=now, updated_at=now,
                         policy_binding=fixed,
-                        **{key: value for key, value in fixed.items() if key not in {"environment", "components"}},
+                        **{key: value for key, value in fixed.items()
+                           if key not in {"environment", "components", "injected_latency_seconds"}},
                     )
                     session.add(run)
                     await session.flush()
@@ -173,6 +176,9 @@ class DistributedRunRepository:
         if failure is not None:
             # Raise only after the outer transaction commits the freeze.
             raise failure
+        if self.metrics is not None:
+            self.metrics.policy_assignments.labels(environment=binding.environment,
+                                                   cohort=binding.policy_cohort).inc()
         return run, False
 
     async def get(self, run_id: str) -> DistributedRun | None:
@@ -433,6 +439,26 @@ class DistributedRunRepository:
 
             await enqueue_shadow_in_transaction(session, run.id)
             return run
+
+    async def record_attempt_usage(self, run_id, token, summary):
+        from .shadow_repository import redacted_summary
+
+        async with self.session_factory() as session, session.begin():
+            run, lease = await self._locked_run_and_lease(session, run_id)
+            attempt = await self._locked_attempt(session, run_id, token)
+            await self._assert_active_lease(session, run, lease, token)
+            attempt.usage_summary = redacted_summary(summary, status="completed")
+
+    async def mark_fault_injected(self, run_id, token):
+        async with self.session_factory() as session, session.begin():
+            run, lease = await self._locked_run_and_lease(session, run_id)
+            attempt = await self._locked_attempt(session, run_id, token)
+            await self._assert_active_lease(session, run, lease, token)
+            binding = run.policy_binding or {}
+            if (binding.get("environment") != "rehearsal" or run.policy_cohort != "candidate"
+                or binding.get("rehearsal_fault_profile") not in {"latency", "commit_failure"}):
+                raise ValueError("fault requires frozen signed candidate binding")
+            attempt.fault_injected = True
 
     async def fail(
         self,

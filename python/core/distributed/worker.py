@@ -10,6 +10,7 @@ from core.distributed.executor import BusinessStoreBusy
 from core.distributed.expert_contracts import RunExecutionAuthority
 from core.distributed.repository import FencingViolation
 from core.distributed.rehearsal_store import validate_environment
+from core.distributed.policy_health import RehearsalInjectedCommitFailure, server_diagnostic_code
 from core.distributed.result_identity import validate_business_result
 from core.run_context import RunExhausted
 
@@ -35,6 +36,7 @@ class RunWorker:
         metrics=None,
         registry_process=None,
         allowed_environment="production",
+        observation_recorder=None,
     ) -> None:
         if lease_seconds <= 0:
             raise ValueError("lease_seconds must be positive")
@@ -50,6 +52,7 @@ class RunWorker:
         if allowed_environment not in {"production", "rehearsal"}:
             raise ValueError("invalid allowed environment")
         self.allowed_environment = allowed_environment
+        self.observation_recorder = observation_recorder
         self.repository = repository
         self.broker = broker
         self.executor = executor
@@ -190,6 +193,10 @@ class RunWorker:
         while current is not None:
             if isinstance(current, RunExhausted):
                 return False
+            if server_diagnostic_code(current) in {
+                "ConfirmedPermissionViolation", "RehearsalInjectedCommitFailure",
+            }:
+                return False
             current = current.__cause__
         if isinstance(exc, HTTPException):
             return (
@@ -198,7 +205,7 @@ class RunWorker:
             )
         return not isinstance(
             exc,
-            (PermissionError, ValueError),
+            (PermissionError, ValueError, RehearsalInjectedCommitFailure),
         )
 
     async def _fail(
@@ -222,6 +229,15 @@ class RunWorker:
             code,
             retryable=retryable,
         )
+
+    async def _execute(self, request, authority, binding):
+        if (binding.environment == "rehearsal" and binding.policy_cohort == "candidate"
+            and binding.rehearsal_id is not None and binding.rehearsal_fault_profile == "latency"):
+            await self.repository.mark_fault_injected(
+                str(authority.distributed_run_id), authority.run_fencing_token,
+            )
+            await asyncio.sleep(float(binding.injected_latency_seconds))
+        return await self.executor.execute(request, authority, binding)
 
     async def handle(self, message) -> None:
         run_id = message.payload["run_id"]
@@ -274,6 +290,11 @@ class RunWorker:
                     heartbeat,
                 )
                 request = claim.to_request()
+                binding = claim.policy_binding
+                signed_candidate = (
+                    binding.environment == "rehearsal" and binding.policy_cohort == "candidate"
+                    and binding.rehearsal_id is not None
+                )
                 step = await self.repository.start_step(
                     run_id,
                     "business-execution",
@@ -296,7 +317,7 @@ class RunWorker:
                         )
                     else:
                         execution = asyncio.create_task(
-                            self.executor.execute(
+                            self._execute(
                                 request,
                                 RunExecutionAuthority(
                                     distributed_run_id=claim.run_id,
@@ -355,6 +376,9 @@ class RunWorker:
                         lease_lost,
                         heartbeat,
                     )
+                    if signed_candidate and binding.rehearsal_fault_profile == "commit_failure":
+                        await self.repository.mark_fault_injected(run_id, claim.fencing_token)
+                        raise RehearsalInjectedCommitFailure()
                     await self.repository.transition_committing(
                         run_id,
                         claim.fencing_token,
@@ -405,7 +429,7 @@ class RunWorker:
                 failed = await self._fail(
                     run_id,
                     claim.fencing_token,
-                    type(exc).__name__,
+                    server_diagnostic_code(exc),
                     (
                         claim.attempt_count < self.max_attempts
                         and self._is_retryable(exc)
@@ -432,6 +456,10 @@ class RunWorker:
                     await heartbeat
             if self.registry_process is not None:
                 await self.registry_process.clear_assignment()
+            if self.observation_recorder is not None:
+                # 持久化终态已完成；通知失败可由健康轮询补录。
+                with suppress(Exception):
+                    await self.observation_recorder.record_run(run_id)
 
     async def run_once(self) -> bool:
         messages = await self.broker.reclaim(
