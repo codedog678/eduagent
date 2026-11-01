@@ -1,20 +1,25 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, ConfigProvider, Input } from 'antd'
 import { Activity, GitBranch, LockKeyhole, Server, ShieldCheck } from 'lucide-react'
 import { OPS_TOKEN_KEY, OpsApiError } from './api'
 import RunsView from './RunsView'
 import TraceView from './TraceView'
 import WorkersView from './WorkersView'
+import PoliciesView from './PoliciesView'
 
 type Route =
   | { name: 'runs' }
   | { name: 'trace'; runId: string }
   | { name: 'workers' }
+  | { name: 'policies'; deploymentId?: string }
 
 function readRoute(): Route {
   const hash = window.location.hash || '#/runs'
   if (hash === '#/runs') return { name: 'runs' }
   if (hash === '#/workers') return { name: 'workers' }
+  if (hash === '#/policies') return { name: 'policies' }
+  const policyMatch = hash.match(/^#\/policies\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/)
+  if (policyMatch) return { name: 'policies', deploymentId: policyMatch[1] }
   const match = hash.match(/^#\/trace\/(.+)$/)
   if (match) {
     try {
@@ -50,16 +55,17 @@ export default function OpsApp() {
 
   const title = useMemo(() => {
     if (route.name === 'trace') return '运行 Trace'
+    if (route.name === 'policies') return 'Policies'
     return route.name === 'workers' ? 'Workers' : 'Runs'
   }, [route])
 
-  function handleError(error: unknown): boolean {
+  const handleError = useCallback((error: unknown): boolean => {
     if (error instanceof OpsApiError && (error.status === 401 || error.status === 403)) {
       setAuthRequired(true)
       return true
     }
     return false
-  }
+  }, [])
 
   function retryWithCurrentAccess() {
     setAuthRequired(false)
@@ -88,7 +94,9 @@ export default function OpsApp() {
     ? <TraceView runId={route.runId} onRequestError={handleError} />
     : route.name === 'workers'
       ? <WorkersView onRequestError={handleError} />
-      : <RunsView onRequestError={handleError} />
+      : route.name === 'policies'
+        ? <PoliciesView deploymentId={route.deploymentId} onRequestError={handleError} />
+        : <RunsView onRequestError={handleError} />
 
   return (
     <ConfigProvider
@@ -120,6 +128,9 @@ export default function OpsApp() {
             </a>
             <a className={route.name === 'workers' ? 'active' : ''} href="#/workers">
               <Server size={16} aria-hidden="true" /> Workers
+            </a>
+            <a className={route.name === 'policies' ? 'active' : ''} href="#/policies">
+              <ShieldCheck size={16} aria-hidden="true" /> Policies
             </a>
           </nav>
           <Button

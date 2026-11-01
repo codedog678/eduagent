@@ -1,0 +1,163 @@
+
+Running 22 tests using 2 workers
+
+[1/22] [desktop] › e2e/ops.spec.ts:410:1 › renders populated Ops workflows with pagination, detail, trace, and stale workers
+[2/22] [mobile] › e2e/ops.spec.ts:410:1 › renders populated Ops workflows with pagination, detail, trace, and stale workers
+[3/22] [desktop] › e2e/ops.spec.ts:450:1 › shows loading and empty states without layout shift
+[4/22] [mobile] › e2e/ops.spec.ts:450:1 › shows loading and empty states without layout shift
+[5/22] [desktop] › e2e/ops.spec.ts:461:1 › shows retryable API errors and recovers
+[6/22] [mobile] › e2e/ops.spec.ts:461:1 › shows retryable API errors and recovers
+[7/22] [desktop] › e2e/ops.spec.ts:477:1 › keeps bearer token in session storage and retries authorization
+[8/22] [mobile] › e2e/ops.spec.ts:477:1 › keeps bearer token in session storage and retries authorization
+[9/22] [desktop] › e2e/ops.spec.ts:496:1 › policy evidence filters, cursor pages, detail, metrics and audit are read only
+[10/22] [mobile] › e2e/ops.spec.ts:496:1 › policy evidence filters, cursor pages, detail, metrics and audit are read only
+  1) [desktop] › e2e/ops.spec.ts:496:1 › policy evidence filters, cursor pages, detail, metrics and audit are read only 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "Warning: [antd: Timeline] `items.dot` is deprecated. Please use `items.icon` instead.",
+    + ]
+
+      535 |     await page.screenshot({ path: `${process.env.OPS_SCREENSHOT_DIR}/policies-${testInfo.project.name}.png`, fullPage: true })
+      536 |   }
+    > 537 |   expect(errors).toEqual([])
+          |                  ^
+      538 | })
+      539 |
+      540 | test('policy loading, empty filters and stale requests do not restore old evidence', async ({ page }) => {
+        at /Users/bytedance/Documents/trae_projects/eduagent-m3/frontend/e2e/ops.spec.ts:537:18
+
+    Error Context: ../../../../../../tmp/m3-task9-playwright-green2/ops-policy-evidence-filter-62f4a-ics-and-audit-are-read-only-desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../../../../../tmp/m3-task9-playwright-green2/ops-policy-evidence-filter-62f4a-ics-and-audit-are-read-only-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../../../../../tmp/m3-task9-playwright-green2/ops-policy-evidence-filter-62f4a-ics-and-audit-are-read-only-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+  2) [mobile] › e2e/ops.spec.ts:496:1 › policy evidence filters, cursor pages, detail, metrics and audit are read only 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "Warning: [antd: Timeline] `items.dot` is deprecated. Please use `items.icon` instead.",
+    + ]
+
+      535 |     await page.screenshot({ path: `${process.env.OPS_SCREENSHOT_DIR}/policies-${testInfo.project.name}.png`, fullPage: true })
+      536 |   }
+    > 537 |   expect(errors).toEqual([])
+          |                  ^
+      538 | })
+      539 |
+      540 | test('policy loading, empty filters and stale requests do not restore old evidence', async ({ page }) => {
+        at /Users/bytedance/Documents/trae_projects/eduagent-m3/frontend/e2e/ops.spec.ts:537:18
+
+    Error Context: ../../../../../../tmp/m3-task9-playwright-green2/ops-policy-evidence-filter-62f4a-ics-and-audit-are-read-only-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../../../../../tmp/m3-task9-playwright-green2/ops-policy-evidence-filter-62f4a-ics-and-audit-are-read-only-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../../../../../tmp/m3-task9-playwright-green2/ops-policy-evidence-filter-62f4a-ics-and-audit-are-read-only-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[11/22] [desktop] › e2e/ops.spec.ts:540:1 › policy loading, empty filters and stale requests do not restore old evidence
+[12/22] [mobile] › e2e/ops.spec.ts:540:1 › policy loading, empty filters and stale requests do not restore old evidence
+[13/22] [desktop] › e2e/ops.spec.ts:554:1 › policy errors and detail errors have independent retry recovery
+[14/22] [mobile] › e2e/ops.spec.ts:554:1 › policy errors and detail errors have independent retry recovery
+[15/22] [desktop] › e2e/ops.spec.ts:566:1 › policy strict response guard rejects extra freeform fields
+[16/22] [mobile] › e2e/ops.spec.ts:566:1 › policy strict response guard rejects extra freeform fields
+[17/22] [desktop] › e2e/ops.spec.ts:574:1 › policy authentication uses existing Ops token and clears it on lock
+[18/22] [mobile] › e2e/ops.spec.ts:574:1 › policy authentication uses existing Ops token and clears it on lock
+[19/22] [desktop] › e2e/ops.spec.ts:587:1 › policy Run and Trace display stored immutable identity and link version evidence
+[20/22] [mobile] › e2e/ops.spec.ts:587:1 › policy Run and Trace display stored immutable identity and link version evidence
+  3) [desktop] › e2e/ops.spec.ts:587:1 › policy Run and Trace display stored immutable identity and link version evidence 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('rehearsal', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('rehearsal', { exact: true }) with timeout 5000ms
+      - waiting for getByText('rehearsal', { exact: true })
+
+
+      595 |   await expect(page.getByRole('heading', { name: '运行 Trace' })).toBeVisible()
+      596 |   await expect(page.getByText('b'.repeat(64), { exact: true })).toBeVisible()
+    > 597 |   await expect(page.getByText('rehearsal', { exact: true })).toBeVisible()
+          |                                                              ^
+      598 |   if (process.env.OPS_SCREENSHOT_DIR) {
+      599 |     await page.screenshot({ path: `${process.env.OPS_SCREENSHOT_DIR}/policy-trace-${testInfo.project.name}.png`, fullPage: true })
+      600 |   }
+        at /Users/bytedance/Documents/trae_projects/eduagent-m3/frontend/e2e/ops.spec.ts:597:62
+
+    Error Context: ../../../../../../tmp/m3-task9-playwright-green2/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../../../../../tmp/m3-task9-playwright-green2/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../../../../../tmp/m3-task9-playwright-green2/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+  4) [mobile] › e2e/ops.spec.ts:587:1 › policy Run and Trace display stored immutable identity and link version evidence 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('rehearsal', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('rehearsal', { exact: true }) with timeout 5000ms
+      - waiting for getByText('rehearsal', { exact: true })
+
+
+      595 |   await expect(page.getByRole('heading', { name: '运行 Trace' })).toBeVisible()
+      596 |   await expect(page.getByText('b'.repeat(64), { exact: true })).toBeVisible()
+    > 597 |   await expect(page.getByText('rehearsal', { exact: true })).toBeVisible()
+          |                                                              ^
+      598 |   if (process.env.OPS_SCREENSHOT_DIR) {
+      599 |     await page.screenshot({ path: `${process.env.OPS_SCREENSHOT_DIR}/policy-trace-${testInfo.project.name}.png`, fullPage: true })
+      600 |   }
+        at /Users/bytedance/Documents/trae_projects/eduagent-m3/frontend/e2e/ops.spec.ts:597:62
+
+    Error Context: ../../../../../../tmp/m3-task9-playwright-green2/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../../../../../tmp/m3-task9-playwright-green2/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../../../../../tmp/m3-task9-playwright-green2/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[21/22] [desktop] › e2e/ops.spec.ts:609:1 › policy legacy Run and Trace identity remains unavailable without current policy fallback
+[22/22] [mobile] › e2e/ops.spec.ts:609:1 › policy legacy Run and Trace identity remains unavailable without current policy fallback
+  4 failed
+    [desktop] › e2e/ops.spec.ts:496:1 › policy evidence filters, cursor pages, detail, metrics and audit are read only 
+    [desktop] › e2e/ops.spec.ts:587:1 › policy Run and Trace display stored immutable identity and link version evidence 
+    [mobile] › e2e/ops.spec.ts:496:1 › policy evidence filters, cursor pages, detail, metrics and audit are read only 
+    [mobile] › e2e/ops.spec.ts:587:1 › policy Run and Trace display stored immutable identity and link version evidence 
+  18 passed (19.0s)

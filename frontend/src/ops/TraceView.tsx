@@ -75,17 +75,20 @@ export default function TraceView({ runId, onRequestError }: TraceViewProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   useEffect(() => {
+    let disposed = false
     const pending = getTrace(runId)
     setLoading(true)
     setError('')
     pending.promise.then((value) => {
+      if (disposed) return
       setTrace(value)
       setExpanded(new Set(value.spans.map((span) => span.span_id)))
     }).catch((reason: unknown) => {
+      if (disposed) return
       if (reason instanceof DOMException && reason.name === 'AbortError') return
       if (!onRequestError(reason)) setError(requestMessage(reason))
-    }).finally(() => setLoading(false))
-    return pending.abort
+    }).finally(() => { if (!disposed) setLoading(false) })
+    return () => { disposed = true; pending.abort() }
   }, [runId, reload, onRequestError])
 
   const tree = useMemo(() => buildTree(trace?.spans || []), [trace])
@@ -116,6 +119,14 @@ export default function TraceView({ runId, onRequestError }: TraceViewProps) {
           刷新
         </Button>
       </div>
+
+      {trace && !error && (
+        <section className="ops-policy-binding" aria-label="运行策略绑定">
+          {trace.deployment_id ? <a href={`#/policies/${trace.deployment_id}`}><code className="ops-id">{trace.deployment_id}</code></a> : <span>策略绑定不可用</span>}
+          <span>{trace.policy_cohort ?? '不可用'} · {trace.namespace_class ?? '不可用'}</span>
+          <code className="ops-id">{trace.effective_policy_hash ?? '不可用'}</code>
+        </section>
+      )}
 
       {error ? (
         <Alert

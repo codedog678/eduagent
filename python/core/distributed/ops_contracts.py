@@ -4,8 +4,13 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
+from typing import Annotated, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+from .promotion_contracts import (
+    DeploymentState, Environment, GateType, PolicyCohort, PolicyThresholds, Sha256,
+)
 
 
 class OpsContract(BaseModel):
@@ -21,7 +26,14 @@ class OpsUsage(OpsContract):
     uncertain: bool
 
 
-class OpsRunSummary(OpsContract):
+class OpsPolicyBinding(OpsContract):
+    deployment_id: UUID | None
+    effective_policy_hash: Sha256 | None
+    policy_cohort: PolicyCohort | None
+    namespace_class: Environment | None
+
+
+class OpsRunSummary(OpsPolicyBinding):
     run_id: str
     operation: str
     status: str
@@ -81,7 +93,7 @@ class OpsTraceSpan(OpsContract):
     duration_ms: int = Field(ge=0)
 
 
-class OpsTrace(OpsContract):
+class OpsTrace(OpsPolicyBinding):
     run_id: str
     trace_id: str
     spans: list[OpsTraceSpan]
@@ -152,4 +164,124 @@ class OpsExpertJobPage(OpsContract):
 
 class OpsWorkerPage(OpsContract):
     items: list[OpsWorker]
+    next_cursor: str | None
+
+
+ShortPolicyHash = Annotated[str, Field(pattern=r"^[0-9a-f]{12}$")]
+RedactedIdentity = Literal["redacted"]
+OpsAuditType = Literal[
+    "qualification_registered", "promotion_transitioned", "promotion_rejected",
+    "health_rollback", "admission_artifact_rejected", "redacted",
+]
+OpsThresholdCode = Literal[
+    "confirmed_permission_violation", "baseline_shortage", "cost_unavailable",
+    "structured_decisions_unavailable", "commit_failure_rate", "terminal_failure_rate",
+    "unknown_rate", "latency_increase_rate", "mean_cost_increase_rate",
+    "matched_window_incomplete", "redacted",
+]
+
+
+class OpsCohortCounts(OpsContract):
+    stable: int = Field(ge=0)
+    candidate: int = Field(ge=0)
+    shadow: int = Field(ge=0)
+
+
+class OpsHealthStats(OpsContract):
+    run_count: int | None = Field(default=None, ge=0)
+    commit_failure_rate: Decimal | None = Field(default=None, ge=0, le=1)
+    terminal_failure_rate: Decimal | None = Field(default=None, ge=0, le=1)
+    p95_latency: Decimal | None = Field(default=None, ge=0)
+    mean_cost: Decimal | None = Field(default=None, ge=0)
+    structured_decision_count: int | None = Field(default=None, ge=0)
+    unknown_decision_count: int | None = Field(default=None, ge=0)
+    unknown_rate: Decimal | None = Field(default=None, ge=0, le=1)
+    fault_injected_count: int | None = Field(default=None, ge=0)
+    injected_commit_failure_count: int | None = Field(default=None, ge=0)
+    natural_failure_count: int | None = Field(default=None, ge=0)
+    latency_increase_rate: Decimal | None = None
+    mean_cost_increase_rate: Decimal | None = None
+
+
+class OpsGateReceipt(OpsContract):
+    receipt_id: UUID
+    policy_hash: Sha256
+    gate_type: GateType
+    status: Literal["passed", "failed", "unknown"]
+    evidence_hash: Sha256
+    sample_count: int = Field(ge=0)
+    cost: Decimal = Field(ge=0)
+    issuer: RedactedIdentity
+    issued_at: datetime
+
+
+class OpsHealthWindow(OpsContract):
+    window_id: Sha256
+    deployment_id: UUID
+    deployment_version: int | None = Field(ge=1)
+    environment: Environment
+    metric_contract_version: int = Field(ge=1)
+    thresholds_hash: Sha256 | None
+    candidate_stats: OpsHealthStats
+    stable_stats: OpsHealthStats
+    decision: Literal["pass", "hold", "fail"]
+    triggered_thresholds: list[OpsThresholdCode] = Field(max_length=16)
+    evaluated_at: datetime
+    created_at: datetime
+
+
+class OpsAuditEvent(OpsContract):
+    event_id: UUID
+    environment: Environment
+    deployment_id: UUID | None
+    failed_deployment_id: UUID | None
+    health_window_id: Sha256 | None
+    from_state: DeploymentState | None
+    to_state: DeploymentState | None
+    event_type: OpsAuditType
+    actor: RedactedIdentity
+    reason: RedactedIdentity
+    created_at: datetime
+
+
+class OpsPolicyDeployment(OpsContract):
+    deployment_id: UUID
+    environment: Environment
+    version: int = Field(ge=1)
+    state: DeploymentState
+    candidate_policy_hash: ShortPolicyHash | None
+    stable_policy_hash: ShortPolicyHash
+    is_current: bool
+    current_deployment_id: UUID | None
+    current_version: int | None = Field(ge=1)
+    traffic_basis_points: int = Field(ge=0, le=10000)
+    cohort_counts: OpsCohortCounts
+    thresholds: PolicyThresholds
+    thresholds_hash: Sha256
+    required_receipts: list[GateType] = Field(max_length=8)
+    actor: RedactedIdentity
+    reason: RedactedIdentity
+    created_at: datetime
+
+
+class OpsPolicyDeploymentDetail(OpsPolicyDeployment):
+    candidate_policy_hash: Sha256 | None
+    stable_policy_hash: Sha256
+    gate_receipts: list[OpsGateReceipt] = Field(max_length=8)
+    latest_health_window: OpsHealthWindow | None
+    audit_events: list[OpsAuditEvent] = Field(max_length=100)
+
+
+class OpsPolicyDeploymentPage(OpsContract):
+    items: list[OpsPolicyDeployment] = Field(max_length=100)
+    next_cursor: str | None
+
+
+class OpsHealthWindowPage(OpsContract):
+    items: list[OpsHealthWindow] = Field(max_length=100)
+    next_cursor: str | None
+
+
+class OpsAuditEventPage(OpsContract):
+    items: list[OpsAuditEvent] = Field(max_length=100)
     next_cursor: str | None

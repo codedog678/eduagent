@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import secrets
+import re
 from ipaddress import ip_address
+from uuid import UUID
 
 from fastapi import (
     APIRouter,
@@ -22,8 +24,12 @@ from core.distributed.ops_contracts import (
     OpsRunPage,
     OpsTrace,
     OpsWorkerPage,
+    OpsAuditEventPage, OpsHealthWindowPage, OpsPolicyDeploymentDetail,
+    OpsPolicyDeploymentPage,
 )
 from core.distributed.ops_queries import InvalidOpsCursor
+from pydantic import ValidationError
+from sqlalchemy.exc import SQLAlchemyError
 
 async def require_ops_access(request: Request) -> None:
     runtime = request.app.state.distributed
@@ -269,3 +275,58 @@ async def list_workers(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             str(exc),
         ) from exc
+
+
+def _policy_params(request: Request, allowed: set[str]) -> dict:
+    params = request.query_params
+    if set(params) - allowed or len(params.multi_items()) != len(params):
+        raise HTTPException(422, "invalid policy query")
+    values = dict(params)
+    limit = values.get("limit", "50")
+    if not re.fullmatch(r"[0-9]{1,3}", limit) or not 1 <= int(limit) <= 100:
+        raise HTTPException(422, "invalid policy limit")
+    values["limit"] = int(limit)
+    if any(value == "" or len(str(value)) > 512 for value in values.values()):
+        raise HTTPException(422, "invalid policy query")
+    return values
+
+
+async def _policy_query(request: Request, method: str, **params):
+    try:
+        return await getattr(request.app.state.distributed.ops_queries, method)(**params)
+    except InvalidOpsCursor as exc:
+        raise HTTPException(422, "invalid policy query") from exc
+    except (ValidationError, SQLAlchemyError) as exc:
+        raise HTTPException(503, "policy evidence temporarily unavailable") from exc
+
+
+@router.get("/policies/deployments", response_model=OpsPolicyDeploymentPage)
+async def policy_deployments(request: Request):
+    params = _policy_params(request, {"limit", "cursor", "environment", "state"})
+    return await _policy_query(request, "list_policy_deployments", **params)
+
+
+@router.get("/policies/deployments/{deployment_id}", response_model=OpsPolicyDeploymentDetail)
+async def policy_deployment_detail(request: Request, deployment_id: str):
+    if request.query_params:
+        raise HTTPException(422, "invalid policy query")
+    value = await _policy_query(request, "get_policy_deployment", deployment_id=deployment_id)
+    if value is None:
+        raise HTTPException(404, "policy deployment not found")
+    return value
+
+
+@router.get("/policies/health-windows", response_model=OpsHealthWindowPage)
+async def policy_health_windows(request: Request):
+    params = _policy_params(request, {
+        "limit", "cursor", "environment", "deployment_id", "decision",
+    })
+    return await _policy_query(request, "list_policy_health_windows", **params)
+
+
+@router.get("/policies/audit", response_model=OpsAuditEventPage)
+async def policy_audit(request: Request):
+    params = _policy_params(request, {
+        "limit", "cursor", "environment", "deployment_id", "event_type",
+    })
+    return await _policy_query(request, "list_policy_audit", **params)

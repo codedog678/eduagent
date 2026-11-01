@@ -5,12 +5,16 @@ from __future__ import annotations
 import base64
 import binascii
 import json
+import re
+from contextlib import asynccontextmanager
 from collections import defaultdict
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, get_args
+from uuid import UUID
 
-from sqlalchemy import and_, case, func, or_, select
+from sqlalchemy import and_, case, func, or_, select, text
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from .expert_contracts import ExpertUsage
@@ -40,6 +44,16 @@ from .ops_contracts import (
     OpsUsage,
     OpsWorker,
     OpsWorkerPage,
+    OpsAuditEvent, OpsAuditEventPage, OpsAuditType, OpsCohortCounts,
+    OpsGateReceipt, OpsHealthStats, OpsHealthWindow, OpsHealthWindowPage,
+    OpsPolicyDeployment, OpsPolicyDeploymentDetail, OpsPolicyDeploymentPage,
+    OpsThresholdCode,
+)
+from .promotion_contracts import DeploymentState, GateType
+from .promotion_models import (
+    PolicyArtifactRecord, PolicyAuditEventRecord, PolicyDeploymentRecord,
+    PolicyEnvironmentHeadRecord, PolicyGateReceiptRecord, PolicyHealthWindowRecord,
+    PolicyShadowExecutionRecord,
 )
 
 _SAFE_TRACE_ATTRIBUTES = frozenset(
@@ -92,6 +106,7 @@ def decode_cursor(value: str) -> tuple[datetime, str]:
         return created_at.astimezone(UTC), row_id
     except (
         ValueError,
+        OverflowError,
         TypeError,
         KeyError,
         UnicodeDecodeError,
@@ -186,6 +201,68 @@ def _source_refs(draft: dict[str, Any] | None) -> list[str]:
     ][:16]
 
 
+def _policy_identity(run: DistributedRun) -> dict:
+    namespace = run.state_namespace
+    return {
+        "deployment_id": run.deployment_id,
+        "effective_policy_hash": run.effective_policy_hash,
+        "policy_cohort": run.policy_cohort,
+        "namespace_class": (
+            "production" if namespace == "production"
+            else "rehearsal" if namespace else None
+        ),
+    }
+
+
+def _policy_cursor(value: str, *, hash_id: bool = False) -> tuple[datetime, str]:
+    try:
+        if not 1 <= len(value) <= 512 or not re.fullmatch(r"[A-Za-z0-9_-]+", value):
+            raise ValueError
+        created_at, row_id = decode_cursor(value)
+        if hash_id:
+            if not re.fullmatch(r"[0-9a-f]{64}", row_id):
+                raise ValueError
+        elif str(UUID(row_id)) != row_id:
+            raise ValueError
+        return created_at, row_id
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise InvalidOpsCursor("invalid policy cursor") from exc
+
+
+def _health_stats(raw: dict) -> OpsHealthStats:
+    # Only individually validated numbers leave the database, never freeform JSON values.
+    safe = {}
+    for name in OpsHealthStats.model_fields:
+        value = raw.get(name) if isinstance(raw, dict) else None
+        if value is None or isinstance(value, bool):
+            continue
+        if not isinstance(value, (str, int, float, Decimal)):
+            continue
+        if isinstance(value, str) and not re.fullmatch(
+            r"-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", value,
+        ):
+            continue
+        try:
+            safe[name] = getattr(OpsHealthStats.model_validate({name: value}), name)
+        except ValidationError:
+            continue
+    return OpsHealthStats(**safe)
+
+
+def _keyset(statement, column, id_column, cursor, *, hash_id=False):
+    if cursor is not None:
+        timestamp, row_id = _policy_cursor(cursor, hash_id=hash_id)
+        statement = statement.where(or_(
+            column < timestamp, and_(column == timestamp, id_column < row_id),
+        ))
+    return statement
+
+
+def _next_cursor(rows, limit, id_name):
+    return encode_cursor(rows[limit - 1].created_at, getattr(rows[limit - 1], id_name)) \
+        if len(rows) > limit else None
+
+
 class OpsQueries:
     """Read-only database access used exclusively by the Ops API."""
 
@@ -199,6 +276,240 @@ class OpsQueries:
             raise ValueError("worker_stale_seconds must be positive")
         self.session_factory = session_factory
         self.worker_stale_seconds = worker_stale_seconds
+
+    @asynccontextmanager
+    async def _policy_read_session(self):
+        async with self.session_factory() as session, session.begin():
+            await session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"))
+            yield session
+
+    @staticmethod
+    def _policy_arguments(limit, environment=None, deployment_id=None):
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 100:
+            raise InvalidOpsCursor("invalid policy limit")
+        if environment is not None and environment not in {"production", "rehearsal"}:
+            raise InvalidOpsCursor("invalid policy environment")
+        if deployment_id is not None:
+            try:
+                if str(UUID(deployment_id)) != deployment_id:
+                    raise ValueError
+            except (ValueError, TypeError, AttributeError) as exc:
+                raise InvalidOpsCursor("invalid deployment identity") from exc
+
+    async def list_policy_deployments(
+        self, *, limit, cursor=None, environment=None, state=None,
+    ) -> OpsPolicyDeploymentPage:
+        self._policy_arguments(limit, environment)
+        if state is not None and state not in {item.value for item in DeploymentState}:
+            raise InvalidOpsCursor("invalid policy state")
+        async with self._policy_read_session() as session:
+            statement = select(PolicyDeploymentRecord).order_by(
+                PolicyDeploymentRecord.created_at.desc(), PolicyDeploymentRecord.deployment_id.desc(),
+            ).limit(limit + 1)
+            statement = _keyset(statement, PolicyDeploymentRecord.created_at,
+                                PolicyDeploymentRecord.deployment_id, cursor)
+            if environment is not None:
+                statement = statement.where(PolicyDeploymentRecord.environment == environment)
+            if state is not None:
+                statement = statement.where(PolicyDeploymentRecord.state == state)
+            rows = list(await session.scalars(statement))
+            heads = {head.environment: head for head in await session.scalars(
+                select(PolicyEnvironmentHeadRecord).where(
+                    PolicyEnvironmentHeadRecord.environment.in_(["production", "rehearsal"]),
+                ),
+            )}
+            counts = await self._policy_counts(session, [row.deployment_id for row in rows[:limit]])
+            return OpsPolicyDeploymentPage(
+                items=[self._deployment(row, heads.get(row.environment), counts[row.deployment_id])
+                       for row in rows[:limit]],
+                next_cursor=_next_cursor(rows, limit, "deployment_id"),
+            )
+
+    async def get_policy_deployment(self, deployment_id) -> OpsPolicyDeploymentDetail | None:
+        self._policy_arguments(1, deployment_id=deployment_id)
+        async with self._policy_read_session() as session:
+            row = await session.get(PolicyDeploymentRecord, deployment_id)
+            if row is None:
+                return None
+            head = await session.get(PolicyEnvironmentHeadRecord, row.environment)
+            counts = await self._policy_counts(session, [deployment_id])
+            summary = self._deployment(row, head, counts[deployment_id])
+            # Latest receipts for the artifact's exact protocol/runtime/source binding.
+            # This is evidence display, not authorization or gate re-evaluation.
+            ranked = select(
+                PolicyGateReceiptRecord.receipt_id,
+                func.row_number().over(
+                    partition_by=PolicyGateReceiptRecord.gate_type,
+                    order_by=(PolicyGateReceiptRecord.issued_at.desc(),
+                              PolicyGateReceiptRecord.receipt_id.desc()),
+                ).label("rank"),
+            ).join(
+                PolicyArtifactRecord,
+                and_(PolicyArtifactRecord.policy_hash == PolicyGateReceiptRecord.policy_hash,
+                     PolicyArtifactRecord.protocol_hash == PolicyGateReceiptRecord.protocol_hash,
+                     PolicyArtifactRecord.runtime_hash == PolicyGateReceiptRecord.runtime_hash,
+                     PolicyArtifactRecord.source_revision == PolicyGateReceiptRecord.source_revision),
+            ).where(
+                PolicyGateReceiptRecord.policy_hash == row.candidate_policy_hash,
+                PolicyGateReceiptRecord.gate_type.in_(get_args(GateType)),
+                PolicyGateReceiptRecord.issued_at <= await self._db_now(session),
+            ).subquery()
+            receipts = await session.scalars(select(PolicyGateReceiptRecord).join(
+                ranked, ranked.c.receipt_id == PolicyGateReceiptRecord.receipt_id,
+            ).where(ranked.c.rank == 1).order_by(PolicyGateReceiptRecord.gate_type).limit(8))
+            window = await session.scalar(select(PolicyHealthWindowRecord).where(
+                PolicyHealthWindowRecord.deployment_id == deployment_id,
+            ).order_by(PolicyHealthWindowRecord.created_at.desc(),
+                       PolicyHealthWindowRecord.window_id.desc()).limit(1))
+            audits = await session.scalars(select(PolicyAuditEventRecord).where(
+                self._audit_binding(deployment_id),
+            ).order_by(PolicyAuditEventRecord.created_at.desc(),
+                       PolicyAuditEventRecord.event_id.desc()).limit(100))
+            return OpsPolicyDeploymentDetail(
+                **{**summary.model_dump(), "candidate_policy_hash": row.candidate_policy_hash,
+                   "stable_policy_hash": row.stable_policy_hash},
+                gate_receipts=[OpsGateReceipt(
+                    receipt_id=r.receipt_id, policy_hash=r.policy_hash, gate_type=r.gate_type,
+                    status=r.status, evidence_hash=r.evidence_hash, sample_count=r.sample_count,
+                    cost=r.cost, issuer="redacted", issued_at=r.issued_at,
+                ) for r in receipts],
+                latest_health_window=self._health_window(window, row.environment) if window else None,
+                audit_events=[self._audit_event(a) for a in audits],
+            )
+
+    async def list_policy_health_windows(
+        self, *, limit, cursor=None, environment=None, deployment_id=None, decision=None,
+    ) -> OpsHealthWindowPage:
+        self._policy_arguments(limit, environment, deployment_id)
+        if decision is not None and decision not in {"pass", "hold", "fail"}:
+            raise InvalidOpsCursor("invalid health decision")
+        async with self._policy_read_session() as session:
+            statement = select(PolicyHealthWindowRecord, PolicyDeploymentRecord.environment).join(
+                PolicyDeploymentRecord,
+                PolicyDeploymentRecord.deployment_id == PolicyHealthWindowRecord.deployment_id,
+            ).order_by(PolicyHealthWindowRecord.created_at.desc(),
+                       PolicyHealthWindowRecord.window_id.desc()).limit(limit + 1)
+            statement = _keyset(statement, PolicyHealthWindowRecord.created_at,
+                                PolicyHealthWindowRecord.window_id, cursor, hash_id=True)
+            if environment is not None:
+                statement = statement.where(PolicyDeploymentRecord.environment == environment)
+            if deployment_id is not None:
+                statement = statement.where(PolicyHealthWindowRecord.deployment_id == deployment_id)
+            if decision is not None:
+                statement = statement.where(PolicyHealthWindowRecord.decision == decision)
+            rows = list(await session.execute(statement))
+            return OpsHealthWindowPage(
+                items=[self._health_window(row, env) for row, env in rows[:limit]],
+                next_cursor=_next_cursor([row for row, _ in rows], limit, "window_id"),
+            )
+
+    async def list_policy_audit(
+        self, *, limit, cursor=None, environment=None, deployment_id=None, event_type=None,
+    ) -> OpsAuditEventPage:
+        self._policy_arguments(limit, environment, deployment_id)
+        if event_type is not None and event_type not in set(get_args(OpsAuditType)) - {"redacted"}:
+            raise InvalidOpsCursor("invalid audit event type")
+        async with self._policy_read_session() as session:
+            statement = select(PolicyAuditEventRecord).order_by(
+                PolicyAuditEventRecord.created_at.desc(), PolicyAuditEventRecord.event_id.desc(),
+            ).limit(limit + 1)
+            statement = _keyset(statement, PolicyAuditEventRecord.created_at,
+                                PolicyAuditEventRecord.event_id, cursor)
+            if environment is not None:
+                statement = statement.where(PolicyAuditEventRecord.environment == environment)
+            if deployment_id is not None:
+                statement = statement.where(self._audit_binding(deployment_id))
+            if event_type is not None:
+                statement = statement.where(PolicyAuditEventRecord.event_type == event_type)
+            rows = list(await session.scalars(statement))
+            return OpsAuditEventPage(
+                items=[self._audit_event(row) for row in rows[:limit]],
+                next_cursor=_next_cursor(rows, limit, "event_id"),
+            )
+
+    @staticmethod
+    async def _policy_counts(session, deployment_ids):
+        counts = {value: {"stable": 0, "candidate": 0, "shadow": 0} for value in deployment_ids}
+        if deployment_ids:
+            rows = await session.execute(select(
+                DistributedRun.deployment_id, DistributedRun.policy_cohort, func.count(),
+            ).where(DistributedRun.deployment_id.in_(deployment_ids)).group_by(
+                DistributedRun.deployment_id, DistributedRun.policy_cohort,
+            ))
+            for deployment_id, cohort, count in rows:
+                if cohort in counts[deployment_id]:
+                    counts[deployment_id][cohort] = int(count)
+            shadows = await session.execute(select(
+                PolicyShadowExecutionRecord.deployment_id, func.count(),
+            ).where(PolicyShadowExecutionRecord.deployment_id.in_(deployment_ids)).group_by(
+                PolicyShadowExecutionRecord.deployment_id,
+            ))
+            for deployment_id, count in shadows:
+                counts[deployment_id]["shadow"] += int(count)
+        return counts
+
+    @staticmethod
+    def _deployment(row, head, counts):
+        return OpsPolicyDeployment(
+            deployment_id=row.deployment_id, environment=row.environment, version=row.version,
+            state=row.state, candidate_policy_hash=row.candidate_policy_hash[:12]
+            if row.candidate_policy_hash else None, stable_policy_hash=row.stable_policy_hash[:12],
+            is_current=bool(head and head.current_deployment_id == row.deployment_id),
+            current_deployment_id=head.current_deployment_id if head else None,
+            current_version=head.current_version if head else None,
+            traffic_basis_points=row.traffic_basis_points, cohort_counts=OpsCohortCounts(**counts),
+            thresholds=row.thresholds, thresholds_hash=row.thresholds_hash,
+            required_receipts=[value for value in row.required_receipts if value in get_args(GateType)],
+            actor="redacted", reason="redacted", created_at=row.created_at,
+        )
+
+    @staticmethod
+    def _health_window(row, environment):
+        return OpsHealthWindow(
+            window_id=row.window_id, deployment_id=row.deployment_id,
+            deployment_version=row.deployment_version, environment=environment,
+            metric_contract_version=row.metric_contract_version, thresholds_hash=row.thresholds_hash,
+            candidate_stats=_health_stats(row.candidate_stats), stable_stats=_health_stats(row.stable_stats),
+            decision=row.decision,
+            triggered_thresholds=[value if value in get_args(OpsThresholdCode) else "redacted"
+                                  for value in row.triggered_thresholds[:16]],
+            evaluated_at=row.evaluated_at, created_at=row.created_at,
+        )
+
+    @staticmethod
+    def _audit_binding(deployment_id):
+        return or_(
+            PolicyAuditEventRecord.deployment_id == deployment_id,
+            and_(
+                PolicyAuditEventRecord.event_type == "health_rollback",
+                PolicyAuditEventRecord.details["failed_deployment_id"].as_string() == deployment_id,
+            ),
+        )
+
+    @staticmethod
+    def _audit_event(row):
+        details = row.details if isinstance(row.details, dict) else {}
+        failed_id = details.get("failed_deployment_id") if row.event_type == "health_rollback" else None
+        try:
+            if not isinstance(failed_id, str) or str(UUID(failed_id)) != failed_id:
+                failed_id = None
+        except (ValueError, TypeError, AttributeError):
+            failed_id = None
+        window_id = details.get("window_id") if row.event_type == "health_rollback" else None
+        if not isinstance(window_id, str) or not re.fullmatch(r"[0-9a-f]{64}", window_id):
+            window_id = None
+        states = {item.value for item in DeploymentState}
+        transitions = {
+            name: details.get(name) if row.event_type == "promotion_transitioned"
+            and isinstance(details.get(name), str) and details[name] in states else None
+            for name in ("from_state", "to_state")
+        }
+        return OpsAuditEvent(
+            event_id=row.event_id, environment=row.environment, deployment_id=row.deployment_id,
+            failed_deployment_id=failed_id, health_window_id=window_id, **transitions,
+            event_type=row.event_type if row.event_type in get_args(OpsAuditType) else "redacted",
+            actor="redacted", reason="redacted", created_at=row.created_at,
+        )
 
     async def list_runs(
         self,
@@ -332,6 +643,7 @@ class OpsQueries:
                 )
             )
             return OpsTrace(
+                **_policy_identity(run),
                 run_id=run.id,
                 trace_id=run.trace_id,
                 spans=[self._trace_span(span, now) for span in spans],
@@ -648,6 +960,7 @@ class OpsQueries:
             else now
         )
         return OpsRunSummary(
+            **_policy_identity(run),
             run_id=run.id,
             operation=run.operation,
             status=run.status,

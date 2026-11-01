@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="4" time="1.587" timestamp="2026-11-01T20:56:37.841424+00:00" hostname="HL41657YW6"><testcase classname="tests.distributed.test_promotion_ops_api" name="test_rehearsal_run_identity_survives_real_head_advance_and_health_rollback" time="0.593"><failure message="AssertionError: assert 0 == 1&#10; +  where 0 = len([])&#10; +    where [] = OpsPolicyDeploymentDetail(deployment_id=UUID('6593bc74-ba1c-4833-bbb7-70d6cb6360f7'), environment='rehearsal', version...ne.utc), created_at=datetime.datetime(2026, 11, 1, 20, 56, 38, 875371, tzinfo=datetime.timezone.utc)), audit_events=[]).audit_events">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10ba48310&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10bc73ed0&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b2b7a10&gt;)
+
+    async def test_rehearsal_run_identity_survives_real_head_advance_and_health_rollback(health_repo):
+        from core.distributed.policy_health import PolicyHealthEvaluator
+    
+        repo, promotion, deployment = health_repo
+        run, _ = await admitted(health_repo, "task9-candidate", cohort="candidate")
+        queries = OpsQueries(repo.session_factory)
+        expected = (str(run.deployment_id), run.effective_policy_hash, "candidate", "rehearsal")
+    
+        async def pinned():
+            for result in (await queries.get_run(run.id), await queries.get_run_trace(run.id)):
+                body = result.model_dump(mode="json")
+                assert tuple(body[name] for name in (
+                    "deployment_id", "effective_policy_hash", "policy_cohort", "namespace_class",
+                )) == expected
+                assert run.state_namespace not in json.dumps(body)
+    
+        await pinned()
+        advanced = await candidate_head(repo, state="canary", traffic=5000, version=3)
+        fixture, _ = await fill_window((repo, promotion, advanced), changes={
+            "commit_outcome": "failed", "terminal_status": "commit_failed",
+        })
+        window = await PolicyHealthEvaluator(promotion).evaluate(advanced.deployment_id)
+        assert window.decision == "fail"
+        head = await promotion.get_head("rehearsal")
+        assert head.state.value == "rolled_back"
+        assert str(head.deployment_id) != advanced.deployment_id
+        detail = await queries.get_policy_deployment(advanced.deployment_id)
+&gt;       assert len(detail.audit_events) == 1
+E       AssertionError: assert 0 == 1
+E        +  where 0 = len([])
+E        +    where [] = OpsPolicyDeploymentDetail(deployment_id=UUID('6593bc74-ba1c-4833-bbb7-70d6cb6360f7'), environment='rehearsal', version...ne.utc), created_at=datetime.datetime(2026, 11, 1, 20, 56, 38, 875371, tzinfo=datetime.timezone.utc)), audit_events=[]).audit_events
+
+tests/distributed/test_promotion_ops_api.py:352: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_cohort_counts_include_pinned_runs_and_shadow_jobs" time="0.183" /><testcase classname="tests.distributed.test_promotion_ops_api" name="test_audit_closed_transition_and_typed_relations_never_expose_details" time="0.139"><failure message="KeyError: 'from_state'">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bf482d0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bfa10d0&gt;, ...tEventRecord object at 0x10c00e350&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10be55390&gt;])
+
+    async def test_audit_closed_transition_and_typed_relations_never_expose_details(policy_ops):
+        audit = policy_ops.audits[0]
+        async with policy_ops.repo.session_factory() as session, session.begin():
+            await session.execute(update(PolicyAuditEventRecord).where(
+                PolicyAuditEventRecord.event_id == audit.event_id,
+            ).values(event_type="promotion_transitioned", details={
+                "from_state": "canary", "to_state": "frozen",
+                "failed_deployment_id": SENSITIVE, "window_id": SENSITIVE,
+                "innocent": SENSITIVE,
+            }))
+        page = (await policy_ops.client.get(PATHS[2])).json()
+        body = next(row for row in page["items"] if row["event_id"] == audit.event_id)
+&gt;       assert body["from_state"] == "canary" and body["to_state"] == "frozen"
+               ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'from_state'
+
+tests/distributed/test_promotion_ops_api.py:393: KeyError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_health_numeric_allowlist_does_not_echo_known_field_freeform" time="0.144" /></testsuite></testsuites>

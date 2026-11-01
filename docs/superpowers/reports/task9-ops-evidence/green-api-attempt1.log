@@ -1,0 +1,88 @@
+..................................F..................................... [ 96%]
+..F                                                                      [100%]
+=================================== FAILURES ===================================
+___________ test_strict_redacted_policy_projections_and_latest_gate ____________
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x10ea18dd0>, app=<fastapi.applications.FastAPI object at 0x10e673290>, ...tEventRecord object at 0x10e4cf3d0>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10e689650>])
+
+    async def test_strict_redacted_policy_projections_and_latest_gate(policy_ops):
+        deployment = policy_ops.deployments[1]
+        response = await policy_ops.client.get(f"{PATHS[0]}/{deployment.deployment_id}")
+        assert response.status_code == 200
+        body = response.json()
+        detail_model = getattr(ops_contracts, "OpsPolicyDeploymentDetail")
+        detail_model.model_validate(body)
+        assert body["stable_policy_hash"] == "a" * 64
+        assert body["candidate_policy_hash"] == "b" * 64
+        assert body["is_current"] is False
+        assert body["cohort_counts"] == {"stable": 0, "candidate": 0, "shadow": 0}
+>       assert body["gate_receipts"][0]["status"] == "unknown"
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+tests/distributed/test_promotion_ops_api.py:199: IndexError
+_________________ test_ops_router_exposes_no_mutation_methods __________________
+
+    def test_ops_router_exposes_no_mutation_methods():
+        app = create_app()
+        routes = {
+            path: operations
+            for path, operations in app.openapi()["paths"].items()
+            if path.startswith("/ops")
+        }
+    
+>       assert set(routes) == {
+            "/ops/runs",
+            "/ops/runs/{run_id}",
+            "/ops/runs/{run_id}/trace",
+            "/ops/expert-jobs",
+            "/ops/expert-jobs/{job_id}",
+            "/ops/workers",
+        }
+E       AssertionError: assert {'/ops/expert...windows', ...} == {'/ops/expert.../ops/workers'}
+E         
+E         Extra items in the left set:
+E         '/ops/policies/deployments/{deployment_id}'
+E         '/ops/policies/health-windows'
+E         '/ops/policies/audit'
+E         '/ops/policies/deployments'
+E         
+E         Full diff:
+E           {
+E               '/ops/expert-jobs',
+E               '/ops/expert-jobs/{job_id}',
+E         +     '/ops/policies/audit',
+E         +     '/ops/policies/deployments',
+E         +     '/ops/policies/deployments/{deployment_id}',
+E         +     '/ops/policies/health-windows',
+E               '/ops/runs',
+E               '/ops/runs/{run_id}',
+E               '/ops/runs/{run_id}/trace',
+E               '/ops/workers',
+E           }
+
+tests/distributed/test_ops_api.py:689: AssertionError
+=========================== short test summary info ============================
+FAILED tests/distributed/test_promotion_ops_api.py::test_strict_redacted_policy_projections_and_latest_gate - IndexError: list index out of range
+FAILED tests/distributed/test_ops_api.py::test_ops_router_exposes_no_mutation_methods - AssertionError: assert {'/ops/expert...windows', ...} == {'/ops/expert.../ops/workers'}
+  
+  Extra items in the left set:
+  '/ops/policies/deployments/{deployment_id}'
+  '/ops/policies/health-windows'
+  '/ops/policies/audit'
+  '/ops/policies/deployments'
+  
+  Full diff:
+    {
+        '/ops/expert-jobs',
+        '/ops/expert-jobs/{job_id}',
+  +     '/ops/policies/audit',
+  +     '/ops/policies/deployments',
+  +     '/ops/policies/deployments/{deployment_id}',
+  +     '/ops/policies/health-windows',
+        '/ops/runs',
+        '/ops/runs/{run_id}',
+        '/ops/runs/{run_id}/trace',
+        '/ops/workers',
+    }
+2 failed, 73 passed in 11.03s

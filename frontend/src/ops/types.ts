@@ -9,7 +9,25 @@ export interface OpsUsage {
   uncertain: boolean
 }
 
-export interface OpsRunSummary {
+export type PolicyEnvironment = 'production' | 'rehearsal'
+export type PolicyState = 'registered' | 'shadow' | 'canary' | 'active' | 'frozen' | 'rolled_back'
+export type PolicyGate = 'artifact_integrity' | 'campaign_eligibility' | 'judge_calibration'
+  | 'formal_holdout' | 'harness_qualification' | 'shadow_health' | 'canary_health' | 'promotion_approval'
+export type PolicyAuditType = 'qualification_registered' | 'promotion_transitioned'
+  | 'promotion_rejected' | 'health_rollback' | 'admission_artifact_rejected' | 'redacted'
+export type PolicyThresholdCode = 'confirmed_permission_violation' | 'baseline_shortage'
+  | 'cost_unavailable' | 'structured_decisions_unavailable' | 'commit_failure_rate'
+  | 'terminal_failure_rate' | 'unknown_rate' | 'latency_increase_rate'
+  | 'mean_cost_increase_rate' | 'matched_window_incomplete' | 'redacted'
+
+export interface OpsPolicyBinding {
+  deployment_id: string | null
+  effective_policy_hash: string | null
+  policy_cohort: 'stable' | 'candidate' | 'shadow' | null
+  namespace_class: PolicyEnvironment | null
+}
+
+export interface OpsRunSummary extends OpsPolicyBinding {
   run_id: string
   operation: string
   status: string
@@ -69,7 +87,7 @@ export interface OpsTraceSpan {
   duration_ms: number
 }
 
-export interface OpsTrace {
+export interface OpsTrace extends OpsPolicyBinding {
   run_id: string
   trace_id: string
   spans: OpsTraceSpan[]
@@ -146,4 +164,104 @@ export interface OpsWorkerPage {
 export interface CursorPageState {
   cursor: string | null
   history: Array<string | null>
+}
+
+export interface OpsPolicyThresholds {
+  candidate_min_runs: number
+  stable_min_runs: number
+  window_max_runs: number
+  commit_failure_rate: string
+  terminal_failure_rate: string
+  latency_increase_rate: string
+  mean_cost_increase_rate: string
+  unknown_rate: string
+  relative_epsilon: string
+}
+
+export interface OpsHealthStats {
+  run_count: number | null
+  commit_failure_rate: string | null
+  terminal_failure_rate: string | null
+  p95_latency: string | null
+  mean_cost: string | null
+  structured_decision_count: number | null
+  unknown_decision_count: number | null
+  unknown_rate: string | null
+  fault_injected_count: number | null
+  injected_commit_failure_count: number | null
+  natural_failure_count: number | null
+  latency_increase_rate: string | null
+  mean_cost_increase_rate: string | null
+}
+
+export interface OpsGateReceipt {
+  receipt_id: string
+  policy_hash: string
+  gate_type: PolicyGate
+  status: 'passed' | 'failed' | 'unknown'
+  evidence_hash: string
+  sample_count: number
+  cost: string
+  issuer: 'redacted'
+  issued_at: string
+}
+
+export interface OpsHealthWindow {
+  window_id: string
+  deployment_id: string
+  deployment_version: number | null
+  environment: PolicyEnvironment
+  metric_contract_version: number
+  thresholds_hash: string | null
+  candidate_stats: OpsHealthStats
+  stable_stats: OpsHealthStats
+  decision: 'pass' | 'hold' | 'fail'
+  triggered_thresholds: PolicyThresholdCode[]
+  evaluated_at: string
+  created_at: string
+}
+
+export interface OpsAuditEvent {
+  event_id: string
+  environment: PolicyEnvironment
+  deployment_id: string | null
+  failed_deployment_id: string | null
+  health_window_id: string | null
+  from_state: PolicyState | null
+  to_state: PolicyState | null
+  event_type: PolicyAuditType
+  actor: 'redacted'
+  reason: 'redacted'
+  created_at: string
+}
+
+export interface OpsPolicyDeployment {
+  deployment_id: string
+  environment: PolicyEnvironment
+  version: number
+  state: PolicyState
+  candidate_policy_hash: string | null
+  stable_policy_hash: string
+  is_current: boolean
+  current_deployment_id: string | null
+  current_version: number | null
+  traffic_basis_points: number
+  cohort_counts: { stable: number; candidate: number; shadow: number }
+  thresholds: OpsPolicyThresholds
+  thresholds_hash: string
+  required_receipts: PolicyGate[]
+  actor: 'redacted'
+  reason: 'redacted'
+  created_at: string
+}
+
+export interface OpsPolicyDeploymentDetail extends OpsPolicyDeployment {
+  gate_receipts: OpsGateReceipt[]
+  latest_health_window: OpsHealthWindow | null
+  audit_events: OpsAuditEvent[]
+}
+
+export interface OpsPolicyPage<T> {
+  items: T[]
+  next_cursor: string | null
 }

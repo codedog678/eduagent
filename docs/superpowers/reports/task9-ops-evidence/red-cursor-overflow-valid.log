@@ -1,0 +1,646 @@
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+_ test_policy_cursor_timezone_overflow_is_safe_422[0001-01-01T00:00:00+23:59-/ops/policies/deployments] _
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x1092b9910>, app=<fastapi.applications.FastAPI object at 0x10919ff50>, ...tEventRecord object at 0x1092853d0>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10928d090>])
+path = '/ops/policies/deployments', timestamp = '0001-01-01T00:00:00+23:59'
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("timestamp", [
+        "0001-01-01T00:00:00+23:59",
+        "9999-12-31T23:59:59-23:59",
+    ])
+    async def test_policy_cursor_timezone_overflow_is_safe_422(policy_ops, path, timestamp):
+        row_id = "1" * 64 if path.endswith("health-windows") else "11111111-1111-1111-1111-111111111111"
+        cursor = base64.urlsafe_b64encode(json.dumps({
+            "created_at": timestamp, "id": row_id,
+        }).encode()).decode().rstrip("=")
+>       response = await policy_ops.client.get(path, params={"cursor": cursor})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/distributed/test_promotion_ops_api.py:173: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_transports/asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/applications.py:1159: in __call__
+    await super().__call__(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:680: in app
+    await route.handle(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:276: in handle
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:134: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:120: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:674: in app
+    raw_response = await run_endpoint_function(
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:328: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api/ops_routes.py:306: in policy_deployments
+    return await _policy_query(request, "list_policy_deployments", **params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api/ops_routes.py:296: in _policy_query
+    return await getattr(request.app.state.distributed.ops_queries, method)(**params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/ops_queries.py:308: in list_policy_deployments
+    statement = _keyset(statement, PolicyDeploymentRecord.created_at,
+core/distributed/ops_queries.py:253: in _keyset
+    timestamp, row_id = _policy_cursor(cursor, hash_id=hash_id)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/ops_queries.py:220: in _policy_cursor
+    created_at, row_id = decode_cursor(value)
+                         ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = 'eyJjcmVhdGVkX2F0IjogIjAwMDEtMDEtMDFUMDA6MDA6MDArMjM6NTkiLCAiaWQiOiAiMTExMTExMTEtMTExMS0xMTExLTExMTEtMTExMTExMTExMTExIn0'
+
+    def decode_cursor(value: str) -> tuple[datetime, str]:
+        try:
+            padded = value + "=" * (-len(value) % 4)
+            body = json.loads(base64.urlsafe_b64decode(padded).decode())
+            if set(body) != {"created_at", "id"}:
+                raise ValueError
+            created_at = datetime.fromisoformat(body["created_at"])
+            row_id = body["id"]
+            if created_at.tzinfo is None or not isinstance(row_id, str) or not row_id:
+                raise ValueError
+>           return created_at.astimezone(UTC), row_id
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           OverflowError: date value out of range
+
+core/distributed/ops_queries.py:106: OverflowError
+_ test_policy_cursor_timezone_overflow_is_safe_422[0001-01-01T00:00:00+23:59-/ops/policies/health-windows] _
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x107a09cd0>, app=<fastapi.applications.FastAPI object at 0x1091a36d0>, ...tEventRecord object at 0x1096888d0>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10967c950>])
+path = '/ops/policies/health-windows', timestamp = '0001-01-01T00:00:00+23:59'
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("timestamp", [
+        "0001-01-01T00:00:00+23:59",
+        "9999-12-31T23:59:59-23:59",
+    ])
+    async def test_policy_cursor_timezone_overflow_is_safe_422(policy_ops, path, timestamp):
+        row_id = "1" * 64 if path.endswith("health-windows") else "11111111-1111-1111-1111-111111111111"
+        cursor = base64.urlsafe_b64encode(json.dumps({
+            "created_at": timestamp, "id": row_id,
+        }).encode()).decode().rstrip("=")
+>       response = await policy_ops.client.get(path, params={"cursor": cursor})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/distributed/test_promotion_ops_api.py:173: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_transports/asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/applications.py:1159: in __call__
+    await super().__call__(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:680: in app
+    await route.handle(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:276: in handle
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:134: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:120: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:674: in app
+    raw_response = await run_endpoint_function(
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:328: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api/ops_routes.py:324: in policy_health_windows
+    return await _policy_query(request, "list_policy_health_windows", **params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api/ops_routes.py:296: in _policy_query
+    return await getattr(request.app.state.distributed.ops_queries, method)(**params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/ops_queries.py:391: in list_policy_health_windows
+    statement = _keyset(statement, PolicyHealthWindowRecord.created_at,
+core/distributed/ops_queries.py:253: in _keyset
+    timestamp, row_id = _policy_cursor(cursor, hash_id=hash_id)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/ops_queries.py:220: in _policy_cursor
+    created_at, row_id = decode_cursor(value)
+                         ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = 'eyJjcmVhdGVkX2F0IjogIjAwMDEtMDEtMDFUMDA6MDA6MDArMjM6NTkiLCAiaWQiOiAiMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMSJ9'
+
+    def decode_cursor(value: str) -> tuple[datetime, str]:
+        try:
+            padded = value + "=" * (-len(value) % 4)
+            body = json.loads(base64.urlsafe_b64decode(padded).decode())
+            if set(body) != {"created_at", "id"}:
+                raise ValueError
+            created_at = datetime.fromisoformat(body["created_at"])
+            row_id = body["id"]
+            if created_at.tzinfo is None or not isinstance(row_id, str) or not row_id:
+                raise ValueError
+>           return created_at.astimezone(UTC), row_id
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           OverflowError: date value out of range
+
+core/distributed/ops_queries.py:106: OverflowError
+_ test_policy_cursor_timezone_overflow_is_safe_422[0001-01-01T00:00:00+23:59-/ops/policies/audit] _
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x10934f9d0>, app=<fastapi.applications.FastAPI object at 0x109146510>, ...tEventRecord object at 0x1092bb990>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x1099eec50>])
+path = '/ops/policies/audit', timestamp = '0001-01-01T00:00:00+23:59'
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("timestamp", [
+        "0001-01-01T00:00:00+23:59",
+        "9999-12-31T23:59:59-23:59",
+    ])
+    async def test_policy_cursor_timezone_overflow_is_safe_422(policy_ops, path, timestamp):
+        row_id = "1" * 64 if path.endswith("health-windows") else "11111111-1111-1111-1111-111111111111"
+        cursor = base64.urlsafe_b64encode(json.dumps({
+            "created_at": timestamp, "id": row_id,
+        }).encode()).decode().rstrip("=")
+>       response = await policy_ops.client.get(path, params={"cursor": cursor})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/distributed/test_promotion_ops_api.py:173: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_transports/asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/applications.py:1159: in __call__
+    await super().__call__(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:680: in app
+    await route.handle(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:276: in handle
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:134: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:120: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:674: in app
+    raw_response = await run_endpoint_function(
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:328: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api/ops_routes.py:332: in policy_audit
+    return await _policy_query(request, "list_policy_audit", **params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api/ops_routes.py:296: in _policy_query
+    return await getattr(request.app.state.distributed.ops_queries, method)(**params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/ops_queries.py:415: in list_policy_audit
+    statement = _keyset(statement, PolicyAuditEventRecord.created_at,
+core/distributed/ops_queries.py:253: in _keyset
+    timestamp, row_id = _policy_cursor(cursor, hash_id=hash_id)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/ops_queries.py:220: in _policy_cursor
+    created_at, row_id = decode_cursor(value)
+                         ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = 'eyJjcmVhdGVkX2F0IjogIjAwMDEtMDEtMDFUMDA6MDA6MDArMjM6NTkiLCAiaWQiOiAiMTExMTExMTEtMTExMS0xMTExLTExMTEtMTExMTExMTExMTExIn0'
+
+    def decode_cursor(value: str) -> tuple[datetime, str]:
+        try:
+            padded = value + "=" * (-len(value) % 4)
+            body = json.loads(base64.urlsafe_b64decode(padded).decode())
+            if set(body) != {"created_at", "id"}:
+                raise ValueError
+            created_at = datetime.fromisoformat(body["created_at"])
+            row_id = body["id"]
+            if created_at.tzinfo is None or not isinstance(row_id, str) or not row_id:
+                raise ValueError
+>           return created_at.astimezone(UTC), row_id
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           OverflowError: date value out of range
+
+core/distributed/ops_queries.py:106: OverflowError
+_ test_policy_cursor_timezone_overflow_is_safe_422[9999-12-31T23:59:59-23:59-/ops/policies/deployments] _
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x1091c8590>, app=<fastapi.applications.FastAPI object at 0x1091afc10>, ...tEventRecord object at 0x107a09850>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x109beee90>])
+path = '/ops/policies/deployments', timestamp = '9999-12-31T23:59:59-23:59'
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("timestamp", [
+        "0001-01-01T00:00:00+23:59",
+        "9999-12-31T23:59:59-23:59",
+    ])
+    async def test_policy_cursor_timezone_overflow_is_safe_422(policy_ops, path, timestamp):
+        row_id = "1" * 64 if path.endswith("health-windows") else "11111111-1111-1111-1111-111111111111"
+        cursor = base64.urlsafe_b64encode(json.dumps({
+            "created_at": timestamp, "id": row_id,
+        }).encode()).decode().rstrip("=")
+>       response = await policy_ops.client.get(path, params={"cursor": cursor})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/distributed/test_promotion_ops_api.py:173: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_transports/asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/applications.py:1159: in __call__
+    await super().__call__(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:680: in app
+    await route.handle(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:276: in handle
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:134: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:120: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:674: in app
+    raw_response = await run_endpoint_function(
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:328: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api/ops_routes.py:306: in policy_deployments
+    return await _policy_query(request, "list_policy_deployments", **params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api/ops_routes.py:296: in _policy_query
+    return await getattr(request.app.state.distributed.ops_queries, method)(**params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/ops_queries.py:308: in list_policy_deployments
+    statement = _keyset(statement, PolicyDeploymentRecord.created_at,
+core/distributed/ops_queries.py:253: in _keyset
+    timestamp, row_id = _policy_cursor(cursor, hash_id=hash_id)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/ops_queries.py:220: in _policy_cursor
+    created_at, row_id = decode_cursor(value)
+                         ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = 'eyJjcmVhdGVkX2F0IjogIjk5OTktMTItMzFUMjM6NTk6NTktMjM6NTkiLCAiaWQiOiAiMTExMTExMTEtMTExMS0xMTExLTExMTEtMTExMTExMTExMTExIn0'
+
+    def decode_cursor(value: str) -> tuple[datetime, str]:
+        try:
+            padded = value + "=" * (-len(value) % 4)
+            body = json.loads(base64.urlsafe_b64decode(padded).decode())
+            if set(body) != {"created_at", "id"}:
+                raise ValueError
+            created_at = datetime.fromisoformat(body["created_at"])
+            row_id = body["id"]
+            if created_at.tzinfo is None or not isinstance(row_id, str) or not row_id:
+                raise ValueError
+>           return created_at.astimezone(UTC), row_id
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           OverflowError: date value out of range
+
+core/distributed/ops_queries.py:106: OverflowError
+_ test_policy_cursor_timezone_overflow_is_safe_422[9999-12-31T23:59:59-23:59-/ops/policies/health-windows] _
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x1092e3110>, app=<fastapi.applications.FastAPI object at 0x1099f4ed0>, ...tEventRecord object at 0x10965a090>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x1096d4d10>])
+path = '/ops/policies/health-windows', timestamp = '9999-12-31T23:59:59-23:59'
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("timestamp", [
+        "0001-01-01T00:00:00+23:59",
+        "9999-12-31T23:59:59-23:59",
+    ])
+    async def test_policy_cursor_timezone_overflow_is_safe_422(policy_ops, path, timestamp):
+        row_id = "1" * 64 if path.endswith("health-windows") else "11111111-1111-1111-1111-111111111111"
+        cursor = base64.urlsafe_b64encode(json.dumps({
+            "created_at": timestamp, "id": row_id,
+        }).encode()).decode().rstrip("=")
+>       response = await policy_ops.client.get(path, params={"cursor": cursor})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/distributed/test_promotion_ops_api.py:173: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_transports/asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/applications.py:1159: in __call__
+    await super().__call__(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:680: in app
+    await route.handle(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:276: in handle
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:134: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:120: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:674: in app
+    raw_response = await run_endpoint_function(
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:328: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api/ops_routes.py:324: in policy_health_windows
+    return await _policy_query(request, "list_policy_health_windows", **params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api/ops_routes.py:296: in _policy_query
+    return await getattr(request.app.state.distributed.ops_queries, method)(**params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/ops_queries.py:391: in list_policy_health_windows
+    statement = _keyset(statement, PolicyHealthWindowRecord.created_at,
+core/distributed/ops_queries.py:253: in _keyset
+    timestamp, row_id = _policy_cursor(cursor, hash_id=hash_id)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/ops_queries.py:220: in _policy_cursor
+    created_at, row_id = decode_cursor(value)
+                         ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = 'eyJjcmVhdGVkX2F0IjogIjk5OTktMTItMzFUMjM6NTk6NTktMjM6NTkiLCAiaWQiOiAiMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMSJ9'
+
+    def decode_cursor(value: str) -> tuple[datetime, str]:
+        try:
+            padded = value + "=" * (-len(value) % 4)
+            body = json.loads(base64.urlsafe_b64decode(padded).decode())
+            if set(body) != {"created_at", "id"}:
+                raise ValueError
+            created_at = datetime.fromisoformat(body["created_at"])
+            row_id = body["id"]
+            if created_at.tzinfo is None or not isinstance(row_id, str) or not row_id:
+                raise ValueError
+>           return created_at.astimezone(UTC), row_id
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           OverflowError: date value out of range
+
+core/distributed/ops_queries.py:106: OverflowError
+_ test_policy_cursor_timezone_overflow_is_safe_422[9999-12-31T23:59:59-23:59-/ops/policies/audit] _
+
+policy_ops = namespace(client=<httpx.AsyncClient object at 0x1092985d0>, app=<fastapi.applications.FastAPI object at 0x109b3c7d0>, ...tEventRecord object at 0x109a1a350>, <core.distributed.promotion_models.PolicyAuditEventRecord object at 0x109a1be50>])
+path = '/ops/policies/audit', timestamp = '9999-12-31T23:59:59-23:59'
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("timestamp", [
+        "0001-01-01T00:00:00+23:59",
+        "9999-12-31T23:59:59-23:59",
+    ])
+    async def test_policy_cursor_timezone_overflow_is_safe_422(policy_ops, path, timestamp):
+        row_id = "1" * 64 if path.endswith("health-windows") else "11111111-1111-1111-1111-111111111111"
+        cursor = base64.urlsafe_b64encode(json.dumps({
+            "created_at": timestamp, "id": row_id,
+        }).encode()).decode().rstrip("=")
+>       response = await policy_ops.client.get(path, params={"cursor": cursor})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/distributed/test_promotion_ops_api.py:173: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/httpx/_transports/asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/applications.py:1159: in __call__
+    await super().__call__(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:680: in app
+    await route.handle(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/routing.py:276: in handle
+    await self.app(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:134: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../eduagent/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:120: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:674: in app
+    raw_response = await run_endpoint_function(
+../../eduagent/.venv/lib/python3.11/site-packages/fastapi/routing.py:328: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api/ops_routes.py:332: in policy_audit
+    return await _policy_query(request, "list_policy_audit", **params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api/ops_routes.py:296: in _policy_query
+    return await getattr(request.app.state.distributed.ops_queries, method)(**params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/ops_queries.py:415: in list_policy_audit
+    statement = _keyset(statement, PolicyAuditEventRecord.created_at,
+core/distributed/ops_queries.py:253: in _keyset
+    timestamp, row_id = _policy_cursor(cursor, hash_id=hash_id)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/ops_queries.py:220: in _policy_cursor
+    created_at, row_id = decode_cursor(value)
+                         ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = 'eyJjcmVhdGVkX2F0IjogIjk5OTktMTItMzFUMjM6NTk6NTktMjM6NTkiLCAiaWQiOiAiMTExMTExMTEtMTExMS0xMTExLTExMTEtMTExMTExMTExMTExIn0'
+
+    def decode_cursor(value: str) -> tuple[datetime, str]:
+        try:
+            padded = value + "=" * (-len(value) % 4)
+            body = json.loads(base64.urlsafe_b64decode(padded).decode())
+            if set(body) != {"created_at", "id"}:
+                raise ValueError
+            created_at = datetime.fromisoformat(body["created_at"])
+            row_id = body["id"]
+            if created_at.tzinfo is None or not isinstance(row_id, str) or not row_id:
+                raise ValueError
+>           return created_at.astimezone(UTC), row_id
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           OverflowError: date value out of range
+
+core/distributed/ops_queries.py:106: OverflowError
+=========================== short test summary info ============================
+FAILED tests/distributed/test_promotion_ops_api.py::test_policy_cursor_timezone_overflow_is_safe_422[0001-01-01T00:00:00+23:59-/ops/policies/deployments] - OverflowError: date value out of range
+FAILED tests/distributed/test_promotion_ops_api.py::test_policy_cursor_timezone_overflow_is_safe_422[0001-01-01T00:00:00+23:59-/ops/policies/health-windows] - OverflowError: date value out of range
+FAILED tests/distributed/test_promotion_ops_api.py::test_policy_cursor_timezone_overflow_is_safe_422[0001-01-01T00:00:00+23:59-/ops/policies/audit] - OverflowError: date value out of range
+FAILED tests/distributed/test_promotion_ops_api.py::test_policy_cursor_timezone_overflow_is_safe_422[9999-12-31T23:59:59-23:59-/ops/policies/deployments] - OverflowError: date value out of range
+FAILED tests/distributed/test_promotion_ops_api.py::test_policy_cursor_timezone_overflow_is_safe_422[9999-12-31T23:59:59-23:59-/ops/policies/health-windows] - OverflowError: date value out of range
+FAILED tests/distributed/test_promotion_ops_api.py::test_policy_cursor_timezone_overflow_is_safe_422[9999-12-31T23:59:59-23:59-/ops/policies/audit] - OverflowError: date value out of range
+6 failed, 57 deselected in 2.00s

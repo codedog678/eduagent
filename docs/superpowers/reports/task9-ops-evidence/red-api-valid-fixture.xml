@@ -1,0 +1,829 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="56" skipped="0" tests="75" time="12.679" timestamp="2026-11-01T20:41:24.582598+00:00" hostname="HL41657YW6"><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_keyset_ties_are_complete_unique_and_bounded[/ops/policies/deployments-deployment_id]" time="0.305"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b2f77d0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10af12ed0&gt;, ...tEventRecord object at 0x10b2c0ed0&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b2d4410&gt;])
+path = '/ops/policies/deployments', key = 'deployment_id'
+
+    @pytest.mark.parametrize("path,key", zip(PATHS, ("deployment_id", "window_id", "event_id")))
+    async def test_policy_keyset_ties_are_complete_unique_and_bounded(policy_ops, path, key):
+        cursor, seen = None, []
+        while True:
+            params = {"limit": 1, "environment": "rehearsal"}
+            if cursor:
+                params["cursor"] = cursor
+            response = await policy_ops.client.get(path, params=params)
+&gt;           assert response.status_code == 200
+E           assert 404 == 200
+E            +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:120: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_keyset_ties_are_complete_unique_and_bounded[/ops/policies/health-windows-window_id]" time="0.124"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b3a6b50&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b1ee950&gt;, ...tEventRecord object at 0x10b369d90&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b3443d0&gt;])
+path = '/ops/policies/health-windows', key = 'window_id'
+
+    @pytest.mark.parametrize("path,key", zip(PATHS, ("deployment_id", "window_id", "event_id")))
+    async def test_policy_keyset_ties_are_complete_unique_and_bounded(policy_ops, path, key):
+        cursor, seen = None, []
+        while True:
+            params = {"limit": 1, "environment": "rehearsal"}
+            if cursor:
+                params["cursor"] = cursor
+            response = await policy_ops.client.get(path, params=params)
+&gt;           assert response.status_code == 200
+E           assert 404 == 200
+E            +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:120: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_keyset_ties_are_complete_unique_and_bounded[/ops/policies/audit-event_id]" time="0.155"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10af5fdd0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b430f50&gt;, ...tEventRecord object at 0x10b3c8c10&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b3cb350&gt;])
+path = '/ops/policies/audit', key = 'event_id'
+
+    @pytest.mark.parametrize("path,key", zip(PATHS, ("deployment_id", "window_id", "event_id")))
+    async def test_policy_keyset_ties_are_complete_unique_and_bounded(policy_ops, path, key):
+        cursor, seen = None, []
+        while True:
+            params = {"limit": 1, "environment": "rehearsal"}
+            if cursor:
+                params["cursor"] = cursor
+            response = await policy_ops.client.get(path, params=params)
+&gt;           assert response.status_code == 200
+E           assert 404 == 200
+E            +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:120: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params0-/ops/policies/deployments]" time="0.129"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b4013d0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b3898d0&gt;, ...tEventRecord object at 0x10b2e7f50&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b2f77d0&gt;])
+path = '/ops/policies/deployments', params = {'limit': 0}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params0-/ops/policies/health-windows]" time="0.135"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b4aba50&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b355f50&gt;, ...tEventRecord object at 0x10b4e3710&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b476110&gt;])
+path = '/ops/policies/health-windows', params = {'limit': 0}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params0-/ops/policies/audit]" time="0.115"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b532c90&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b4445d0&gt;, ...tEventRecord object at 0x10b4b97d0&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b4bbdd0&gt;])
+path = '/ops/policies/audit', params = {'limit': 0}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params1-/ops/policies/deployments]" time="0.126"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b598a50&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b4c7350&gt;, ...tEventRecord object at 0x10b526cd0&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b541410&gt;])
+path = '/ops/policies/deployments', params = {'limit': 101}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params1-/ops/policies/health-windows]" time="0.133"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b5ae010&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b4fb310&gt;, ...tEventRecord object at 0x10b5b1790&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b5b2dd0&gt;])
+path = '/ops/policies/health-windows', params = {'limit': 101}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params1-/ops/policies/audit]" time="0.126"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b637850&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b5cfed0&gt;, ...tEventRecord object at 0x10b5ffe90&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b62e510&gt;])
+path = '/ops/policies/audit', params = {'limit': 101}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params2-/ops/policies/deployments]" time="0.132"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b6c33d0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b4c4090&gt;, ...tEventRecord object at 0x10b692b10&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b6a9f10&gt;])
+path = '/ops/policies/deployments', params = {'limit': 'private-secret'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params2-/ops/policies/health-windows]" time="0.124"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b735e10&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b6c7b50&gt;, ...tEventRecord object at 0x10b709190&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b70a910&gt;])
+path = '/ops/policies/health-windows', params = {'limit': 'private-secret'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params2-/ops/policies/audit]" time="0.132"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b798b90&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b6ceed0&gt;, ...tEventRecord object at 0x10b767e10&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b762610&gt;])
+path = '/ops/policies/audit', params = {'limit': 'private-secret'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params3-/ops/policies/deployments]" time="0.131"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b80f350&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b736850&gt;, ...tEventRecord object at 0x10b7ee810&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b7e8810&gt;])
+path = '/ops/policies/deployments', params = {'environment': 'private-secret'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params3-/ops/policies/health-windows]" time="0.111"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b8720d0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b838690&gt;, ...tEventRecord object at 0x10b7f1250&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b7f3a10&gt;])
+path = '/ops/policies/health-windows'
+params = {'environment': 'private-secret'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params3-/ops/policies/audit]" time="0.117"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b8e8990&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b817690&gt;, ...tEventRecord object at 0x10b88c050&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b88ed50&gt;])
+path = '/ops/policies/audit', params = {'environment': 'private-secret'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params4-/ops/policies/deployments]" time="0.132"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b8ea290&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b896f90&gt;, ...tEventRecord object at 0x10b7d6f10&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b8c29d0&gt;])
+path = '/ops/policies/deployments'
+params = {'unused-private-secret': 'Bearer abc.def.private nonce learner request privateprompt output artifact'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params4-/ops/policies/health-windows]" time="0.318"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b6aead0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b8588d0&gt;, ...tEventRecord object at 0x10b75c510&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b693250&gt;])
+path = '/ops/policies/health-windows'
+params = {'unused-private-secret': 'Bearer abc.def.private nonce learner request privateprompt output artifact'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params4-/ops/policies/audit]" time="0.127"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b5046d0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b5d9110&gt;, ...tEventRecord object at 0x10b5a1450&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b5c8e10&gt;])
+path = '/ops/policies/audit'
+params = {'unused-private-secret': 'Bearer abc.def.private nonce learner request privateprompt output artifact'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params5-/ops/policies/deployments]" time="0.120"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b4aa090&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b5b1ad0&gt;, ...tEventRecord object at 0x10b4bb990&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b4f0e50&gt;])
+path = '/ops/policies/deployments', params = {'cursor': ''}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params5-/ops/policies/health-windows]" time="0.118"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b466e50&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b599610&gt;, ...tEventRecord object at 0x10b2e7010&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b2f7710&gt;])
+path = '/ops/policies/health-windows', params = {'cursor': ''}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params5-/ops/policies/audit]" time="0.116"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b431b50&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b388990&gt;, ...tEventRecord object at 0x10b3a53d0&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b392790&gt;])
+path = '/ops/policies/audit', params = {'cursor': ''}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params6-/ops/policies/deployments]" time="0.125"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b976650&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10aec9f90&gt;, ...tEventRecord object at 0x10b622190&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b6bcc50&gt;])
+path = '/ops/policies/deployments', params = {'cursor': 'private-secret'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params6-/ops/policies/health-windows]" time="0.115"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b9c4ed0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b532750&gt;, ...tEventRecord object at 0x10b9b8350&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b9ba950&gt;])
+path = '/ops/policies/health-windows', params = {'cursor': 'private-secret'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params6-/ops/policies/audit]" time="0.121"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10ba2be10&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b9b0110&gt;, ...tEventRecord object at 0x10b9f7010&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10ba113d0&gt;])
+path = '/ops/policies/audit', params = {'cursor': 'private-secret'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params7-/ops/policies/deployments]" time="0.114"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10ba7e890&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b7d5f50&gt;, ...tEventRecord object at 0x10ba59c90&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10ba74050&gt;])
+path = '/ops/policies/deployments'
+params = {'cursor': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params7-/ops/policies/health-windows]" time="0.115"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bae9050&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10ba5b250&gt;, ...tEventRecord object at 0x10baac4d0&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10baae0d0&gt;])
+path = '/ops/policies/health-windows'
+params = {'cursor': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params7-/ops/policies/audit]" time="0.117"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bb4b990&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bac4490&gt;, ...tEventRecord object at 0x10bafed90&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bb08350&gt;])
+path = '/ops/policies/audit'
+params = {'cursor': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params8-/ops/policies/deployments]" time="0.115"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10ba2ce50&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bae9c50&gt;, ...tEventRecord object at 0x10ba7e090&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10ba80c90&gt;])
+path = '/ops/policies/deployments', params = {'limit': 1, 'limit_again': 2}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params8-/ops/policies/health-windows]" time="0.115"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b981490&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10baaf510&gt;, ...tEventRecord object at 0x10b9c5550&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b9c16d0&gt;])
+path = '/ops/policies/health-windows', params = {'limit': 1, 'limit_again': 2}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_rejections_do_not_echo_input[params8-/ops/policies/audit]" time="0.118"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b969250&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b4f6210&gt;, ...tEventRecord object at 0x10b47fcd0&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b390650&gt;])
+path = '/ops/policies/audit', params = {'limit': 1, 'limit_again': 2}
+
+    @pytest.mark.parametrize("path", PATHS)
+    @pytest.mark.parametrize("params", [
+        {"limit": 0}, {"limit": 101}, {"limit": "private-secret"},
+        {"environment": "private-secret"}, {"unused-private-secret": SENSITIVE},
+        {"cursor": ""}, {"cursor": "private-secret"}, {"cursor": "a" * 513},
+        {"limit": 1, "limit_again": 2},
+    ])
+    async def test_policy_rejections_do_not_echo_input(policy_ops, path, params):
+        response = await policy_ops.client.get(path, params=params)
+&gt;       assert response.status_code == 422
+E       assert 404 == 422
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:141: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_cursor_requires_exact_typed_identity[/ops/policies/deployments]" time="0.131"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b6ae7d0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b4a8890&gt;, ...tEventRecord object at 0x10b526f10&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b58bcd0&gt;])
+path = '/ops/policies/deployments'
+
+    @pytest.mark.parametrize("path", PATHS)
+    async def test_policy_cursor_requires_exact_typed_identity(policy_ops, path):
+        for body in (
+            {"created_at": NOW.isoformat(), "id": SENSITIVE},
+            {"created_at": NOW.replace(tzinfo=None).isoformat(), "id": str(uuid4())},
+            {"created_at": NOW.isoformat(), "id": str(uuid4()), "innocent": SENSITIVE},
+            [],
+        ):
+            cursor = base64.urlsafe_b64encode(json.dumps(body).encode()).decode().rstrip("=")
+            response = await policy_ops.client.get(path, params={"cursor": cursor})
+&gt;           assert response.status_code == 422
+E           assert 404 == 422
+E            +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:156: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_cursor_requires_exact_typed_identity[/ops/policies/health-windows]" time="0.134"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b430e10&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b4a9a50&gt;, ...tEventRecord object at 0x10b80f190&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b77e850&gt;])
+path = '/ops/policies/health-windows'
+
+    @pytest.mark.parametrize("path", PATHS)
+    async def test_policy_cursor_requires_exact_typed_identity(policy_ops, path):
+        for body in (
+            {"created_at": NOW.isoformat(), "id": SENSITIVE},
+            {"created_at": NOW.replace(tzinfo=None).isoformat(), "id": str(uuid4())},
+            {"created_at": NOW.isoformat(), "id": str(uuid4()), "innocent": SENSITIVE},
+            [],
+        ):
+            cursor = base64.urlsafe_b64encode(json.dumps(body).encode()).decode().rstrip("=")
+            response = await policy_ops.client.get(path, params={"cursor": cursor})
+&gt;           assert response.status_code == 422
+E           assert 404 == 422
+E            +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:156: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_cursor_requires_exact_typed_identity[/ops/policies/audit]" time="0.117"><failure message="assert 404 == 422&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b646510&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b86a790&gt;, ...tEventRecord object at 0x10b831c10&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b8de290&gt;])
+path = '/ops/policies/audit'
+
+    @pytest.mark.parametrize("path", PATHS)
+    async def test_policy_cursor_requires_exact_typed_identity(policy_ops, path):
+        for body in (
+            {"created_at": NOW.isoformat(), "id": SENSITIVE},
+            {"created_at": NOW.replace(tzinfo=None).isoformat(), "id": str(uuid4())},
+            {"created_at": NOW.isoformat(), "id": str(uuid4()), "innocent": SENSITIVE},
+            [],
+        ):
+            cursor = base64.urlsafe_b64encode(json.dumps(body).encode()).decode().rstrip("=")
+            response = await policy_ops.client.get(path, params={"cursor": cursor})
+&gt;           assert response.status_code == 422
+E           assert 404 == 422
+E            +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:156: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_filters_and_ids_are_meaningful_and_strict" time="0.117"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bbdf850&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b88ef10&gt;, ...tEventRecord object at 0x10bbdc490&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bbdd550&gt;])
+
+    async def test_policy_filters_and_ids_are_meaningful_and_strict(policy_ops):
+        client = policy_ops.client
+        response = await client.get(PATHS[0], params={"state": "canary"})
+&gt;       assert response.status_code == 200
+E       assert 404 == 200
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:163: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_strict_redacted_policy_projections_and_latest_gate" time="0.118"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bc3f750&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b7457d0&gt;, ...tEventRecord object at 0x10bc16d50&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bc30390&gt;])
+
+    async def test_strict_redacted_policy_projections_and_latest_gate(policy_ops):
+        deployment = policy_ops.deployments[1]
+        response = await policy_ops.client.get(f"{PATHS[0]}/{deployment.deployment_id}")
+&gt;       assert response.status_code == 200
+E       assert 404 == 200
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:191: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[POST-/ops/policies/deployments]" time="0.119"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bca1f50&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bbff390&gt;, ...tEventRecord object at 0x10bc79590&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bc7b150&gt;])
+path = '/ops/policies/deployments', method = 'POST'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[POST-/ops/policies/health-windows]" time="0.119"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bcfc710&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b85b450&gt;, ...tEventRecord object at 0x10bcc3a50&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bcce150&gt;])
+path = '/ops/policies/health-windows', method = 'POST'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[POST-/ops/policies/audit]" time="0.122"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bd4f4d0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bc81510&gt;, ...tEventRecord object at 0x10bd32110&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bd041d0&gt;])
+path = '/ops/policies/audit', method = 'POST'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[POST-/ops/policies/deployments/11111111-1111-1111-1111-111111111111]" time="0.116"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bdb1cd0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bc852d0&gt;, ...tEventRecord object at 0x10bd79150&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bd7b710&gt;])
+path = '/ops/policies/deployments/11111111-1111-1111-1111-111111111111'
+method = 'POST'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[PUT-/ops/policies/deployments]" time="0.129"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bd58e10&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bd58690&gt;, ...tEventRecord object at 0x10bcddd50&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bdbea50&gt;])
+path = '/ops/policies/deployments', method = 'PUT'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[PUT-/ops/policies/health-windows]" time="0.121"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bca3050&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bd02b90&gt;, ...tEventRecord object at 0x10bc46290&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bbea6d0&gt;])
+path = '/ops/policies/health-windows', method = 'PUT'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[PUT-/ops/policies/audit]" time="0.114"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b734490&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b872e10&gt;, ...tEventRecord object at 0x10b747550&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b6e8410&gt;])
+path = '/ops/policies/audit', method = 'PUT'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[PUT-/ops/policies/deployments/11111111-1111-1111-1111-111111111111]" time="0.117"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10ba75810&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b8c6d10&gt;, ...tEventRecord object at 0x10b574b10&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b3f1250&gt;])
+path = '/ops/policies/deployments/11111111-1111-1111-1111-111111111111'
+method = 'PUT'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[PATCH-/ops/policies/deployments]" time="0.136"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b465210&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bdbe290&gt;, ...tEventRecord object at 0x10b96a490&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10ba82310&gt;])
+path = '/ops/policies/deployments', method = 'PATCH'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[PATCH-/ops/policies/health-windows]" time="0.127"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bb6e950&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10baac9d0&gt;, ...tEventRecord object at 0x10baff0d0&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bb2d610&gt;])
+path = '/ops/policies/health-windows', method = 'PATCH'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[PATCH-/ops/policies/audit]" time="0.123"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10be52a50&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bb5d3d0&gt;, ...tEventRecord object at 0x10bdf2010&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10be48c10&gt;])
+path = '/ops/policies/audit', method = 'PATCH'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[PATCH-/ops/policies/deployments/11111111-1111-1111-1111-111111111111]" time="0.126"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10beb13d0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10be1b010&gt;, ...tEventRecord object at 0x10be8c710&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10be8e250&gt;])
+path = '/ops/policies/deployments/11111111-1111-1111-1111-111111111111'
+method = 'PATCH'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[DELETE-/ops/policies/deployments]" time="0.128"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bf07b90&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bf43d10&gt;, ...tEventRecord object at 0x10beef090&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bed1a90&gt;])
+path = '/ops/policies/deployments', method = 'DELETE'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[DELETE-/ops/policies/health-windows]" time="0.145"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bf6e6d0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bec2dd0&gt;, ...tEventRecord object at 0x10bf3a010&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bee82d0&gt;])
+path = '/ops/policies/health-windows', method = 'DELETE'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[DELETE-/ops/policies/audit]" time="0.123"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bfa7850&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10c00ae10&gt;, ...tEventRecord object at 0x10bf8c550&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bf8dc10&gt;])
+path = '/ops/policies/audit', method = 'DELETE'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_paths_never_accept_mutations[DELETE-/ops/policies/deployments/11111111-1111-1111-1111-111111111111]" time="0.124"><failure message="assert 404 == 405&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10c01b990&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bff27d0&gt;, ...tEventRecord object at 0x10bffed90&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10c011390&gt;])
+path = '/ops/policies/deployments/11111111-1111-1111-1111-111111111111'
+method = 'DELETE'
+
+    @pytest.mark.parametrize("path", PATHS + ["/ops/policies/deployments/11111111-1111-1111-1111-111111111111"])
+    @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+    async def test_policy_paths_never_accept_mutations(policy_ops, path, method):
+        response = await policy_ops.client.request(method, path, json={"state": "active"})
+&gt;       assert response.status_code == 405
+E       assert 404 == 405
+E        +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:223: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_auth_reuses_ops_bearer_and_loopback[/ops/policies/deployments]" time="0.138"><failure message="assert 404 == 403&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10befc9d0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10c02af10&gt;, ...tEventRecord object at 0x10c069510&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bf5fc50&gt;])
+path = '/ops/policies/deployments'
+
+    @pytest.mark.parametrize("path", PATHS)
+    async def test_policy_auth_reuses_ops_bearer_and_loopback(policy_ops, path):
+        async with AsyncClient(
+            transport=ASGITransport(app=policy_ops.app, client=("203.0.113.10", 1)),
+            base_url="http://test",
+        ) as client:
+&gt;           assert (await client.get(path)).status_code == 403
+E           assert 404 == 403
+E            +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:232: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_auth_reuses_ops_bearer_and_loopback[/ops/policies/health-windows]" time="0.115"><failure message="assert 404 == 403&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10be593d0&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bf8fa50&gt;, ...tEventRecord object at 0x10be8fa50&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bdf1fd0&gt;])
+path = '/ops/policies/health-windows'
+
+    @pytest.mark.parametrize("path", PATHS)
+    async def test_policy_auth_reuses_ops_bearer_and_loopback(policy_ops, path):
+        async with AsyncClient(
+            transport=ASGITransport(app=policy_ops.app, client=("203.0.113.10", 1)),
+            base_url="http://test",
+        ) as client:
+&gt;           assert (await client.get(path)).status_code == 403
+E           assert 404 == 403
+E            +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:232: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_auth_reuses_ops_bearer_and_loopback[/ops/policies/audit]" time="0.136"><failure message="assert 404 == 403&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b392a50&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bead410&gt;, ...tEventRecord object at 0x10b5cad50&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b9ba990&gt;])
+path = '/ops/policies/audit'
+
+    @pytest.mark.parametrize("path", PATHS)
+    async def test_policy_auth_reuses_ops_bearer_and_loopback(policy_ops, path):
+        async with AsyncClient(
+            transport=ASGITransport(app=policy_ops.app, client=("203.0.113.10", 1)),
+            base_url="http://test",
+        ) as client:
+&gt;           assert (await client.get(path)).status_code == 403
+E           assert 404 == 403
+E            +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:232: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_policy_queries_use_sql_readonly_and_never_commands" time="0.160"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404 Not Found]&gt;.status_code">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10b7d6a90&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10bab2c50&gt;, ...tEventRecord object at 0x10b9c3750&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10b77fd90&gt;])
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x10bc76790&gt;
+
+    async def test_policy_queries_use_sql_readonly_and_never_commands(policy_ops, monkeypatch):
+        from core.distributed.promotion_service import PromotionCommandService
+    
+        def forbidden(*args, **kwargs):
+            raise AssertionError("Ops must never call promotion commands")
+    
+        for name in ("transition", "register_qualification"):
+            if hasattr(PromotionCommandService, name):
+                monkeypatch.setattr(PromotionCommandService, name, forbidden)
+        engine = policy_ops.repo.session_factory.kw["bind"]
+        statements, readonly = [], []
+    
+        def inspect_sql(conn, cursor, statement, parameters, context, executemany):
+            statements.append(statement)
+            if statement.lstrip().upper().startswith("SELECT"):
+                cursor.execute("SHOW transaction_read_only")
+                readonly.append(cursor.fetchone()[0])
+    
+        event.listen(engine.sync_engine, "before_cursor_execute", inspect_sql)
+        try:
+            for path in [*PATHS, f"{PATHS[0]}/{policy_ops.deployments[1].deployment_id}"]:
+&gt;               assert (await policy_ops.client.get(path)).status_code == 200
+E               assert 404 == 200
+E                +  where 404 = &lt;Response [404 Not Found]&gt;.status_code
+
+tests/distributed/test_promotion_ops_api.py:260: AssertionError</failure></testcase><testcase classname="tests.distributed.test_promotion_ops_api" name="test_run_and_trace_identity_is_stored_and_historical_null_stays_null" time="0.167"><failure message="KeyError: 'deployment_id'">policy_ops = namespace(client=&lt;httpx.AsyncClient object at 0x10bca2650&gt;, app=&lt;fastapi.applications.FastAPI object at 0x10b2e7050&gt;, ...tEventRecord object at 0x10bc95110&gt;, &lt;core.distributed.promotion_models.PolicyAuditEventRecord object at 0x10bc446d0&gt;])
+
+    async def test_run_and_trace_identity_is_stored_and_historical_null_stays_null(policy_ops):
+        repo = policy_ops.repo
+        run, _ = await repo.accept_with_replay(spec("task9-pinned"))
+        old = (run.deployment_id, run.effective_policy_hash, run.policy_cohort, "production")
+        for version in (99, 100):
+            async with repo.session_factory() as session, session.begin():
+                head = await session.get(PolicyEnvironmentHeadRecord, "production")
+                head.current_deployment_id = policy_ops.deployments[-1].deployment_id
+                head.current_version = version
+            for suffix in ("", "/trace"):
+                body = (await policy_ops.client.get(f"/ops/runs/{run.id}{suffix}")).json()
+&gt;               assert tuple(body[name] for name in (
+                    "deployment_id", "effective_policy_hash", "policy_cohort", "namespace_class",
+                )) == old
+
+tests/distributed/test_promotion_ops_api.py:283: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = &lt;tuple_iterator object at 0x10bdd4640&gt;
+
+&gt;   assert tuple(body[name] for name in (
+                 ^^^^^^^^^^
+        "deployment_id", "effective_policy_hash", "policy_cohort", "namespace_class",
+    )) == old
+E   KeyError: 'deployment_id'
+
+tests/distributed/test_promotion_ops_api.py:283: KeyError</failure></testcase><testcase classname="tests.distributed.test_ops_api" name="test_worker_registry_upserts_heartbeats_assigns_and_stops_with_db_time" time="0.120" /><testcase classname="tests.distributed.test_ops_api" name="test_ops_lists_use_bounded_opaque_cursor_pagination[/ops/runs-run_id]" time="0.236" /><testcase classname="tests.distributed.test_ops_api" name="test_ops_lists_use_bounded_opaque_cursor_pagination[/ops/expert-jobs-job_id]" time="0.224" /><testcase classname="tests.distributed.test_ops_api" name="test_ops_lists_use_bounded_opaque_cursor_pagination[/ops/workers-worker_id]" time="0.235" /><testcase classname="tests.distributed.test_ops_api" name="test_ops_lists_accept_only_allow_listed_filters[/ops/runs-allowed_filter0-operation-learning_task]" time="0.282" /><testcase classname="tests.distributed.test_ops_api" name="test_ops_lists_accept_only_allow_listed_filters[/ops/expert-jobs-allowed_filter1-role-assessment]" time="0.227" /><testcase classname="tests.distributed.test_ops_api" name="test_ops_lists_accept_only_allow_listed_filters[/ops/workers-allowed_filter2-process_type-expert-worker]" time="0.238" /><testcase classname="tests.distributed.test_ops_api" name="test_run_detail_and_trace_are_bounded_redacted_projections" time="0.259" /><testcase classname="tests.distributed.test_ops_api" name="test_expert_job_detail_exposes_only_bounded_audit_metadata" time="0.229" /><testcase classname="tests.distributed.test_ops_api" name="test_workers_use_database_time_for_freshness" time="0.219" /><testcase classname="tests.distributed.test_ops_api" name="test_missing_ops_details_return_404[/ops/runs/missing]" time="0.226" /><testcase classname="tests.distributed.test_ops_api" name="test_missing_ops_details_return_404[/ops/runs/missing/trace]" time="0.249" /><testcase classname="tests.distributed.test_ops_api" name="test_missing_ops_details_return_404[/ops/expert-jobs/missing]" time="0.251" /><testcase classname="tests.distributed.test_ops_api" name="test_every_ops_response_omits_forbidden_keys_and_seeded_values" time="0.301" /><testcase classname="tests.distributed.test_ops_api" name="test_registry_process_failures_never_escape_into_business_loop" time="0.001" /><testcase classname="tests.distributed.test_ops_api" name="test_registry_process_retries_and_converges_assignment" time="0.055" /><testcase classname="tests.distributed.test_ops_api" name="test_registry_assignment_writes_cannot_finish_out_of_order" time="0.001" /><testcase classname="tests.distributed.test_ops_api" name="test_ops_access_requires_token_away_from_loopback" time="0.005" /><testcase classname="tests.distributed.test_ops_api" name="test_ops_router_exposes_no_mutation_methods" time="0.027" /></testsuite></testsuites>

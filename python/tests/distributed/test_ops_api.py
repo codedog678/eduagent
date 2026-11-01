@@ -693,6 +693,10 @@ def test_ops_router_exposes_no_mutation_methods():
         "/ops/expert-jobs",
         "/ops/expert-jobs/{job_id}",
         "/ops/workers",
+        "/ops/policies/deployments",
+        "/ops/policies/deployments/{deployment_id}",
+        "/ops/policies/health-windows",
+        "/ops/policies/audit",
     }
     assert all(
         set(operations) <= {"get", "head"}

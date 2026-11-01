@@ -13,6 +13,17 @@ import type {
   OpsUsage,
   OpsWorker,
   OpsWorkerPage,
+  OpsPolicyBinding,
+  OpsPolicyDeployment,
+  OpsPolicyDeploymentDetail,
+  OpsPolicyThresholds,
+  OpsHealthStats,
+  OpsHealthWindow,
+  OpsGateReceipt,
+  OpsAuditEvent,
+  OpsPolicyPage,
+  PolicyEnvironment,
+  PolicyState,
 } from './types'
 
 const API_ROOT = '/ops-api/ops'
@@ -152,15 +163,17 @@ function usage(value: unknown, path = 'usage'): OpsUsage {
   }
 }
 
+const bindingKeys = ['deployment_id', 'effective_policy_hash', 'policy_cohort', 'namespace_class'] as const
 const runSummaryKeys = [
   'run_id', 'operation', 'status', 'trace_id', 'attempt_count', 'owner',
   'fencing_token', 'lease_expires_at', 'lease_fresh', 'expert_job_count',
-  'usage', 'latency_ms', 'created_at', 'updated_at',
+  'usage', 'latency_ms', 'created_at', 'updated_at', ...bindingKeys,
 ] as const
 
 function runSummary(value: unknown, path = 'run'): OpsRunSummary {
   const item = exact(value, path, runSummaryKeys)
   return {
+    ...policyBinding(item, path),
     run_id: string(item.run_id, `${path}.run_id`),
     operation: string(item.operation, `${path}.operation`),
     status: string(item.status, `${path}.status`),
@@ -271,8 +284,9 @@ function traceSpan(value: unknown, path = 'span'): OpsTraceSpan {
 }
 
 function trace(value: unknown, path = 'response'): OpsTrace {
-  const item = exact(value, path, ['run_id', 'trace_id', 'spans'])
+  const item = exact(value, path, ['run_id', 'trace_id', 'spans', ...bindingKeys])
   return {
+    ...policyBinding(item, path),
     run_id: string(item.run_id, `${path}.run_id`),
     trace_id: string(item.trace_id, `${path}.trace_id`),
     spans: array(item.spans, `${path}.spans`, traceSpan),
@@ -373,6 +387,147 @@ function workerPage(value: unknown, path = 'response'): OpsWorkerPage {
   }
 }
 
+const environments = ['production', 'rehearsal'] as const
+const states = ['registered', 'shadow', 'canary', 'active', 'frozen', 'rolled_back'] as const
+const gates = [
+  'artifact_integrity', 'campaign_eligibility', 'judge_calibration', 'formal_holdout',
+  'harness_qualification', 'shadow_health', 'canary_health', 'promotion_approval',
+] as const
+const auditTypes = [
+  'qualification_registered', 'promotion_transitioned', 'promotion_rejected',
+  'health_rollback', 'admission_artifact_rejected', 'redacted',
+] as const
+const thresholdCodes = [
+  'confirmed_permission_violation', 'baseline_shortage', 'cost_unavailable',
+  'structured_decisions_unavailable', 'commit_failure_rate', 'terminal_failure_rate',
+  'unknown_rate', 'latency_increase_rate', 'mean_cost_increase_rate', 'matched_window_incomplete', 'redacted',
+] as const
+
+function choice<T extends string>(values: readonly T[]): Guard<T> {
+  return (value, path) => {
+    if (typeof value !== 'string' || !values.includes(value as T)) return fail(path, '受支持枚举')
+    return value as T
+  }
+}
+
+function nullable<T>(guard: Guard<T>): Guard<T | null> {
+  return (value, path) => value === null ? null : guard(value, path)
+}
+
+function boundedInteger(min: number, max: number): Guard<number> {
+  return (value, path) => {
+    const result = integer(value, path)
+    if (result < min || result > max) return fail(path, `${min}..${max} 的整数`)
+    return result
+  }
+}
+
+function patterned(pattern: RegExp): Guard<string> {
+  return (value, path) => {
+    const result = string(value, path)
+    if (!pattern.test(result)) return fail(path, '规范化标识')
+    return result
+  }
+}
+
+const uuid = patterned(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
+const hash = patterned(/^[0-9a-f]{64}$/)
+const shortHash = patterned(/^[0-9a-f]{12}$/)
+const timestamp: Guard<string> = (value, path) => {
+  const result = string(value, path)
+  if (!/^\d{4}-\d\d-\d\dT.+(?:Z|[+-]\d\d:\d\d)$/.test(result) || !Number.isFinite(Date.parse(result))) {
+    return fail(path, '带时区时间')
+  }
+  return result
+}
+function decimal(min = -Infinity, max = Infinity, exclusiveMin = false): Guard<string> {
+  return (value, path) => {
+    const result = string(value, path)
+    const numeric = Number(result)
+    if (!/^-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(result)
+      || !Number.isFinite(numeric) || numeric < min || numeric > max
+      || (exclusiveMin && numeric === min)) return fail(path, '有限十进制字符串')
+    return result
+  }
+}
+function boundedArray<T>(guard: Guard<T>, max: number): Guard<T[]> {
+  return (value, path) => {
+    const result = array(value, path, guard)
+    if (result.length > max) return fail(path, `不超过 ${max} 项`)
+    return result
+  }
+}
+function fields<T>(schema: Record<string, Guard<unknown>>): Guard<T> {
+  return (value, path) => {
+    const item = exact(value, path, Object.keys(schema))
+    return Object.fromEntries(Object.entries(schema).map(([key, guard]) => [
+      key, guard(item[key], `${path}.${key}`),
+    ])) as T
+  }
+}
+
+function policyBinding(item: Record<string, unknown>, path: string): OpsPolicyBinding {
+  return {
+    deployment_id: nullable(uuid)(item.deployment_id, `${path}.deployment_id`),
+    effective_policy_hash: nullable(hash)(item.effective_policy_hash, `${path}.effective_policy_hash`),
+    policy_cohort: nullable(choice(['stable', 'candidate', 'shadow'] as const))(item.policy_cohort, `${path}.policy_cohort`),
+    namespace_class: nullable(choice(environments))(item.namespace_class, `${path}.namespace_class`),
+  }
+}
+
+const policyThresholds = fields<OpsPolicyThresholds>({
+  candidate_min_runs: boundedInteger(20, 10000), stable_min_runs: boundedInteger(20, 10000),
+  window_max_runs: boundedInteger(1, 10000), commit_failure_rate: decimal(0, 1, true),
+  terminal_failure_rate: decimal(0, 1, true), latency_increase_rate: decimal(0, Infinity, true),
+  mean_cost_increase_rate: decimal(0, Infinity, true), unknown_rate: decimal(0, 1, true),
+  relative_epsilon: decimal(0, Infinity, true),
+})
+const healthStats = fields<OpsHealthStats>({
+  run_count: nullable(nonNegativeInteger), commit_failure_rate: nullable(decimal(0, 1)),
+  terminal_failure_rate: nullable(decimal(0, 1)), p95_latency: nullable(decimal(0)),
+  mean_cost: nullable(decimal(0)), structured_decision_count: nullable(nonNegativeInteger),
+  unknown_decision_count: nullable(nonNegativeInteger), unknown_rate: nullable(decimal(0, 1)),
+  fault_injected_count: nullable(nonNegativeInteger), injected_commit_failure_count: nullable(nonNegativeInteger),
+  natural_failure_count: nullable(nonNegativeInteger), latency_increase_rate: nullable(decimal()),
+  mean_cost_increase_rate: nullable(decimal()),
+})
+const gateReceipt = fields<OpsGateReceipt>({
+  receipt_id: uuid, policy_hash: hash, gate_type: choice(gates),
+  status: choice(['passed', 'failed', 'unknown'] as const), evidence_hash: hash,
+  sample_count: nonNegativeInteger, cost: decimal(0), issuer: choice(['redacted'] as const), issued_at: timestamp,
+})
+const healthWindowGuard = fields<OpsHealthWindow>({
+  window_id: hash, deployment_id: uuid, deployment_version: nullable(positiveInteger),
+  environment: choice(environments), metric_contract_version: positiveInteger, thresholds_hash: nullable(hash),
+  candidate_stats: healthStats, stable_stats: healthStats, decision: choice(['pass', 'hold', 'fail'] as const),
+  triggered_thresholds: boundedArray(choice(thresholdCodes), 16), evaluated_at: timestamp, created_at: timestamp,
+})
+const auditEventGuard = fields<OpsAuditEvent>({
+  event_id: uuid, environment: choice(environments), deployment_id: nullable(uuid),
+  failed_deployment_id: nullable(uuid), health_window_id: nullable(hash),
+  from_state: nullable(choice(states)), to_state: nullable(choice(states)),
+  event_type: choice(auditTypes), actor: choice(['redacted'] as const),
+  reason: choice(['redacted'] as const), created_at: timestamp,
+})
+const deploymentSchema = {
+  deployment_id: uuid, environment: choice(environments), version: positiveInteger, state: choice(states),
+  candidate_policy_hash: nullable(shortHash), stable_policy_hash: shortHash, is_current: boolean,
+  current_deployment_id: nullable(uuid), current_version: nullable(positiveInteger),
+  traffic_basis_points: boundedInteger(0, 10000),
+  cohort_counts: fields({ stable: nonNegativeInteger, candidate: nonNegativeInteger, shadow: nonNegativeInteger }),
+  thresholds: policyThresholds, thresholds_hash: hash, required_receipts: boundedArray(choice(gates), 8),
+  actor: choice(['redacted'] as const), reason: choice(['redacted'] as const), created_at: timestamp,
+}
+const deploymentGuard = fields<OpsPolicyDeployment>(deploymentSchema)
+const deploymentDetailGuard = fields<OpsPolicyDeploymentDetail>({
+  ...deploymentSchema, candidate_policy_hash: nullable(hash), stable_policy_hash: hash,
+  gate_receipts: boundedArray(gateReceipt, 8), latest_health_window: nullable(healthWindowGuard),
+  audit_events: boundedArray(auditEventGuard, 100),
+})
+function policyPage<T>(guard: Guard<T>): Guard<OpsPolicyPage<T>> {
+  return fields<OpsPolicyPage<T>>({ items: boundedArray(guard, 100), next_cursor: nullableString })
+}
+
 function query(params: Record<string, string | number | null | undefined>): string {
   const search = new URLSearchParams()
   Object.entries(params).forEach(([key, value]) => {
@@ -443,4 +598,22 @@ export function getWorkers(
   limit = 50,
 ): AbortableRequest<OpsWorkerPage> {
   return request(`/workers${query({ limit, cursor, ...filters })}`, workerPage)
+}
+
+export interface PolicyFilters {
+  environment?: PolicyEnvironment
+  state?: PolicyState
+}
+
+export function getPolicyDeployments(cursor: string | null, filters: PolicyFilters, limit = 50) {
+  return request(`/policies/deployments${query({ limit, cursor, ...filters })}`, policyPage(deploymentGuard))
+}
+export function getPolicyDeployment(deploymentId: string) {
+  return request(`/policies/deployments/${encodeURIComponent(deploymentId)}`, deploymentDetailGuard)
+}
+export function getPolicyHealthWindows(cursor: string | null, environment?: PolicyEnvironment, limit = 50) {
+  return request(`/policies/health-windows${query({ limit, cursor, environment })}`, policyPage(healthWindowGuard))
+}
+export function getPolicyAudit(cursor: string | null, environment?: PolicyEnvironment, limit = 50) {
+  return request(`/policies/audit${query({ limit, cursor, environment })}`, policyPage(auditEventGuard))
 }

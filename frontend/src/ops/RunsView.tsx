@@ -140,6 +140,17 @@ export default function RunsView({ onRequestError }: RunsViewProps) {
     },
     { title: '操作', dataIndex: 'operation', width: 135 },
     {
+      title: '策略绑定',
+      width: 245,
+      render: (_, run) => (
+        <div className="ops-cell-stack">
+          {run.deployment_id ? <a href={`#/policies/${run.deployment_id}`}><code className="ops-id">{run.deployment_id}</code></a> : <span>策略绑定不可用</span>}
+          <span>{run.policy_cohort ?? '不可用'} · {run.namespace_class ?? '不可用'}</span>
+          <code className="ops-id">{run.effective_policy_hash ?? '不可用'}</code>
+        </div>
+      ),
+    },
+    {
       title: '租约',
       width: 160,
       render: (_, run) => (
@@ -258,7 +269,7 @@ export default function RunsView({ onRequestError }: RunsViewProps) {
           columns={columns}
           dataSource={items}
           pagination={false}
-          scroll={{ x: 1370 }}
+          scroll={{ x: 1615 }}
         />
       )}
 
@@ -357,6 +368,12 @@ function RunDrawer({ runId, onClose, onRequestError }: RunDrawerProps) {
               <a href={`#/trace/${encodeURIComponent(detail.run_id)}`}><code className="ops-id">{detail.trace_id}</code></a>
             </Descriptions.Item>
             <Descriptions.Item label="状态"><Tag color={statusColor(detail.status)}>{detail.status}</Tag></Descriptions.Item>
+            <Descriptions.Item label="Deployment">
+              {detail.deployment_id ? <a href={`#/policies/${detail.deployment_id}`}><code className="ops-id">{detail.deployment_id}</code></a> : '策略绑定不可用'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Policy hash"><code className="ops-id">{detail.effective_policy_hash ?? '不可用'}</code></Descriptions.Item>
+            <Descriptions.Item label="Cohort">{detail.policy_cohort ?? '不可用'}</Descriptions.Item>
+            <Descriptions.Item label="Namespace class">{detail.namespace_class ?? '不可用'}</Descriptions.Item>
             <Descriptions.Item label="Owner">{detail.owner || '—'}</Descriptions.Item>
             <Descriptions.Item label="Lease">{detail.lease_fresh ? 'fresh' : 'not fresh'} · fence {detail.fencing_token}</Descriptions.Item>
             <Descriptions.Item label="延迟">{formatDuration(detail.latency_ms)}</Descriptions.Item>
