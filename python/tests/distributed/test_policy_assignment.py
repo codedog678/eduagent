@@ -186,6 +186,94 @@ async def test_concurrent_admission_consumes_one_nonce(assignment_repo):
     assert await count(repo, DistributedRun) == await count(repo, RehearsalTokenNonceRecord) == 1
 
 
+@pytest.mark.parametrize("lock_kind", ["head", "nonce"])
+@pytest.mark.parametrize("expired", [True, False], ids=["expired", "valid"])
+async def test_rehearsal_admission_rechecks_time_after_pg_lock_wait(
+    assignment_repo, monkeypatch, lock_kind, expired,
+):
+    repo = assignment_repo
+    row = await candidate_head(repo)
+    after_wait = NOW + timedelta(seconds=31)
+    expires_at = NOW + timedelta(seconds=30 if expired else 300)
+    token = token_for(row, expires_at=expires_at.isoformat())
+    assert repo.policy_assigner.verify(token, spec(), NOW).expires_at == expires_at
+    nonce_digest = hashlib.sha256(b"nonce-1").hexdigest()
+    clock_now = NOW
+    clock_reads = []
+    prechecked = asyncio.Event()
+    waiter_pid = None
+
+    async def db_now(session):
+        nonlocal waiter_pid
+        waiter_pid = await session.scalar(select(func.pg_backend_pid()))
+        clock_reads.append(clock_now)
+        prechecked.set()
+        return clock_now
+
+    monkeypatch.setattr(repo, "_db_now", db_now)
+    async with repo.session_factory() as blocker:
+        await blocker.begin()
+        blocker_pid = await blocker.scalar(select(func.pg_backend_pid()))
+        head_query = select(PolicyEnvironmentHeadRecord).where(
+            PolicyEnvironmentHeadRecord.environment == "rehearsal"
+        )
+        if lock_kind == "head":
+            head_query = head_query.with_for_update()
+        head = await blocker.scalar(head_query)
+        original_head = (head.current_deployment_id, head.current_version, head.updated_at)
+        original_deployments = await count(repo, PolicyDeploymentRecord)
+        original_audits = await count(repo, PolicyAuditEventRecord)
+        if lock_kind == "nonce":
+            # An uncommitted competing insert must roll back, not consume the token.
+            blocker.add(RehearsalTokenNonceRecord(
+                nonce_digest=nonce_digest, rehearsal_id="demo", expires_at=expires_at,
+                consumed_at=NOW, created_at=NOW,
+            ))
+            await blocker.flush()
+        admission = asyncio.create_task(repo.accept_with_replay(spec(), rehearsal_token=token))
+        try:
+            await asyncio.wait_for(prechecked.wait(), timeout=5)
+            # Observe the real row/unique-index wait before advancing token time.
+            async with repo.session_factory() as observer, asyncio.timeout(5):
+                while True:
+                    blocking_pids = await observer.scalar(select(func.pg_blocking_pids(waiter_pid)))
+                    if blocker_pid in blocking_pids:
+                        break
+                    assert not admission.done(), "admission did not wait for the PostgreSQL blocker"
+            assert clock_reads == [NOW] and not admission.done()
+            clock_now = after_wait
+            await blocker.rollback()
+            if expired:
+                with pytest.raises(RehearsalTokenConflict):
+                    await asyncio.wait_for(admission, timeout=5)
+            else:
+                run, replay = await asyncio.wait_for(admission, timeout=5)
+                assert not replay and run.policy_cohort == "candidate"
+                assert run.created_at == run.updated_at == after_wait
+        finally:
+            await blocker.rollback()
+            if not admission.done():
+                admission.cancel()
+            await asyncio.gather(admission, return_exceptions=True)
+
+    assert clock_reads == [NOW, after_wait]
+    async with repo.session_factory() as session:
+        head = await session.get(PolicyEnvironmentHeadRecord, "rehearsal")
+        assert (head.current_deployment_id, head.current_version, head.updated_at) == original_head
+        if not expired:
+            persisted = await session.get(DistributedRun, run.id)
+            nonce = await session.get(RehearsalTokenNonceRecord, nonce_digest)
+            lease = await session.get(DistributedLease, run.id)
+            outbox = await session.scalar(select(DistributedOutbox))
+            assert persisted.created_at == persisted.updated_at == after_wait
+            assert nonce.created_at == nonce.consumed_at == after_wait
+            assert lease.updated_at == outbox.created_at == after_wait
+    for model in (DistributedRun, RehearsalTokenNonceRecord, DistributedLease, DistributedOutbox):
+        assert await count(repo, model) == (0 if expired else 1)
+    assert await count(repo, PolicyDeploymentRecord) == original_deployments
+    assert await count(repo, PolicyAuditEventRecord) == original_audits
+
+
 async def test_nonce_replay_and_stale_version_leave_no_partial_run(assignment_repo):
     repo = assignment_repo
     row = await candidate_head(repo)

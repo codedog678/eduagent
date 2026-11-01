@@ -122,7 +122,7 @@ class DistributedRunRepository:
                             pg_insert(RehearsalTokenNonceRecord).values(
                                 nonce_digest=hashlib.sha256(claims.nonce.encode()).hexdigest(),
                                 rehearsal_id=claims.rehearsal_id, expires_at=claims.expires_at,
-                                consumed_at=now, created_at=now,
+                                consumed_at=None, created_at=now,
                             ).on_conflict_do_nothing().returning(RehearsalTokenNonceRecord.nonce_digest)
                         )
                         if nonce_id is None:
@@ -133,6 +133,13 @@ class DistributedRunRepository:
                     ).with_for_update())
                     if head is None:
                         raise ArtifactUnavailable()
+                    if claims is not None:
+                        # Nonce uniqueness and head locks may outlive the token.
+                        now = await self._db_now(session)
+                        claims = self.policy_assigner.verify(rehearsal_token, spec, now)
+                        await session.execute(update(RehearsalTokenNonceRecord).where(
+                            RehearsalTokenNonceRecord.nonce_digest == nonce_id
+                        ).values(consumed_at=now, created_at=now))
                     deployment = await session.get(PolicyDeploymentRecord, head.current_deployment_id)
                     if deployment is None:
                         raise ArtifactUnavailable()
