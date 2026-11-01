@@ -171,6 +171,240 @@ async def wait_until(check):
             await asyncio.sleep(0.01)
 
 
+async def mutate_shadow(promotion, job, operation):
+    if operation == "renew":
+        await promotion.renew_shadow(job.shadow_id, job.owner, job.fencing_token, 30)
+    elif operation == "complete":
+        await promotion.complete_shadow(job.shadow_id, job.owner, job.fencing_token, {})
+    else:
+        await promotion.fail_shadow(
+            job.shadow_id, job.owner, job.fencing_token, "execution_failed",
+        )
+
+
+@pytest.mark.parametrize("operation", ["renew", "complete", "fail"])
+@pytest.mark.parametrize("expiry", ["both", "lease", "deadline"])
+async def test_shadow_mutation_rechecks_time_after_pg_lock_wait(shadow_repo, operation, expiry):
+    from core.distributed.shadow_repository import ShadowFencingViolation
+
+    repo, promotion, _ = shadow_repo
+    parent = await parent_for(shadow_repo)
+    await finish_parent(repo, parent)
+    job = await promotion.claim_shadow(
+        "worker", 30 if expiry == "deadline" else 0.8,
+        attempt_timeout_seconds=30 if expiry == "lease" else 0.8,
+    )
+    mutation = None
+    try:
+        async with repo.session_factory() as blocker, blocker.begin():
+            await blocker.scalar(select(PolicyShadowExecutionRecord).where(
+                PolicyShadowExecutionRecord.shadow_id == job.shadow_id,
+            ).with_for_update())
+            blocker_pid = await blocker.scalar(select(func.pg_backend_pid()))
+            mutation = asyncio.create_task(mutate_shadow(promotion, job, operation))
+            async with repo.session_factory() as observer:
+                async def in_lock_wait():
+                    return await observer.scalar(text(
+                        "SELECT EXISTS (SELECT 1 FROM pg_stat_activity "
+                        "WHERE wait_event_type = 'Lock' "
+                        "AND :blocker = ANY(pg_blocking_pids(pid)) "
+                        "AND query ILIKE '%policy_shadow_executions%')"
+                    ), {"blocker": blocker_pid})
+                await wait_until(in_lock_wait)
+                expires_at = min(job.lease_expires_at, job.deadline_at)
+                assert await observer.scalar(select(func.clock_timestamp())) < expires_at
+
+                async def expired_in_db():
+                    return await observer.scalar(select(func.clock_timestamp())) >= expires_at
+                # 已确认真实等锁；仅轮询数据库时间，不以固定 sleep 推测竞态。
+                await wait_until(expired_in_db)
+                assert not mutation.done()
+        with pytest.raises(ShadowFencingViolation):
+            await mutation
+        unchanged = await promotion.get_shadow(job.shadow_id)
+        assert unchanged.status == "running" and unchanged.owner == job.owner
+        assert unchanged.fencing_token == job.fencing_token
+        assert unchanged.lease_expires_at == job.lease_expires_at
+        assert unchanged.deadline_at == job.deadline_at
+        assert unchanged.updated_at == job.updated_at
+        assert unchanged.result is None and unchanged.finished_at is None
+        assert unchanged.error_code is None
+    finally:
+        if mutation is not None:
+            await asyncio.gather(mutation, return_exceptions=True)
+
+
+@pytest.mark.parametrize("operation", ["renew", "complete", "fail"])
+async def test_shadow_live_mutation_control(shadow_repo, operation):
+    repo, promotion, _ = shadow_repo
+    parent = await parent_for(shadow_repo)
+    await finish_parent(repo, parent)
+    job = await promotion.claim_shadow("worker", 10, attempt_timeout_seconds=20)
+    await mutate_shadow(promotion, job, operation)
+    after = await promotion.get_shadow(job.shadow_id)
+    if operation == "renew":
+        assert after.status == "running" and after.owner == "worker"
+        assert job.lease_expires_at < after.lease_expires_at == job.deadline_at
+        assert after.result is None and after.finished_at is None
+    else:
+        assert after.status == ("completed" if operation == "complete" else "failed")
+        assert after.owner is None and after.lease_expires_at is None
+        assert after.result is not None and after.finished_at is not None
+
+
+@pytest.mark.parametrize("cancellation", [
+    "deadline_overlap", "lease_loss", "external_cancel", "repeated_cancel",
+])
+@pytest.mark.parametrize("recovery", ["retry", "exhausted"])
+async def test_real_sdk_cancellation_keeps_store_until_executor_exits(
+    shadow_repo, tmp_path, monkeypatch, cancellation, recovery,
+):
+    from types import SimpleNamespace as NS
+    from core import llm_service
+    from config.settings import settings
+    from core.distributed.executor import LearningTaskExecutor
+    from core.distributed.rehearsal_store import ShadowStoreRouter
+    from core.distributed.shadow_worker import ShadowWorker, ShadowReaper
+
+    repo, promotion, _ = shadow_repo
+    parent = await parent_for(shadow_repo)
+    primary = await finish_parent(repo, parent)
+    started, cancelling, release, sdk_exited, heartbeat_exited = [
+        asyncio.Event() for _ in range(5)
+    ]
+    calls, sdk_tasks = [], []
+
+    async def create(**kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            sdk_tasks.append(asyncio.current_task())
+            started.set()
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                cancelling.set()
+                # 模拟 SDK 的协作取消清理；重复外层取消不得打断这段清理。
+                await release.wait()
+                raise
+            finally:
+                sdk_exited.set()
+        assert sdk_exited.is_set() and sdk_tasks[0].done()
+        body = json.dumps({"goal": "synthetic learning task", "steps": [
+            {"step_id": "step-1", "agent": "Tutor", "objective": "provide a reply", "depends_on": []},
+        ]}) if "tools" not in kwargs else "synthetic tutor reply"
+        return NS(choices=[NS(message=NS(content=body, tool_calls=[]), finish_reason="stop")],
+                  usage=NS(prompt_tokens=11, completion_tokens=5))
+
+    service = llm_service.LLMService(
+        provider="openai", api_key="synthetic-unused", model="stub-model",
+    )
+    service._client = NS(chat=NS(completions=NS(create=create)))
+    monkeypatch.setattr(llm_service, "get_llm_service", lambda: service)
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(settings, "memory_worker_enabled", False)
+    monkeypatch.setattr(settings, "tutor_context_budget_tokens", 32000)
+    monkeypatch.setattr(settings, "harness_timeout_seconds", 30)
+
+    class ObservedWorker(ShadowWorker):
+        async def _heartbeat(self, job):
+            try:
+                await super()._heartbeat(job)
+            finally:
+                heartbeat_exited.set()
+
+    old_router = ShadowStoreRouter(tmp_path / "isolated")
+    new_router = ShadowStoreRouter(old_router.root)
+    job = await promotion.enqueue_shadow(parent.id)
+    binding = PolicyExecutionBinding.model_validate(job.policy_binding)
+    path = old_router.path_for(binding)
+    old = ObservedWorker(
+        "old", promotion, LearningTaskExecutor(None, shadow_store_router=old_router),
+        old_router, policy_assigner=repo.policy_assigner, lease_seconds=2,
+        heartbeat_seconds=0.05,
+        attempt_timeout_seconds=0.5 if cancellation == "deadline_overlap" else 30,
+    )
+    old_task = asyncio.create_task(old.run_once())
+    new_task = None
+    try:
+        await asyncio.wait_for(started.wait(), 3)
+        assert path.exists() and not sdk_tasks[0].done()
+        if cancellation == "lease_loss":
+            await expire(repo, job.shadow_id)
+        elif cancellation in {"external_cancel", "repeated_cancel"}:
+            old_task.cancel()
+        await asyncio.wait_for(cancelling.wait(), 3)
+        await asyncio.wait_for(heartbeat_exited.wait(), 3)
+        if cancellation == "repeated_cancel":
+            old_task.cancel()
+            await asyncio.sleep(0)
+            old_task.cancel()
+        if cancellation != "deadline_overlap":
+            await expire(repo, job.shadow_id)
+
+        reaper = ShadowReaper(promotion, new_router)
+        if recovery == "retry":
+            await reaper.reap_once()
+            new = ShadowWorker(
+                "new", promotion, LearningTaskExecutor(None, shadow_store_router=new_router),
+                new_router, policy_assigner=repo.policy_assigner, lease_seconds=2,
+                heartbeat_seconds=0.05,
+            )
+            new_task = asyncio.create_task(new.run_once())
+
+            async def new_claimed():
+                return (await promotion.get_shadow(job.shadow_id)).attempt_count == 2
+            await wait_until(new_claimed)
+        else:
+            async with repo.session_factory() as session, session.begin():
+                await session.execute(text(
+                    "UPDATE policy_shadow_executions SET attempt_count = max_attempts "
+                    "WHERE shadow_id = :id"
+                ), {"id": job.shadow_id})
+            await reaper.reap_once()
+            assert (await promotion.get_shadow(job.shadow_id)).status == "exhausted"
+
+        probe = new_router.try_lock(binding)
+        if probe is not None:
+            probe.close()
+        assert probe is None
+        assert not old_task.done() and not sdk_tasks[0].done()
+        assert not sdk_exited.is_set() and len(calls) == 1 and path.exists()
+        await reaper.reap_once()
+        assert path.exists()
+        if recovery == "retry":
+            after = await promotion.get_shadow(job.shadow_id)
+            assert after.status == "running" and after.owner == "new"
+            assert after.result is None and after.finished_at is None
+
+        release.set()
+        result = (await asyncio.wait_for(
+            asyncio.gather(old_task, return_exceptions=True), 3,
+        ))[0]
+        if cancellation in {"external_cancel", "repeated_cancel"}:
+            assert isinstance(result, asyncio.CancelledError)
+        else:
+            assert result is True
+        assert sdk_exited.is_set() and sdk_tasks[0].done()
+        if new_task is not None:
+            assert await asyncio.wait_for(new_task, 3)
+            after = await promotion.get_shadow(job.shadow_id)
+            assert after.status == "completed" and after.attempt_count == 2
+            assert len(calls) > 1
+        else:
+            probe = new_router.try_lock(binding)
+            assert probe is not None
+            probe.close()
+            await reaper.reap_once()
+        assert not path.exists()
+        assert (await repo.get(parent.id)).public_dict() == primary.public_dict()
+    finally:
+        release.set()
+        if new_task is not None and not new_task.done():
+            new_task.cancel()
+        tasks = {task for task in (old_task, new_task, *sdk_tasks) if task is not None}
+        await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), 5)
+
+
 async def test_claim_skips_pg_locked_row_and_has_single_owner(shadow_repo):
     repo, promotion, _ = shadow_repo
     first = await parent_for(shadow_repo, "first")

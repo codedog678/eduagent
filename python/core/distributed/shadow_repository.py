@@ -5,7 +5,7 @@ from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 from uuid import uuid4
 
-from sqlalchemy import and_, func, or_, select, update
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 
 from .contracts import RunStatus
@@ -107,6 +107,7 @@ class ShadowRepositoryMixin:
             ).order_by(Shadow.created_at, Shadow.shadow_id).with_for_update(skip_locked=True))
             if job is None:
                 return None
+            now = await session.scalar(select(func.clock_timestamp()))
             job.status, job.owner = "running", worker_id
             job.fencing_token += 1
             job.attempt_count += 1
@@ -116,38 +117,33 @@ class ShadowRepositoryMixin:
             job.updated_at = now
             return job
 
-    @staticmethod
-    def _live(shadow_id, worker_id, token):
-        return (
-            Shadow.shadow_id == shadow_id, Shadow.status == "running",
-            Shadow.owner == worker_id, Shadow.fencing_token == token,
-            Shadow.lease_expires_at > func.clock_timestamp(),
-            Shadow.deadline_at > func.clock_timestamp(),
-        )
+    async def _locked_live_shadow(self, session, shadow_id, worker_id, token):
+        # WHERE 中的时间可能在等锁前求值，必须锁定后重新取数据库时间。
+        job = await session.scalar(select(Shadow).where(
+            Shadow.shadow_id == shadow_id,
+        ).with_for_update())
+        now = await session.scalar(select(func.clock_timestamp()))
+        if (job is None or job.status != "running"
+            or job.owner != worker_id or job.fencing_token != token
+            or job.lease_expires_at is None or job.lease_expires_at <= now
+            or job.deadline_at is None or job.deadline_at <= now):
+            raise ShadowFencingViolation("shadow lease lost")
+        return job, now
 
     async def renew_shadow(self, shadow_id, worker_id, token, lease_seconds):
         if lease_seconds <= 0:
             raise ValueError("invalid shadow lease")
         async with self.session_factory() as session, session.begin():
-            changed = await session.execute(update(Shadow).where(
-                *self._live(shadow_id, worker_id, token),
-            ).values(lease_expires_at=func.least(
-                func.clock_timestamp() + timedelta(seconds=lease_seconds), Shadow.deadline_at,
-            ), updated_at=func.clock_timestamp()))
-            if changed.rowcount != 1:
-                raise ShadowFencingViolation("shadow lease lost")
+            job, now = await self._locked_live_shadow(session, shadow_id, worker_id, token)
+            job.lease_expires_at = min(now + timedelta(seconds=lease_seconds), job.deadline_at)
+            job.updated_at = now
 
     async def _finish_shadow(self, shadow_id, worker_id, token, status, summary, code):
         async with self.session_factory() as session, session.begin():
-            changed = await session.execute(update(Shadow).where(
-                *self._live(shadow_id, worker_id, token),
-            ).values(
-                status=status, result=redacted_summary(summary, status=status),
-                error_code=code, owner=None, lease_expires_at=None,
-                finished_at=func.clock_timestamp(), updated_at=func.clock_timestamp(),
-            ))
-            if changed.rowcount != 1:
-                raise ShadowFencingViolation("shadow lease lost")
+            job, now = await self._locked_live_shadow(session, shadow_id, worker_id, token)
+            job.status, job.result = status, redacted_summary(summary, status=status)
+            job.error_code, job.owner, job.lease_expires_at = code, None, None
+            job.finished_at = job.updated_at = now
 
     async def complete_shadow(self, shadow_id, worker_id, token, summary):
         await self._finish_shadow(shadow_id, worker_id, token, "completed", summary, None)
@@ -171,6 +167,7 @@ class ShadowRepositoryMixin:
                     ),
                 )),
             ).with_for_update(skip_locked=True))).all()
+            db_now = await session.scalar(select(func.clock_timestamp()))
             ids = []
             for job in jobs:
                 if job.input_hash is None or job.policy_binding is None or job.payload_reference is None or job.deployment_version is None:

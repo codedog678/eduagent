@@ -123,21 +123,19 @@ class ShadowWorker:
             return False
         lock_holder = [None]
         remaining = max(0, (job.deadline_at - datetime.now(UTC)).total_seconds())
-        execution = asyncio.create_task(asyncio.wait_for(
-            self._execute(job, lock_holder), timeout=remaining,
-        ))
+        execution = asyncio.create_task(self._execute(job, lock_holder))
+        deadline = asyncio.create_task(asyncio.sleep(remaining))
         heartbeat = asyncio.create_task(self._heartbeat(job))
         try:
             done, _ = await asyncio.wait(
-                [execution, heartbeat], return_when=asyncio.FIRST_COMPLETED,
+                [execution, heartbeat, deadline], return_when=asyncio.FIRST_COMPLETED,
             )
             if heartbeat in done:
                 await heartbeat
-            try:
-                code, summary = await execution
-            except TimeoutError:
-                # Deadline is already expired: only the fenced reaper may retry it.
+            if deadline in done:
+                # 截止后只允许 fenced reaper 重试，取消仍须等真实执行退出。
                 return True
+            code, summary = await execution
             heartbeat.cancel()
             with suppress(asyncio.CancelledError):
                 await heartbeat
@@ -155,12 +153,23 @@ class ShadowWorker:
         except ShadowFencingViolation:
             pass
         finally:
-            # Cancellation must finish before releasing the lock, even on lease loss.
-            for task in (execution, heartbeat):
-                task.cancel()
-            await asyncio.gather(execution, heartbeat, return_exceptions=True)
+            # 只取消一次；外层重复取消不能打断 SDK/Harness 清理或遗留后台执行。
+            tasks = (execution, heartbeat, deadline)
+            for task in tasks:
+                if not task.done() and not task.cancelling():
+                    task.cancel()
+            drain = asyncio.gather(*tasks, return_exceptions=True)
+            cancelled = False
+            while not drain.done():
+                try:
+                    await asyncio.shield(drain)
+                except asyncio.CancelledError:
+                    cancelled = True
+            # 协作取消若一直不退出，就一直持锁，不宣称已强制终止执行。
             if lock_holder[0] is not None:
                 lock_holder[0].close()
+            if cancelled:
+                raise asyncio.CancelledError
         return True
 
 
