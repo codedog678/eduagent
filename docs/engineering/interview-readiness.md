@@ -3,7 +3,8 @@
 核对日期：2026-11-01。当前索引覆盖已验收的 M1、M2、M3 Tasks1–7，
 以及 `0b2247b` 的演示兼容修复。Task8 首次独立规格审查复现四个缺口，
 修复冻结于 `a4691bf`：定向 457 / 完整后端 1400 项通过，均无失败、错误或跳过。
-新的独立规格复审通过，独立代码审查正在进行。
+新的独立规格复审通过，但代码审查复现权限观测与晋级事务之间的并发漏洞，
+修复与再次验收尚待完成。
 Policies 页面和完整灰度演练尚待验收；最终交付时需重新核对本页与实际代码、运行证据。
 
 项目适合从三个问题展开：如何可靠执行 Agent，如何保护学习证据，
@@ -21,7 +22,7 @@ Policies 页面和完整灰度演练尚待验收；最终交付时需重新核�
 | Judge 输出格式正确是否就可信？ | v3 verdict/reason/criterion/evidence 一致性校验，一次 repair，失败归 unknown；[Judge v3](../../python/evals/optimization/judge_v3.py) | [v3 测试](../../python/tests/evals/test_judge_v3.py)、[评分重放](../../python/evals/optimization/gates.py) | schema 有效不证明语义正确；unknown 不授予资格 |
 | 如何避免新旧策略混跑？ | 受理时固定 policy/deployment/namespace，尝试与专家继承；[policy_assignment](../../python/core/distributed/policy_assignment.py) | [版本固定回归](../../python/tests/distributed/test_policy_pinning.py)、[Task6 审查](../superpowers/reports/2026-11-01-m3-task6-execution.md) | 自动回滚只影响新受理 Run；Task8 已有旧/新 Run 回归，完整闭环仍待 Task8–10 验收 |
 | 如何证明候选没有污染主状态？ | 无提交权的 Shadow 执行、专用 store 与 stream、文件锁 | [Shadow 回归](../../python/tests/distributed/test_shadow_worker.py)、[Task7 审查及 JUnit](../superpowers/reports/2026-11-01-m3-task7-shadow.md) | 隔离执行证明工程边界，不能证明候选改善教学质量 |
-| 缺少费用或结构判定时能否晋级？ | 全尝试账本、真实判定分子/分母、缺失证据 HOLD；[policy_health](../../python/core/distributed/policy_health.py) | [Task8 实现与冻结测试](../superpowers/reports/2026-11-01-m3-task8-health.md)、[健康回归](../../python/tests/distributed/test_policy_health.py) | fixture 的 Decimal 费用只检验算法；实际费用缺失保持 unknown；规格复审通过，代码审查仍待完成 |
+| 缺少费用或结构判定时能否晋级？ | 全尝试账本、真实判定分子/分母、缺失证据 HOLD；[policy_health](../../python/core/distributed/policy_health.py) | [Task8 实现与冻结测试](../superpowers/reports/2026-11-01-m3-task8-health.md)、[健康回归](../../python/tests/distributed/test_policy_health.py) | fixture 的 Decimal 费用只检验算法；实际费用缺失保持 unknown；代码审查 FAIL，不能声称完整发布链已验收 |
 | 两个 evaluator 同时回滚怎么办？ | 同事务冻结观察集合、锁定 head、CAS 更新、审计与 Outbox；旧硬违规不被滚动窗口淘汰 | [Task8 修复后完整 JUnit](../../python/tests/distributed/evidence/2026-11-01-m3-task8-corrections-full.xml)、[并发与迟到回归](../../python/tests/distributed/test_policy_health.py) | 1400 项含 38 项 integration、843 项 distributed；当前不能替代完整多进程受控演练 |
 
 ```mermaid
@@ -88,7 +89,7 @@ flowchart LR
 
 | 项目 | 当前事实 | 完成所需证据 |
 | --- | --- | --- |
-| 健康与自动回滚 | Task8 `a4691bf` 修复四项，[独立规格复审](../superpowers/reports/2026-11-01-m3-task8-spec-review.md) PASS，完整后端 1400 项通过 | 独立代码审查通过；如有缺口需修复、补证据并再次顺序复审 |
+| 健康与自动回滚 | Task8 `a4691bf` 规格复审 PASS、完整后端 1400 项通过；[代码审查](../superpowers/reports/2026-11-01-m3-task8-code-review.md) FAIL，确认权限观测发布与晋级事务的并发漏洞 | 共享事务同步边界，补真实交错回归；修复后重新顺序进行规格与代码审查 |
 | Policies 只读界面 | Task9 尚待实现 | 脱敏分页 API、Trace 版本关联、桌面/移动端 Playwright 与生产 build |
 | 真实基础设施闭环 | Task10 尚待实现 | 两 Run Worker、Shadow、health 进程；强杀接管、签名故障、旧/新 Run 与迟到观察的证据 |
 | 正式模型资格 | 现有开发重放与历史评测不满足 Judge v3 资格 | 合格 campaign、独立校准、正式留出与真实模型账本；缺项须记录实际前提，不能生成假回执 |
