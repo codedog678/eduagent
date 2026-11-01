@@ -254,7 +254,7 @@ async def test_forged_or_inconsistent_health_receipt_is_not_consumable(health_re
     assert missing == ["canary_health"] and not bound
 
 
-async def real_active_fixture(health_repo):
+async def real_active_fixture(health_repo, *, stop_at="active", command_prefix="correction"):
     repo, promotion, _ = health_repo
     # Real command chain; all campaign/provider data remains deterministic test fixtures.
     material = _material()
@@ -268,11 +268,11 @@ async def real_active_fixture(health_repo):
     repo.policy_assigner = assigner(runtime_hash=material.artifact.runtime_hash,
                                    source_revision=material.artifact.source_revision)
     registered = await promotion.register_qualification(
-        material, actor="test", command_id="correction-register")
+        material, actor="test", command_id=f"{command_prefix}-register")
 
     async def move(snapshot, target, traffic):
         return await promotion.transition(PromotionCommand(
-            command_id=f"correction-{target}", environment="rehearsal",
+            command_id=f"{command_prefix}-{target}", environment="rehearsal",
             expected_version=snapshot.version, current_state=snapshot.state,
             target_state=target, traffic_basis_points=traffic, actor="test",
             reason="fixture-only health chain, not formal release evidence"))
@@ -283,12 +283,16 @@ async def real_active_fixture(health_repo):
         changes=lambda i: {"observed_at": datetime.now(UTC)},
         stable_changes=lambda i: {"observed_at": datetime.now(UTC)})
     assert (await PolicyHealthEvaluator(promotion).evaluate(shadow.deployment_id)).decision == "pass"
+    if stop_at == "shadow":
+        return (repo, promotion, shadow), None, []
     canary = await move(shadow, "canary", 5000)
     fixture, rows = await fill_window(
         (repo, promotion, canary),
         changes=lambda i: {"observed_at": datetime.now(UTC)},
         stable_changes=lambda i: {"observed_at": datetime.now(UTC)})
     assert (await PolicyHealthEvaluator(promotion).evaluate(canary.deployment_id)).decision == "pass"
+    if stop_at == "canary":
+        return (repo, promotion, canary), canary, rows
     active = await move(canary, "active", 10000)
     return (repo, promotion, active), canary, rows
 

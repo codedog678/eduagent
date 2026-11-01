@@ -1,0 +1,59 @@
+FFFFFFF                                                                  [100%]
+=================================== FAILURES ===================================
+_____ test_terminal_publication_serializes_after_gate_query[direct-shadow] _____
+tests/distributed/test_policy_health_publication.py:137: in test_terminal_publication_serializes_after_gate_query
+    assert blocked, "terminal observation committed after gate query while head was locked"
+E   AssertionError: terminal observation committed after gate query while head was locked
+E   assert False
+_____ test_terminal_publication_serializes_after_gate_query[direct-canary] _____
+tests/distributed/test_policy_health_publication.py:137: in test_terminal_publication_serializes_after_gate_query
+    assert blocked, "terminal observation committed after gate query while head was locked"
+E   AssertionError: terminal observation committed after gate query while head was locked
+E   assert False
+____ test_terminal_publication_serializes_after_gate_query[recover-shadow] _____
+tests/distributed/test_policy_health_publication.py:137: in test_terminal_publication_serializes_after_gate_query
+    assert blocked, "terminal observation committed after gate query while head was locked"
+E   AssertionError: terminal observation committed after gate query while head was locked
+E   assert False
+____ test_terminal_publication_serializes_after_gate_query[recover-canary] _____
+tests/distributed/test_policy_health_publication.py:137: in test_terminal_publication_serializes_after_gate_query
+    assert blocked, "terminal observation committed after gate query while head was locked"
+E   AssertionError: terminal observation committed after gate query while head was locked
+E   assert False
+________ test_committed_terminal_permission_rejects_transition[shadow] _________
+tests/distributed/test_policy_health_publication.py:172: in test_committed_terminal_permission_rejects_transition
+    await promotion.transition(advance(deployment))
+core/distributed/promotion_repository.py:579: in transition
+    raise PromotionCommandRejected(rejected)
+E   core.distributed.promotion_repository.PromotionCommandRejected: required gates are missing or invalid: shadow_health
+________ test_committed_terminal_permission_rejects_transition[canary] _________
+tests/distributed/test_policy_health_publication.py:172: in test_committed_terminal_permission_rejects_transition
+    await promotion.transition(advance(deployment))
+core/distributed/promotion_repository.py:579: in transition
+    raise PromotionCommandRejected(rejected)
+E   core.distributed.promotion_repository.PromotionCommandRejected: required gates are missing or invalid: canary_health
+____ test_late_consumed_canary_permission_invalidates_existing_active_pass _____
+tests/distributed/test_policy_health_publication.py:195: in test_late_consumed_canary_permission_invalidates_existing_active_pass
+    assert window.decision == "fail", "Active must not reuse PASS after its consumed Canary hard event"
+E   AssertionError: Active must not reuse PASS after its consumed Canary hard event
+E   assert 'pass' == 'fail'
+E     
+E     - fail
+E     + pass
+=========================== short test summary info ============================
+FAILED tests/distributed/test_policy_health_publication.py::test_terminal_publication_serializes_after_gate_query[direct-shadow] - AssertionError: terminal observation committed after gate query while head was locked
+assert False
+FAILED tests/distributed/test_policy_health_publication.py::test_terminal_publication_serializes_after_gate_query[direct-canary] - AssertionError: terminal observation committed after gate query while head was locked
+assert False
+FAILED tests/distributed/test_policy_health_publication.py::test_terminal_publication_serializes_after_gate_query[recover-shadow] - AssertionError: terminal observation committed after gate query while head was locked
+assert False
+FAILED tests/distributed/test_policy_health_publication.py::test_terminal_publication_serializes_after_gate_query[recover-canary] - AssertionError: terminal observation committed after gate query while head was locked
+assert False
+FAILED tests/distributed/test_policy_health_publication.py::test_committed_terminal_permission_rejects_transition[shadow] - core.distributed.promotion_repository.PromotionCommandRejected: required gates are missing or invalid: shadow_health
+FAILED tests/distributed/test_policy_health_publication.py::test_committed_terminal_permission_rejects_transition[canary] - core.distributed.promotion_repository.PromotionCommandRejected: required gates are missing or invalid: canary_health
+FAILED tests/distributed/test_policy_health_publication.py::test_late_consumed_canary_permission_invalidates_existing_active_pass - AssertionError: Active must not reuse PASS after its consumed Canary hard event
+assert 'pass' == 'fail'
+  
+  - fail
+  + pass
+7 failed in 5.21s

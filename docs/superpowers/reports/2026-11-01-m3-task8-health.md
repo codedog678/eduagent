@@ -1,5 +1,183 @@
 # M3 Task8: Health Gates and Transactional Rollback
 
+## CODE P1 Correction Freeze
+
+Current independent verdict is **CODE FAIL** despite historical SPEC PASS and
+457 targeted / 1400 backend passes. The independent real PostgreSQL probe
+published an actual candidate permission terminal after the gate query but
+before Active creation; activation succeeded and later Active evaluation passed.
+This section supersedes earlier freeze claims; all historical evidence remains.
+Correction base is parent docs-only `07293a2`, following `6e55434`.
+Implementation verification is complete below; the current independent verdict
+remains CODE FAIL until the parent performs fresh SPEC then CODE review. This
+implementation report does not replace the parent-owned review records/index.
+
+Approved Task8-only correction plan:
+
+- [x] Read Task8, design 9.1-9.3, original SPEC FAIL/four corrections/PASS,
+  independent CODE P1 and terminal completion/publication lock ordering.
+- [x] Archive RED: actual typed server store-boundary terminal, transaction
+  pause after gate query, PostgreSQL blocking PID barrier, late Active PASS.
+- [x] Serialize all recorder inserts on the server-derived environment head.
+  Recorder must not acquire health advisory after head, nor hold terminal
+  Run/Shadow completion locks while waiting for publication.
+- [x] Inherit hard events only through the immutable validated consumed
+  promotion predecessor chain, not arbitrary historical policies/head versions.
+- [x] Verify focused and full real-service backend matrices, archive GREEN,
+  freeze digest, stage owned paths and create a new commit without amend/push.
+- [ ] Parent launches fresh SPEC then CODE reviews; Task9 remains unstarted.
+
+### Publication and Causality
+
+`PolicyObservationRecorder._insert()` resolves the immutable deployment's
+environment from PostgreSQL and locks that environment head `FOR UPDATE` before
+inserting and assigning database `created_at`. All direct Run, direct Shadow,
+and recovery publication routes use this boundary. Identity/outcome still come
+from persisted Run/attempt/Shadow rows, not caller policy/cohort/permission flags.
+No source terminal row is locked by publication. Worker completion/failure
+transactions finish before recorder calls, so publication waits do not retain
+Run/attempt/lease/Shadow locks or their expiring execution authority.
+
+Promotion, registration, admission freeze, and health CAS already lock the same
+head. Health keeps its existing advisory-then-head ordering; publication takes
+head only and never acquires the health advisory. If publication commits first,
+the transition's subsequent locked gate query rejects the hard event. If the
+transition holds head first, publication blocks until that transition commits.
+Rechecking a gate without shared synchronization is not used as the fix.
+
+The successor still inherits a late hard event from its causal predecessor.
+Active's Canary source reuses the exact immutable activation approval,
+audit, consumed receipt, and fully replayed passing window validator. Canary's
+Shadow source requires the immediately preceding matching deployment and
+immutable Shadow-to-Canary audit, stable/candidate identities, thresholds,
+assignment salt and previous-stable deployment. The hard-event query is bounded
+to the deployment plus at most two predecessors, freezes one earliest typed
+hard key, and remains lifetime-wide rather than last-50 limited. Missing Active
+source evidence continues to HOLD. Ordinary Active baseline logic and all four
+prior SPEC corrections are unchanged.
+
+On the next current-head evaluation a committed inherited hard event creates
+a distinct FAIL window with `hard_failures`, preventing reuse of an existing
+Active PASS, and uses the existing atomic CAS/audit/Outbox rollback. A genuinely
+old unrelated chain only receives historical FAIL windows. The new regressions
+re-register the *same* artifact in another chain and prove neither a new Active
+head nor a frozen stable-serving head is moved by the old Canary event.
+Hash equality alone is not accepted as causal lineage.
+
+### Regression Evidence
+
+The new 12-case suite extends the real registration -> Shadow -> Canary ->
+Active fixture. It opens an actual wrong server-selected SQLite store through
+`LearningTaskExecutor`; the real Worker/ShadowWorker emits and persists
+`ConfirmedPermissionViolation`, with no fabricated diagnostic or caller flags.
+Model/provider responses remain fixtures and this is not release qualification.
+
+- Four direct/recovery barriers pause a real promotion transaction after its
+  gate query while head is locked, observe the actual blocker backend PID via
+  live `pg_locks`/`pg_blocking_pids`, and check database clock chronology.
+  Publication must block, then the successor must inherit FAIL and roll back.
+- Two committed-first controls reject promotion and keep one rejected audit.
+- Two publication-first barriers hold an uncommitted real observation/head
+  transaction while promotion and advisory-locked health wait. The live PID
+  dependency chain includes PostgreSQL waiter queuing; all finish without
+  deadlock and terminal publication retries remain idempotent.
+- Two late predecessor cases prove both consumed Shadow and consumed Canary
+  events invalidate a previously passing Active window.
+- Two unrelated same-policy chains prove historical evaluation cannot move
+  a newer Active or frozen stable-serving head.
+
+| Round | Result | Evidence Suffix |
+| --- | --- | --- |
+| Initial RED, before runtime edits | 7 fail, 5.21 s; five feature reproductions plus two incorrect expected exception types | `p1-red` |
+| Fixture-corrected RED, before runtime edits | 5 fail / 2 pass, 3.78 s; four publications escaped locked gate/head transaction; late Canary reused Active PASS | `p1-repro-red` |
+| Development | 213 pass / 4 fail, 63.82 s; observer `pg_stat_activity` transaction snapshot hid actual blocking | `p1-dev` |
+| Scoped development | 9 pass / 2 fail, 19.58 s; direct-PID count missed queued waiter dependency | `p1-scoped` |
+| Focused GREEN | 222 pass, 45.90 s; four health/promotion suites, including all 12 publication cases | `p1-focused` |
+| Frozen targeted GREEN | 469 pass / 0 failure/error/skip, 101.43 s; XML time 101.424 s | `p1-targeted` |
+| Frozen full backend GREEN | 1412 pass / 0 failure/error/skip, 270.88 s; XML time 270.868 s | `p1-full` |
+
+All `.log`/`.xml` files are preserved under
+`python/tests/distributed/evidence/2026-11-01-m3-task8-<suffix>`.
+Development failures were test-observer issues, not counted as successful
+verification. The final barrier polls live locks, not cached activity or a
+fixed sleep to infer contention. The full run retains the pre-existing
+`TestAgent` constructor collection warning.
+
+Each invocation used a new unique database with PostgreSQL 16
+`127.0.0.1:55432`, Redis `127.0.0.1:56379/0`, the existing main-worktree venv,
+absolute m3 `PYTHONPATH` and `TZ=UTC`. Createdb/dropdb use
+`/opt/homebrew/opt/postgresql@16/bin` and an EXIT trap. Catalog verification
+after the final run found zero databases matching this task's `task8_p1_%`
+prefix. Parent databases/processes were not managed.
+
+Frozen execution commands from `eduagent-m3/python`:
+
+```bash
+set -o pipefail
+DB="task8_p1_targeted_$(date -u +%Y%m%d%H%M%S)_${RANDOM}"
+/opt/homebrew/opt/postgresql@16/bin/createdb -h 127.0.0.1 -p 55432 -U postgres "$DB"
+trap '/opt/homebrew/opt/postgresql@16/bin/dropdb -h 127.0.0.1 -p 55432 -U postgres "$DB"' EXIT
+export DISTRIBUTED_TEST_DATABASE_URL="postgresql+asyncpg://postgres@127.0.0.1:55432/$DB"
+export DISTRIBUTED_TEST_REDIS_URL=redis://127.0.0.1:56379/0
+export PYTHONPATH=/Users/bytedance/Documents/trae_projects/eduagent-m3/python
+export TZ=UTC
+/Users/bytedance/Documents/trae_projects/eduagent/.venv/bin/python -m pytest \
+  tests/distributed/test_policy_health.py \
+  tests/distributed/test_policy_health_corrections.py \
+  tests/distributed/test_policy_health_publication.py \
+  tests/distributed/test_instrumentation.py tests/distributed/test_worker.py \
+  tests/distributed/test_shadow_worker.py tests/distributed/test_shadow_usage.py \
+  tests/distributed/test_policy_assignment.py \
+  tests/distributed/test_promotion_schema_upgrade.py \
+  tests/distributed/test_promotion_repository.py \
+  tests/distributed/test_expert_engine.py tests/distributed/test_expert_repository.py \
+  tests/distributed/test_expert_cli.py tests/distributed/test_runtime_schema_startup.py \
+  tests/distributed/test_schema_migration.py tests/distributed/test_promotion_contracts.py \
+  tests/distributed/test_executor.py -q --tb=short \
+  --junitxml=tests/distributed/evidence/2026-11-01-m3-task8-p1-targeted.xml \
+  2>&1 | tee tests/distributed/evidence/2026-11-01-m3-task8-p1-targeted.log
+```
+
+Full invocation used the same setup in a separate shell and new database prefix
+`task8_p1_full_`, replacing the test list with `tests`, and both evidence suffixes
+with `p1-full`. No runtime/test edits occurred between the frozen runs.
+
+### Freeze Identity
+
+New commit is the commit containing this report, parent `07293a2`; its exact
+hash is supplied at handoff rather than self-referentially embedded here.
+Four owned Python files, sorted repository-relative paths, content digest:
+`9785e3347d5bbb50aed170e8946831c7f263b892731bd2b1b71748056a57e4f3`.
+
+```bash
+shasum -a 256 \
+  python/core/distributed/policy_health.py \
+  python/core/distributed/promotion_repository.py \
+  python/tests/distributed/test_policy_health_corrections.py \
+  python/tests/distributed/test_policy_health_publication.py | shasum -a 256
+```
+
+| XML Suffix | SHA-256 |
+| --- | --- |
+| `p1-red` | `578d8afe4d86b4c10c82a91cac15c6cffa1fbe6aab985dc8c42696b302f2371c` |
+| `p1-repro-red` | `ccb9416c9c5cd3bf1cdb330ea1d3ae7391fb75c2db2b51c6ed260d82c14f7781` |
+| `p1-dev` | `f75a4b656946ab7c1041471db726568d2af9f957ec809af678eb725a1e64edea` |
+| `p1-scoped` | `712ed158c5e1538c04e6116bfa75d50297a068c42a7cf54ec9bcf50e99069175` |
+| `p1-focused` | `6cb7f5104366ea2eaa9301624c3169b8f9f24741c7fdaad8ccf697c41985d7cc` |
+| `p1-targeted` | `b8707601e1402741664fd6be16388c7c6b87d019f3c925b18513afdf5b274952` |
+| `p1-full` | `20877b910caa7edc5cd1fa450a1563b3383dcc0bb97dd18bb704dd9b1b00c160` |
+
+Limits: no installation, Docker/Compose, push/amend, external model calls,
+frontend work, Task9/10 implementation or independent approval. Actual store
+boundary checks are not OS sandboxing. Health process availability still
+governs automatic rollback timing; this correction ensures a committed causal
+hard event cannot produce/reuse a PASS, not that publication itself rolls back.
+Model credentials are not the missing prerequisite; formal JudgeV3
+qualification evidence remains absent. Fixture costs are not provider charges.
+Staged source/report whitespace checks pass. The unrestricted staged diff check
+reports six trailing-whitespace lines in raw pytest RED `.log`/`.xml` output;
+those captured evidence bytes and their hashes are intentionally preserved.
+
 ## Fresh SPEC Corrections and Current Freeze
 
 This section supersedes the original implementation freeze below. The independent

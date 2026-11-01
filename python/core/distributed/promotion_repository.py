@@ -759,10 +759,10 @@ class PromotionRepository(ShadowRepositoryMixin):
         except (ValueError, TypeError, KeyError, InvalidOperation):
             return None
 
-    async def active_health_baseline(self, session, deployment):
-        """Use only the Canary window actually consumed by this activation."""
+    async def _active_health_source(self, session, deployment):
+        """Validate the exact Canary/window actually consumed by this activation."""
         if deployment.environment != "rehearsal":
-            return []
+            return None
         canary = await session.scalar(select(PolicyDeploymentRecord).where(
             PolicyDeploymentRecord.environment == deployment.environment,
             PolicyDeploymentRecord.version == deployment.version - 1,
@@ -772,7 +772,7 @@ class PromotionRepository(ShadowRepositoryMixin):
             PolicyDeploymentRecord.thresholds_hash == deployment.thresholds_hash,
         ))
         if canary is None or canary.created_at > deployment.created_at:
-            return []
+            return None
         audit = await session.scalar(select(PolicyAuditEventRecord).where(
             PolicyAuditEventRecord.command_id == deployment.command_id,
             PolicyAuditEventRecord.deployment_id == deployment.deployment_id,
@@ -784,7 +784,7 @@ class PromotionRepository(ShadowRepositoryMixin):
             PolicyGateReceiptRecord.details["command_id"].as_string() == deployment.command_id,
         ).limit(1))
         if audit is None or approval is None or not isinstance(approval.details, dict):
-            return []
+            return None
         details = approval.details
         if (
             approval.status != "passed" or approval.evidence_hash != canonical_hash(details)
@@ -799,10 +799,10 @@ class PromotionRepository(ShadowRepositoryMixin):
             or details.get("canary_thresholds_hash") != canary.thresholds_hash
             or details.get("actor") != deployment.actor or details.get("reason") != deployment.reason
         ):
-            return []
+            return None
         receipt_id = details.get("canary_health_receipt_id")
         if not isinstance(receipt_id, str):
-            return []
+            return None
         receipt = await session.get(PolicyGateReceiptRecord, receipt_id)
         artifact = await session.get(PolicyArtifactRecord, deployment.candidate_policy_hash)
         if (
@@ -812,17 +812,67 @@ class PromotionRepository(ShadowRepositoryMixin):
             or approval.runtime_hash != artifact.runtime_hash
             or approval.source_revision != artifact.source_revision
         ):
-            return []
+            return None
         window = await self._validated_health_window(
             session, artifact=artifact, deployment=canary, gate_type="canary_health", receipt=receipt)
         if window is None:
+            return None
+        return canary, window
+
+    async def active_health_baseline(self, session, deployment):
+        """Use only stable keys in the validated consumed Canary window."""
+        source = await self._active_health_source(session, deployment)
+        if source is None:
             return []
+        canary, window = source
         return list((await session.scalars(select(PolicyObservationRecord).where(
             PolicyObservationRecord.observation_key.in_(window.observation_keys["stable"]),
             PolicyObservationRecord.observed_at >= canary.created_at,
             PolicyObservationRecord.observed_at <= deployment.created_at,
             PolicyObservationRecord.created_at <= deployment.created_at,
         ).limit(PolicyThresholds.model_validate(deployment.thresholds).window_max_runs))).all())
+
+    async def health_predecessors(self, session, deployment):
+        """Bound hard-event inheritance to this audited promotion chain, never policy history."""
+        sources = []
+        canary = deployment
+        if deployment.state == "active":
+            source = await self._active_health_source(session, deployment)
+            if source is None:
+                return sources
+            canary, _ = source
+            sources.append(canary)
+        if canary.state != "canary" or canary.environment != "rehearsal":
+            return sources
+        shadow = await session.scalar(select(PolicyDeploymentRecord).where(
+            PolicyDeploymentRecord.environment == canary.environment,
+            PolicyDeploymentRecord.version == canary.version - 1,
+            PolicyDeploymentRecord.state == "shadow",
+            PolicyDeploymentRecord.candidate_policy_hash == canary.candidate_policy_hash,
+            PolicyDeploymentRecord.stable_policy_hash == canary.stable_policy_hash,
+            PolicyDeploymentRecord.thresholds_hash == canary.thresholds_hash,
+            PolicyDeploymentRecord.assignment_salt_id == canary.assignment_salt_id,
+            PolicyDeploymentRecord.previous_stable_deployment_id == canary.previous_stable_deployment_id,
+        ))
+        if shadow is None or shadow.created_at > canary.created_at:
+            return sources
+        audit = await session.scalar(select(PolicyAuditEventRecord).where(
+            PolicyAuditEventRecord.command_id == canary.command_id,
+            PolicyAuditEventRecord.deployment_id == canary.deployment_id,
+            PolicyAuditEventRecord.environment == canary.environment,
+            PolicyAuditEventRecord.event_type == "promotion_transitioned",
+        ))
+        if (
+            audit is not None and isinstance(audit.details, dict)
+            and audit.created_at == canary.created_at
+            and audit.details.get("from_state") == "shadow"
+            and audit.details.get("from_version") == shadow.version
+            and audit.details.get("to_state") == "canary"
+            and audit.details.get("to_version") == canary.version
+            and "shadow_health" in audit.details.get("required_receipts", [])
+        ):
+            sources.append(shadow)
+        return sources
 
     @staticmethod
     async def _bound_gate_receipts(

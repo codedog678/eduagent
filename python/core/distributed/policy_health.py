@@ -170,6 +170,15 @@ class PolicyObservationRecorder:
         self.session_factory, self.metrics = session_factory, metrics
 
     async def _insert(self, session, observation):
+        deployment = await session.get(PolicyDeploymentRecord, str(observation.deployment_id))
+        if deployment is None:
+            raise ValueError("observation deployment is missing")
+        # 与晋级/回滚共用 head 锁；此路径不持有终态写锁，也不反向取得 health advisory。
+        head = await session.scalar(select(PolicyEnvironmentHeadRecord).where(
+            PolicyEnvironmentHeadRecord.environment == deployment.environment,
+        ).with_for_update())
+        if head is None:
+            raise ValueError("observation environment head is missing")
         values = observation.model_dump(mode="python")
         for field in ("run_id", "deployment_id"):
             values[field] = str(values[field])
@@ -352,8 +361,15 @@ class PolicyHealthEvaluator:
             candidate = [_observation(row) for row in (await session.scalars(
                 candidate_query.order_by(*ordering).limit(thresholds.window_max_runs))).all()][::-1]
             # 硬违规不受滚动窗口淘汰；有界查询冻结最早的权威违规键。
-            hard_failure = await session.scalar(query.where(
-                PolicyObservationRecord.cohort == cohort,
+            predecessors = await self.repository.health_predecessors(session, deployment)
+            hard_sources = [(deployment.deployment_id, cohort)] + [
+                (source.deployment_id, "shadow" if source.state == "shadow" else "candidate")
+                for source in predecessors
+            ]
+            hard_failure = await session.scalar(select(PolicyObservationRecord).where(
+                tuple_(PolicyObservationRecord.deployment_id,
+                       PolicyObservationRecord.cohort).in_(hard_sources),
+                PolicyObservationRecord.metric_contract_version == 1,
                 PolicyObservationRecord.policy_hash == deployment.candidate_policy_hash,
                 PolicyObservationRecord.permission_outcome == "confirmed_violation",
                 PolicyObservationRecord.terminal_status == "confirmed_permission_violation",
