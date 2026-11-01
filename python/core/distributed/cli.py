@@ -42,6 +42,8 @@ def parser() -> argparse.ArgumentParser:
     subcommands.add_parser("dispatcher", help="publish production, rehearsal and deployment topics to isolated streams")
     subcommands.add_parser("worker")
     subcommands.add_parser("rehearsal-worker")
+    subcommands.add_parser("shadow-worker")
+    subcommands.add_parser("shadow-reaper")
     subcommands.add_parser("reaper")
     subcommands.add_parser("expert-dispatcher")
     subcommands.add_parser("expert-worker")
@@ -69,7 +71,7 @@ async def run_forever(command: str) -> None:
     runtime = build_runtime()
     worker_id = (
         settings.distributed_worker_id
-        if command in {"worker", "rehearsal-worker"} and settings.distributed_worker_id
+        if command in {"worker", "rehearsal-worker", "shadow-worker"} and settings.distributed_worker_id
         else settings.expert_worker_id
         if command == "expert-worker" and settings.expert_worker_id
         else f"{socket.gethostname()}:{os.getpid()}:{command}"
@@ -81,7 +83,7 @@ async def run_forever(command: str) -> None:
     )
     capabilities = (
         ["learning_task"]
-        if command in {"worker", "rehearsal-worker"}
+        if command in {"worker", "rehearsal-worker", "shadow-worker"}
         else sorted(role.value.lower() for role in roles)
     )
     heartbeat_seconds = (
@@ -110,6 +112,23 @@ async def run_forever(command: str) -> None:
                     await asyncio.sleep(
                         settings.distributed_heartbeat_seconds,
                     )
+            elif command in {"shadow-worker", "shadow-reaper"}:
+                from .rehearsal_store import ShadowStoreRouter
+
+                router = ShadowStoreRouter(settings.promotion_rehearsal_store_root)
+                process = (
+                    runtime.shadow_worker(
+                        worker_id,
+                        LearningTaskExecutor(None, shadow_store_router=router),
+                        router,
+                    ) if command == "shadow-worker" else runtime.shadow_reaper(router)
+                )
+                while True:
+                    if command == "shadow-worker":
+                        await process.run_once()
+                    else:
+                        await process.reap_once()
+                    await asyncio.sleep(settings.distributed_heartbeat_seconds)
             elif command in {"worker", "rehearsal-worker"}:
                 environment = "rehearsal" if command == "rehearsal-worker" else "production"
                 worker = runtime.worker(

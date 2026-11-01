@@ -43,8 +43,17 @@ class LearningHarness:
     def __init__(self, orchestrator, path: str, timeout: float = 45,
                  quiz_ttl: float = 86400, queue_timeout: float | None = None,
                  *, execution_authority=None, expert_gateway=None,
-                 pinned_policy=None, state_namespace="local"):
-        if execution_authority is not None and execution_authority.execution_mode == "distributed":
+                 pinned_policy=None, state_namespace="local", shadow_usage_sink=None):
+        if shadow_usage_sink is not None and (
+            execution_authority is None or execution_authority.execution_mode != "shadow"
+        ):
+            raise ValueError("shadow usage sink requires isolated authority")
+        self.shadow_usage_sink = shadow_usage_sink
+        if pinned_policy is not None and pinned_policy.policy_cohort == "shadow":
+            if (execution_authority is None or execution_authority.execution_mode != "shadow"
+                or expert_gateway is not None):
+                raise ValueError("shadow harness requires isolated authority and inline experts")
+        if execution_authority is not None and execution_authority.execution_mode != "local":
             if pinned_policy is None:
                 raise ValueError("distributed execution requires trusted policy binding")
             execution_authority.validate_binding(pinned_policy)
@@ -313,6 +322,10 @@ class LearningHarness:
                     "source_refs": ctx.source_refs, "retrieved_refs": ctx.retrieved_refs,
                     "read_refs": ctx.read_refs, "cited_refs": ctx.cited_refs, **metadata,
                 }
+                if self.execution_authority is not None and self.execution_authority.execution_mode == "shadow":
+                    from core.distributed.shadow_usage import summarize_shadow_usage
+
+                    result["usage"] = summarize_shadow_usage(ctx)
                 ctx.record("commit_started")
                 # 学习状态、测验状态和可重放结果一起提交。
                 with self.db:
@@ -389,7 +402,13 @@ class LearningHarness:
                     raise
                 raise HTTPException(503, "本次执行未完成，学习状态已回滚，请重试") from exc
             finally:
-                active_run.reset(token)
+                try:
+                    if self.shadow_usage_sink is not None:
+                        from core.distributed.shadow_usage import summarize_shadow_usage
+
+                        self.shadow_usage_sink(summarize_shadow_usage(ctx))
+                finally:
+                    active_run.reset(token)
 
     async def converse(self, learner, request_id, knowledge, text, session_id=None,
                        thread_id=None, quiz_id=None, kind="question"):

@@ -174,9 +174,9 @@ async def wait_until(check, timeout=5):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("startup_kind", ["runtime", "cli"])
+@pytest.mark.parametrize("startup_kind", ["runtime", "cli", "shadow-worker", "shadow-reaper"])
 async def test_hot_start_while_real_expert_terminal_poll_holds_job_lock(
-    startup_engine, monkeypatch, startup_kind,
+    startup_engine, monkeypatch, startup_kind, tmp_path,
 ):
     engine, schema = startup_engine
     factory = async_sessionmaker(engine, expire_on_commit=False)
@@ -210,6 +210,7 @@ async def test_hot_start_while_real_expert_terminal_poll_holds_job_lock(
     startup = None
     process = None
     worker_id = f"schema-hot-{uuid4().hex}"
+    process_type = startup_kind if startup_kind.startswith("shadow-") else "rehearsal-worker"
     try:
         await asyncio.wait_for(identity_read.wait(), 5)
         if startup_kind == "runtime":
@@ -223,7 +224,7 @@ async def test_hot_start_while_real_expert_terminal_poll_holds_job_lock(
                 "runtime.create_async_engine = partial(create_async_engine, "
                 f"connect_args={{'server_settings': {{'search_path': {schema!r}}}}}); "
                 "runpy.run_module('core.distributed.cli', run_name='__main__')",
-                "rehearsal-worker",
+                process_type,
                 env={
                     **os.environ,
                     "PYTHONPATH": str(Path(__file__).parents[2]),
@@ -242,6 +243,7 @@ async def test_hot_start_while_real_expert_terminal_poll_holds_job_lock(
                     "EXPERT_CONSUMER_GROUP": runtime.expert_broker.group,
                     "LLM_PROVIDER": "template",
                     "MEMORY_WORKER_ENABLED": "false",
+                    "PROMOTION_REHEARSAL_STORE_ROOT": str(tmp_path / "shadow-only"),
                 },
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.PIPE,
@@ -256,8 +258,8 @@ async def test_hot_start_while_real_expert_terminal_poll_holds_job_lock(
                 ))
                 registered = await connection.scalar(text(
                     "SELECT EXISTS (SELECT 1 FROM distributed_worker_registry "
-                    "WHERE worker_id = :id AND status = 'running')"
-                ), {"id": worker_id})
+                    "WHERE process_type = :type AND status = 'running')"
+                ), {"type": process_type})
             return ddl_wait or registered or (startup is not None and startup.done())
 
         await wait_until(ready_or_ddl_wait)
@@ -281,9 +283,8 @@ async def test_hot_start_while_real_expert_terminal_poll_holds_job_lock(
                 async with engine.connect() as connection:
                     return await connection.scalar(text(
                         "SELECT EXISTS (SELECT 1 FROM distributed_worker_registry "
-                        "WHERE worker_id = :id AND status = 'running' "
-                        "AND process_type = 'rehearsal-worker')"
-                    ), {"id": worker_id})
+                        "WHERE status = 'running' AND process_type = :type)"
+                    ), {"type": process_type})
             await wait_until(registered_or_exited)
             assert process.returncode is None
         assert not poll.done()

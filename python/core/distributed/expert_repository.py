@@ -150,6 +150,8 @@ class ExpertJobRepository:
         self,
         request: ExpertJobRequest,
     ) -> tuple[DistributedExpertJob, bool]:
+        if request.authority.execution_mode != "distributed":
+            raise ExpertFencingViolation("durable experts require primary run authority")
         payload = request.model_dump(mode="json")
         payload_bytes = len(
             json.dumps(

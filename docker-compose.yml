@@ -255,6 +255,41 @@ services:
       distributed-api:
         condition: service_healthy
 
+  shadow-worker:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "shadow-worker"]
+    environment:
+      <<: *distributed-env
+      DISTRIBUTED_WORKER_ID: shadow-worker
+      PROMOTION_REHEARSAL_STORE_ROOT: /app/shadow
+    volumes:
+      - shadow_harnessdata:/app/shadow
+    depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
+      distributed-api:
+        condition: service_healthy
+
+  shadow-reaper:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "shadow-reaper"]
+    environment:
+      <<: *distributed-env
+      PROMOTION_REHEARSAL_STORE_ROOT: /app/shadow
+    volumes:
+      - shadow_harnessdata:/app/shadow
+    depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
+      distributed-api:
+        condition: service_healthy
+
   expert-worker-a:
     profiles: ["distributed"]
     build:
@@ -294,3 +329,4 @@ volumes:
   redisdata:
   distributed_harnessdata:
   rehearsal_harnessdata:
+  shadow_harnessdata:

@@ -252,6 +252,17 @@ class PolicyShadowExecutionRecord(DistributedBase):
     policy_hash: Mapped[str] = mapped_column(
         ForeignKey("policy_artifacts.policy_hash"), nullable=False
     )
+    # Nullable identity permits explicit migration of historical Task4 rows.
+    input_hash: Mapped[str | None] = mapped_column(String(64))
+    payload_reference: Mapped[dict | None] = mapped_column(JSON)
+    policy_binding: Mapped[dict | None] = mapped_column(JSON)
+    deployment_version: Mapped[int | None] = mapped_column(Integer)
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3, server_default="3")
+    error_code: Mapped[str | None] = mapped_column(String(64))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    deadline_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     fencing_token: Mapped[int] = mapped_column(
         BigInteger, default=0, nullable=False

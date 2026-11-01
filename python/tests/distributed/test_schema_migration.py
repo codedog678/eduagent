@@ -99,6 +99,11 @@ async def test_explicit_migration_creates_or_upgrades_idempotently(migration_eng
                     "rehearsal_id", "rehearsal_fault_profile", "policy_binding",
                 ],
                 "distributed_expert_jobs": ["deployment_id", "state_namespace"],
+                "policy_shadow_executions": [
+                    "input_hash", "payload_reference", "policy_binding", "deployment_version",
+                    "attempt_count", "max_attempts", "error_code", "started_at",
+                    "finished_at", "deadline_at",
+                ],
             }.items():
                 for column in columns:
                     await connection.execute(text(

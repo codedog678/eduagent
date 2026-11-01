@@ -130,6 +130,24 @@ class DistributedRuntime:
             metrics=self.metrics,
         )
 
+    def shadow_worker(self, worker_id, executor, store_router):
+        from .promotion_repository import PromotionRepository
+        from .shadow_worker import ShadowWorker
+
+        return ShadowWorker(
+            worker_id, PromotionRepository(self.session_factory), executor, store_router,
+            policy_assigner=self.repository.policy_assigner,
+            lease_seconds=self.settings.distributed_lease_seconds,
+            heartbeat_seconds=self.settings.distributed_heartbeat_seconds,
+            attempt_timeout_seconds=self.settings.distributed_attempt_timeout_seconds,
+        )
+
+    def shadow_reaper(self, store_router):
+        from .promotion_repository import PromotionRepository
+        from .shadow_worker import ShadowReaper
+
+        return ShadowReaper(PromotionRepository(self.session_factory), store_router)
+
     def worker(
         self,
         worker_id,
@@ -357,6 +375,22 @@ async def upgrade_m3_schema(connection) -> None:
         "deployment_id": "VARCHAR(36)",
         "state_namespace": "VARCHAR(128)",
     }
+    shadow_columns = {
+        "input_hash": "VARCHAR(64)",
+        "payload_reference": "JSON",
+        "policy_binding": "JSON",
+        "deployment_version": "INTEGER",
+        "attempt_count": "INTEGER NOT NULL DEFAULT 0",
+        "max_attempts": "INTEGER NOT NULL DEFAULT 3",
+        "error_code": "VARCHAR(64)",
+        "started_at": "TIMESTAMP WITH TIME ZONE",
+        "finished_at": "TIMESTAMP WITH TIME ZONE",
+        "deadline_at": "TIMESTAMP WITH TIME ZONE",
+    }
+    for name, sql_type in shadow_columns.items():
+        await connection.execute(text(
+            f"ALTER TABLE policy_shadow_executions ADD COLUMN IF NOT EXISTS {name} {sql_type}"
+        ))
     for name, sql_type in run_columns.items():
         await connection.execute(
             text(
@@ -806,6 +840,11 @@ async def upgrade_m3_schema(connection) -> None:
             "OR NEW.parent_run_id IS DISTINCT FROM OLD.parent_run_id "
             "OR NEW.deployment_id IS DISTINCT FROM OLD.deployment_id "
             "OR NEW.policy_hash IS DISTINCT FROM OLD.policy_hash "
+            "OR NEW.input_hash IS DISTINCT FROM OLD.input_hash "
+            "OR NEW.payload_reference::jsonb IS DISTINCT FROM OLD.payload_reference::jsonb "
+            "OR NEW.policy_binding::jsonb IS DISTINCT FROM OLD.policy_binding::jsonb "
+            "OR NEW.deployment_version IS DISTINCT FROM OLD.deployment_version "
+            "OR NEW.max_attempts IS DISTINCT FROM OLD.max_attempts "
             "OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN "
             "RAISE EXCEPTION '% identity is immutable', TG_TABLE_NAME; "
             "END IF; "

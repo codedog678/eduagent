@@ -42,6 +42,8 @@ class DurableExpertGateway:
 
     async def execute(self, request):
         started = monotonic()
+        if request.authority.execution_mode != "distributed":
+            raise ValueError("durable expert gateway requires primary run authority")
         self._observe_snapshot(request)
         try:
             job, _ = await self.repository.create_or_replay(request)

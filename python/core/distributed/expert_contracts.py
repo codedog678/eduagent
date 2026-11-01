@@ -92,10 +92,10 @@ class RunExecutionAuthority(FrozenContract):
     policy_cohort: PolicyCohort | None = None
     state_namespace: str = "local"
     rehearsal_id: str | None = None
-    execution_mode: Literal["distributed", "local"] = "distributed"
+    execution_mode: Literal["distributed", "local", "shadow"] = "distributed"
 
     def validate_binding(self, binding: PolicyExecutionBinding) -> None:
-        if self.execution_mode != "distributed" or any(
+        if self.execution_mode not in {"distributed", "shadow"} or any(
             getattr(self, name) != getattr(binding, name)
             for name in (
                 "deployment_id", "effective_policy_hash", "policy_cohort",
@@ -103,6 +103,12 @@ class RunExecutionAuthority(FrozenContract):
             )
         ):
             raise ValueError("execution authority differs from trusted policy binding")
+        if (self.execution_mode == "shadow") != (binding.policy_cohort == "shadow"):
+            raise ValueError("shadow requires an explicit isolated authority")
+        if self.execution_mode == "shadow":
+            from .rehearsal_store import validate_shadow_binding
+
+            validate_shadow_binding(binding)
 
 
 class ExpertBudget(FrozenContract):
@@ -144,7 +150,7 @@ class ExpertSnapshot(FrozenContract):
     effective_policy_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     deployment_id: UUID | None = None
     state_namespace: str = "local"
-    execution_mode: Literal["distributed", "local"] = "distributed"
+    execution_mode: Literal["distributed", "local", "shadow"] = "distributed"
     practice_policy: dict[str, Any] = Field(default_factory=dict)
     knowledge_state: dict[str, Any] = Field(default_factory=dict)
     learner_profile: dict[str, Any] = Field(default_factory=dict)

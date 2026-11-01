@@ -27,6 +27,7 @@ from .promotion_models import (
 )
 from .models import DistributedOutbox
 from .promotion_service import QualificationMaterial
+from .shadow_repository import ShadowRepositoryMixin
 
 REQUIRED_QUALIFICATION_GATES = (
     "campaign_eligibility",
@@ -68,7 +69,7 @@ REQUIRED_EXTERNAL_GATES = {
 }
 
 
-class PromotionRepository:
+class PromotionRepository(ShadowRepositoryMixin):
     def __init__(
         self,
         session_factory: async_sessionmaker[AsyncSession],

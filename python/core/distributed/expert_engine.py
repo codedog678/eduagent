@@ -99,7 +99,7 @@ class ExpertEngine:
     ) -> ExpertTerminalEnvelope:
         authority, snapshot = request.authority, request.snapshot
         if authority.execution_mode != snapshot.execution_mode or (
-            authority.execution_mode == "distributed"
+            authority.execution_mode != "local"
             and (
                 authority.deployment_id is None
                 or authority.effective_policy_hash is None

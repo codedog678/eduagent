@@ -10,12 +10,18 @@ from core.distributed.contracts import (
 )
 from core.distributed.expert_contracts import RunExecutionAuthority
 from core.distributed.promotion_contracts import Environment, PolicyExecutionBinding
-from core.distributed.rehearsal_store import RehearsalStoreRouter
+from core.distributed.rehearsal_store import RehearsalStoreRouter, ShadowStoreRouter
 from core.harness import LearningHarness
 
 
 class BusinessStoreBusy(RuntimeError):
     pass
+
+
+class ShadowExecutionError(RuntimeError):
+    def __init__(self, usage):
+        super().__init__("shadow execution failed")
+        self.usage = usage
 
 
 class RunExecutor(Protocol):
@@ -31,21 +37,31 @@ class RunExecutor(Protocol):
 class LearningTaskExecutor:
     def __init__(
         self,
-        store_path: str,
+        store_path: str | None,
         enable_db_logging: bool = False,
         expert_gateway=None,
         *,
         allowed_environment: Environment = "production",
         rehearsal_store_root: str | None = None,
+        shadow_store_router: ShadowStoreRouter | None = None,
     ) -> None:
         self.store_path = store_path
         self.enable_db_logging = enable_db_logging
         self.expert_gateway = expert_gateway
-        self.store_router = RehearsalStoreRouter(
-            store_path,
-            rehearsal_store_root or settings.promotion_rehearsal_store_root,
-            allowed_environment=allowed_environment,
-        )
+        if shadow_store_router is not None:
+            if store_path is not None or expert_gateway is not None:
+                raise ValueError("shadow executor cannot receive primary store or durable gateway")
+            if enable_db_logging:
+                raise ValueError("shadow executor cannot enable database logging")
+            self.store_router = shadow_store_router
+        else:
+            if store_path is None:
+                raise ValueError("primary executor requires store path")
+            self.store_router = RehearsalStoreRouter(
+                store_path,
+                rehearsal_store_root or settings.promotion_rehearsal_store_root,
+                allowed_environment=allowed_environment,
+            )
 
     async def execute(
         self,
@@ -54,6 +70,10 @@ class LearningTaskExecutor:
         binding: PolicyExecutionBinding,
     ) -> dict:
         authority.validate_binding(binding)
+        if (authority.execution_mode == "shadow") != isinstance(self.store_router, ShadowStoreRouter):
+            raise ValueError("executor store capability differs from authority")
+        if authority.execution_mode == "shadow":
+            self.store_router.assert_locked(binding)
         if spec.operation != RunOperation.LEARNING_TASK:
             raise ValueError(f"unsupported operation: {spec.operation}")
         store_path = str(self.store_router.path_for(binding))
@@ -62,6 +82,7 @@ class LearningTaskExecutor:
             enable_db_logging=self.enable_db_logging
         )
         harness: LearningHarness | None = None
+        shadow_usage = {"model_calls": 0, "tool_calls": 0}
         try:
             try:
                 harness = LearningHarness(
@@ -73,6 +94,7 @@ class LearningTaskExecutor:
                     expert_gateway=self.expert_gateway,
                     pinned_policy=binding,
                     state_namespace=binding.state_namespace,
+                    shadow_usage_sink=shadow_usage.update if authority.execution_mode == "shadow" else None,
                 )
             except RuntimeError as exc:
                 message = str(exc)
@@ -97,6 +119,10 @@ class LearningTaskExecutor:
                 payload.quiz_id,
                 kind="task",
             )
+        except Exception as exc:
+            if authority.execution_mode == "shadow":
+                raise ShadowExecutionError(shadow_usage) from exc
+            raise
         finally:
             if harness is not None:
                 await harness.memory_worker.stop()

@@ -137,9 +137,9 @@ class ExpertResultAdopter:
                 self._reject(ctx, request, reason, "expert_result_invalid")
 
         current = getattr(ctx, "execution_authority", None)
-        if request.authority.execution_mode == "distributed" and (
+        if request.authority.execution_mode != "local" and (
             request.authority.deployment_id is None
-            or request.snapshot.execution_mode != "distributed"
+            or request.snapshot.execution_mode != request.authority.execution_mode
             or any(getattr(request.snapshot, name) != getattr(ctx, name, None) for name in (
                 "deployment_id", "effective_policy_hash", "state_namespace",
             ))

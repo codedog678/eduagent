@@ -439,6 +439,9 @@ class DistributedRunRepository:
             lease.expires_at = None
             lease.updated_at = now
             await session.refresh(run)
+            from .shadow_repository import enqueue_shadow_in_transaction
+
+            await enqueue_shadow_in_transaction(session, run.id)
             return run
 
     async def fail(
