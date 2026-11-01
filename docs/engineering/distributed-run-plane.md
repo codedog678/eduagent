@@ -16,9 +16,15 @@ PostgreSQL 是以下状态的唯一真相来源：
 - lease owner、到期时间和单调递增 token；
 - transactional outbox、delivery inbox 和 durable spans。
 
-所有 Run/Lease 复合变更使用统一的 `run -> lease` 行锁顺序。续租、step
-提交和最终提交均校验当前 owner/token，并以 PostgreSQL 数据库时钟判断租约
-是否有效。过期 Worker 即使继续运行，也不能提交 PostgreSQL 结果。
+所有 Run/Lease 复合变更先按 `run -> lease` 获取行锁；step 路径继续锁 step，
+授权检查再锁当前 attempt。续租、step 提交和最终提交在取得这些可能阻塞的锁后，
+另读 PostgreSQL `clock_timestamp()`，同时检查 owner/token、attempt 状态和
+deadline。等待行锁期间可能耗尽租约，因此锁前读取的时间不能证明锁后的权限。
+过期 Worker 即使继续运行，也不能提交 PostgreSQL 结果。
+
+[等锁回归](../../python/tests/distributed/test_lease_lock_time.py)用真实 PostgreSQL
+确认操作进入目标 Lock wait，跨过 lease 或 deadline 后才放锁，检查续租、step、
+提交、失败和回收路径；同时保留有效期限内的对照。
 
 ## Redis 不保证
 

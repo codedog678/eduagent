@@ -5,8 +5,8 @@
 Shadow 与跨执行面 corrective 均已提交；当前 source/test 冻结 HEAD 为
 `f4726c841412f10dc8c93b7b0e1cd33c3662a43d`，
 九文件矩阵 289 passed、全后端 1290 passed；父新 stage1 独立 spec review
-PASS（65 tests、0 skipped），等待新 stage2 独立 code review；
-不得据此宣告 Task7 验收 PASS 或 M3 完成。
+PASS（65 tests、0 skipped），新 stage2 独立 code review PASS（89 checks）。
+Task7 已验收；M3 的 Task8–10 和全项目面试就绪验收仍未完成。
 批准依据：`docs/superpowers/plans/2026-10-30-m3-trusted-policy-promotion.md` Task7。
 分支：`feature/m3-trusted-policy-promotion`。
 原实施基线：`e486e28`；本轮 corrective 基线：
@@ -396,3 +396,31 @@ attempt 场景则因原实现根本未锁 attempt 而提前返回，是缺失授
 当前为 corrective 实施与自身验证完成、独立复审待定，不宣告 Task7 验收 PASS。
 P1b 的取消边界保持第一轮描述：协作取消不退出就持续持锁，不伪称强制终止。
 只停止于 Task7，不启动 Task8，不 push，不 amend。
+
+## 父线程最终验收闭环
+
+两阶段独立审查均针对 `f4726c841412f10dc8c93b7b0e1cd33c3662a43d`
+的冻结 source/test，范围为 `8051d25..f4726c8`，包含两轮纠错。
+审查前后 Python source/test 哈希一致；后续 `cf7a8e9` 只提交报告，
+父同步 M1/M2 工程文档中的末锁时钟、parent attempt 和状态刷新说明。
+
+| 独立审查 | 范围 | 实际结果 | 秒 |
+| --- | --- | ---: | ---: |
+| Stage1 spec | Shadow 新回归 | 20 passed，36 deselected | 13.42 |
+| Stage1 spec | 跨执行面关键权限 | 24 passed | 22.27 |
+| Stage1 spec | 隔离、固定策略、只读启动 | 21 passed | 4.24 |
+| Stage2 code | Shadow 新回归 | 20 passed | 13.79 |
+| Stage2 code | 跨执行面代表矩阵 | 51 passed | 43.22 |
+| Stage2 code | 额外 attempt 撤销探针 | 12 passed | 2.128 |
+| Stage2 code | 心跳异常、内部超时、重复取消探针 | 2 passed | 0.769 |
+| Stage2 code | Run/Expert 并发锁序探针 | 4 passed | 0.950 |
+
+各组无 failure/skip；两阶段分别 PASS，未发现尚未修复的 blocking P1/P2。
+Stage2 共 89 个独立检查，包含测试与额外探针，不能与实现矩阵或全后端相加。
+父另实际解析冻结全后端 JUnit：1290 tests、0 failure/error/skipped，
+226.686 秒；不是第二阶段重跑的全后端。所有临时数据库均已清理。
+
+据此验收 Task7 的工程实现及同类跨执行面纠错，允许推进已批准 Task8。
+真实 SDK 链路中的供应商请求由受控 stub 替代；没有新增外部模型请求，
+不证明正式候选资格、真实学生效果或 Docker 动态部署。协作取消若不退出
+仍持续持锁，硬终止未持久化的用量仍未知；这些边界不因审查 PASS 改变。

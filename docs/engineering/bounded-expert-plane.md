@@ -87,11 +87,18 @@ parent run -> parent lease -> parent attempt
 创建 job 时尚无 expert 行可锁，因此在 parent run/lease 后按
 `parent -> queued-bytes -> role` 获取 advisory admission lock，再锁 parent
 attempt。claim 在 parent attempt 与 expert job/lease 后获取 role advisory
-lock。Run cancel 先锁 parent run/lease，再锁全部 active expert job/lease，
-最后结束当前 parent attempt。Result submit 锁 parent run/lease、expert
-job/lease 和已有 results，但不锁 parent attempt。所有跨平面路径先持有同一
+lock。创建路径还锁旧 epoch 的 job/lease 和重放 job，授权通过后才关闭旧 epoch。
+Run cancel 先锁 parent run/lease，再锁全部 active expert job/lease，
+最后结束当前 parent attempt。Result submit 锁 parent run/lease、parent attempt、
+expert job/lease 和已有 results。所有跨平面路径先持有同一
 parent run/lease，后续顺序按操作固定，不宣称每种操作共享一条不存在的全局
 序列。
+
+所有可能阻塞的行锁与 advisory lock 返回后，才另读数据库当前时间检查权限。
+已在 session 中读取过的 job 在锁定时重新加载，避免采用等锁前缓存的状态。
+parent 检查包含当前 attempt 的状态、owner/token 和 deadline；仅检查 parent
+lease 未过期不能替代 attempt deadline。真实等锁与状态更新用例见
+[跨平面租约回归](../../python/tests/distributed/test_lease_lock_time.py)。
 
 结果接受同时要求：
 
