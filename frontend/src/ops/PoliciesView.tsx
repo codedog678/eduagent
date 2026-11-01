@@ -199,16 +199,31 @@ function PolicyDetail({ deploymentId, reload, onRequestError }: Props & { deploy
               {Object.entries(detail.thresholds).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}
             </dl>
             <h3>Gate Receipts</h3>
+            <p className="ops-policy-note">收据是历史证据，不代表可发布资格。健康证据按来源部署和冻结窗口关联；已消费前序证据不是本部署的新观测通过，旧窗口 pass 不覆盖最新 hold / fail。</p>
             {!detail.required_receipts.length && !detail.gate_receipts.length
               && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无 Gate 收据" />}
             <div className="ops-tag-list">{detail.required_receipts.map((gate) => {
               const receipt = detail.gate_receipts.find((item) => item.gate_type === gate)
-              return <Tooltip key={gate} title={receipt ? '最新绑定收据' : '未取得绑定收据'}><span>{gate} <PolicyStatus value={receipt?.status ?? 'unknown'} /></span></Tooltip>
+              const source = receipt?.health_source
+              return <Tooltip key={gate} title={!receipt ? '未取得绑定收据' : source
+                ? source.relation === 'consumed_chain' ? '已消费前序证据，不是本部署新观测' : source.is_latest_window ? '本部署来源窗口' : '本部署旧窗口证据，不代表最新健康通过'
+                : '最新 artifact 资格收据'}><span>{gate} <PolicyStatus value={receipt?.status ?? 'unknown'} /></span></Tooltip>
             })}</div>
-            {detail.gate_receipts.length > 0 && <Table rowKey="receipt_id" size="small" pagination={false} scroll={{ x: 760 }}
+            {detail.gate_receipts.length > 0 && <Table rowKey="receipt_id" size="small" pagination={false} scroll={{ x: 1100 }}
               dataSource={detail.gate_receipts} columns={[
                 { title: 'Gate', dataIndex: 'gate_type', width: 180 },
                 { title: '状态', dataIndex: 'status', width: 120, render: (value: string) => <PolicyStatus value={value} /> },
+                { title: '健康来源', width: 340, render: (_, receipt) => receipt.health_source ? (
+                  <div className="ops-cell-stack">
+                    <strong>{receipt.health_source.relation === 'consumed_chain'
+                      ? '已消费前序证据（非本部署新观测）'
+                      : receipt.health_source.is_latest_window ? '本部署窗口' : '本部署旧窗口证据，不代表最新健康通过'}</strong>
+                    <PolicyLink id={receipt.health_source.deployment_id} />
+                    <span>版本 {receipt.health_source.deployment_version} · {receipt.health_source.window_decision} · {receipt.health_source.is_latest_window ? '来源最新窗口' : '来源历史窗口'}</span>
+                    <code className="ops-id">Window {receipt.health_source.window_id}</code>
+                    <span>{date(receipt.health_source.evaluated_at)}</span>
+                  </div>
+                ) : 'artifact 资格证据' },
                 { title: '样本', dataIndex: 'sample_count', width: 80 },
                 { title: '成本 USD', dataIndex: 'cost', width: 90 },
                 { title: 'Issuer', dataIndex: 'issuer', width: 100 },

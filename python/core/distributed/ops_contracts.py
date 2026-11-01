@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from .promotion_contracts import (
     DeploymentState, Environment, GateType, PolicyCohort, PolicyThresholds, Sha256,
 )
@@ -203,6 +203,17 @@ class OpsHealthStats(OpsContract):
     mean_cost_increase_rate: Decimal | None = None
 
 
+class OpsHealthSource(OpsContract):
+    relation: Literal["local", "consumed_chain"]
+    deployment_id: UUID
+    deployment_version: int = Field(ge=1, strict=True)
+    window_id: Sha256
+    thresholds_hash: Sha256
+    window_decision: Literal["pass", "hold", "fail"]
+    evaluated_at: datetime
+    is_latest_window: bool
+
+
 class OpsGateReceipt(OpsContract):
     receipt_id: UUID
     policy_hash: Sha256
@@ -213,6 +224,17 @@ class OpsGateReceipt(OpsContract):
     cost: Decimal = Field(ge=0)
     issuer: RedactedIdentity
     issued_at: datetime
+    health_source: OpsHealthSource | None
+
+    @model_validator(mode="after")
+    def health_relation(self):
+        is_health = self.gate_type in {"shadow_health", "canary_health"}
+        if is_health != (self.health_source is not None):
+            raise ValueError("health source must match the gate scope")
+        if self.health_source and self.health_source.relation == "consumed_chain" \
+                and (self.status != "passed" or self.health_source.window_decision != "pass"):
+            raise ValueError("consumed source must be passing historical evidence")
+        return self
 
 
 class OpsHealthWindow(OpsContract):
@@ -270,6 +292,26 @@ class OpsPolicyDeploymentDetail(OpsPolicyDeployment):
     gate_receipts: list[OpsGateReceipt] = Field(max_length=8)
     latest_health_window: OpsHealthWindow | None
     audit_events: list[OpsAuditEvent] = Field(max_length=100)
+
+    @model_validator(mode="after")
+    def local_health_relation(self):
+        for receipt in self.gate_receipts:
+            source = receipt.health_source
+            if source is None:
+                continue
+            if source.thresholds_hash != self.thresholds_hash or (
+                source.relation == "local" and (
+                    source.deployment_id != self.deployment_id
+                    or source.deployment_version != self.version
+                )
+            ) or (
+                source.relation == "consumed_chain" and (
+                    source.deployment_id == self.deployment_id
+                    or source.deployment_version >= self.version
+                )
+            ):
+                raise ValueError("health source is not related to the selected deployment")
+        return self
 
 
 class OpsPolicyDeploymentPage(OpsContract):

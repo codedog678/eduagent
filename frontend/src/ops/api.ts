@@ -20,6 +20,7 @@ import type {
   OpsHealthStats,
   OpsHealthWindow,
   OpsGateReceipt,
+  OpsHealthSource,
   OpsAuditEvent,
   OpsPolicyPage,
   PolicyEnvironment,
@@ -491,11 +492,28 @@ const healthStats = fields<OpsHealthStats>({
   natural_failure_count: nullable(nonNegativeInteger), latency_increase_rate: nullable(decimal()),
   mean_cost_increase_rate: nullable(decimal()),
 })
-const gateReceipt = fields<OpsGateReceipt>({
+const healthSource = fields<OpsHealthSource>({
+  relation: choice(['local', 'consumed_chain'] as const), deployment_id: uuid,
+  deployment_version: positiveInteger, window_id: hash, thresholds_hash: hash,
+  window_decision: choice(['pass', 'hold', 'fail'] as const), evaluated_at: timestamp,
+  is_latest_window: boolean,
+})
+const gateReceiptShape = fields<OpsGateReceipt>({
   receipt_id: uuid, policy_hash: hash, gate_type: choice(gates),
   status: choice(['passed', 'failed', 'unknown'] as const), evidence_hash: hash,
   sample_count: nonNegativeInteger, cost: decimal(0), issuer: choice(['redacted'] as const), issued_at: timestamp,
+  health_source: nullable(healthSource),
 })
+const gateReceipt: Guard<OpsGateReceipt> = (value, path) => {
+  const receipt = gateReceiptShape(value, path)
+  const isHealth = ['shadow_health', 'canary_health'].includes(receipt.gate_type)
+  if (isHealth !== (receipt.health_source !== null)) fail(`${path}.health_source`, '与 Gate 匹配的来源')
+  if (receipt.health_source?.relation === 'consumed_chain'
+    && (receipt.status !== 'passed' || receipt.health_source.window_decision !== 'pass')) {
+    fail(`${path}.health_source`, '已消费的通过证据')
+  }
+  return receipt
+}
 const healthWindowGuard = fields<OpsHealthWindow>({
   window_id: hash, deployment_id: uuid, deployment_version: nullable(positiveInteger),
   environment: choice(environments), metric_contract_version: positiveInteger, thresholds_hash: nullable(hash),
@@ -519,11 +537,24 @@ const deploymentSchema = {
   actor: choice(['redacted'] as const), reason: choice(['redacted'] as const), created_at: timestamp,
 }
 const deploymentGuard = fields<OpsPolicyDeployment>(deploymentSchema)
-const deploymentDetailGuard = fields<OpsPolicyDeploymentDetail>({
+const deploymentDetailShape = fields<OpsPolicyDeploymentDetail>({
   ...deploymentSchema, candidate_policy_hash: nullable(hash), stable_policy_hash: hash,
   gate_receipts: boundedArray(gateReceipt, 8), latest_health_window: nullable(healthWindowGuard),
   audit_events: boundedArray(auditEventGuard, 100),
 })
+const deploymentDetailGuard: Guard<OpsPolicyDeploymentDetail> = (value, path) => {
+  const detail = deploymentDetailShape(value, path)
+  for (const { health_source: source } of detail.gate_receipts) {
+    if (source === null) continue
+    const related = source.relation === 'local'
+      ? source.deployment_id === detail.deployment_id && source.deployment_version === detail.version
+      : source.deployment_id !== detail.deployment_id && source.deployment_version < detail.version
+    if (!related || source.thresholds_hash !== detail.thresholds_hash) {
+      fail(`${path}.gate_receipts`, '与部署匹配的健康来源')
+    }
+  }
+  return detail
+}
 function policyPage<T>(guard: Guard<T>): Guard<OpsPolicyPage<T>> {
   return fields<OpsPolicyPage<T>>({ items: boundedArray(guard, 100), next_cursor: nullableString })
 }

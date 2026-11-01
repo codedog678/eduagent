@@ -45,11 +45,11 @@ from .ops_contracts import (
     OpsWorker,
     OpsWorkerPage,
     OpsAuditEvent, OpsAuditEventPage, OpsAuditType, OpsCohortCounts,
-    OpsGateReceipt, OpsHealthStats, OpsHealthWindow, OpsHealthWindowPage,
+    OpsGateReceipt, OpsHealthSource, OpsHealthStats, OpsHealthWindow, OpsHealthWindowPage,
     OpsPolicyDeployment, OpsPolicyDeploymentDetail, OpsPolicyDeploymentPage,
     OpsThresholdCode,
 )
-from .promotion_contracts import DeploymentState, GateType
+from .promotion_contracts import DeploymentState, GateType, PolicyThresholds, canonical_hash
 from .promotion_models import (
     PolicyArtifactRecord, PolicyAuditEventRecord, PolicyDeploymentRecord,
     PolicyEnvironmentHeadRecord, PolicyGateReceiptRecord, PolicyHealthWindowRecord,
@@ -334,7 +334,7 @@ class OpsQueries:
             head = await session.get(PolicyEnvironmentHeadRecord, row.environment)
             counts = await self._policy_counts(session, [deployment_id])
             summary = self._deployment(row, head, counts[deployment_id])
-            # Latest receipts for the artifact's exact protocol/runtime/source binding.
+            # Artifact-wide qualification receipts retain the authority's three-key ordering.
             # This is evidence display, not authorization or gate re-evaluation.
             ranked = select(
                 PolicyGateReceiptRecord.receipt_id,
@@ -353,11 +353,14 @@ class OpsQueries:
             ).where(
                 PolicyGateReceiptRecord.policy_hash == row.candidate_policy_hash,
                 PolicyGateReceiptRecord.gate_type.in_(get_args(GateType)),
+                PolicyGateReceiptRecord.gate_type.not_in(("shadow_health", "canary_health")),
                 PolicyGateReceiptRecord.issued_at <= await self._db_now(session),
             ).subquery()
-            receipts = await session.scalars(select(PolicyGateReceiptRecord).join(
+            receipts = list(await session.scalars(select(PolicyGateReceiptRecord).join(
                 ranked, ranked.c.receipt_id == PolicyGateReceiptRecord.receipt_id,
-            ).where(ranked.c.rank == 1).order_by(PolicyGateReceiptRecord.gate_type).limit(8))
+            ).where(ranked.c.rank == 1).order_by(PolicyGateReceiptRecord.gate_type).limit(8)))
+            projected = [self._gate_receipt(r) for r in receipts]
+            projected.extend(await self._health_receipts(session, row))
             window = await session.scalar(select(PolicyHealthWindowRecord).where(
                 PolicyHealthWindowRecord.deployment_id == deployment_id,
             ).order_by(PolicyHealthWindowRecord.created_at.desc(),
@@ -369,14 +372,226 @@ class OpsQueries:
             return OpsPolicyDeploymentDetail(
                 **{**summary.model_dump(), "candidate_policy_hash": row.candidate_policy_hash,
                    "stable_policy_hash": row.stable_policy_hash},
-                gate_receipts=[OpsGateReceipt(
-                    receipt_id=r.receipt_id, policy_hash=r.policy_hash, gate_type=r.gate_type,
-                    status=r.status, evidence_hash=r.evidence_hash, sample_count=r.sample_count,
-                    cost=r.cost, issuer="redacted", issued_at=r.issued_at,
-                ) for r in receipts],
+                gate_receipts=sorted(projected, key=lambda r: r.gate_type),
                 latest_health_window=self._health_window(window, row.environment) if window else None,
                 audit_events=[self._audit_event(a) for a in audits],
             )
+
+    @staticmethod
+    def _gate_receipt(receipt, source=None):
+        return OpsGateReceipt(
+            receipt_id=receipt.receipt_id, policy_hash=receipt.policy_hash,
+            gate_type=receipt.gate_type, status=receipt.status,
+            evidence_hash=receipt.evidence_hash, sample_count=receipt.sample_count,
+            cost=receipt.cost, issuer="redacted", issued_at=receipt.issued_at,
+            health_source=source,
+        )
+
+    async def _health_receipts(self, session, deployment):
+        """Project at most two explicitly related sources, without replay or authorization."""
+        artifact = await session.get(PolicyArtifactRecord, deployment.candidate_policy_hash) \
+            if deployment.candidate_policy_hash else None
+        if artifact is None:
+            return []
+        now = await self._db_now(session)
+        sources = []
+        if deployment.state in {"shadow", "canary", "active"}:
+            gate = "shadow_health" if deployment.state == "shadow" else "canary_health"
+            sources.append((deployment, gate, "local", now, None))
+        canary = deployment
+        if deployment.state == "active":
+            consumed = await self._consumed_canary(session, deployment, artifact)
+            if consumed is None:
+                return await self._project_health_sources(session, artifact, sources)
+            canary, receipt_id = consumed
+            # A local Active receipt, including unknown/invalid evidence, never falls back.
+            local = await self._latest_health_receipt(session, artifact, deployment, "canary_health", now)
+            if local is None:
+                sources.append((canary, "canary_health", "consumed_chain",
+                                deployment.created_at, receipt_id))
+        if canary.state == "canary":
+            # This established helper is read-only for Canary; Active would replay evidence.
+            from .promotion_repository import PromotionRepository
+            predecessors = await PromotionRepository(self.session_factory).health_predecessors(
+                session, canary,
+            )
+            for shadow in predecessors[:1]:
+                audit = await session.scalar(select(PolicyAuditEventRecord).where(
+                    PolicyAuditEventRecord.command_id == canary.command_id,
+                    PolicyAuditEventRecord.deployment_id == canary.deployment_id,
+                    PolicyAuditEventRecord.event_type == "promotion_transitioned",
+                ).limit(1))
+                details = audit.details if audit and isinstance(audit.details, dict) else {}
+                required = details.get("required_receipts")
+                if (
+                    not isinstance(required, list) or "shadow_health" not in required
+                    or type(details.get("from_version")) is not int
+                    or type(details.get("to_version")) is not int
+                    or shadow.thresholds != canary.thresholds
+                ):
+                    continue
+                sources.append((shadow, "shadow_health", "consumed_chain", canary.created_at, None))
+        return await self._project_health_sources(session, artifact, sources)
+
+    @staticmethod
+    async def _latest_health_receipt(session, artifact, deployment, gate, cutoff):
+        return await session.scalar(select(PolicyGateReceiptRecord).where(
+            PolicyGateReceiptRecord.policy_hash == artifact.policy_hash,
+            PolicyGateReceiptRecord.protocol_hash == artifact.protocol_hash,
+            PolicyGateReceiptRecord.runtime_hash == artifact.runtime_hash,
+            PolicyGateReceiptRecord.source_revision == artifact.source_revision,
+            PolicyGateReceiptRecord.gate_type == gate,
+            or_(
+                PolicyGateReceiptRecord.details["deployment_id"].as_string() == deployment.deployment_id,
+                func.coalesce(func.json_typeof(PolicyGateReceiptRecord.details), "null") != "object",
+                func.coalesce(func.json_typeof(
+                    PolicyGateReceiptRecord.details["deployment_id"],
+                ), "null") != "string",
+                PolicyGateReceiptRecord.details["deployment_id"].as_string().op("!~")(
+                    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                ),
+            ),
+            PolicyGateReceiptRecord.issued_at >= deployment.created_at,
+            PolicyGateReceiptRecord.issued_at <= cutoff,
+            PolicyGateReceiptRecord.created_at <= cutoff,
+        ).order_by(PolicyGateReceiptRecord.issued_at.desc(),
+                   PolicyGateReceiptRecord.created_at.desc(),
+                   PolicyGateReceiptRecord.receipt_id.desc()).limit(1))
+
+    async def _project_health_sources(self, session, artifact, sources):
+        result = {}
+        for deployment, gate, relation, cutoff, exact_id in sources:
+            # Unidentifiable latest evidence blocks display rather than reviving an old pass.
+            receipt = await self._latest_health_receipt(session, artifact, deployment, gate, cutoff)
+            if receipt is None or (exact_id is not None and receipt.receipt_id != exact_id):
+                continue
+            details = receipt.details
+            if not isinstance(details, dict):
+                continue
+            window_id = details.get("window_id")
+            if not isinstance(window_id, str) or not re.fullmatch(r"[0-9a-f]{64}", window_id):
+                continue
+            window = await session.get(PolicyHealthWindowRecord, window_id)
+            latest = await session.scalar(select(PolicyHealthWindowRecord).where(
+                PolicyHealthWindowRecord.deployment_id == deployment.deployment_id,
+            ).order_by(PolicyHealthWindowRecord.evaluated_at.desc(),
+                       PolicyHealthWindowRecord.window_id.desc()).limit(1))
+            consumed_latest = await session.scalar(select(PolicyHealthWindowRecord).where(
+                PolicyHealthWindowRecord.deployment_id == deployment.deployment_id,
+                PolicyHealthWindowRecord.evaluated_at <= cutoff,
+                PolicyHealthWindowRecord.created_at <= cutoff,
+            ).order_by(PolicyHealthWindowRecord.evaluated_at.desc(),
+                       PolicyHealthWindowRecord.window_id.desc()).limit(1)) \
+                if relation == "consumed_chain" else None
+            try:
+                thresholds = PolicyThresholds.model_validate(deployment.thresholds)
+                identity = {
+                    "deployment_id": deployment.deployment_id,
+                    "deployment_version": deployment.version,
+                    "metric_contract_version": 1, "thresholds_hash": thresholds.digest,
+                    "observation_keys": window.observation_keys if window else None,
+                }
+                if (
+                    window is None or thresholds.digest != deployment.thresholds_hash
+                    or receipt.data_role != artifact.data_role
+                    or receipt.issuer != "policy-health"
+                    or receipt.model_identity != "server-policy-health-v1"
+                    or type(details.get("deployment_version")) is not int
+                    or type(details.get("metric_contract_version")) is not int
+                    or any(details.get(key) != value for key, value in identity.items())
+                    or window.deployment_id != deployment.deployment_id
+                    or window.deployment_version != deployment.version
+                    or window.thresholds_hash != deployment.thresholds_hash
+                    or window.metric_contract_version != 1
+                    or canonical_hash(identity) != window.window_id
+                    or canonical_hash(details) != receipt.evidence_hash
+                    or details.get("gate_cohort") != ("shadow" if gate == "shadow_health" else "candidate")
+                    or details.get("candidate_stats") != window.candidate_stats
+                    or details.get("stable_stats") != window.stable_stats
+                    or not deployment.created_at <= window.evaluated_at <= receipt.issued_at <= cutoff
+                    or window.created_at > cutoff
+                    or (receipt.status == "passed" and window.decision != "pass")
+                    or (relation == "consumed_chain" and (
+                        receipt.status != "passed" or window.decision != "pass"
+                        or consumed_latest is None or consumed_latest.window_id != window.window_id
+                    ))
+                ):
+                    continue
+                source = OpsHealthSource(
+                    relation=relation, deployment_id=deployment.deployment_id,
+                    deployment_version=deployment.version, window_id=window.window_id,
+                    thresholds_hash=window.thresholds_hash, window_decision=window.decision,
+                    evaluated_at=window.evaluated_at,
+                    is_latest_window=bool(latest and latest.window_id == window.window_id),
+                )
+            except (ValidationError, ValueError, TypeError, KeyError):
+                continue
+            result[gate] = self._gate_receipt(receipt, source)
+        return list(result.values())
+
+    @staticmethod
+    async def _consumed_canary(session, deployment, artifact):
+        """Read the exact approval/audit relation, never infer consumption from adjacency."""
+        audit = await session.scalar(select(PolicyAuditEventRecord).where(
+            PolicyAuditEventRecord.command_id == deployment.command_id,
+            PolicyAuditEventRecord.deployment_id == deployment.deployment_id,
+            PolicyAuditEventRecord.environment == deployment.environment,
+            PolicyAuditEventRecord.event_type == "promotion_transitioned",
+        ).limit(1))
+        approval = await session.scalar(select(PolicyGateReceiptRecord).where(
+            PolicyGateReceiptRecord.policy_hash == artifact.policy_hash,
+            PolicyGateReceiptRecord.gate_type == "promotion_approval",
+            PolicyGateReceiptRecord.details["command_id"].as_string() == deployment.command_id,
+        ).order_by(PolicyGateReceiptRecord.issued_at.desc(),
+                   PolicyGateReceiptRecord.created_at.desc(),
+                   PolicyGateReceiptRecord.receipt_id.desc()).limit(1))
+        if audit is None or approval is None or not isinstance(audit.details, dict) \
+                or not isinstance(approval.details, dict):
+            return None
+        details = approval.details
+        canary_id = details.get("canary_deployment_id")
+        receipt_id = details.get("canary_health_receipt_id")
+        if not isinstance(canary_id, str) or not isinstance(receipt_id, str):
+            return None
+        canary = await session.get(PolicyDeploymentRecord, canary_id)
+        receipt = await session.get(PolicyGateReceiptRecord, receipt_id)
+        try:
+            if (
+                canary is None or receipt is None or deployment.environment != "rehearsal"
+                or canary.environment != deployment.environment or canary.state != "canary"
+                or canary.version != deployment.version - 1
+                or canary.candidate_policy_hash != deployment.candidate_policy_hash
+                or canary.stable_policy_hash != deployment.stable_policy_hash
+                or canary.thresholds_hash != deployment.thresholds_hash
+                or canary.thresholds != deployment.thresholds
+                or canary.assignment_salt_id != deployment.assignment_salt_id
+                or canary.previous_stable_deployment_id != deployment.previous_stable_deployment_id
+                or canary.created_at > deployment.created_at
+                or audit.created_at != deployment.created_at
+                or approval.issued_at != deployment.created_at
+                or approval.status != "passed"
+                or approval.protocol_hash != artifact.protocol_hash
+                or approval.runtime_hash != artifact.runtime_hash
+                or approval.source_revision != artifact.source_revision
+                or approval.evidence_hash != canonical_hash(details)
+                or details.get("command_hash") != audit.details.get("command_hash")
+                or not isinstance(details.get("command_hash"), str)
+                or audit.details.get("from_state") != "canary"
+                or audit.details.get("from_version") != canary.version
+                or type(audit.details.get("from_version")) is not int
+                or audit.details.get("to_state") != "active"
+                or audit.details.get("to_version") != deployment.version
+                or type(audit.details.get("to_version")) is not int
+                or details.get("canary_deployment_version") != canary.version
+                or type(details.get("canary_deployment_version")) is not int
+                or details.get("canary_thresholds_hash") != canary.thresholds_hash
+                or details.get("canary_health_evidence_hash") != receipt.evidence_hash
+                or details.get("actor") != deployment.actor or details.get("reason") != deployment.reason
+            ):
+                return None
+        except (ValueError, TypeError):
+            return None
+        return canary, receipt_id
 
     async def list_policy_health_windows(
         self, *, limit, cursor=None, environment=None, deployment_id=None, decision=None,

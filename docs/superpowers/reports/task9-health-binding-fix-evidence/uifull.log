@@ -1,0 +1,272 @@
+v20.19.5
+
+Running 54 tests using 2 workers
+
+[1/54] [desktop] › e2e/ops.spec.ts:417:1 › renders populated Ops workflows with pagination, detail, trace, and stale workers
+[2/54] [mobile] › e2e/ops.spec.ts:417:1 › renders populated Ops workflows with pagination, detail, trace, and stale workers
+[3/54] [mobile] › e2e/ops.spec.ts:457:1 › shows loading and empty states without layout shift
+[4/54] [desktop] › e2e/ops.spec.ts:457:1 › shows loading and empty states without layout shift
+[5/54] [mobile] › e2e/ops.spec.ts:468:1 › shows retryable API errors and recovers
+[6/54] [desktop] › e2e/ops.spec.ts:468:1 › shows retryable API errors and recovers
+[7/54] [mobile] › e2e/ops.spec.ts:484:1 › keeps bearer token in session storage and retries authorization
+[8/54] [desktop] › e2e/ops.spec.ts:484:1 › keeps bearer token in session storage and retries authorization
+[9/54] [mobile] › e2e/ops.spec.ts:503:1 › policy evidence filters, cursor pages, detail, metrics and audit are read only
+[10/54] [desktop] › e2e/ops.spec.ts:503:1 › policy evidence filters, cursor pages, detail, metrics and audit are read only
+[11/54] [desktop] › e2e/ops.spec.ts:557:1 › policy loading, empty filters and stale requests do not restore old evidence
+[12/54] [mobile] › e2e/ops.spec.ts:557:1 › policy loading, empty filters and stale requests do not restore old evidence
+[13/54] [desktop] › e2e/ops.spec.ts:571:1 › policy errors and detail errors have independent retry recovery
+[14/54] [mobile] › e2e/ops.spec.ts:571:1 › policy errors and detail errors have independent retry recovery
+[15/54] [desktop] › e2e/ops.spec.ts:583:1 › policy strict response guard rejects extra freeform fields
+[16/54] [mobile] › e2e/ops.spec.ts:583:1 › policy strict response guard rejects extra freeform fields
+[17/54] [desktop] › e2e/ops.spec.ts:591:1 › policy authentication uses existing Ops token and clears it on lock
+[18/54] [mobile] › e2e/ops.spec.ts:591:1 › policy authentication uses existing Ops token and clears it on lock
+[19/54] [desktop] › e2e/ops.spec.ts:604:1 › policy Run and Trace display stored immutable identity and link version evidence
+[20/54] [mobile] › e2e/ops.spec.ts:604:1 › policy Run and Trace display stored immutable identity and link version evidence
+  1) [desktop] › e2e/ops.spec.ts:604:1 › policy Run and Trace display stored immutable identity and link version evidence 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('region', { name: '策略版本详情' }).getByText('版本 2')
+    Expected: visible
+    Error: strict mode violation: getByRole('region', { name: '策略版本详情' }).getByText('版本 2') resolved to 2 elements:
+        1) <span>…</span> aka getByText('rehearsal · 版本 2 canary')
+        2) <span>…</span> aka getByText('版本 2 · fail · 来源最新窗口')
+
+    Call log:
+      - Expect "toBeVisible" getByRole('region', { name: '策略版本详情' }).getByText('版本 2') with timeout 5000ms
+      - waiting for getByRole('region', { name: '策略版本详情' }).getByText('版本 2')
+
+
+      617 |   }
+      618 |   await page.getByRole('link', { name: deploymentId, exact: true }).click()
+    > 619 |   await expect(page.getByRole('region', { name: '策略版本详情' }).getByText('版本 2', { exact: false })).toBeVisible()
+          |                                                                                                  ^
+      620 |   await expect(page.getByText('当前版本 3', { exact: false }).first()).toBeVisible()
+      621 |   await page.goto('/ops/#/trace/run-1')
+      622 |   await expect(page.getByText('b'.repeat(64), { exact: true })).toBeVisible()
+        at /private/tmp/m3-task9-health-fix-20261102-xtfx61/frontend/e2e/ops.spec.ts:619:98
+
+    Error Context: test-results/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+  2) [mobile] › e2e/ops.spec.ts:604:1 › policy Run and Trace display stored immutable identity and link version evidence 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('region', { name: '策略版本详情' }).getByText('版本 2')
+    Expected: visible
+    Error: strict mode violation: getByRole('region', { name: '策略版本详情' }).getByText('版本 2') resolved to 2 elements:
+        1) <span>…</span> aka getByText('rehearsal · 版本 2 canary')
+        2) <span>…</span> aka getByText('版本 2 · fail · 来源最新窗口')
+
+    Call log:
+      - Expect "toBeVisible" getByRole('region', { name: '策略版本详情' }).getByText('版本 2') with timeout 5000ms
+      - waiting for getByRole('region', { name: '策略版本详情' }).getByText('版本 2')
+
+
+      617 |   }
+      618 |   await page.getByRole('link', { name: deploymentId, exact: true }).click()
+    > 619 |   await expect(page.getByRole('region', { name: '策略版本详情' }).getByText('版本 2', { exact: false })).toBeVisible()
+          |                                                                                                  ^
+      620 |   await expect(page.getByText('当前版本 3', { exact: false }).first()).toBeVisible()
+      621 |   await page.goto('/ops/#/trace/run-1')
+      622 |   await expect(page.getByText('b'.repeat(64), { exact: true })).toBeVisible()
+        at /private/tmp/m3-task9-health-fix-20261102-xtfx61/frontend/e2e/ops.spec.ts:619:98
+
+    Error Context: test-results/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[21/54] [desktop] › e2e/ops.spec.ts:626:1 › policy legacy Run and Trace identity remains unavailable without current policy fallback
+[22/54] [mobile] › e2e/ops.spec.ts:626:1 › policy legacy Run and Trace identity remains unavailable without current policy fallback
+[23/54] [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects actor freeform
+[24/54] [mobile] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects actor freeform
+[25/54] [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects hash identity
+[26/54] [mobile] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects hash identity
+[27/54] [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects missing required binding
+[28/54] [mobile] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects missing required binding
+[29/54] [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects raw namespace
+[30/54] [mobile] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects raw namespace
+[31/54] [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects detail nested extras
+[32/54] [mobile] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects detail nested extras
+[33/54] [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects detail invalid metric
+[34/54] [mobile] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects detail invalid metric
+[35/54] [desktop] › e2e/ops.spec.ts:658:1 › policy strict health and audit guards reject freeform aggregates and reasons
+[36/54] [mobile] › e2e/ops.spec.ts:658:1 › policy strict health and audit guards reject freeform aggregates and reasons
+[37/54] [desktop] › e2e/ops.spec.ts:674:1 › policy detail empty evidence is explicitly unavailable
+[38/54] [mobile] › e2e/ops.spec.ts:674:1 › policy detail empty evidence is explicitly unavailable
+[39/54] [desktop] › e2e/ops.spec.ts:685:1 › policy detail selection ignores delayed previous version responses
+[40/54] [mobile] › e2e/ops.spec.ts:685:1 › policy detail selection ignores delayed previous version responses
+[41/54] [desktop] › e2e/ops.spec.ts:712:3 › health source consumed is explicit and does not claim a new passing window
+[42/54] [mobile] › e2e/ops.spec.ts:712:3 › health source consumed is explicit and does not claim a new passing window
+[43/54] [desktop] › e2e/ops.spec.ts:712:3 › health source old-local is explicit and does not claim a new passing window
+[44/54] [mobile] › e2e/ops.spec.ts:712:3 › health source old-local is explicit and does not claim a new passing window
+  3) [desktop] › e2e/ops.spec.ts:712:3 › health source old-local is explicit and does not claim a new passing window 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('region', { name: '策略版本详情' }).getByText('本部署旧窗口证据，不代表最新健康通过', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('region', { name: '策略版本详情' }).getByText('本部署旧窗口证据，不代表最新健康通过', { exact: true }) with timeout 5000ms
+      - waiting for getByRole('region', { name: '策略版本详情' }).getByText('本部署旧窗口证据，不代表最新健康通过', { exact: true })
+
+
+      733 |     const explanation = scenario === 'consumed' ? '已消费前序证据（非本部署新观测）'
+      734 |       : scenario === 'old-local' ? '本部署旧窗口证据，不代表最新健康通过' : '暂无 Gate 收据'
+    > 735 |     await expect(detail.getByText(explanation, { exact: true })).toBeVisible()
+          |                                                                  ^
+      736 |     await expectStableLayout(page)
+      737 |   })
+      738 | }
+        at /private/tmp/m3-task9-health-fix-20261102-xtfx61/frontend/e2e/ops.spec.ts:735:66
+
+    Error Context: test-results/ops-health-source-old-loca-f4def--claim-a-new-passing-window-desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ops-health-source-old-loca-f4def--claim-a-new-passing-window-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ops-health-source-old-loca-f4def--claim-a-new-passing-window-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+  4) [mobile] › e2e/ops.spec.ts:712:3 › health source old-local is explicit and does not claim a new passing window 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('region', { name: '策略版本详情' }).getByText('本部署旧窗口证据，不代表最新健康通过', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('region', { name: '策略版本详情' }).getByText('本部署旧窗口证据，不代表最新健康通过', { exact: true }) with timeout 5000ms
+      - waiting for getByRole('region', { name: '策略版本详情' }).getByText('本部署旧窗口证据，不代表最新健康通过', { exact: true })
+
+
+      733 |     const explanation = scenario === 'consumed' ? '已消费前序证据（非本部署新观测）'
+      734 |       : scenario === 'old-local' ? '本部署旧窗口证据，不代表最新健康通过' : '暂无 Gate 收据'
+    > 735 |     await expect(detail.getByText(explanation, { exact: true })).toBeVisible()
+          |                                                                  ^
+      736 |     await expectStableLayout(page)
+      737 |   })
+      738 | }
+        at /private/tmp/m3-task9-health-fix-20261102-xtfx61/frontend/e2e/ops.spec.ts:735:66
+
+    Error Context: test-results/ops-health-source-old-loca-f4def--claim-a-new-passing-window-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ops-health-source-old-loca-f4def--claim-a-new-passing-window-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ops-health-source-old-loca-f4def--claim-a-new-passing-window-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[45/54] [desktop] › e2e/ops.spec.ts:712:3 › health source missing is explicit and does not claim a new passing window
+[46/54] [mobile] › e2e/ops.spec.ts:712:3 › health source missing is explicit and does not claim a new passing window
+  5) [desktop] › e2e/ops.spec.ts:712:3 › health source missing is explicit and does not claim a new passing window 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('region', { name: '策略版本详情' }).getByText('暂无 Gate 收据', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('region', { name: '策略版本详情' }).getByText('暂无 Gate 收据', { exact: true }) with timeout 5000ms
+      - waiting for getByRole('region', { name: '策略版本详情' }).getByText('暂无 Gate 收据', { exact: true })
+
+
+      733 |     const explanation = scenario === 'consumed' ? '已消费前序证据（非本部署新观测）'
+      734 |       : scenario === 'old-local' ? '本部署旧窗口证据，不代表最新健康通过' : '暂无 Gate 收据'
+    > 735 |     await expect(detail.getByText(explanation, { exact: true })).toBeVisible()
+          |                                                                  ^
+      736 |     await expectStableLayout(page)
+      737 |   })
+      738 | }
+        at /private/tmp/m3-task9-health-fix-20261102-xtfx61/frontend/e2e/ops.spec.ts:735:66
+
+    Error Context: test-results/ops-health-source-missing--1c86c--claim-a-new-passing-window-desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ops-health-source-missing--1c86c--claim-a-new-passing-window-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ops-health-source-missing--1c86c--claim-a-new-passing-window-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+  6) [mobile] › e2e/ops.spec.ts:712:3 › health source missing is explicit and does not claim a new passing window 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('region', { name: '策略版本详情' }).getByText('暂无 Gate 收据', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('region', { name: '策略版本详情' }).getByText('暂无 Gate 收据', { exact: true }) with timeout 5000ms
+      - waiting for getByRole('region', { name: '策略版本详情' }).getByText('暂无 Gate 收据', { exact: true })
+
+
+      733 |     const explanation = scenario === 'consumed' ? '已消费前序证据（非本部署新观测）'
+      734 |       : scenario === 'old-local' ? '本部署旧窗口证据，不代表最新健康通过' : '暂无 Gate 收据'
+    > 735 |     await expect(detail.getByText(explanation, { exact: true })).toBeVisible()
+          |                                                                  ^
+      736 |     await expectStableLayout(page)
+      737 |   })
+      738 | }
+        at /private/tmp/m3-task9-health-fix-20261102-xtfx61/frontend/e2e/ops.spec.ts:735:66
+
+    Error Context: test-results/ops-health-source-missing--1c86c--claim-a-new-passing-window-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ops-health-source-missing--1c86c--claim-a-new-passing-window-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ops-health-source-missing--1c86c--claim-a-new-passing-window-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[47/54] [desktop] › e2e/ops.spec.ts:741:3 › closed health source rejects extra
+[48/54] [mobile] › e2e/ops.spec.ts:741:3 › closed health source rejects extra
+[49/54] [desktop] › e2e/ops.spec.ts:741:3 › closed health source rejects wrong-local
+[50/54] [mobile] › e2e/ops.spec.ts:741:3 › closed health source rejects wrong-local
+[51/54] [desktop] › e2e/ops.spec.ts:741:3 › closed health source rejects null-health
+[52/54] [mobile] › e2e/ops.spec.ts:741:3 › closed health source rejects null-health
+[53/54] [desktop] › e2e/ops.spec.ts:741:3 › closed health source rejects nonpassing-consumed
+[54/54] [mobile] › e2e/ops.spec.ts:741:3 › closed health source rejects nonpassing-consumed
+  6 failed
+    [desktop] › e2e/ops.spec.ts:604:1 › policy Run and Trace display stored immutable identity and link version evidence 
+    [desktop] › e2e/ops.spec.ts:712:3 › health source old-local is explicit and does not claim a new passing window 
+    [desktop] › e2e/ops.spec.ts:712:3 › health source missing is explicit and does not claim a new passing window 
+    [mobile] › e2e/ops.spec.ts:604:1 › policy Run and Trace display stored immutable identity and link version evidence 
+    [mobile] › e2e/ops.spec.ts:712:3 › health source old-local is explicit and does not claim a new passing window 
+    [mobile] › e2e/ops.spec.ts:712:3 › health source missing is explicit and does not claim a new passing window 
+  48 passed (30.9s)

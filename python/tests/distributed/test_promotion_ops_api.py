@@ -218,7 +218,8 @@ async def test_strict_redacted_policy_projections_and_latest_gate(policy_ops):
     assert body["candidate_policy_hash"] == "b" * 64
     assert body["is_current"] is False
     assert body["cohort_counts"] == {"stable": 0, "candidate": 0, "shadow": 0}
-    assert body["gate_receipts"][0]["status"] == "unknown"
+    # Freeform fixture receipts have no deployment/window binding and must not look green.
+    assert body["gate_receipts"] == []
     assert body["latest_health_window"]["candidate_stats"]["mean_cost"] == "0.01"
     assert body["latest_health_window"]["stable_stats"]["mean_cost"] is None
     assert body["latest_health_window"]["stable_stats"]["p95_latency"] is None

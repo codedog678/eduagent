@@ -194,6 +194,17 @@ export interface OpsHealthStats {
   mean_cost_increase_rate: string | null
 }
 
+export interface OpsHealthSource {
+  relation: 'local' | 'consumed_chain'
+  deployment_id: string
+  deployment_version: number
+  window_id: string
+  thresholds_hash: string
+  window_decision: 'pass' | 'hold' | 'fail'
+  evaluated_at: string
+  is_latest_window: boolean
+}
+
 export interface OpsGateReceipt {
   receipt_id: string
   policy_hash: string
@@ -204,6 +215,7 @@ export interface OpsGateReceipt {
   cost: string
   issuer: 'redacted'
   issued_at: string
+  health_source: OpsHealthSource | null
 }
 
 export interface OpsHealthWindow {

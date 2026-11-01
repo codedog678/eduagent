@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="1.036" timestamp="2026-11-01T22:36:31.800424+00:00" hostname="HL41657YW6"><testcase classname="" name="test_current_health_gate_must_not_borrow_previous_deployment_pass" time="0.582"><failure message="AssertionError: current hold deployment displays another deployment's green canary_health receipt&#10;assert not [OpsGateReceipt(receipt_id=UUID('07224eac-f7e2-407c-b22a-79c73a39171e'), policy_hash='2130496b36e933ce0cfe44199866ad7e...0000'), issuer='redacted', issued_at=datetime.datetime(2026, 11, 1, 22, 36, 32, 374881, tzinfo=datetime.timezone.utc))]">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x109417190&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x108dd4090&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x1091ec050&gt;)
+
+    async def test_current_health_gate_must_not_borrow_previous_deployment_pass(health_repo):
+        repo, promotion, _ = health_repo
+        old, current, old_window, new_window, receipts = await health_pair(health_repo)
+        async with repo.session_factory() as session:
+            artifact = await session.get(PolicyArtifactRecord, current.candidate_policy_hash)
+            missing, accepted = await PromotionRepository._bound_gate_receipts(
+                session, artifact=artifact, required={"canary_health"},
+                health_bindings={"canary_health": current},
+            )
+        assert missing == ["canary_health"] and not accepted
+        detail = await OpsQueries(repo.session_factory).get_policy_deployment(current.deployment_id)
+        assert detail.is_current and detail.latest_health_window.decision == "hold"
+        shown = [r for r in detail.gate_receipts if r.gate_type == "canary_health"]
+        proof = {
+            "role": "synthetic engineering fixture; no model or release qualification",
+            "old_deployment": old.deployment_id, "current_deployment": current.deployment_id,
+            "old_window": old_window.window_id, "current_window": new_window.window_id,
+            "authority_missing": missing, "detail": detail.model_dump(mode="json"),
+            "receipt_actual_bindings": [{"receipt_id": r.receipt_id, "details": r.details} for r in receipts],
+        }
+        (OWN / "health-cross-current.json").write_text(json.dumps(proof, indent=2) + "\n")
+&gt;       assert not shown, "current hold deployment displays another deployment's green canary_health receipt"
+E       AssertionError: current hold deployment displays another deployment's green canary_health receipt
+E       assert not [OpsGateReceipt(receipt_id=UUID('07224eac-f7e2-407c-b22a-79c73a39171e'), policy_hash='2130496b36e933ce0cfe44199866ad7e...0000'), issuer='redacted', issued_at=datetime.datetime(2026, 11, 1, 22, 36, 32, 374881, tzinfo=datetime.timezone.utc))]
+
+/tmp/m3-task9-health-fix-20261102-xtfx61/test_code_attacks.py:69: AssertionError</failure></testcase><testcase classname="" name="test_historical_health_gate_must_not_be_replaced_by_new_deployment" time="0.389"><failure message="AssertionError: old detail was replaced by receipt from a different deployment&#10;assert '7cc457b8-963...-9c0aaea970ad' == '283fe673-009...-83e7220bca68'&#10;  &#10;  - 283fe673-0097-4740-9975-83e7220bca68&#10;  + 7cc457b8-963a-4b8f-9b11-9c0aaea970ad">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x1090d1dd0&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10916d610&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x108f9bc10&gt;)
+
+    async def test_historical_health_gate_must_not_be_replaced_by_new_deployment(health_repo):
+        repo, _, _ = health_repo
+        old, current, _, _, receipts = await health_pair(health_repo, current_healthy=True)
+        original = next(r for r in receipts if r.details["deployment_id"] == old.deployment_id)
+        newer = next(r for r in receipts if r.details["deployment_id"] == current.deployment_id)
+        detail = await OpsQueries(repo.session_factory).get_policy_deployment(old.deployment_id)
+        shown = next(r for r in detail.gate_receipts if r.gate_type == "canary_health")
+        assert not detail.is_current
+        (OWN / "health-cross-history.json").write_text(json.dumps({
+            "old_deployment": old.deployment_id, "current_deployment": current.deployment_id,
+            "original_receipt": original.receipt_id, "newer_receipt": newer.receipt_id,
+            "shown_receipt": str(shown.receipt_id), "detail": detail.model_dump(mode="json"),
+        }, indent=2) + "\n")
+&gt;       assert str(shown.receipt_id) == original.receipt_id, "old detail was replaced by receipt from a different deployment"
+E       AssertionError: old detail was replaced by receipt from a different deployment
+E       assert '7cc457b8-963...-9c0aaea970ad' == '283fe673-009...-83e7220bca68'
+E         
+E         - 283fe673-0097-4740-9975-83e7220bca68
+E         + 7cc457b8-963a-4b8f-9b11-9c0aaea970ad
+
+/tmp/m3-task9-health-fix-20261102-xtfx61/test_code_attacks.py:85: AssertionError</failure></testcase></testsuite></testsuites>

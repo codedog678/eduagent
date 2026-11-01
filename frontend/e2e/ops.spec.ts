@@ -253,6 +253,11 @@ const policyDetail = (id = deploymentId) => ({
     policy_hash: 'b'.repeat(64), gate_type: 'canary_health', status: 'failed',
     evidence_hash: 'e'.repeat(64), sample_count: 20, cost: '0.02',
     issuer: 'redacted', issued_at: '2026-10-30T10:02:00Z',
+    health_source: {
+      relation: 'local', deployment_id: id, deployment_version: id === deploymentId ? 2 : 3,
+      window_id: 'c'.repeat(64), thresholds_hash: 'd'.repeat(64), window_decision: 'fail',
+      evaluated_at: '2026-10-30T10:03:00Z', is_latest_window: true,
+    },
   }],
   latest_health_window: { ...healthWindow, deployment_id: id },
   audit_events: [
@@ -611,7 +616,7 @@ test('policy Run and Trace display stored immutable identity and link version ev
     await page.screenshot({ path: `${process.env.OPS_SCREENSHOT_DIR}/policy-trace-${testInfo.project.name}.png`, fullPage: true })
   }
   await page.getByRole('link', { name: deploymentId, exact: true }).click()
-  await expect(page.getByRole('region', { name: '策略版本详情' }).getByText('版本 2', { exact: false })).toBeVisible()
+  await expect(page.getByRole('region', { name: '策略版本详情' }).getByText('rehearsal · 版本 2', { exact: false })).toBeVisible()
   await expect(page.getByText('当前版本 3', { exact: false }).first()).toBeVisible()
   await page.goto('/ops/#/trace/run-1')
   await expect(page.getByText('b'.repeat(64), { exact: true })).toBeVisible()
@@ -702,3 +707,48 @@ test('policy detail selection ignores delayed previous version responses', async
   await expect(detail.getByText('rehearsal · 版本 3', { exact: false })).toBeVisible()
   await expect(detail.getByText('rehearsal · 版本 2', { exact: false })).toHaveCount(0)
 })
+
+for (const scenario of ['consumed', 'old-local', 'missing'] as const) {
+  test(`health source ${scenario} is explicit and does not claim a new passing window`, async ({ page }) => {
+    await mockOps(page)
+    const body = policyDetail(secondDeploymentId)
+    body.state = 'active'
+    body.latest_health_window = { ...body.latest_health_window, decision: 'hold', triggered_thresholds: [] }
+    if (scenario === 'missing') {
+      body.gate_receipts = []
+    } else {
+      body.gate_receipts[0].status = 'passed'
+      body.gate_receipts[0].health_source.window_decision = 'pass'
+      body.gate_receipts[0].health_source.is_latest_window = false
+      if (scenario === 'consumed') {
+        body.gate_receipts[0].health_source.relation = 'consumed_chain'
+        body.gate_receipts[0].health_source.deployment_id = deploymentId
+        body.gate_receipts[0].health_source.deployment_version = 2
+      }
+    }
+    await page.route(`**/ops-api/ops/policies/deployments/${secondDeploymentId}`, (route) => route.fulfill({ json: body }))
+    await page.goto(`/ops/#/policies/${secondDeploymentId}`)
+    const detail = page.getByRole('region', { name: '策略版本详情' })
+    await expect(detail.getByText('hold', { exact: true })).toBeVisible()
+    const explanation = scenario === 'consumed' ? '已消费前序证据（非本部署新观测）'
+      : scenario === 'old-local' ? '本部署旧窗口证据，不代表最新健康通过' : 'unknown'
+    await expect(detail.getByText(explanation, { exact: true })).toBeVisible()
+    await expectStableLayout(page)
+  })
+}
+
+for (const mutation of ['extra', 'wrong-local', 'null-health', 'nonpassing-consumed'] as const) {
+  test(`closed health source rejects ${mutation}`, async ({ page }) => {
+    await mockOps(page)
+    const body = policyDetail()
+    const receipt = body.gate_receipts[0]
+    if (mutation === 'extra') Object.assign(receipt.health_source, { details: 'private-source-value' })
+    if (mutation === 'wrong-local') receipt.health_source.deployment_id = secondDeploymentId
+    if (mutation === 'null-health') Object.assign(receipt, { health_source: null })
+    if (mutation === 'nonpassing-consumed') receipt.health_source.relation = 'consumed_chain'
+    await page.route(`**/ops-api/ops/policies/deployments/${deploymentId}`, (route) => route.fulfill({ json: body }))
+    await page.goto(`/ops/#/policies/${deploymentId}`)
+    await expect(page.getByText(/响应格式错误/)).toBeVisible()
+    await expect(page.getByText('private-source-value', { exact: true })).toHaveCount(0)
+  })
+}

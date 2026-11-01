@@ -1,0 +1,56 @@
+EE                                                                       [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_current_health_gate_must_not_borrow_previous_deployment_pass _
+file /tmp/m3-task9-health-fix-20261102-xtfx61/test_code_attacks.py, line 48
+  async def test_current_health_gate_must_not_borrow_previous_deployment_pass(health_repo):
+      repo, promotion, _ = health_repo
+      old, current, old_window, new_window, receipts = await health_pair(health_repo)
+      async with repo.session_factory() as session:
+          artifact = await session.get(PolicyArtifactRecord, current.candidate_policy_hash)
+          missing, accepted = await PromotionRepository._bound_gate_receipts(
+              session, artifact=artifact, required={"canary_health"},
+              health_bindings={"canary_health": current},
+          )
+      assert missing == ["canary_health"] and not accepted
+      detail = await OpsQueries(repo.session_factory).get_policy_deployment(current.deployment_id)
+      assert detail.is_current and detail.latest_health_window.decision == "hold"
+      shown = [r for r in detail.gate_receipts if r.gate_type == "canary_health"]
+      proof = {
+          "role": "synthetic engineering fixture; no model or release qualification",
+          "old_deployment": old.deployment_id, "current_deployment": current.deployment_id,
+          "old_window": old_window.window_id, "current_window": new_window.window_id,
+          "authority_missing": missing, "detail": detail.model_dump(mode="json"),
+          "receipt_actual_bindings": [{"receipt_id": r.receipt_id, "details": r.details} for r in receipts],
+      }
+      (OWN / "health-cross-current.json").write_text(json.dumps(proof, indent=2) + "\n")
+      assert not shown, "current hold deployment displays another deployment's green canary_health receipt"
+E       fixture 'health_repo' not found
+>       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/tmp/m3-task9-health-fix-20261102-xtfx61/test_code_attacks.py:48
+_ ERROR at setup of test_historical_health_gate_must_not_be_replaced_by_new_deployment _
+file /tmp/m3-task9-health-fix-20261102-xtfx61/test_code_attacks.py, line 72
+  async def test_historical_health_gate_must_not_be_replaced_by_new_deployment(health_repo):
+      repo, _, _ = health_repo
+      old, current, _, _, receipts = await health_pair(health_repo, current_healthy=True)
+      original = next(r for r in receipts if r.details["deployment_id"] == old.deployment_id)
+      newer = next(r for r in receipts if r.details["deployment_id"] == current.deployment_id)
+      detail = await OpsQueries(repo.session_factory).get_policy_deployment(old.deployment_id)
+      shown = next(r for r in detail.gate_receipts if r.gate_type == "canary_health")
+      assert not detail.is_current
+      (OWN / "health-cross-history.json").write_text(json.dumps({
+          "old_deployment": old.deployment_id, "current_deployment": current.deployment_id,
+          "original_receipt": original.receipt_id, "newer_receipt": newer.receipt_id,
+          "shown_receipt": str(shown.receipt_id), "detail": detail.model_dump(mode="json"),
+      }, indent=2) + "\n")
+      assert str(shown.receipt_id) == original.receipt_id, "old detail was replaced by receipt from a different deployment"
+E       fixture 'health_repo' not found
+>       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/tmp/m3-task9-health-fix-20261102-xtfx61/test_code_attacks.py:72
+=========================== short test summary info ============================
+ERROR ::test_current_health_gate_must_not_borrow_previous_deployment_pass
+ERROR ::test_historical_health_gate_must_not_be_replaced_by_new_deployment
+2 errors in 1.10s

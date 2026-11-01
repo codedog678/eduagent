@@ -1,0 +1,793 @@
+.....................................FFFF............................... [ 52%]
+.................................................................        [100%]
+=================================== FAILURES ===================================
+__ test_active_without_exact_approval_audit_relation_is_unavailable[no_audit] __
+
+self = <sqlalchemy.engine.base.Connection object at 0x10a88f110>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10a731490>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg'>>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10a7c2b10>
+parameters = [{'actor': 'test', 'assignment_salt_id': 'registration-2537b3d6216e3862', 'candidate_policy_hash': '2537b3d6216e386297...6bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'command_id': 'ops-active-invalid-99dc1ea9e8604618bc17b8fad51dddb5', ...}]
+execution_options = immutabledict({'compiled_cache': <sqlalchemy.util._collections.LRUCache object at 0x109b7cc70>})
+args = (<sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10a7c2b10>, [{'actor': 'test', 'assignment_sal...': 'ops-active-invalid-99dc1ea9e8604618bc17b8fad51dddb5', ...}], <sqlalchemy.sql.dml.Insert object at 0x109a1e010>, [])
+kw = {'cache_hit': <CacheStats.CACHE_HIT: 0>}, yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x10a14cd70>
+
+    def _execute_context(
+        self,
+        dialect: Dialect,
+        constructor: Callable[..., ExecutionContext],
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+        execution_options: _ExecuteOptions,
+        *args: Any,
+        **kw: Any,
+    ) -> CursorResult[Any]:
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+>           context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1817: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1494: in _init_compiled
+    l_param: List[Any] = [
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1496: in <listcomp>
+    flattened_processors[key](compiled_params[key])
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/sqltypes.py:2802: in process
+    return json_serializer(value)
+           ^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/__init__.py:231: in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:258: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.encoder.JSONEncoder object at 0x106907950>
+o = PolicyThresholds(candidate_min_runs=20, stable_min_runs=20, window_max_runs=50, commit_failure_rate=Decimal('0.05'), t...l('0.50'), mean_cost_increase_rate=Decimal('0.30'), unknown_rate=Decimal('0.10'), relative_epsilon=Decimal('0.000001'))
+
+    def default(self, o):
+        """Implement this method in a subclass such that it returns
+        a serializable object for ``o``, or calls the base implementation
+        (to raise a ``TypeError``).
+    
+        For example, to support arbitrary iterators, you could
+        implement default like this::
+    
+            def default(self, o):
+                try:
+                    iterable = iter(o)
+                except TypeError:
+                    pass
+                else:
+                    return list(iterable)
+                # Let the base class default method raise the TypeError
+                return super().default(o)
+    
+        """
+>       raise TypeError(f'Object of type {o.__class__.__name__} '
+                        f'is not JSON serializable')
+E       TypeError: Object of type PolicyThresholds is not JSON serializable
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:180: TypeError
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109bc60d0>, <core.distributed.promotion_repository....ionRepository object at 0x109f67a50>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a8f8650>)
+breakage = 'no_audit'
+
+    @pytest.mark.parametrize("breakage", ["no_audit", "no_approval", "wrong_command_hash", "bool_version"])
+    async def test_active_without_exact_approval_audit_relation_is_unavailable(health_repo, breakage):
+        fixture, _, _ = await real_active_fixture(health_repo, command_prefix="ops-active-broken")
+        repo, _, active = fixture
+        values = {c.name: getattr(active, c.name) for c in PolicyDeploymentRecord.__table__.columns}
+        values.update(deployment_id=str(uuid4()), command_id=f"ops-active-invalid-{uuid4().hex}")
+        async with repo.session_factory() as session:
+            audit = await session.scalar(select(PolicyAuditEventRecord).where(
+                PolicyAuditEventRecord.command_id == active.command_id,
+            ))
+            approval = await session.scalar(select(PolicyGateReceiptRecord).where(
+                PolicyGateReceiptRecord.gate_type == "promotion_approval",
+                PolicyGateReceiptRecord.details["command_id"].as_string() == active.command_id,
+            ))
+        forged = PolicyDeploymentRecord(**values)
+        async with repo.session_factory() as session, session.begin():
+            session.add(forged)
+>           await session.flush()
+
+tests/distributed/test_ops_health_binding.py:282: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:786: in flush
+    await greenlet_spawn(self.sync_session.flush, objects=objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:190: in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4352: in flush
+    self._flush(objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4487: in _flush
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4448: in _flush
+    flush_context.execute()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1421: in execute
+    return meth(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1643: in _execute_clauseelement
+    ret = self._execute_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1823: in _execute_context
+    self._handle_dbapi_exception(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1817: in _execute_context
+    context = constructor(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1494: in _init_compiled
+    l_param: List[Any] = [
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1496: in <listcomp>
+    flattened_processors[key](compiled_params[key])
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/sqltypes.py:2802: in process
+    return json_serializer(value)
+           ^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/__init__.py:231: in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:258: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.encoder.JSONEncoder object at 0x106907950>
+o = PolicyThresholds(candidate_min_runs=20, stable_min_runs=20, window_max_runs=50, commit_failure_rate=Decimal('0.05'), t...l('0.50'), mean_cost_increase_rate=Decimal('0.30'), unknown_rate=Decimal('0.10'), relative_epsilon=Decimal('0.000001'))
+
+    def default(self, o):
+        """Implement this method in a subclass such that it returns
+        a serializable object for ``o``, or calls the base implementation
+        (to raise a ``TypeError``).
+    
+        For example, to support arbitrary iterators, you could
+        implement default like this::
+    
+            def default(self, o):
+                try:
+                    iterable = iter(o)
+                except TypeError:
+                    pass
+                else:
+                    return list(iterable)
+                # Let the base class default method raise the TypeError
+                return super().default(o)
+    
+        """
+>       raise TypeError(f'Object of type {o.__class__.__name__} '
+                        f'is not JSON serializable')
+E       sqlalchemy.exc.StatementError: (builtins.TypeError) Object of type PolicyThresholds is not JSON serializable
+E       [SQL: INSERT INTO policy_deployments (deployment_id, environment, version, state, candidate_policy_hash, stable_policy_hash, previous_stable_deployment_id, traffic_basis_points, assignment_salt_id, thresholds, thresholds_hash, required_receipts, command_id, reason, actor, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::INTEGER, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::INTEGER, $9::VARCHAR, $10::JSON, $11::VARCHAR, $12::JSON, $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+E       [parameters: [{'previous_stable_deployment_id': UUID('ff1d65e8-66e1-45de-9348-ce38e1a9b284'), 'actor': 'test', 'candidate_policy_hash': '2537b3d6216e386297a9b26bd1e ... (1014 characters truncated) ... 7b2cedc9', 'state': <DeploymentState.ACTIVE: 'active'>, 'created_at': datetime.datetime(2026, 11, 1, 22, 44, 2, 740477, tzinfo=datetime.timezone.utc)}]]
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:180: StatementError
+_ test_active_without_exact_approval_audit_relation_is_unavailable[no_approval] _
+
+self = <sqlalchemy.engine.base.Connection object at 0x10a1c7dd0>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10b632510>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg'>>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10a47a990>
+parameters = [{'actor': 'test', 'assignment_salt_id': 'registration-2537b3d6216e3862', 'candidate_policy_hash': '2537b3d6216e386297...6bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'command_id': 'ops-active-invalid-9dd95f11bd424d88b087982a1d453f56', ...}]
+execution_options = immutabledict({'compiled_cache': <sqlalchemy.util._collections.LRUCache object at 0x109b7cc70>})
+args = (<sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10a47a990>, [{'actor': 'test', 'assignment_sal...': 'ops-active-invalid-9dd95f11bd424d88b087982a1d453f56', ...}], <sqlalchemy.sql.dml.Insert object at 0x109a1e010>, [])
+kw = {'cache_hit': <CacheStats.CACHE_HIT: 0>}, yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x10b5b10d0>
+
+    def _execute_context(
+        self,
+        dialect: Dialect,
+        constructor: Callable[..., ExecutionContext],
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+        execution_options: _ExecuteOptions,
+        *args: Any,
+        **kw: Any,
+    ) -> CursorResult[Any]:
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+>           context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1817: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1494: in _init_compiled
+    l_param: List[Any] = [
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1496: in <listcomp>
+    flattened_processors[key](compiled_params[key])
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/sqltypes.py:2802: in process
+    return json_serializer(value)
+           ^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/__init__.py:231: in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:258: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.encoder.JSONEncoder object at 0x106907950>
+o = PolicyThresholds(candidate_min_runs=20, stable_min_runs=20, window_max_runs=50, commit_failure_rate=Decimal('0.05'), t...l('0.50'), mean_cost_increase_rate=Decimal('0.30'), unknown_rate=Decimal('0.10'), relative_epsilon=Decimal('0.000001'))
+
+    def default(self, o):
+        """Implement this method in a subclass such that it returns
+        a serializable object for ``o``, or calls the base implementation
+        (to raise a ``TypeError``).
+    
+        For example, to support arbitrary iterators, you could
+        implement default like this::
+    
+            def default(self, o):
+                try:
+                    iterable = iter(o)
+                except TypeError:
+                    pass
+                else:
+                    return list(iterable)
+                # Let the base class default method raise the TypeError
+                return super().default(o)
+    
+        """
+>       raise TypeError(f'Object of type {o.__class__.__name__} '
+                        f'is not JSON serializable')
+E       TypeError: Object of type PolicyThresholds is not JSON serializable
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:180: TypeError
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10b632b90>, <core.distributed.promotion_repository....ionRepository object at 0x10a479710>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a19fa90>)
+breakage = 'no_approval'
+
+    @pytest.mark.parametrize("breakage", ["no_audit", "no_approval", "wrong_command_hash", "bool_version"])
+    async def test_active_without_exact_approval_audit_relation_is_unavailable(health_repo, breakage):
+        fixture, _, _ = await real_active_fixture(health_repo, command_prefix="ops-active-broken")
+        repo, _, active = fixture
+        values = {c.name: getattr(active, c.name) for c in PolicyDeploymentRecord.__table__.columns}
+        values.update(deployment_id=str(uuid4()), command_id=f"ops-active-invalid-{uuid4().hex}")
+        async with repo.session_factory() as session:
+            audit = await session.scalar(select(PolicyAuditEventRecord).where(
+                PolicyAuditEventRecord.command_id == active.command_id,
+            ))
+            approval = await session.scalar(select(PolicyGateReceiptRecord).where(
+                PolicyGateReceiptRecord.gate_type == "promotion_approval",
+                PolicyGateReceiptRecord.details["command_id"].as_string() == active.command_id,
+            ))
+        forged = PolicyDeploymentRecord(**values)
+        async with repo.session_factory() as session, session.begin():
+            session.add(forged)
+>           await session.flush()
+
+tests/distributed/test_ops_health_binding.py:282: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:786: in flush
+    await greenlet_spawn(self.sync_session.flush, objects=objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:190: in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4352: in flush
+    self._flush(objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4487: in _flush
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4448: in _flush
+    flush_context.execute()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1421: in execute
+    return meth(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1643: in _execute_clauseelement
+    ret = self._execute_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1823: in _execute_context
+    self._handle_dbapi_exception(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1817: in _execute_context
+    context = constructor(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1494: in _init_compiled
+    l_param: List[Any] = [
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1496: in <listcomp>
+    flattened_processors[key](compiled_params[key])
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/sqltypes.py:2802: in process
+    return json_serializer(value)
+           ^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/__init__.py:231: in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:258: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.encoder.JSONEncoder object at 0x106907950>
+o = PolicyThresholds(candidate_min_runs=20, stable_min_runs=20, window_max_runs=50, commit_failure_rate=Decimal('0.05'), t...l('0.50'), mean_cost_increase_rate=Decimal('0.30'), unknown_rate=Decimal('0.10'), relative_epsilon=Decimal('0.000001'))
+
+    def default(self, o):
+        """Implement this method in a subclass such that it returns
+        a serializable object for ``o``, or calls the base implementation
+        (to raise a ``TypeError``).
+    
+        For example, to support arbitrary iterators, you could
+        implement default like this::
+    
+            def default(self, o):
+                try:
+                    iterable = iter(o)
+                except TypeError:
+                    pass
+                else:
+                    return list(iterable)
+                # Let the base class default method raise the TypeError
+                return super().default(o)
+    
+        """
+>       raise TypeError(f'Object of type {o.__class__.__name__} '
+                        f'is not JSON serializable')
+E       sqlalchemy.exc.StatementError: (builtins.TypeError) Object of type PolicyThresholds is not JSON serializable
+E       [SQL: INSERT INTO policy_deployments (deployment_id, environment, version, state, candidate_policy_hash, stable_policy_hash, previous_stable_deployment_id, traffic_basis_points, assignment_salt_id, thresholds, thresholds_hash, required_receipts, command_id, reason, actor, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::INTEGER, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::INTEGER, $9::VARCHAR, $10::JSON, $11::VARCHAR, $12::JSON, $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+E       [parameters: [{'previous_stable_deployment_id': UUID('8b7cf3e5-c3d1-4026-943e-9423ce5c247f'), 'actor': 'test', 'candidate_policy_hash': '2537b3d6216e386297a9b26bd1e ... (1014 characters truncated) ... 7b2cedc9', 'state': <DeploymentState.ACTIVE: 'active'>, 'created_at': datetime.datetime(2026, 11, 1, 22, 44, 3, 397461, tzinfo=datetime.timezone.utc)}]]
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:180: StatementError
+_ test_active_without_exact_approval_audit_relation_is_unavailable[wrong_command_hash] _
+
+self = <sqlalchemy.engine.base.Connection object at 0x10a193950>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10b659550>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg'>>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10a7c1f10>
+parameters = [{'actor': 'test', 'assignment_salt_id': 'registration-2537b3d6216e3862', 'candidate_policy_hash': '2537b3d6216e386297...6bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'command_id': 'ops-active-invalid-418879699c5f4146bb6393af55043610', ...}]
+execution_options = immutabledict({'compiled_cache': <sqlalchemy.util._collections.LRUCache object at 0x109b7cc70>})
+args = (<sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10a7c1f10>, [{'actor': 'test', 'assignment_sal...': 'ops-active-invalid-418879699c5f4146bb6393af55043610', ...}], <sqlalchemy.sql.dml.Insert object at 0x109a1e010>, [])
+kw = {'cache_hit': <CacheStats.CACHE_HIT: 0>}, yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x10ad30170>
+
+    def _execute_context(
+        self,
+        dialect: Dialect,
+        constructor: Callable[..., ExecutionContext],
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+        execution_options: _ExecuteOptions,
+        *args: Any,
+        **kw: Any,
+    ) -> CursorResult[Any]:
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+>           context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1817: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1494: in _init_compiled
+    l_param: List[Any] = [
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1496: in <listcomp>
+    flattened_processors[key](compiled_params[key])
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/sqltypes.py:2802: in process
+    return json_serializer(value)
+           ^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/__init__.py:231: in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:258: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.encoder.JSONEncoder object at 0x106907950>
+o = PolicyThresholds(candidate_min_runs=20, stable_min_runs=20, window_max_runs=50, commit_failure_rate=Decimal('0.05'), t...l('0.50'), mean_cost_increase_rate=Decimal('0.30'), unknown_rate=Decimal('0.10'), relative_epsilon=Decimal('0.000001'))
+
+    def default(self, o):
+        """Implement this method in a subclass such that it returns
+        a serializable object for ``o``, or calls the base implementation
+        (to raise a ``TypeError``).
+    
+        For example, to support arbitrary iterators, you could
+        implement default like this::
+    
+            def default(self, o):
+                try:
+                    iterable = iter(o)
+                except TypeError:
+                    pass
+                else:
+                    return list(iterable)
+                # Let the base class default method raise the TypeError
+                return super().default(o)
+    
+        """
+>       raise TypeError(f'Object of type {o.__class__.__name__} '
+                        f'is not JSON serializable')
+E       TypeError: Object of type PolicyThresholds is not JSON serializable
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:180: TypeError
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a638b50>, <core.distributed.promotion_repository....ionRepository object at 0x10a7c1490>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a873650>)
+breakage = 'wrong_command_hash'
+
+    @pytest.mark.parametrize("breakage", ["no_audit", "no_approval", "wrong_command_hash", "bool_version"])
+    async def test_active_without_exact_approval_audit_relation_is_unavailable(health_repo, breakage):
+        fixture, _, _ = await real_active_fixture(health_repo, command_prefix="ops-active-broken")
+        repo, _, active = fixture
+        values = {c.name: getattr(active, c.name) for c in PolicyDeploymentRecord.__table__.columns}
+        values.update(deployment_id=str(uuid4()), command_id=f"ops-active-invalid-{uuid4().hex}")
+        async with repo.session_factory() as session:
+            audit = await session.scalar(select(PolicyAuditEventRecord).where(
+                PolicyAuditEventRecord.command_id == active.command_id,
+            ))
+            approval = await session.scalar(select(PolicyGateReceiptRecord).where(
+                PolicyGateReceiptRecord.gate_type == "promotion_approval",
+                PolicyGateReceiptRecord.details["command_id"].as_string() == active.command_id,
+            ))
+        forged = PolicyDeploymentRecord(**values)
+        async with repo.session_factory() as session, session.begin():
+            session.add(forged)
+>           await session.flush()
+
+tests/distributed/test_ops_health_binding.py:282: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:786: in flush
+    await greenlet_spawn(self.sync_session.flush, objects=objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:190: in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4352: in flush
+    self._flush(objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4487: in _flush
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4448: in _flush
+    flush_context.execute()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1421: in execute
+    return meth(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1643: in _execute_clauseelement
+    ret = self._execute_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1823: in _execute_context
+    self._handle_dbapi_exception(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1817: in _execute_context
+    context = constructor(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1494: in _init_compiled
+    l_param: List[Any] = [
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1496: in <listcomp>
+    flattened_processors[key](compiled_params[key])
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/sqltypes.py:2802: in process
+    return json_serializer(value)
+           ^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/__init__.py:231: in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:258: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.encoder.JSONEncoder object at 0x106907950>
+o = PolicyThresholds(candidate_min_runs=20, stable_min_runs=20, window_max_runs=50, commit_failure_rate=Decimal('0.05'), t...l('0.50'), mean_cost_increase_rate=Decimal('0.30'), unknown_rate=Decimal('0.10'), relative_epsilon=Decimal('0.000001'))
+
+    def default(self, o):
+        """Implement this method in a subclass such that it returns
+        a serializable object for ``o``, or calls the base implementation
+        (to raise a ``TypeError``).
+    
+        For example, to support arbitrary iterators, you could
+        implement default like this::
+    
+            def default(self, o):
+                try:
+                    iterable = iter(o)
+                except TypeError:
+                    pass
+                else:
+                    return list(iterable)
+                # Let the base class default method raise the TypeError
+                return super().default(o)
+    
+        """
+>       raise TypeError(f'Object of type {o.__class__.__name__} '
+                        f'is not JSON serializable')
+E       sqlalchemy.exc.StatementError: (builtins.TypeError) Object of type PolicyThresholds is not JSON serializable
+E       [SQL: INSERT INTO policy_deployments (deployment_id, environment, version, state, candidate_policy_hash, stable_policy_hash, previous_stable_deployment_id, traffic_basis_points, assignment_salt_id, thresholds, thresholds_hash, required_receipts, command_id, reason, actor, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::INTEGER, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::INTEGER, $9::VARCHAR, $10::JSON, $11::VARCHAR, $12::JSON, $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+E       [parameters: [{'previous_stable_deployment_id': UUID('505f5f1e-0495-4938-bc50-d7d84efeb7d8'), 'actor': 'test', 'candidate_policy_hash': '2537b3d6216e386297a9b26bd1e ... (1013 characters truncated) ... 07b2cedc9', 'state': <DeploymentState.ACTIVE: 'active'>, 'created_at': datetime.datetime(2026, 11, 1, 22, 44, 4, 17494, tzinfo=datetime.timezone.utc)}]]
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:180: StatementError
+_ test_active_without_exact_approval_audit_relation_is_unavailable[bool_version] _
+
+self = <sqlalchemy.engine.base.Connection object at 0x10a0ea9d0>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10bff0550>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg'>>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10a1a2810>
+parameters = [{'actor': 'test', 'assignment_salt_id': 'registration-2537b3d6216e3862', 'candidate_policy_hash': '2537b3d6216e386297...6bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'command_id': 'ops-active-invalid-b0e5c6e5515e48d69256003e7ba84268', ...}]
+execution_options = immutabledict({'compiled_cache': <sqlalchemy.util._collections.LRUCache object at 0x109b7cc70>})
+args = (<sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10a1a2810>, [{'actor': 'test', 'assignment_sal...': 'ops-active-invalid-b0e5c6e5515e48d69256003e7ba84268', ...}], <sqlalchemy.sql.dml.Insert object at 0x109a1e010>, [])
+kw = {'cache_hit': <CacheStats.CACHE_HIT: 0>}, yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x10a02a270>
+
+    def _execute_context(
+        self,
+        dialect: Dialect,
+        constructor: Callable[..., ExecutionContext],
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+        execution_options: _ExecuteOptions,
+        *args: Any,
+        **kw: Any,
+    ) -> CursorResult[Any]:
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+>           context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1817: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1494: in _init_compiled
+    l_param: List[Any] = [
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1496: in <listcomp>
+    flattened_processors[key](compiled_params[key])
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/sqltypes.py:2802: in process
+    return json_serializer(value)
+           ^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/__init__.py:231: in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:258: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.encoder.JSONEncoder object at 0x106907950>
+o = PolicyThresholds(candidate_min_runs=20, stable_min_runs=20, window_max_runs=50, commit_failure_rate=Decimal('0.05'), t...l('0.50'), mean_cost_increase_rate=Decimal('0.30'), unknown_rate=Decimal('0.10'), relative_epsilon=Decimal('0.000001'))
+
+    def default(self, o):
+        """Implement this method in a subclass such that it returns
+        a serializable object for ``o``, or calls the base implementation
+        (to raise a ``TypeError``).
+    
+        For example, to support arbitrary iterators, you could
+        implement default like this::
+    
+            def default(self, o):
+                try:
+                    iterable = iter(o)
+                except TypeError:
+                    pass
+                else:
+                    return list(iterable)
+                # Let the base class default method raise the TypeError
+                return super().default(o)
+    
+        """
+>       raise TypeError(f'Object of type {o.__class__.__name__} '
+                        f'is not JSON serializable')
+E       TypeError: Object of type PolicyThresholds is not JSON serializable
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:180: TypeError
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10c0ed250>, <core.distributed.promotion_repository....ionRepository object at 0x10a1a0a10>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10aa48910>)
+breakage = 'bool_version'
+
+    @pytest.mark.parametrize("breakage", ["no_audit", "no_approval", "wrong_command_hash", "bool_version"])
+    async def test_active_without_exact_approval_audit_relation_is_unavailable(health_repo, breakage):
+        fixture, _, _ = await real_active_fixture(health_repo, command_prefix="ops-active-broken")
+        repo, _, active = fixture
+        values = {c.name: getattr(active, c.name) for c in PolicyDeploymentRecord.__table__.columns}
+        values.update(deployment_id=str(uuid4()), command_id=f"ops-active-invalid-{uuid4().hex}")
+        async with repo.session_factory() as session:
+            audit = await session.scalar(select(PolicyAuditEventRecord).where(
+                PolicyAuditEventRecord.command_id == active.command_id,
+            ))
+            approval = await session.scalar(select(PolicyGateReceiptRecord).where(
+                PolicyGateReceiptRecord.gate_type == "promotion_approval",
+                PolicyGateReceiptRecord.details["command_id"].as_string() == active.command_id,
+            ))
+        forged = PolicyDeploymentRecord(**values)
+        async with repo.session_factory() as session, session.begin():
+            session.add(forged)
+>           await session.flush()
+
+tests/distributed/test_ops_health_binding.py:282: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:786: in flush
+    await greenlet_spawn(self.sync_session.flush, objects=objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:190: in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4352: in flush
+    self._flush(objects)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4487: in _flush
+    with util.safe_reraise():
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4448: in _flush
+    flush_context.execute()
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1421: in execute
+    return meth(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1643: in _execute_clauseelement
+    ret = self._execute_context(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1823: in _execute_context
+    self._handle_dbapi_exception(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1817: in _execute_context
+    context = constructor(
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1494: in _init_compiled
+    l_param: List[Any] = [
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:1496: in <listcomp>
+    flattened_processors[key](compiled_params[key])
+../../eduagent/.venv/lib/python3.11/site-packages/sqlalchemy/sql/sqltypes.py:2802: in process
+    return json_serializer(value)
+           ^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/__init__.py:231: in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:258: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.encoder.JSONEncoder object at 0x106907950>
+o = PolicyThresholds(candidate_min_runs=20, stable_min_runs=20, window_max_runs=50, commit_failure_rate=Decimal('0.05'), t...l('0.50'), mean_cost_increase_rate=Decimal('0.30'), unknown_rate=Decimal('0.10'), relative_epsilon=Decimal('0.000001'))
+
+    def default(self, o):
+        """Implement this method in a subclass such that it returns
+        a serializable object for ``o``, or calls the base implementation
+        (to raise a ``TypeError``).
+    
+        For example, to support arbitrary iterators, you could
+        implement default like this::
+    
+            def default(self, o):
+                try:
+                    iterable = iter(o)
+                except TypeError:
+                    pass
+                else:
+                    return list(iterable)
+                # Let the base class default method raise the TypeError
+                return super().default(o)
+    
+        """
+>       raise TypeError(f'Object of type {o.__class__.__name__} '
+                        f'is not JSON serializable')
+E       sqlalchemy.exc.StatementError: (builtins.TypeError) Object of type PolicyThresholds is not JSON serializable
+E       [SQL: INSERT INTO policy_deployments (deployment_id, environment, version, state, candidate_policy_hash, stable_policy_hash, previous_stable_deployment_id, traffic_basis_points, assignment_salt_id, thresholds, thresholds_hash, required_receipts, command_id, reason, actor, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::INTEGER, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::INTEGER, $9::VARCHAR, $10::JSON, $11::VARCHAR, $12::JSON, $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+E       [parameters: [{'previous_stable_deployment_id': UUID('bb5828ee-6e1a-4d48-bd59-22ef11639b51'), 'actor': 'test', 'candidate_policy_hash': '2537b3d6216e386297a9b26bd1e ... (1014 characters truncated) ... 7b2cedc9', 'state': <DeploymentState.ACTIVE: 'active'>, 'created_at': datetime.datetime(2026, 11, 1, 22, 44, 4, 618599, tzinfo=datetime.timezone.utc)}]]
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/json/encoder.py:180: StatementError
+=========================== short test summary info ============================
+FAILED tests/distributed/test_ops_health_binding.py::test_active_without_exact_approval_audit_relation_is_unavailable[no_audit] - sqlalchemy.exc.StatementError: (builtins.TypeError) Object of type PolicyThresholds is not JSON serializable
+[SQL: INSERT INTO policy_deployments (deployment_id, environment, version, state, candidate_policy_hash, stable_policy_hash, previous_stable_deployment_id, traffic_basis_points, assignment_salt_id, thresholds, thresholds_hash, required_receipts, command_id, reason, actor, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::INTEGER, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::INTEGER, $9::VARCHAR, $10::JSON, $11::VARCHAR, $12::JSON, $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+[parameters: [{'previous_stable_deployment_id': UUID('ff1d65e8-66e1-45de-9348-ce38e1a9b284'), 'actor': 'test', 'candidate_policy_hash': '2537b3d6216e386297a9b26bd1e ... (1014 characters truncated) ... 7b2cedc9', 'state': <DeploymentState.ACTIVE: 'active'>, 'created_at': datetime.datetime(2026, 11, 1, 22, 44, 2, 740477, tzinfo=datetime.timezone.utc)}]]
+FAILED tests/distributed/test_ops_health_binding.py::test_active_without_exact_approval_audit_relation_is_unavailable[no_approval] - sqlalchemy.exc.StatementError: (builtins.TypeError) Object of type PolicyThresholds is not JSON serializable
+[SQL: INSERT INTO policy_deployments (deployment_id, environment, version, state, candidate_policy_hash, stable_policy_hash, previous_stable_deployment_id, traffic_basis_points, assignment_salt_id, thresholds, thresholds_hash, required_receipts, command_id, reason, actor, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::INTEGER, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::INTEGER, $9::VARCHAR, $10::JSON, $11::VARCHAR, $12::JSON, $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+[parameters: [{'previous_stable_deployment_id': UUID('8b7cf3e5-c3d1-4026-943e-9423ce5c247f'), 'actor': 'test', 'candidate_policy_hash': '2537b3d6216e386297a9b26bd1e ... (1014 characters truncated) ... 7b2cedc9', 'state': <DeploymentState.ACTIVE: 'active'>, 'created_at': datetime.datetime(2026, 11, 1, 22, 44, 3, 397461, tzinfo=datetime.timezone.utc)}]]
+FAILED tests/distributed/test_ops_health_binding.py::test_active_without_exact_approval_audit_relation_is_unavailable[wrong_command_hash] - sqlalchemy.exc.StatementError: (builtins.TypeError) Object of type PolicyThresholds is not JSON serializable
+[SQL: INSERT INTO policy_deployments (deployment_id, environment, version, state, candidate_policy_hash, stable_policy_hash, previous_stable_deployment_id, traffic_basis_points, assignment_salt_id, thresholds, thresholds_hash, required_receipts, command_id, reason, actor, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::INTEGER, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::INTEGER, $9::VARCHAR, $10::JSON, $11::VARCHAR, $12::JSON, $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+[parameters: [{'previous_stable_deployment_id': UUID('505f5f1e-0495-4938-bc50-d7d84efeb7d8'), 'actor': 'test', 'candidate_policy_hash': '2537b3d6216e386297a9b26bd1e ... (1013 characters truncated) ... 07b2cedc9', 'state': <DeploymentState.ACTIVE: 'active'>, 'created_at': datetime.datetime(2026, 11, 1, 22, 44, 4, 17494, tzinfo=datetime.timezone.utc)}]]
+FAILED tests/distributed/test_ops_health_binding.py::test_active_without_exact_approval_audit_relation_is_unavailable[bool_version] - sqlalchemy.exc.StatementError: (builtins.TypeError) Object of type PolicyThresholds is not JSON serializable
+[SQL: INSERT INTO policy_deployments (deployment_id, environment, version, state, candidate_policy_hash, stable_policy_hash, previous_stable_deployment_id, traffic_basis_points, assignment_salt_id, thresholds, thresholds_hash, required_receipts, command_id, reason, actor, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::INTEGER, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::INTEGER, $9::VARCHAR, $10::JSON, $11::VARCHAR, $12::JSON, $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+[parameters: [{'previous_stable_deployment_id': UUID('bb5828ee-6e1a-4d48-bd59-22ef11639b51'), 'actor': 'test', 'candidate_policy_hash': '2537b3d6216e386297a9b26bd1e ... (1014 characters truncated) ... 7b2cedc9', 'state': <DeploymentState.ACTIVE: 'active'>, 'created_at': datetime.datetime(2026, 11, 1, 22, 44, 4, 618599, tzinfo=datetime.timezone.utc)}]]
+4 failed, 133 passed in 29.43s
