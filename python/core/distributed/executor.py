@@ -11,7 +11,7 @@ from core.distributed.contracts import (
 )
 from core.distributed.expert_contracts import RunExecutionAuthority
 from core.distributed.promotion_contracts import Environment, PolicyExecutionBinding
-from core.distributed.policy_health import ConfirmedPermissionViolation
+from core.distributed.policy_health import ConfirmedPermissionViolation, server_diagnostic_code
 from core.distributed.rehearsal_store import RehearsalStoreRouter, ShadowStoreRouter
 from core.harness import LearningHarness
 
@@ -95,6 +95,8 @@ class LearningTaskExecutor:
         )
         harness: LearningHarness | None = None
         shadow_usage = {"model_calls": 0, "tool_calls": 0}
+        failure: BaseException | None = None
+        cleanup_failures: list[BaseException] = []
         try:
             try:
                 harness = LearningHarness(
@@ -134,17 +136,51 @@ class LearningTaskExecutor:
                 kind="task",
             )
             assert_open_store_capability(harness.db, expected_path)
-            return result
-        except Exception as exc:
-            if authority.execution_mode == "shadow":
-                raise ShadowExecutionError(shadow_usage) from exc
-            raise
+        except BaseException as exc:
+            failure = exc
+            if harness is not None:
+                try:
+                    assert_open_store_capability(harness.db, expected_path)
+                except ConfirmedPermissionViolation as violation:
+                    if server_diagnostic_code(exc) != "ConfirmedPermissionViolation":
+                        violation.__cause__ = exc
+                        failure = violation
+                except Exception:
+                    # 连接不可查询不等于已确认越权，保留原异常或取消。
+                    pass
         finally:
             if harness is not None:
-                await harness.memory_worker.stop()
-                harness.close()
-            await orchestrator.close_database()
+                try:
+                    await harness.memory_worker.stop()
+                except BaseException as exc:
+                    cleanup_failures.append(exc)
+                try:
+                    harness.close()
+                except BaseException as exc:
+                    cleanup_failures.append(exc)
+            try:
+                await orchestrator.close_database()
+            except BaseException as exc:
+                cleanup_failures.append(exc)
             if self.usage_recorder is not None and authority.execution_mode != "shadow":
-                await self.usage_recorder(
-                    str(authority.distributed_run_id), authority.run_fencing_token, shadow_usage,
-                )
+                try:
+                    await self.usage_recorder(
+                        str(authority.distributed_run_id), authority.run_fencing_token, shadow_usage,
+                    )
+                except BaseException as exc:
+                    cleanup_failures.append(exc)
+        # 清理和用量通知均须尝试；不能用它们的异常覆盖已确认的硬违规。
+        for exc in cleanup_failures:
+            if failure is None:
+                failure = exc
+            elif (server_diagnostic_code(failure) != "ConfirmedPermissionViolation"
+                  and server_diagnostic_code(exc) == "ConfirmedPermissionViolation"):
+                exc.__cause__ = failure
+                failure = exc
+            else:
+                failure.add_note(f"Executor cleanup also raised {type(exc).__name__}.")
+        if failure is not None:
+            if authority.execution_mode == "shadow" and isinstance(failure, Exception):
+                raise ShadowExecutionError(shadow_usage) from failure
+            raise failure
+        return result

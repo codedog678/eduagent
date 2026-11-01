@@ -1,0 +1,230 @@
+FFFF..FFFFFFFFFFF                                                        [100%]
+=================================== FAILURES ===================================
+_ test_actual_attach_exit_durable_diagnostic_and_promotion_controls[True-value-canary] _
+tests/distributed/test_executor_exception_health.py:169: in test_actual_attach_exit_durable_diagnostic_and_promotion_controls
+    assert code == "ConfirmedPermissionViolation"
+E   AssertionError: assert 'ValueError' == 'ConfirmedPermissionViolation'
+E     
+E     - ConfirmedPermissionViolation
+E     + ValueError
+_ test_actual_attach_exit_durable_diagnostic_and_promotion_controls[True-value-shadow] _
+tests/distributed/test_executor_exception_health.py:169: in test_actual_attach_exit_durable_diagnostic_and_promotion_controls
+    assert code == "ConfirmedPermissionViolation"
+E   AssertionError: assert 'execution_failed' == 'ConfirmedPermissionViolation'
+E     
+E     - ConfirmedPermissionViolation
+E     + execution_failed
+_ test_actual_attach_exit_durable_diagnostic_and_promotion_controls[True-success-canary] _
+tests/distributed/test_executor_exception_health.py:176: in test_actual_attach_exit_durable_diagnostic_and_promotion_controls
+    assert window.observation_keys["hard_failures"] == [observation.observation_key]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'hard_failures'
+_ test_actual_attach_exit_durable_diagnostic_and_promotion_controls[True-success-shadow] _
+tests/distributed/test_executor_exception_health.py:176: in test_actual_attach_exit_durable_diagnostic_and_promotion_controls
+    assert window.observation_keys["hard_failures"] == [observation.observation_key]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'hard_failures'
+__ test_cleanup_cannot_erase_confirmed_store_violation_or_usage[stop-canary] ___
+tests/distributed/test_executor_exception_health.py:50: in converse
+    return await self.run(
+core/harness.py:405: in run
+    raise HTTPException(503, "本次执行未完成，学习状态已回滚，请重试") from exc
+E   fastapi.exceptions.HTTPException: 503: 本次执行未完成，学习状态已回滚，请重试
+
+During handling of the above exception, another exception occurred:
+tests/distributed/test_executor_exception_health.py:56: in converse
+    raise exc.__cause__
+core/harness.py:317: in run
+    result, quiz_update = await operation()
+                          ^^^^^^^^^^^^^^^^^
+tests/distributed/test_executor_exception_health.py:43: in operation
+    raise ValueError("fixture execution failed after store operation")
+E   ValueError: fixture execution failed after store operation
+
+During handling of the above exception, another exception occurred:
+tests/distributed/test_executor_exception_health.py:193: in test_cleanup_cannot_erase_confirmed_store_violation_or_usage
+    source_id, code, _ = await run_terminal(
+tests/distributed/test_executor_exception_health.py:126: in run_terminal
+    assert await worker.run_once()
+           ^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/worker.py:478: in run_once
+    await self.handle(messages[0])
+core/distributed/worker.py:345: in handle
+    result = await self._await_execution(
+core/distributed/worker.py:188: in _await_execution
+    return await execution
+           ^^^^^^^^^^^^^^^
+core/distributed/worker.py:240: in _execute
+    return await self.executor.execute(request, authority, binding)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/executor.py:144: in execute
+    await harness.memory_worker.stop()
+tests/distributed/test_executor_exception_health.py:69: in stop
+    raise asyncio.CancelledError()
+E   asyncio.exceptions.CancelledError
+__ test_cleanup_cannot_erase_confirmed_store_violation_or_usage[stop-shadow] ___
+tests/distributed/test_executor_exception_health.py:50: in converse
+    return await self.run(
+core/harness.py:405: in run
+    raise HTTPException(503, "本次执行未完成，学习状态已回滚，请重试") from exc
+E   fastapi.exceptions.HTTPException: 503: 本次执行未完成，学习状态已回滚，请重试
+
+During handling of the above exception, another exception occurred:
+tests/distributed/test_executor_exception_health.py:56: in converse
+    raise exc.__cause__
+core/harness.py:317: in run
+    result, quiz_update = await operation()
+                          ^^^^^^^^^^^^^^^^^
+tests/distributed/test_executor_exception_health.py:43: in operation
+    raise ValueError("fixture execution failed after store operation")
+E   ValueError: fixture execution failed after store operation
+
+The above exception was the direct cause of the following exception:
+core/distributed/executor.py:140: in execute
+    raise ShadowExecutionError(shadow_usage) from exc
+E   core.distributed.executor.ShadowExecutionError: shadow execution failed
+
+During handling of the above exception, another exception occurred:
+tests/distributed/test_executor_exception_health.py:193: in test_cleanup_cannot_erase_confirmed_store_violation_or_usage
+    source_id, code, _ = await run_terminal(
+tests/distributed/test_executor_exception_health.py:103: in run_terminal
+    assert await worker.run_once()
+           ^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/shadow_worker.py:145: in run_once
+    code, summary = await execution
+                    ^^^^^^^^^^^^^^^
+core/distributed/shadow_worker.py:98: in _execute
+    result = await self.executor.execute(request, authority, binding)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/executor.py:144: in execute
+    await harness.memory_worker.stop()
+tests/distributed/test_executor_exception_health.py:69: in stop
+    raise asyncio.CancelledError()
+E   asyncio.exceptions.CancelledError
+__ test_cleanup_cannot_erase_confirmed_store_violation_or_usage[close-canary] __
+tests/distributed/test_executor_exception_health.py:193: in test_cleanup_cannot_erase_confirmed_store_violation_or_usage
+    source_id, code, _ = await run_terminal(
+tests/distributed/test_executor_exception_health.py:144: in run_terminal
+    assert ledger["model_calls"] == ledger["tool_calls"] == 0
+           ^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'NoneType' object is not subscriptable
+__ test_cleanup_cannot_erase_confirmed_store_violation_or_usage[close-shadow] __
+tests/distributed/test_executor_exception_health.py:193: in test_cleanup_cannot_erase_confirmed_store_violation_or_usage
+    source_id, code, _ = await run_terminal(
+tests/distributed/test_executor_exception_health.py:144: in run_terminal
+    assert ledger["model_calls"] == ledger["tool_calls"] == 0
+E   assert None == 0
+_ test_cleanup_cannot_erase_confirmed_store_violation_or_usage[database-canary] _
+tests/distributed/test_executor_exception_health.py:193: in test_cleanup_cannot_erase_confirmed_store_violation_or_usage
+    source_id, code, _ = await run_terminal(
+tests/distributed/test_executor_exception_health.py:144: in run_terminal
+    assert ledger["model_calls"] == ledger["tool_calls"] == 0
+           ^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'NoneType' object is not subscriptable
+_ test_cleanup_cannot_erase_confirmed_store_violation_or_usage[database-shadow] _
+tests/distributed/test_executor_exception_health.py:193: in test_cleanup_cannot_erase_confirmed_store_violation_or_usage
+    source_id, code, _ = await run_terminal(
+tests/distributed/test_executor_exception_health.py:144: in run_terminal
+    assert ledger["model_calls"] == ledger["tool_calls"] == 0
+E   assert None == 0
+_____ test_primary_usage_notification_failure_cannot_erase_hard_diagnostic _____
+tests/distributed/test_executor_exception_health.py:205: in test_primary_usage_notification_failure_cannot_erase_hard_diagnostic
+    assert code == "ConfirmedPermissionViolation"
+E   AssertionError: assert 'ValueError' == 'ConfirmedPermissionViolation'
+E     
+E     - ConfirmedPermissionViolation
+E     + ValueError
+_____ test_source_cancellation_cannot_erase_actual_store_violation[canary] _____
+tests/distributed/test_executor_exception_health.py:214: in test_source_cancellation_cannot_erase_actual_store_violation
+    source_id, code, _ = await run_terminal(
+tests/distributed/test_executor_exception_health.py:126: in run_terminal
+    assert await worker.run_once()
+           ^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/worker.py:478: in run_once
+    await self.handle(messages[0])
+core/distributed/worker.py:345: in handle
+    result = await self._await_execution(
+core/distributed/worker.py:188: in _await_execution
+    return await execution
+           ^^^^^^^^^^^^^^^
+core/distributed/worker.py:240: in _execute
+    return await self.executor.execute(request, authority, binding)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/executor.py:126: in execute
+    result = await harness.converse(
+tests/distributed/test_executor_exception_health.py:50: in converse
+    return await self.run(
+core/harness.py:317: in run
+    result, quiz_update = await operation()
+                          ^^^^^^^^^^^^^^^^^
+tests/distributed/test_executor_exception_health.py:45: in operation
+    raise asyncio.CancelledError()
+E   asyncio.exceptions.CancelledError
+_____ test_source_cancellation_cannot_erase_actual_store_violation[shadow] _____
+tests/distributed/test_executor_exception_health.py:214: in test_source_cancellation_cannot_erase_actual_store_violation
+    source_id, code, _ = await run_terminal(
+tests/distributed/test_executor_exception_health.py:103: in run_terminal
+    assert await worker.run_once()
+           ^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/shadow_worker.py:145: in run_once
+    code, summary = await execution
+                    ^^^^^^^^^^^^^^^
+core/distributed/shadow_worker.py:98: in _execute
+    result = await self.executor.execute(request, authority, binding)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/distributed/executor.py:126: in execute
+    result = await harness.converse(
+tests/distributed/test_executor_exception_health.py:50: in converse
+    return await self.run(
+core/harness.py:317: in run
+    result, quiz_update = await operation()
+                          ^^^^^^^^^^^^^^^^^
+tests/distributed/test_executor_exception_health.py:45: in operation
+    raise asyncio.CancelledError()
+E   asyncio.exceptions.CancelledError
+_ test_exception_terminal_recovery_invalidates_consumed_active_pass_and_pinning[canary] _
+tests/distributed/test_executor_exception_health.py:228: in test_exception_terminal_recovery_invalidates_consumed_active_pass_and_pinning
+    assert code == "ConfirmedPermissionViolation"
+E   AssertionError: assert 'ValueError' == 'ConfirmedPermissionViolation'
+E     
+E     - ConfirmedPermissionViolation
+E     + ValueError
+_ test_exception_terminal_recovery_invalidates_consumed_active_pass_and_pinning[shadow] _
+tests/distributed/test_executor_exception_health.py:228: in test_exception_terminal_recovery_invalidates_consumed_active_pass_and_pinning
+    assert code == "ConfirmedPermissionViolation"
+E   AssertionError: assert 'execution_failed' == 'ConfirmedPermissionViolation'
+E     
+E     - ConfirmedPermissionViolation
+E     + execution_failed
+=========================== short test summary info ============================
+FAILED tests/distributed/test_executor_exception_health.py::test_actual_attach_exit_durable_diagnostic_and_promotion_controls[True-value-canary] - AssertionError: assert 'ValueError' == 'ConfirmedPermissionViolation'
+  
+  - ConfirmedPermissionViolation
+  + ValueError
+FAILED tests/distributed/test_executor_exception_health.py::test_actual_attach_exit_durable_diagnostic_and_promotion_controls[True-value-shadow] - AssertionError: assert 'execution_failed' == 'ConfirmedPermissionViolation'
+  
+  - ConfirmedPermissionViolation
+  + execution_failed
+FAILED tests/distributed/test_executor_exception_health.py::test_actual_attach_exit_durable_diagnostic_and_promotion_controls[True-success-canary] - KeyError: 'hard_failures'
+FAILED tests/distributed/test_executor_exception_health.py::test_actual_attach_exit_durable_diagnostic_and_promotion_controls[True-success-shadow] - KeyError: 'hard_failures'
+FAILED tests/distributed/test_executor_exception_health.py::test_cleanup_cannot_erase_confirmed_store_violation_or_usage[stop-canary] - asyncio.exceptions.CancelledError
+FAILED tests/distributed/test_executor_exception_health.py::test_cleanup_cannot_erase_confirmed_store_violation_or_usage[stop-shadow] - asyncio.exceptions.CancelledError
+FAILED tests/distributed/test_executor_exception_health.py::test_cleanup_cannot_erase_confirmed_store_violation_or_usage[close-canary] - TypeError: 'NoneType' object is not subscriptable
+FAILED tests/distributed/test_executor_exception_health.py::test_cleanup_cannot_erase_confirmed_store_violation_or_usage[close-shadow] - assert None == 0
+FAILED tests/distributed/test_executor_exception_health.py::test_cleanup_cannot_erase_confirmed_store_violation_or_usage[database-canary] - TypeError: 'NoneType' object is not subscriptable
+FAILED tests/distributed/test_executor_exception_health.py::test_cleanup_cannot_erase_confirmed_store_violation_or_usage[database-shadow] - assert None == 0
+FAILED tests/distributed/test_executor_exception_health.py::test_primary_usage_notification_failure_cannot_erase_hard_diagnostic - AssertionError: assert 'ValueError' == 'ConfirmedPermissionViolation'
+  
+  - ConfirmedPermissionViolation
+  + ValueError
+FAILED tests/distributed/test_executor_exception_health.py::test_source_cancellation_cannot_erase_actual_store_violation[canary] - asyncio.exceptions.CancelledError
+FAILED tests/distributed/test_executor_exception_health.py::test_source_cancellation_cannot_erase_actual_store_violation[shadow] - asyncio.exceptions.CancelledError
+FAILED tests/distributed/test_executor_exception_health.py::test_exception_terminal_recovery_invalidates_consumed_active_pass_and_pinning[canary] - AssertionError: assert 'ValueError' == 'ConfirmedPermissionViolation'
+  
+  - ConfirmedPermissionViolation
+  + ValueError
+FAILED tests/distributed/test_executor_exception_health.py::test_exception_terminal_recovery_invalidates_consumed_active_pass_and_pinning[shadow] - AssertionError: assert 'execution_failed' == 'ConfirmedPermissionViolation'
+  
+  - ConfirmedPermissionViolation
+  + execution_failed
+15 failed, 2 passed in 7.67s

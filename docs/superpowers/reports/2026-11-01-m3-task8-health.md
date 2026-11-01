@@ -1,5 +1,194 @@
 # M3 Task8: Health Gates and Transactional Rollback
 
+## Exceptional Exit Correction
+
+Current independent verdict remains **CODE FAIL**. Review
+`arun_6ae72e3051536906a0738117` reproduced an actual SQLite ATTACH outside write
+followed by ValueError through both primary candidate and Shadow workers.
+The successful-return control detected the violation, but exceptional exits
+skipped the capability check. Promotion and subsequent Active PASS succeeded.
+Parent archived this new failure in docs-only `7a6966a`; all historical reviews
+and failures below remain preserved. This correction does not grant acceptance.
+
+Approved Task8-only implementation checklist:
+
+- [x] Read the approved Task8 plan, health/security design, preserved SPEC/CODE
+  failures, executor, worker diagnostics, usage and publication paths.
+- [x] Preserve RED using real SQLite ATTACH/write then ValueError through both
+  workers, with successful outside-write and clean-failure controls.
+- [x] Reuse the existing opened-store check on exceptional exits before close;
+  preserve confirmed diagnostics through cancellation, cleanup and usage.
+- [x] Verify promotion rejection and late consumed-source Active FAIL/rollback,
+  recovery, pinning and the complete Task8/full backend regression matrices.
+- [x] Archive owned evidence, digest, cleanup and actual parent; new commit only.
+- [ ] Parent performs fresh SPEC then fresh CODE after freeze; Task9/10 untouched.
+
+### Runtime Boundary
+
+Only `python/core/distributed/executor.py` changes at runtime. The existing
+initial and successful-return checks remain unchanged. The shared exception
+handler now catches BaseException, including cancellation, and checks the actual
+opened connection with the same `assert_open_store_capability()` before stopping
+the memory worker or closing the Harness. A confirmed mismatch retains the
+source exception/cancellation as its explicit cause. If the connection cannot
+be queried, the original exception survives; unavailable capability is not
+turned into a permission violation. Constructor failure with no Harness is safe.
+
+Cleanup attempts memory-worker stop, Harness close, orchestrator database close,
+and primary usage recording independently. Cleanup failures cannot replace an
+existing execution failure/cancellation or confirmed hard diagnostic; their
+exception types are retained as notes without logging bodies. A cleanup-only
+failure still fails execution. Any confirmed diagnostic in a cleanup cause
+chain takes precedence over an ordinary failure. Shadow wraps the retained
+Exception only after cleanup, carrying its usage and explicit cause; a clean
+CancelledError is not wrapped. Existing Worker/ShadowWorker classification,
+non-retryable hard failures, fenced usage and observation recording are reused.
+No worker, health, promotion, schema or Task7 authority mechanism was rewritten.
+
+The four SPEC corrections in `a4691bf` and shared-head publication/consumed
+causal inheritance in `4c9b204` are unchanged. The targeted/full suites retain
+their coverage. No new permission flags, caller diagnostics, parallel permission
+mechanism or OS sandbox claim is introduced.
+
+### Regression Proofs
+
+Two owned suites contain 71 new cases. Real SQLite ATTACH creates an outside
+database and commits a marker on the opened Harness connection; an independent
+connection reads the marker after exit. The actual Harness `run()` failure and
+finally usage paths execute with zero model/provider calls. Its HTTP wrapper is
+unwrapped in the fixture to reproduce the reviewed ValueError exactly.
+
+- Real Redis primary Worker and PostgreSQL attempts record one terminal,
+  non-retryable `ConfirmedPermissionViolation` for outside write then ValueError.
+  Actual ShadowWorker records the same typed diagnostic without changing its
+  stable parent. Both preserve complete no-model usage counters with unknown
+  provider cost, rather than inventing charges or structured decisions.
+- Successful outside-write controls still reject promotion. Clean-store
+  ValueError remains ordinary (`ValueError` primary, `execution_failed` Shadow),
+  with `not_applicable`/`isolated` permission outcomes and honest unknown-cost
+  HOLD rather than a fabricated hard FAIL.
+- Both stages reject actual promotion after a committed exceptional-exit
+  observation. If notification is deliberately omitted, the actual passing
+  Shadow/Canary gates may be consumed before recovery. The successor Active
+  first passes; real recovery then publishes the hard source terminal and the
+  next evaluation invalidates PASS and rolls back. Recovery retries are
+  idempotent. Accepted old Active Runs retain candidate binding after rollback;
+  new Runs use stable. This tests the existing causal/publication fix unchanged.
+- Stop cancellation, Harness-close failure, orchestrator cleanup failure and
+  primary usage-notification failure cannot erase the hard terminal or persisted
+  counters. Source cancellation also records the hard violation through both
+  live, authorized workers.
+- Direct executor probes verify initial-check rejection, constructor failure,
+  unavailable connection, ordinary exception/cancellation identity through
+  cleanup, exact cause preservation, and check-before-close ordering. External
+  executor-task cancellation with a live outside attachment surfaces the hard
+  violation; clean external cancellation remains the same CancelledError.
+
+Authority limit: these new durable worker proofs complete within valid leases.
+Cancelling the enclosing primary Worker retains its existing cancellation
+handler; Shadow deadline/external-cancellation cleanup retains its existing
+`gather(return_exceptions=True)` drain. This correction does not add a terminal
+publication route for results discarded by those worker paths. In particular,
+an expired/fenced worker cannot regain terminal authority merely because its
+executor detects a hard violation during drain. Such a result is not guaranteed
+to become a durable permission terminal, and SQL recovery cannot fabricate one
+from an absent terminal. The direct cancellation probes prove executor reporting
+before close, not persisted expired-worker diagnostics or forced SDK termination.
+Existing lock-drain, repeated-cancellation and takeover regressions still pass.
+
+### Frozen Evidence
+
+| Round | Result | XML Time | Evidence Suffix |
+| --- | --- | --- | --- |
+| Initial RED, no runtime edits | 15 fail / 2 pass, 7.67 s; includes two overly strict success-control key assertions | 7.659 s | `exception-red` |
+| Corrected RED, no runtime edits | 29 fail / 14 pass, 7.64 s; both success controls and clean/initial controls pass | 7.640 s | `exception-repro-red` |
+| Initial focused GREEN | 43 pass, 7.61 s; before expanding clean cleanup/external cancellation probes | 7.609 s | `exception-focused` |
+| Frozen targeted GREEN | 568 pass / 0 failure/error/skip, 111.24 s | 111.233 s | `exception-targeted` |
+| Frozen full backend GREEN | 1483 pass / 0 failure/error/skip, 279.66 s | 279.636 s | `exception-full` |
+
+All five raw `.log`/`.xml` pairs remain preserved under
+`python/tests/distributed/evidence/2026-11-01-m3-task8-<suffix>`.
+Both RED runs exited 1; all GREEN runs exited 0. No runtime/test edits occurred
+between frozen targeted and full runs. Full retains the existing `TestAgent`
+constructor collection warning. These are engineering fixtures, not independent
+review approval, formal JudgeV3 release qualification or student-effect evidence.
+
+Each pytest invocation created a new unique `task8_exception_<round>_` database
+using PostgreSQL 16 at `127.0.0.1:55432`, no password, and the Homebrew
+createdb/dropdb binaries. Every invocation ran in its own zsh shell with an EXIT
+cleanup trap. Final catalog query found zero `task8_exception_%` databases.
+Redis was `redis://127.0.0.1:56379/0`; the real broker fixture uses unique streams
+and cleans them at teardown. No parent databases/processes were managed.
+
+Frozen targeted invocation, working directory `eduagent-m3/python`:
+
+```bash
+zsh -c 'set -o pipefail
+DB="task8_exception_targeted_$(date -u +%Y%m%d%H%M%S)_${RANDOM}"
+/opt/homebrew/opt/postgresql@16/bin/createdb -h 127.0.0.1 -p 55432 -U postgres "$DB" || exit
+trap '\''/opt/homebrew/opt/postgresql@16/bin/dropdb -h 127.0.0.1 -p 55432 -U postgres "$DB"'\'' EXIT
+export DISTRIBUTED_TEST_DATABASE_URL="postgresql+asyncpg://postgres@127.0.0.1:55432/$DB"
+export DISTRIBUTED_TEST_REDIS_URL=redis://127.0.0.1:56379/0
+export PYTHONPATH=/Users/bytedance/Documents/trae_projects/eduagent-m3/python
+export TZ=UTC
+/Users/bytedance/Documents/trae_projects/eduagent/.venv/bin/python -m pytest \
+  tests/distributed/test_policy_health.py \
+  tests/distributed/test_policy_health_corrections.py \
+  tests/distributed/test_policy_health_publication.py \
+  tests/distributed/test_instrumentation.py tests/distributed/test_worker.py \
+  tests/distributed/test_shadow_worker.py tests/distributed/test_shadow_usage.py \
+  tests/distributed/test_policy_assignment.py \
+  tests/distributed/test_promotion_schema_upgrade.py \
+  tests/distributed/test_promotion_repository.py \
+  tests/distributed/test_expert_engine.py tests/distributed/test_expert_repository.py \
+  tests/distributed/test_expert_cli.py tests/distributed/test_runtime_schema_startup.py \
+  tests/distributed/test_schema_migration.py tests/distributed/test_promotion_contracts.py \
+  tests/distributed/test_executor.py tests/distributed/test_policy_pinning.py \
+  tests/distributed/test_executor_exception_health.py \
+  tests/distributed/test_executor_exception_lifecycle.py -q --tb=short \
+  --junitxml=tests/distributed/evidence/2026-11-01-m3-task8-exception-targeted.xml \
+  2>&1 | tee tests/distributed/evidence/2026-11-01-m3-task8-exception-targeted.log'
+```
+
+Full used the same setup in a new shell with `task8_exception_full_`, test list
+`tests`, and suffix `exception-full`. Earlier two RED rounds and focused GREEN
+used only the new suites (initial RED only the health suite).
+
+New freeze parent is `7a6966ac6e03a747d6fc6a9c93de0463904c5d63`; the exact NEW
+commit is supplied at handoff, not self-referentially embedded here. Three owned
+Python files, sorted repository-relative paths, have combined SHA-256
+`151452b68ffaa4c720f371d27c62367dd05a4bf7d42ebdaa7bf3fed54907c654`.
+
+```bash
+shasum -a 256 \
+  python/core/distributed/executor.py \
+  python/tests/distributed/test_executor_exception_health.py \
+  python/tests/distributed/test_executor_exception_lifecycle.py | shasum -a 256
+```
+
+| Suffix | XML SHA-256 | Log SHA-256 |
+| --- | --- | --- |
+| `exception-red` | `b795c2ca51bb2758aacf2db2ec14c56ea14aaf3ea3f05cf42637765b900237dd` | `db283ffbe45b2c01a08e4e028d7b6d1a0c985495104e8d3c61af3ed0c93f8485` |
+| `exception-repro-red` | `dd4377d99a78ab9e2bd7a0e6d3ff676d3ebfe40c419e47734a4bbf07d50b8849` | `e741d65d105b96e7761b08a6a19483369d43963611f1678d7813f45c97378bde` |
+| `exception-focused` | `f73b93505e24e05a3a50dd889e9aa68d3c23ddcb32a53a29dfd83e8959cda67d` | `36617709c69e392822781fa7241f84c578ecabbc9cbe341c07cfb3bc29bfca44` |
+| `exception-targeted` | `12932ea23977bde59ba14e4d196f39283bd74f8c84dd1279d26b36e9b26aa5e8` | `42a92e7206af447fce93cdcede87b6a8c01e6e0f576c6214a97b33dd88e774d9` |
+| `exception-full` | `744dbb27873b65ef365dd0efcb8413880c69f669413db1c62e7adb94e4e205ee` | `e43e510bd4c5d89262efa40c589cdd5370ca273fa000cf3cc0a62465c87842b3` |
+
+Only the executor, two new test suites, this report and ten owned evidence files
+belong to this commit. Parent review reports and interview-readiness index were
+not edited or staged. Primary remains read-only, clean at
+`2ff803c968d64741d149e5a1ce88a823d4d32422`. Both worktrees are checked for
+cleanliness after commit. No installs, Docker, external model calls, secrets/env
+dumps, amend, push, main writes, Task9 or Task10 work occurred.
+
+AST parsing of all three owned Python files and staged source/test/report
+whitespace checks pass. The unrestricted staged whitespace check reports 30
+trailing-whitespace lines in the two raw RED log/XML pairs. Those captured bytes
+are intentionally preserved with their hashes, not reformatted as source.
+
+The following sections are preserved historical implementation freezes, not the
+current correction identity or a replacement for the parent-owned CODE FAIL.
+
 ## CODE P1 Correction Freeze
 
 Current independent verdict is **CODE FAIL** despite historical SPEC PASS and
