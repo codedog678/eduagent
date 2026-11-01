@@ -122,6 +122,40 @@ async def test_distributed_replay_rejects_legacy_sqlite_identity_without_rebindi
         pinned.close()
 
 
+@pytest.mark.parametrize("field", ["policy_cohort", "rehearsal_id"])
+@pytest.mark.parametrize("missing", [True, False])
+async def test_pinned_sqlite_replay_rejects_cohort_and_rehearsal_identity(
+    tmp_path, field, missing,
+):
+    harness = LearningHarness(
+        AgentOrchestrator(), str(tmp_path / "identity.sqlite3"),
+        pinned_policy=binding(), state_namespace="production",
+    )
+
+    async def operation():
+        return {}, None
+
+    try:
+        payload = {"kind": "task", "knowledge_id": "general"}
+        first = await harness.run("student", "identity", payload, operation)
+        if missing:
+            first["execution"].pop(field)
+        else:
+            first["execution"][field] = "forged"
+        with harness.db:
+            harness.db.execute(
+                "UPDATE runs SET result=? WHERE learner='student' AND request='identity'",
+                (json.dumps(first),),
+            )
+        with pytest.raises(HTTPException) as raised:
+            await harness.run("student", "identity", payload, operation)
+        assert raised.value.status_code == 409
+        assert json.loads(harness.db.execute("SELECT result FROM runs").fetchone()[0]) == first
+    finally:
+        await harness.memory_worker.stop()
+        harness.close()
+
+
 @pytest.mark.parametrize("namespace", [
     "../production", "rehearsal-a/b", "rehearsal-a\\b", "rehearsal-Ａ",
     "rehearsal-a\n", "rehearsal-", "production/../production",

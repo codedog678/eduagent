@@ -34,7 +34,7 @@ from core.distributed.repository import (
     RequestConflict,
     RunClaim,
 )
-from tests.distributed.helpers import spec
+from tests.distributed.helpers import business_result, spec
 
 pytestmark = pytest.mark.distributed_integration
 
@@ -820,7 +820,7 @@ async def test_expired_lease_increments_fencing_and_rejects_old_owner(repo):
         await repo.complete(run.id, first.fencing_token, {"owner": "a"})
     await repo.transition_committing(run.id, second.fencing_token)
     completed = await repo.complete(
-        run.id, second.fencing_token, {"owner": "b"}
+        run.id, second.fencing_token, business_result(second.policy_binding, owner="b")
     )
     assert completed.status == RunStatus.COMPLETED
 
@@ -897,14 +897,14 @@ async def test_step_result_is_reused_only_for_same_input_hash(repo):
         "business-execution",
         "hash-a",
         claim.fencing_token,
-        {"ok": True},
+        business_result(claim.policy_binding, ok=True),
     )
     replay = await repo.complete_step(
         run.id,
         "business-execution",
         "hash-a",
         claim.fencing_token,
-        {"ok": True},
+        business_result(claim.policy_binding, ok=True),
     )
     assert replay.id == first.id
     with pytest.raises(RequestConflict):

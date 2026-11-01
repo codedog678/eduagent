@@ -31,7 +31,7 @@ from core.distributed.expert_repository import ExpertJobRepository
 from core.distributed.models import DistributedBase
 from core.distributed.repository import DistributedRunRepository
 from core.distributed.worker import RunWorker
-from tests.distributed.helpers import bootstrap_production, spec
+from tests.distributed.helpers import bootstrap_production, business_result, spec
 from tests.distributed.test_expert_repository import parent_claim, request_for
 
 pytestmark = pytest.mark.distributed_integration
@@ -563,7 +563,7 @@ class _ProbeExecutor:
             policy_binding=binding,
         )
         terminal = await self.gateway.execute(request_for(claim))
-        return {"expert_outcome": terminal.outcome}
+        return business_result(binding, expert_outcome=terminal.outcome)
 
 
 async def _run_parent_probe() -> None:

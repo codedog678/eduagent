@@ -15,6 +15,7 @@ from .policy_assignment import ArtifactUnavailable, PolicyAssigner, RehearsalTok
 from .promotion_contracts import PolicyExecutionBinding
 from .promotion_models import PolicyDeploymentRecord, PolicyEnvironmentHeadRecord, RehearsalTokenNonceRecord
 from .promotion_repository import PromotionRepository
+from .result_identity import validate_business_result
 
 PRODUCTION_RUN_TOPICS = ("run.accepted", "run.retry", "run.cancelled")
 REHEARSAL_RUN_TOPICS = ("run.rehearsal.accepted", "run.rehearsal.retry", "run.rehearsal.cancelled")
@@ -345,13 +346,16 @@ class DistributedRunRepository:
                 )
 
             self._assert_step_hash(step, input_hash)
-            if step.status == RunStatus.COMPLETED:
-                return step
-            if step.fencing_token != token:
+            if step.status != RunStatus.COMPLETED and step.fencing_token != token:
                 raise FencingViolation(
                     f"step {step_id} is owned by stale token "
                     f"{step.fencing_token}"
                 )
+            binding = self._persisted_binding(run)
+            validate_business_result(result, binding)
+            if step.status == RunStatus.COMPLETED:
+                validate_business_result(step.result, binding)
+                return step
             step.status = RunStatus.COMPLETED
             step.fencing_token = token
             step.result = result
@@ -399,6 +403,7 @@ class DistributedRunRepository:
                 token,
                 now,
             )
+            validate_business_result(result, self._persisted_binding(run))
             updated = await session.execute(
                 update(DistributedRun)
                 .where(

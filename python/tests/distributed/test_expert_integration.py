@@ -8,9 +8,10 @@ from core.distributed.dispatcher import OutboxDispatcher
 from core.distributed.expert_dispatcher import ExpertDispatcher
 from core.distributed.expert_gateway import DurableExpertGateway
 from core.distributed.expert_worker import ExpertWorker
+from core.distributed.promotion_contracts import PolicyExecutionBinding
 from core.distributed.worker import RunWorker
 from tests.distributed.test_expert_repository import envelope, request_for
-from tests.distributed.helpers import spec
+from tests.distributed.helpers import business_result, spec
 
 pytestmark = pytest.mark.distributed_integration
 
@@ -25,7 +26,7 @@ class AuthorityExecutor:
         self.authority = authority
         self.started.set()
         await self.release.wait()
-        return {"ok": True}
+        return business_result(binding, ok=True)
 
 
 class GatewayExecutor:
@@ -47,7 +48,7 @@ class GatewayExecutor:
         )
         self.request = request_for(claim)
         self.envelope = await self.gateway.execute(self.request)
-        return {"expert_outcome": self.envelope.outcome}
+        return business_result(binding, expert_outcome=self.envelope.outcome)
 
 
 class ImmediateExpertEngine:
@@ -140,4 +141,7 @@ async def test_parent_waits_durably_then_completes_after_expert_result(
 
     completed = await repo.get(run.id)
     assert completed.status == RunStatus.COMPLETED
-    assert completed.result == {"expert_outcome": "succeeded"}
+    assert completed.result == business_result(
+        PolicyExecutionBinding.model_validate(run.policy_binding),
+        expert_outcome="succeeded",
+    )

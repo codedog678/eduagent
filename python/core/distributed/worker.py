@@ -10,6 +10,7 @@ from core.distributed.executor import BusinessStoreBusy
 from core.distributed.expert_contracts import RunExecutionAuthority
 from core.distributed.repository import FencingViolation
 from core.distributed.rehearsal_store import validate_environment
+from core.distributed.result_identity import validate_business_result
 from core.run_context import RunExhausted
 
 
@@ -287,11 +288,8 @@ class RunWorker:
                     attributes={"run.operation": request.operation},
                 ):
                     if step.status == RunStatus.COMPLETED:
-                        if step.result is None:
-                            raise RuntimeError(
-                                "completed step has no result"
-                            )
                         result = step.result
+                        validate_business_result(result, claim.policy_binding)
                         self._increment_metric(
                             "idempotency_hits",
                             labels={"scope": "step"},
@@ -327,6 +325,7 @@ class RunWorker:
                             execution,
                             heartbeat,
                         )
+                        validate_business_result(result, claim.policy_binding)
 
                 async with self._span(
                     run_id,

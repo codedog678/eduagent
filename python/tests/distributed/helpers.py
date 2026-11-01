@@ -38,6 +38,19 @@ def authority(worker_id="parent-worker", binding=None):
     )
 
 
+def business_result(binding, **body):
+    return {
+        **body,
+        "execution": {
+            "deployment_id": str(binding.deployment_id),
+            "effective_policy_hash": binding.effective_policy_hash,
+            "policy_cohort": binding.policy_cohort,
+            "state_namespace": binding.state_namespace,
+            "rehearsal_id": binding.rehearsal_id,
+        },
+    }
+
+
 async def bootstrap_production(repo):
     from core.distributed.promotion_models import (
         PolicyArtifactRecord, PolicyDeploymentRecord, PolicyEnvironmentHeadRecord,

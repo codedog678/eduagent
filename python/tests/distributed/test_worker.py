@@ -9,7 +9,7 @@ from core.distributed.executor import BusinessStoreBusy
 from core.distributed.reaper import LeaseReaper
 from core.distributed.repository import FencingViolation
 from core.distributed.worker import RunWorker
-from tests.distributed.helpers import spec
+from tests.distributed.helpers import business_result, spec
 
 pytestmark = pytest.mark.distributed_integration
 
@@ -31,7 +31,7 @@ class BlockingExecutor:
         except asyncio.CancelledError:
             self.cancelled.set()
             raise
-        return {"ok": True}
+        return business_result(binding, ok=True)
 
 
 class ImmediateExecutor:
@@ -42,7 +42,7 @@ class ImmediateExecutor:
         self.authority = authority
         self.binding = binding
         self.calls += 1
-        return {"request_id": request.request_id}
+        return business_result(binding, request_id=request.request_id)
 
 
 class BusyExecutor:
@@ -265,6 +265,6 @@ async def test_stale_worker_cannot_commit_after_reap(repo):
     completed = await repo.complete(
         run.id,
         second.fencing_token,
-        {"owner": "b"},
+        business_result(second.policy_binding, owner="b"),
     )
     assert completed.status == RunStatus.COMPLETED

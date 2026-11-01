@@ -229,13 +229,16 @@ class LearningHarness:
             if row and row[1] == "completed":
                 result = json.loads(row[2])
                 if self.pinned_policy is not None:
-                    execution = result.get("execution", {})
-                    if any(execution.get(name) != value for name, value in (
-                        ("effective_policy_hash", self.pinned_policy.effective_policy_hash),
-                        ("deployment_id", str(self.pinned_policy.deployment_id)),
-                        ("state_namespace", self.state_namespace),
-                    )):
-                        raise HTTPException(409, "replayed result differs from trusted binding")
+                    from core.distributed.result_identity import (
+                        ProtocolIdentityError, validate_business_result,
+                    )
+
+                    try:
+                        validate_business_result(result, self.pinned_policy)
+                    except ProtocolIdentityError as exc:
+                        raise HTTPException(
+                            409, "replayed result differs from trusted binding",
+                        ) from exc
                 return result
             self.load(learner)
             if learner not in self.orch.learner_models:

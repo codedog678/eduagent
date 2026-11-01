@@ -8,7 +8,7 @@ from core.distributed.dispatcher import OutboxDispatcher
 from core.distributed.executor import BusinessStoreBusy
 from core.distributed.reaper import LeaseReaper
 from core.distributed.worker import RunWorker
-from tests.distributed.helpers import spec
+from tests.distributed.helpers import business_result, spec
 
 pytestmark = pytest.mark.distributed_integration
 
@@ -81,7 +81,7 @@ class RecordingMetrics:
 
 class ImmediateExecutor:
     async def execute(self, request, authority, binding):
-        return {"request_id": request.request_id}
+        return business_result(binding, request_id=request.request_id)
 
 
 class BusyExecutor:

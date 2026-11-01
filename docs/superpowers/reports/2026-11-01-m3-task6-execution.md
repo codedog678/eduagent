@@ -95,3 +95,167 @@ Docker execution**. Docker is unavailable and was not installed.
 - These are deterministic/template-backed engineering tests, not new model
   evaluation, policy release qualification, Docker qualification or evidence
   that Task7 health observations and promotion monitoring are implemented.
+
+## Task6 Review Correction Evidence
+
+Corrective base: `e05552ac93fec9b6448a645d90f7eb1980ced12a`.
+Only the `eduagent-m3` worktree was edited. This is a new corrective commit,
+not an amendment or a push. The approved Task6 plan and design section 5.4
+remain the contract; the plan's metadata-free executor spy is not a valid
+business result under that contract.
+
+### Corrected Commit Boundaries
+
+- `result_identity.py` validates exactly deployment, effective policy hash,
+  cohort, state namespace and rehearsal ID against the frozen persisted Run
+  binding. Missing keys fail closed, including a missing production rehearsal
+  ID where the contract requires explicit null. It adds no request-ID,
+  learner-ID, attempt-ID or distributed/local Run-ID equivalence requirement.
+- Worker validation covers fresh executor results and completed PostgreSQL
+  step results before any commit API or committing transition. Cached null,
+  malformed, legacy and explicitly mismatched results produce terminal
+  `ProtocolIdentityError`, not retry work.
+- `complete_step` validates both the caller result and a completed step's
+  cached result under the locked Run transaction. `complete` independently
+  validates the caller result before any Run, attempt or lease mutation.
+  Rejection rolls back atomically. Existing lease, step-token and input-hash
+  fencing remain authoritative; valid completed-step replay preserves its
+  original body, finish time and token.
+- Pinned SQLite replay reuses the validator, preserving HTTP 409 and stored
+  historical evidence. Explicit local unbound replay is unchanged.
+  Real `LearningTaskExecutor` already emits all five fields. Test executors
+  now emit valid execution metadata instead of weakening the validator.
+
+Real PostgreSQL tests cover both production and rehearsal, each missing or
+wrong field, absent/malformed execution metadata, legacy deployment/namespace
+omissions, direct repository rejection, cached takeover with zero executor
+calls and no public Run result, no new retry outbox, duplicate delivery, and
+valid cached takeover after a head change. They also assert the worker never
+calls either commit API or the committing transition for invalid results.
+
+### Corrective Test Runs
+
+All runs used the interpreter and real infrastructure above, unique databases
+created with `createdb` and removed by an EXIT `dropdb` trap, `TZ=UTC`, PostgreSQL
+55432 as `postgres`, and Redis 56379 database 0. `PYTHONPATH="$PWD/python"`
+points only to this worktree's Python source, not the main checkout's source.
+Counts overlap and must not be summed.
+
+| Run | Result | Seconds | Evidence Boundary |
+| --- | --- | --- | --- |
+| Initial red: identity + pinning | 145 failed, 24 passed | 26.33 | Included fixture mistakes: frozen admission clock used for live leases, missing reaper argument and pre-existing takeover retry outbox |
+| Corrected red: identity + pinning | 144 failed, 25 passed | 27.90 | Real database lease time; invalid results accepted by both repository APIs and fresh/cached workers; cached null incorrectly retried |
+| Initial green: identity + pinning | 169 passed | 28.36 | Shared validator implemented |
+| First required matrix | 1 failed, 588 passed | 70.82 | One stale fake-executor assertion expected a metadata-free body |
+| Required matrix after expectation update | 589 passed | 69.95 | Before final stale-step error-order test and concurrent startup edits |
+| Process integrations | 5 passed | 22.93 | Before final stale-step ordering adjustment and concurrent startup edits |
+| Stale-step ordering red | 1 failed | 0.66 | Identity validation preceded the running step's stale-token fencing error |
+| Final owned-file focused regression | 217 passed | 35.96 | Includes corrected fencing order and both extra replay/fencing tests; owned-file hashes identical before/after |
+| Concurrent full backend attempt | 6 failed, 1096 passed, 6 setup errors | 111.56 | Startup-dependent fixtures lacked the concurrently introduced schema marker; whole-source hash changed during the run; not final combined verification |
+
+There were no skips in these runs. The full backend attempt retained the
+historical `TestAgent` collection warning. The first red run is not presented
+as clean bypass evidence; the corrected red run is.
+
+Exact test selections, with the common runner below:
+
+```bash
+# Red and first green:
+run_task6_tests python/tests/distributed/test_business_result_identity.py \
+python/tests/distributed/test_policy_pinning.py
+
+# Required matrix:
+run_task6_tests python/tests/distributed \
+python/tests/test_learning_harness.py \
+python/tests/test_rsi_policy_runtime.py \
+python/tests/test_coordinator_runtime.py
+
+# Process integrations:
+run_task6_tests python/tests/integration
+
+# Stale-step ordering red:
+run_task6_tests python/tests/distributed/test_business_result_identity.py::test_unclaimed_running_step_still_rejects_stale_token_before_identity
+
+# Final owned-file focused regression:
+run_task6_tests python/tests/distributed/test_business_result_identity.py \
+python/tests/distributed/test_policy_pinning.py \
+python/tests/distributed/test_repository.py \
+python/tests/distributed/test_worker.py \
+python/tests/distributed/test_expert_integration.py \
+python/tests/distributed/test_instrumentation.py
+
+# Concurrent full backend attempt:
+run_task6_tests python/tests
+```
+
+```bash
+run_task6_tests() (
+  set -eu
+  db="m3_task6_corrective_$(date +%s)_$$"
+  createdb -h 127.0.0.1 -p 55432 -U postgres "$db"
+  trap 'dropdb -h 127.0.0.1 -p 55432 -U postgres "$db"' EXIT
+  PYTHONPATH="$PWD/python" TZ=UTC \
+    DISTRIBUTED_TEST_DATABASE_URL="postgresql+asyncpg://postgres@127.0.0.1:55432/$db" \
+    DISTRIBUTED_TEST_REDIS_URL="redis://127.0.0.1:56379/0" \
+    /Users/bytedance/Documents/trae_projects/eduagent/.venv/bin/python \
+    -m pytest "$@" -q --tb=short
+)
+```
+
+The first red used `--tb=line`, the corrected red used `--tb=no`, and all
+remaining runs used `--tb=short`.
+
+### Tested Source And Limits
+
+Final owned-file focused run: SHA-256 of the ordered `git hash-object` output
+was identical before and after:
+`0af8fea141efb9091147cb2a37cb7ad2f7f3f5601ebccca0cb9e574a5f1e1d17`.
+The file order was:
+
+```text
+python/core/distributed/result_identity.py
+python/core/distributed/repository.py
+python/core/distributed/worker.py
+python/core/harness.py
+python/tests/distributed/helpers.py
+python/tests/distributed/test_business_result_identity.py
+python/tests/distributed/test_policy_pinning.py
+python/tests/distributed/test_repository.py
+python/tests/distributed/test_worker.py
+python/tests/distributed/test_expert_integration.py
+python/tests/distributed/test_instrumentation.py
+python/tests/integration/test_expert_failover.py
+```
+
+Full backend attempt: HEAD was `e05552ac93fec9b6448a645d90f7eb1980ced12a`
+both before and after, with uncommitted Task6 and parallel startup changes.
+The SHA-256 of sorted `rg --files python` file checksums followed by the
+`docker-compose.yml` checksum changed from
+`22bd2f7fe4d7d8a9020f95608c3a0c0d288620c6ce3a9f6e4b19511ef8530068` to
+`424fd0a4d96b42126ca0f978acec31f7c88c4f0c70009d1764f5e825a00a66c9`.
+The runtime, CLI and Compose blob IDs remained, respectively:
+
+```text
+dcc80fcf48707280d95108bd671144c05ca20d46
+5bbcfba70a69176aa37c23d34cf8b608885717d6
+1497f150fbdde3fa3180f0dc383fcaa09a22cfab
+```
+
+The startup failures reported `SchemaVersionMismatch`: missing/incompatible
+schema marker, requiring the explicit drained `cli migrate` step. Six API
+fixture setup errors, one runtime/pinning failure and five process failures
+were recorded. No startup implementation or pre-migration fixture change is
+included in this correction; the parent coordinates that follow-up after both
+agents finish. Earlier 589/5 green counts are not evidence for the combined
+startup patch. The 217 focused count identifies only unchanged Task6-owned
+files, not a frozen snapshot of all concurrent files.
+
+Legacy or forged cached results are retained, never silently rewritten or
+rebound. Drain legacy in-flight work; this correction does not repair already
+published historical results. Task7, model evaluation, release qualification,
+Docker execution and startup rollout qualification remain outside this commit.
+
+Manual staged-patch scope and secret review found no added credentials or
+secret material. `git diff --cached --check` passed. Only the twelve owned
+source/test paths listed above and this Task6 report are included; parallel
+startup files and tests are excluded.
