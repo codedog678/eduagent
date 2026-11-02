@@ -1,0 +1,161 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+........................................................................ [  3%]
+........................................................................ [  7%]
+........................................................................ [ 11%]
+........................................................................ [ 15%]
+........................................................................ [ 19%]
+........................................................................ [ 23%]
+........................................................................ [ 27%]
+........................................................................ [ 31%]
+........................................................................ [ 35%]
+........................................................................ [ 39%]
+........................................................................ [ 43%]
+........................................................................ [ 46%]
+........................................................................ [ 50%]
+........................................................................ [ 54%]
+........................................................................ [ 58%]
+........................................................................ [ 62%]
+........................................................................ [ 66%]
+........................................................................ [ 70%]
+........................................................................ [ 74%]
+........................................................................ [ 78%]
+..................................F..................................... [ 82%]
+........................................................................ [ 86%]
+........................................................................ [ 90%]
+........................................................................ [ 93%]
+........................................................................ [ 97%]
+........................................                                 [100%]
+=================================== FAILURES ===================================
+_________ test_killed_worker_is_fenced_and_second_worker_replays_once __________
+
+tmp_path = PosixPath('/private/tmp/m3-task9-wholespec-7116c864-8783-4351-92c2-550bf3427d3e/tmp/full/test_killed_worker_is_fenced_a0')
+
+    async def test_killed_worker_is_fenced_and_second_worker_replays_once(
+        tmp_path,
+    ):
+        database_url = os.getenv("DISTRIBUTED_TEST_DATABASE_URL")
+        redis_url = os.getenv("DISTRIBUTED_TEST_REDIS_URL")
+        if not database_url or not redis_url:
+            pytest.skip("distributed PostgreSQL and Redis URLs are required")
+    
+        suffix = uuid4().hex
+        stream = f"eduagent:test:failover:{suffix}"
+        group = f"eduagent-test-{suffix}"
+        store_path = tmp_path / "shared-harness.sqlite3"
+        engine = create_async_engine(database_url)
+        factory = async_sessionmaker(engine, expire_on_commit=False)
+        repository = DistributedRunRepository(factory, max_attempts=3)
+        redis = Redis.from_url(redis_url, decode_responses=True)
+        broker = RedisRunBroker(redis, stream, group)
+        dispatcher = OutboxDispatcher(repository, broker)
+        reaper = LeaseReaper(repository)
+        first = None
+        second = None
+    
+        try:
+            async with engine.begin() as connection:
+                await connection.execute(text("DROP TABLE IF EXISTS distributed_schema_version"))
+                await connection.run_sync(DistributedBase.metadata.drop_all)
+            await migrate_schema(engine)
+            await broker.ensure_group()
+    
+            run = await repository.accept(spec(request_id="kill-recover"))
+            assert await dispatcher.dispatch_once() == 1
+    
+            first = worker_process(
+                database_url=database_url,
+                redis_url=redis_url,
+                stream=stream,
+                group=group,
+                store_path=store_path,
+                worker_id="worker-a",
+                pause_before_commit=30,
+            )
+            await wait_for_status(
+                repository,
+                run.id,
+                RunStatus.COMMITTING,
+            )
+            stop_process(first)
+    
+            await asyncio.sleep(3.2)
+            assert await reaper.reap_once() == [run.id]
+            assert await dispatcher.dispatch_once() == 1
+    
+            second = worker_process(
+                database_url=database_url,
+                redis_url=redis_url,
+                stream=stream,
+                group=group,
+                store_path=store_path,
+                worker_id="worker-b",
+                pause_before_commit=0,
+            )
+            completed = await wait_for_status(
+                repository,
+                run.id,
+                RunStatus.COMPLETED,
+            )
+    
+            assert completed.attempt_count == 2
+            spans = await repository.trace(run.id)
+            assert {span.name for span in spans} >= {
+                "run.attempt",
+                "business.execute",
+                "run.commit",
+            }
+            assert {
+                span.attributes.get("worker.id")
+                for span in spans
+                if span.name == "run.attempt"
+            } >= {"worker-a", "worker-b"}
+            with sqlite3.connect(store_path) as business:
+                run_count = business.execute(
+                    "SELECT COUNT(*) FROM runs "
+                    "WHERE learner=? AND request=? AND status='completed'",
+                    ("student", "kill-recover"),
+                ).fetchone()[0]
+            assert run_count == 1
+        finally:
+            stop_process(first)
+            stop_process(second)
+>           await redis.delete(stream)
+
+tests/integration/test_distributed_failover.py:182: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <redis.asyncio.client.Redis(<redis.asyncio.connection.ConnectionPool(<redis.asyncio.connection.Connection(decode_respo...d_timeout=10, endpoint_type=None),orig_host_address=127.0.0.1,orig_socket_timeout=5,orig_socket_connect_timeout=5)>)>)>
+args = ('DEL', 'eduagent:test:failover:8abfc4f58eec4842beac2daa27d42aa0')
+kwargs = {}
+
+    async def ledger(self, *args, **kwargs):
+        command = str(args[0]).upper()
+        assert command not in {"FLUSHALL", "FLUSHDB"}, "no flush"
+        keys = []
+        if command in {"DEL", "UNLINK"}:
+            keys = [str(k) for k in args[1:]]
+>           assert all(re.fullmatch(r"test:(?:[a-z-]+:)*[0-9a-f]{32}(?::[a-z-]+)*", k) for k in keys)
+E           assert False
+E            +  where False = all(<generator object pytest_configure.<locals>.ledger.<locals>.<genexpr> at 0x111d5adc0>)
+
+/tmp/m3-task9-wholespec-7116c864-8783-4351-92c2-550bf3427d3e/safety.py:19: AssertionError
+=============================== warnings summary ===============================
+../../../../../../tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/_pytest/python.py:144
+  /tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/_pytest/python.py:144: PytestRemovedIn10Warning: Passing a non-Collection iterable to parametrize is deprecated.
+  Test: tests/distributed/test_promotion_ops_api.py::test_policy_keyset_ties_are_complete_unique_and_bounded, argvalues type: zip
+  Please convert to a list or tuple.
+  See https://docs.pytest.org/en/stable/deprecations.html#parametrize-iterators
+    metafunc.parametrize(*marker.args, **marker.kwargs, _param_mark=marker)
+
+tests/v2/test_agent_base.py:8
+  /Users/bytedance/Documents/trae_projects/eduagent-m3/python/tests/v2/test_agent_base.py:8: PytestCollectionWarning: cannot collect test class 'TestAgent' because it has a __init__ constructor (from: tests/v2/test_agent_base.py)
+    class TestAgent(BaseAgent):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_distributed_failover.py::test_killed_worker_is_fenced_and_second_worker_replays_once - assert False
+ +  where False = all(<generator object pytest_configure.<locals>.ledger.<locals>.<genexpr> at 0x111d5adc0>)
+1 failed, 1839 passed, 2 warnings in 368.85s (0:06:08)
