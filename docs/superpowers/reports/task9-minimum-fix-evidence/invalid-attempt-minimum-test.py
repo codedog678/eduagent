@@ -1,0 +1,265 @@
+"""Task9 SPEC-1: frozen minima through complete PostgreSQL-backed GETs."""
+
+from copy import deepcopy
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
+import json
+import os
+from pathlib import Path
+from uuid import uuid4
+
+import pytest
+from sqlalchemy import select
+
+from core.distributed.policy_health import PolicyHealthEvaluator
+from core.distributed.promotion_contracts import PolicyThresholds, PromotionCommand, canonical_hash
+from core.distributed.promotion_models import (
+    PolicyArtifactRecord, PolicyAuditEventRecord, PolicyDeploymentRecord,
+    PolicyEnvironmentHeadRecord, PolicyGateReceiptRecord, PolicyHealthWindowRecord,
+    PolicyObservationRecord,
+)
+from core.distributed.promotion_repository import PromotionRepository
+from tests.distributed.test_ops_complete_chain import sources
+from tests.distributed.test_ops_source_integrity import api_detail
+from tests.distributed.test_policy_health import fill_window, health_repo
+from tests.distributed.test_policy_health_corrections import real_active_fixture
+
+pytestmark = pytest.mark.distributed_integration
+
+
+def record(name, body):
+    if os.environ.get("REVIEW_OWN"):
+        directory = Path(os.environ["REVIEW_OWN"]) / os.environ["EVIDENCE_RUN"]
+        directory.mkdir(exist_ok=True)
+        with (directory / (name + ".json")).open("x") as output:
+            json.dump(body, output, indent=2, default=str)
+            output.write("\n")
+
+
+async def frozen_leaf(fixture, candidate_count, stable_count, *,
+                      status="passed", decision="pass"):
+    repo, promotion, deployment = fixture
+    gate = "shadow_health" if deployment.state == "shadow" else "canary_health"
+    async with repo.session_factory() as session:
+        source = await session.get(PolicyDeploymentRecord, str(deployment.deployment_id))
+        artifact = await session.get(PolicyArtifactRecord, source.candidate_policy_hash)
+        original = await session.scalar(select(PolicyGateReceiptRecord).where(
+            PolicyGateReceiptRecord.gate_type == gate,
+            PolicyGateReceiptRecord.details["deployment_id"].as_string() == source.deployment_id,
+        ).order_by(PolicyGateReceiptRecord.issued_at.desc()).limit(1))
+        window = await session.get(PolicyHealthWindowRecord, original.details["window_id"])
+        wvalues = {c.name: deepcopy(getattr(window, c.name)) for c in window.__table__.columns}
+        rvalues = {c.name: deepcopy(getattr(original, c.name)) for c in original.__table__.columns}
+        keys = {label: original.details["observation_keys"][label][:count]
+                for label, count in (("candidate", candidate_count), ("stable", stable_count))}
+        assert len(keys["candidate"]) == candidate_count and len(keys["stable"]) == stable_count
+        flat = keys["candidate"] + keys["stable"]
+        rows = list(await session.scalars(select(PolicyObservationRecord).where(
+            PolicyObservationRecord.observation_key.in_(flat))))
+    receipt = original
+    if keys != original.details["observation_keys"] or status != original.status or decision != window.decision:
+        now = datetime.now(UTC)
+        identity = {key: deepcopy(original.details[key]) for key in (
+            "deployment_id", "deployment_version", "metric_contract_version", "thresholds_hash")}
+        identity["observation_keys"] = keys
+        wid = canonical_hash(identity)
+        candidate_stats = {**window.candidate_stats, "run_count": candidate_count}
+        stable_stats = {**window.stable_stats, "run_count": stable_count}
+        details = {**deepcopy(original.details), **identity, "window_id": wid,
+                   "candidate_stats": candidate_stats, "stable_stats": stable_stats}
+        wvalues.update(window_id=wid, observation_keys=keys, candidate_stats=candidate_stats,
+                       stable_stats=stable_stats, decision=decision, evaluated_at=now, created_at=now,
+                       observation_start_key=flat[0] if flat else canonical_hash([]),
+                       observation_end_key=flat[-1] if flat else canonical_hash([]))
+        rvalues.update(receipt_id=str(uuid4()), details=details, evidence_hash=canonical_hash(details),
+                       status=status, sample_count=candidate_count,
+                       cost=sum((row.cost for row in rows), Decimal(0)),
+                       issued_at=now, created_at=now)
+        receipt = PolicyGateReceiptRecord(**rvalues)
+        async with repo.session_factory() as session, session.begin():
+            session.add(PolicyHealthWindowRecord(**wvalues))
+            await session.flush()
+            session.add(receipt)
+    async with repo.session_factory() as session:
+        accepted = await promotion._validated_health_window(
+            session, artifact=artifact, deployment=source, gate_type=gate, receipt=receipt)
+    return source, artifact, receipt, accepted is not None
+
+
+async def append_active(repo, canary, artifact, receipt):
+    now = datetime.now(UTC)
+    command = PromotionCommand(
+        command_id="minimum-get-active-" + uuid4().hex, environment="rehearsal",
+        expected_version=canary.version, current_state="canary", target_state="active",
+        traffic_basis_points=10000, actor="test", reason="append-only fixture; no real promotion claim",
+    )
+    command_hash = canonical_hash({"command_type": "transition", "command": command.model_dump(mode="json")})
+    values = {c.name: deepcopy(getattr(canary, c.name)) for c in canary.__table__.columns}
+    required = ["shadow_health", "canary_health", "promotion_approval"]
+    values.update(deployment_id=str(uuid4()), version=canary.version + 1, state="active",
+                  traffic_basis_points=10000, command_id=command.command_id, actor=command.actor,
+                  reason=command.reason, created_at=now, required_receipts=required)
+    active = PolicyDeploymentRecord(**values)
+    async with repo.session_factory() as session, session.begin():
+        session.add(active)
+        await session.flush()
+        session.add(PolicyAuditEventRecord(
+            event_id=str(uuid4()), command_id=command.command_id, deployment_id=active.deployment_id,
+            environment="rehearsal", event_type="promotion_transitioned",
+            actor=command.actor, reason=command.reason, created_at=now,
+            details={"command_hash": command_hash, "from_state": "canary", "to_state": "active",
+                     "from_version": canary.version, "to_version": active.version,
+                     "required_receipts": required}))
+        await PromotionRepository._create_promotion_approval(
+            session, command=command, artifact=artifact, canary_health=receipt,
+            command_hash=command_hash, now=now)
+    return active
+
+
+@pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+async def test_local_canary_minimum_is_gate_specific_and_shadow_history_survives(health_repo, counts):
+    fixture, _, _ = await real_active_fixture(
+        health_repo, stop_at="canary", command_prefix="minimum-local-" + uuid4().hex)
+    repo, _, canary = fixture
+    source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+    body = await api_detail(repo, canary)
+    record("local-canary-" + "-".join(map(str, counts)), {
+        "counts": counts, "thresholds": source.thresholds, "authority_accepts": accepted,
+        "exact_receipt": receipt.receipt_id, "body": body})
+    valid = counts[0] >= 20 and counts[1] >= 20
+    assert accepted == valid
+    health = sources(body)
+    assert health["shadow_health"]["status"] == "passed"
+    assert health["shadow_health"]["health_source"]["relation"] == "consumed_chain"
+    assert ("canary_health" in health) == valid
+
+
+@pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+async def test_active_complete_chain_uses_exact_minimum_leaf(health_repo, counts):
+    fixture, _, _ = await real_active_fixture(
+        health_repo, stop_at="canary", command_prefix="minimum-active-" + uuid4().hex)
+    repo, _, _ = fixture
+    canary, artifact, receipt, accepted = await frozen_leaf(fixture, *counts)
+    active = await append_active(repo, canary, artifact, receipt)
+    body = await api_detail(repo, active)
+    record("active-" + "-".join(map(str, counts)), {
+        "thresholds": canary.thresholds, "authority_accepts": accepted,
+        "exact_receipt": receipt.receipt_id, "body": body})
+    valid = counts[0] >= 20 and counts[1] >= 20
+    assert accepted == valid
+    health = sources(body)
+    assert set(health) == ({"canary_health", "shadow_health"} if valid else set())
+    if valid:
+        assert health["canary_health"]["receipt_id"] == receipt.receipt_id
+
+
+@pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+async def test_local_shadow_requires_both_frozen_minima(health_repo, counts):
+    fixture, _, _ = await real_active_fixture(
+        health_repo, stop_at="shadow", command_prefix="minimum-shadow-" + uuid4().hex)
+    source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+    body = await api_detail(fixture[0], source)
+    record("local-shadow-" + "-".join(map(str, counts)), {
+        "authority_accepts": accepted, "exact_receipt": receipt.receipt_id, "body": body})
+    valid = counts[0] >= 20 and counts[1] >= 20
+    assert accepted == valid
+    assert ("shadow_health" in sources(body)) == valid
+
+
+@pytest.mark.parametrize("state", ["shadow", "canary"])
+@pytest.mark.parametrize("status,decision", [("failed", "fail"), ("unknown", "hold"), ("failed", "hold")])
+async def test_low_sample_local_nonpass_is_not_deleted(health_repo, state, status, decision):
+    fixture, _, _ = await real_active_fixture(
+        health_repo, stop_at=state, command_prefix="minimum-nonpass-" + uuid4().hex)
+    source, _, receipt, accepted = await frozen_leaf(
+        fixture, 1, 1, status=status, decision=decision)
+    body = await api_detail(fixture[0], source)
+    record(f"nonpass-{state}-{status}-{decision}", {"body": body, "authority_accepts": accepted})
+    shown = sources(body)["shadow_health" if state == "shadow" else "canary_health"]
+    assert not accepted and shown["receipt_id"] == receipt.receipt_id
+    assert shown["status"] == status and shown["sample_count"] == 1
+    assert shown["health_source"]["relation"] == "local"
+    assert shown["health_source"]["window_decision"] == decision
+    assert body["latest_health_window"]["decision"] == decision
+
+
+@pytest.mark.parametrize("counts", [(20, 23), (22, 20), (22, 23)])
+async def test_custom_deployment_minima_not_global_twenty(health_repo, counts):
+    # 新 immutable Shadow snapshot 冻结更高下限，不改写已存在的部署。
+    fixture, _, _ = await real_active_fixture(
+        health_repo, stop_at="shadow", command_prefix="minimum-custom-" + uuid4().hex)
+    repo, promotion, shadow = fixture
+    thresholds = PolicyThresholds(candidate_min_runs=22, stable_min_runs=23)
+    async with repo.session_factory() as session, session.begin():
+        original = await session.get(PolicyDeploymentRecord, str(shadow.deployment_id))
+        values = {c.name: deepcopy(getattr(original, c.name)) for c in original.__table__.columns}
+        values.update(deployment_id=str(uuid4()), version=shadow.version + 1,
+                      command_id="custom-frozen-" + uuid4().hex, created_at=datetime.now(UTC),
+                      thresholds=thresholds.model_dump(mode="json"), thresholds_hash=thresholds.digest)
+        custom = PolicyDeploymentRecord(**values)
+        session.add(custom)
+        await session.flush()
+        head = await session.get(PolicyEnvironmentHeadRecord, "rehearsal")
+        head.current_deployment_id, head.current_version = custom.deployment_id, custom.version
+    await fill_window((repo, promotion, custom), state="shadow", count=23, paired=True,
+                      changes=lambda i: {"observed_at": datetime.now(UTC)},
+                      stable_changes=lambda i: {"observed_at": datetime.now(UTC)})
+    assert (await PolicyHealthEvaluator(promotion).evaluate(custom.deployment_id)).decision == "pass"
+    canary = await promotion.transition(PromotionCommand(
+        command_id="custom-canary-" + uuid4().hex, environment="rehearsal",
+        expected_version=custom.version, current_state="shadow", target_state="canary",
+        traffic_basis_points=5000, actor="test", reason="custom frozen minimum fixture"))
+    await fill_window((repo, promotion, canary), count=22, stable_count=23,
+                      changes=lambda i: {"observed_at": datetime.now(UTC)},
+                      stable_changes=lambda i: {"observed_at": datetime.now(UTC)})
+    assert (await PolicyHealthEvaluator(promotion).evaluate(canary.deployment_id)).decision == "pass"
+    source, artifact, receipt, accepted = await frozen_leaf((repo, promotion, canary), *counts)
+    local = await api_detail(repo, canary)
+    active = await append_active(repo, source, artifact, receipt)
+    body = await api_detail(repo, active)
+    record("custom-" + "-".join(map(str, counts)), {
+        "thresholds": source.thresholds, "authority_accepts": accepted, "local": local, "active": body})
+    valid = counts == (22, 23)
+    assert accepted == valid
+    assert ("canary_health" in sources(local)) == valid
+    assert "shadow_health" in sources(local)
+    assert len(sources(body)) == (2 if valid else 0)
+
+
+@pytest.mark.parametrize("state", ["shadow", "canary"])
+async def test_twenty_one_decimal_boundary_stays_exact(health_repo, state):
+    fixture, rows = await fill_window(
+        health_repo, state=state, count=21, paired=state == "shadow",
+        changes=lambda i: {"cost": Decimal(".01000001") if i == 0 else Decimal(".01")})
+    repo, promotion, deployment = fixture
+    window = await PolicyHealthEvaluator(promotion).evaluate(deployment.deployment_id)
+    assert window.decision == "pass"
+    body = await api_detail(repo, deployment)
+    health = sources(body)["shadow_health" if state == "shadow" else "canary_health"]
+    total = sum((row.cost for row in rows), Decimal(0))
+    rounded = sum((Decimal(stats["mean_cost"]) * stats["run_count"]
+                   for stats in (window.candidate_stats, window.stable_stats)), Decimal(0))
+    assert total != rounded and Decimal(health["cost"]) == total and health["sample_count"] == 21
+
+
+async def test_active_local_baseline_keeps_consumed_keys_not_new_canary_leaf(health_repo):
+    fixture, canary, rows = await real_active_fixture(
+        health_repo, command_prefix="minimum-baseline-" + uuid4().hex)
+    repo, promotion, active = fixture
+    before = sources(await api_detail(repo, active))
+    await fill_window(fixture, state="active", stable_count=0,
+                      changes={"observed_at": active.created_at + timedelta(microseconds=1)})
+    window = await PolicyHealthEvaluator(promotion).evaluate(active.deployment_id)
+    assert window.decision == "pass"
+    # 推进 Canary 新观测不改变 Active 在审批时已冻结的基线。
+    await fill_window((repo, promotion, canary), count=21,
+                      changes={"observed_at": datetime.now(UTC)},
+                      stable_changes={"observed_at": datetime.now(UTC)})
+    await PolicyHealthEvaluator(promotion).evaluate(canary.deployment_id)
+    body = await api_detail(repo, active)
+    shown = sources(body)
+    assert window.observation_keys["stable"] == [row.observation_key for row in rows[20:]]
+    assert shown["canary_health"]["health_source"]["relation"] == "local"
+    assert shown["canary_health"]["health_source"]["deployment_id"] == str(active.deployment_id)
+    assert shown["canary_health"]["health_source"]["window_id"] == window.window_id
+    assert shown["shadow_health"]["receipt_id"] == before["shadow_health"]["receipt_id"]

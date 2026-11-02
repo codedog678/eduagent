@@ -1,0 +1,71 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+FFF.                                                                     [100%]
+=================================== FAILURES ===================================
+________ test_under_minimum_frozen_pass_cannot_authenticate_chain[0-0] _________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109b600d0>, <core.distributed.promotion_repository....ionRepository object at 0x109fa0090>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x109c5a950>)
+candidate_count = 0, stable_count = 0
+
+    @pytest.mark.parametrize("candidate_count,stable_count", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_under_minimum_frozen_pass_cannot_authenticate_chain(health_repo, candidate_count, stable_count):
+        _, _, proof = await minimum_fixture(health_repo, candidate_count, stable_count)
+        valid = candidate_count >= 20 and stable_count >= 20
+        record(f"minimum-{candidate_count}-{stable_count}", {**proof, "expected_trusted": valid})
+        assert proof["repository_accepts"] == valid
+        shown = [r for r in proof["active"]["gate_receipts"] if r["health_source"]]
+>       assert bool(shown) == valid, "under-minimum exact Canary evidence must break entire Active chain"
+E       AssertionError: under-minimum exact Canary evidence must break entire Active chain
+E       assert True == False
+E        +  where True = bool([{'receipt_id': 'ab83945f-fe83-4d1f-9353-4560ff1fcbea', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])
+
+/tmp/m3-task9-minimum-fix-157727b8-1740-4144-b066-f9a239fe4ecb/test_minimum_evidence.py:110: AssertionError
+_______ test_under_minimum_frozen_pass_cannot_authenticate_chain[19-20] ________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a39a810>, <core.distributed.promotion_repository....ionRepository object at 0x10a48d8d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x109cf4f50>)
+candidate_count = 19, stable_count = 20
+
+    @pytest.mark.parametrize("candidate_count,stable_count", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_under_minimum_frozen_pass_cannot_authenticate_chain(health_repo, candidate_count, stable_count):
+        _, _, proof = await minimum_fixture(health_repo, candidate_count, stable_count)
+        valid = candidate_count >= 20 and stable_count >= 20
+        record(f"minimum-{candidate_count}-{stable_count}", {**proof, "expected_trusted": valid})
+        assert proof["repository_accepts"] == valid
+        shown = [r for r in proof["active"]["gate_receipts"] if r["health_source"]]
+>       assert bool(shown) == valid, "under-minimum exact Canary evidence must break entire Active chain"
+E       AssertionError: under-minimum exact Canary evidence must break entire Active chain
+E       assert True == False
+E        +  where True = bool([{'receipt_id': 'e4fc1003-bed2-463c-a788-8bc8059f1a67', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])
+
+/tmp/m3-task9-minimum-fix-157727b8-1740-4144-b066-f9a239fe4ecb/test_minimum_evidence.py:110: AssertionError
+_______ test_under_minimum_frozen_pass_cannot_authenticate_chain[20-19] ________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a3f7ed0>, <core.distributed.promotion_repository....ionRepository object at 0x10a393ad0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a604110>)
+candidate_count = 20, stable_count = 19
+
+    @pytest.mark.parametrize("candidate_count,stable_count", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_under_minimum_frozen_pass_cannot_authenticate_chain(health_repo, candidate_count, stable_count):
+        _, _, proof = await minimum_fixture(health_repo, candidate_count, stable_count)
+        valid = candidate_count >= 20 and stable_count >= 20
+        record(f"minimum-{candidate_count}-{stable_count}", {**proof, "expected_trusted": valid})
+        assert proof["repository_accepts"] == valid
+        shown = [r for r in proof["active"]["gate_receipts"] if r["health_source"]]
+>       assert bool(shown) == valid, "under-minimum exact Canary evidence must break entire Active chain"
+E       AssertionError: under-minimum exact Canary evidence must break entire Active chain
+E       assert True == False
+E        +  where True = bool([{'receipt_id': 'cb963a3a-9158-4537-a9ca-2315da34adb0', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])
+
+/tmp/m3-task9-minimum-fix-157727b8-1740-4144-b066-f9a239fe4ecb/test_minimum_evidence.py:110: AssertionError
+=========================== short test summary info ============================
+FAILED ::test_under_minimum_frozen_pass_cannot_authenticate_chain[0-0] - AssertionError: under-minimum exact Canary evidence must break entire Active chain
+assert True == False
+ +  where True = bool([{'receipt_id': 'ab83945f-fe83-4d1f-9353-4560ff1fcbea', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])
+FAILED ::test_under_minimum_frozen_pass_cannot_authenticate_chain[19-20] - AssertionError: under-minimum exact Canary evidence must break entire Active chain
+assert True == False
+ +  where True = bool([{'receipt_id': 'e4fc1003-bed2-463c-a788-8bc8059f1a67', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])
+FAILED ::test_under_minimum_frozen_pass_cannot_authenticate_chain[20-19] - AssertionError: under-minimum exact Canary evidence must break entire Active chain
+assert True == False
+ +  where True = bool([{'receipt_id': 'cb963a3a-9158-4537-a9ca-2315da34adb0', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}])
+3 failed, 1 passed in 2.18s

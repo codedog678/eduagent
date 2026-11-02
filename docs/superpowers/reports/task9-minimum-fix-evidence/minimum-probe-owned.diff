@@ -1,0 +1,13 @@
+--- docs/superpowers/reports/task9-minimum-spec-failure-evidence/test_minimum_evidence.py
++++ owned/test_minimum_evidence.py
+@@ -108,5 +108,9 @@
+     assert proof["repository_accepts"] == valid
+     shown = [r for r in proof["active"]["gate_receipts"] if r["health_source"]]
+     assert bool(shown) == valid, "under-minimum exact Canary evidence must break entire Active chain"
+-    local = [r for r in proof["local"]["gate_receipts"] if r["health_source"] and r["status"] == "passed"]
++    local = [r for r in proof["local"]["gate_receipts"]
++             if r["gate_type"] == "canary_health" and r["health_source"] and r["status"] == "passed"]
+     assert bool(local) == valid, "under-minimum local evidence cannot be a trusted passed source"
++    shadow = [r for r in proof["local"]["gate_receipts"]
++              if r["gate_type"] == "shadow_health" and r["health_source"]]
++    assert len(shadow) == 1 and shadow[0]["status"] == "passed"

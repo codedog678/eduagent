@@ -1,0 +1,387 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+FFF.FFF.FFF.......FF....                                                 [100%]
+=================================== FAILURES ===================================
+_ test_local_canary_minimum_is_gate_specific_and_shadow_history_survives[counts0] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10977b810>, <core.distributed.promotion_repository....ionRepository object at 0x1095378d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x1094f8110>)
+counts = (0, 0)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_local_canary_minimum_is_gate_specific_and_shadow_history_survives(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="canary", command_prefix="minimum-local-" + uuid4().hex)
+        repo, _, canary = fixture
+        source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+        body = await api_detail(repo, canary)
+        record("local-canary-" + "-".join(map(str, counts)), {
+            "counts": counts, "thresholds": source.thresholds, "authority_accepts": accepted,
+            "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+        health = sources(body)
+        assert health["shadow_health"]["status"] == "passed"
+        assert health["shadow_health"]["health_source"]["relation"] == "consumed_chain"
+>       assert ("canary_health" in health) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': 'b6ff1e5e-1fa9-43fb-95dc-cf270cebe444', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+tests/distributed/test_ops_minimum_evidence.py:135: AssertionError
+_ test_local_canary_minimum_is_gate_specific_and_shadow_history_survives[counts1] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109d5b290>, <core.distributed.promotion_repository....ionRepository object at 0x109d32490>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x1097cf910>)
+counts = (19, 20)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_local_canary_minimum_is_gate_specific_and_shadow_history_survives(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="canary", command_prefix="minimum-local-" + uuid4().hex)
+        repo, _, canary = fixture
+        source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+        body = await api_detail(repo, canary)
+        record("local-canary-" + "-".join(map(str, counts)), {
+            "counts": counts, "thresholds": source.thresholds, "authority_accepts": accepted,
+            "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+        health = sources(body)
+        assert health["shadow_health"]["status"] == "passed"
+        assert health["shadow_health"]["health_source"]["relation"] == "consumed_chain"
+>       assert ("canary_health" in health) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '1502807a-e79b-48b4-9475-2cfd56cbdfb9', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+tests/distributed/test_ops_minimum_evidence.py:135: AssertionError
+_ test_local_canary_minimum_is_gate_specific_and_shadow_history_survives[counts2] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109fd4d50>, <core.distributed.promotion_repository....ionRepository object at 0x109e41990>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x109f1d190>)
+counts = (20, 19)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_local_canary_minimum_is_gate_specific_and_shadow_history_survives(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="canary", command_prefix="minimum-local-" + uuid4().hex)
+        repo, _, canary = fixture
+        source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+        body = await api_detail(repo, canary)
+        record("local-canary-" + "-".join(map(str, counts)), {
+            "counts": counts, "thresholds": source.thresholds, "authority_accepts": accepted,
+            "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+        health = sources(body)
+        assert health["shadow_health"]["status"] == "passed"
+        assert health["shadow_health"]["health_source"]["relation"] == "consumed_chain"
+>       assert ("canary_health" in health) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': 'd932f365-b4ee-477e-986b-a89307e9c2ba', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+tests/distributed/test_ops_minimum_evidence.py:135: AssertionError
+_________ test_active_complete_chain_uses_exact_minimum_leaf[counts0] __________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109e6c0d0>, <core.distributed.promotion_repository....ionRepository object at 0x10847d150>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x109f75010>)
+counts = (0, 0)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_active_complete_chain_uses_exact_minimum_leaf(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="canary", command_prefix="minimum-active-" + uuid4().hex)
+        repo, _, _ = fixture
+        canary, artifact, receipt, accepted = await frozen_leaf(fixture, *counts)
+        active = await append_active(repo, canary, artifact, receipt)
+        body = await api_detail(repo, active)
+        record("active-" + "-".join(map(str, counts)), {
+            "thresholds": canary.thresholds, "authority_accepts": accepted,
+            "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+        health = sources(body)
+>       assert set(health) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+tests/distributed/test_ops_minimum_evidence.py:152: AssertionError
+_________ test_active_complete_chain_uses_exact_minimum_leaf[counts1] __________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a1de290>, <core.distributed.promotion_repository....ionRepository object at 0x109d409d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a207810>)
+counts = (19, 20)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_active_complete_chain_uses_exact_minimum_leaf(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="canary", command_prefix="minimum-active-" + uuid4().hex)
+        repo, _, _ = fixture
+        canary, artifact, receipt, accepted = await frozen_leaf(fixture, *counts)
+        active = await append_active(repo, canary, artifact, receipt)
+        body = await api_detail(repo, active)
+        record("active-" + "-".join(map(str, counts)), {
+            "thresholds": canary.thresholds, "authority_accepts": accepted,
+            "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+        health = sources(body)
+>       assert set(health) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+tests/distributed/test_ops_minimum_evidence.py:152: AssertionError
+_________ test_active_complete_chain_uses_exact_minimum_leaf[counts2] __________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a3b5f50>, <core.distributed.promotion_repository....ionRepository object at 0x10a322b90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a3f7250>)
+counts = (20, 19)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_active_complete_chain_uses_exact_minimum_leaf(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="canary", command_prefix="minimum-active-" + uuid4().hex)
+        repo, _, _ = fixture
+        canary, artifact, receipt, accepted = await frozen_leaf(fixture, *counts)
+        active = await append_active(repo, canary, artifact, receipt)
+        body = await api_detail(repo, active)
+        record("active-" + "-".join(map(str, counts)), {
+            "thresholds": canary.thresholds, "authority_accepts": accepted,
+            "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+        health = sources(body)
+>       assert set(health) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+tests/distributed/test_ops_minimum_evidence.py:152: AssertionError
+____________ test_local_shadow_requires_both_frozen_minima[counts0] ____________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a25f710>, <core.distributed.promotion_repository....ionRepository object at 0x109c63850>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a074490>)
+counts = (0, 0)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_local_shadow_requires_both_frozen_minima(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow", command_prefix="minimum-shadow-" + uuid4().hex)
+        source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+        body = await api_detail(fixture[0], source)
+        record("local-shadow-" + "-".join(map(str, counts)), {
+            "authority_accepts": accepted, "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+>       assert ("shadow_health" in sources(body)) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'e5d6ca9f-d1af-4798-8c5a-df81b2996622', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+E        +  where {'shadow_health': {'receipt_id': 'e5d6ca9f-d1af-4798-8c5a-df81b2996622', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': 'a2bdb2db-884a-4c89-9de8-52a3f3381431', 'environment': 'rehearsal', 'version': 4, 'state': 'shadow', ...})
+
+tests/distributed/test_ops_minimum_evidence.py:167: AssertionError
+____________ test_local_shadow_requires_both_frozen_minima[counts1] ____________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109c97910>, <core.distributed.promotion_repository....ionRepository object at 0x109ec3a10>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a1c35d0>)
+counts = (19, 20)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_local_shadow_requires_both_frozen_minima(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow", command_prefix="minimum-shadow-" + uuid4().hex)
+        source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+        body = await api_detail(fixture[0], source)
+        record("local-shadow-" + "-".join(map(str, counts)), {
+            "authority_accepts": accepted, "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+>       assert ("shadow_health" in sources(body)) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '643b207b-38d5-4d02-93fa-f3cddbad2673', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+E        +  where {'shadow_health': {'receipt_id': '643b207b-38d5-4d02-93fa-f3cddbad2673', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': 'cc050d46-e0d7-4e2b-820e-127aae62d3c5', 'environment': 'rehearsal', 'version': 4, 'state': 'shadow', ...})
+
+tests/distributed/test_ops_minimum_evidence.py:167: AssertionError
+____________ test_local_shadow_requires_both_frozen_minima[counts2] ____________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a32cb50>, <core.distributed.promotion_repository....ionRepository object at 0x109fbce50>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a474610>)
+counts = (20, 19)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_local_shadow_requires_both_frozen_minima(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow", command_prefix="minimum-shadow-" + uuid4().hex)
+        source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+        body = await api_detail(fixture[0], source)
+        record("local-shadow-" + "-".join(map(str, counts)), {
+            "authority_accepts": accepted, "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+>       assert ("shadow_health" in sources(body)) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'a4eb4c4b-f39d-42dc-ac68-49438c65c040', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+E        +  where {'shadow_health': {'receipt_id': 'a4eb4c4b-f39d-42dc-ac68-49438c65c040', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '72bfb468-5c35-47c7-888f-ada8a71cba4e', 'environment': 'rehearsal', 'version': 4, 'state': 'shadow', ...})
+
+tests/distributed/test_ops_minimum_evidence.py:167: AssertionError
+___________ test_custom_deployment_minima_not_global_twenty[counts0] ___________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109793d10>, <core.distributed.promotion_repository....ionRepository object at 0x109f4cf90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x109cef1d0>)
+counts = (20, 23)
+
+    @pytest.mark.parametrize("counts", [(20, 23), (22, 20), (22, 23)])
+    async def test_custom_deployment_minima_not_global_twenty(health_repo, counts):
+        # 新 immutable Shadow snapshot 冻结更高下限，不改写已存在的部署。
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow", command_prefix="minimum-custom-" + uuid4().hex)
+        repo, promotion, shadow = fixture
+        thresholds = PolicyThresholds(candidate_min_runs=22, stable_min_runs=23)
+        async with repo.session_factory() as session, session.begin():
+            original = await session.get(PolicyDeploymentRecord, str(shadow.deployment_id))
+            values = {c.name: deepcopy(getattr(original, c.name)) for c in original.__table__.columns}
+            values.update(deployment_id=str(uuid4()), version=shadow.version + 1,
+                          command_id="custom-frozen-" + uuid4().hex, created_at=datetime.now(UTC),
+                          thresholds=thresholds.model_dump(mode="json"), thresholds_hash=thresholds.digest)
+            custom = PolicyDeploymentRecord(**values)
+            session.add(custom)
+            await session.flush()
+            head = await session.get(PolicyEnvironmentHeadRecord, "rehearsal")
+            head.current_deployment_id, head.current_version = custom.deployment_id, custom.version
+        await fill_window((repo, promotion, custom), state="shadow", count=23, paired=True,
+                          changes=lambda i: {"observed_at": datetime.now(UTC)},
+                          stable_changes=lambda i: {"observed_at": datetime.now(UTC)})
+        assert (await PolicyHealthEvaluator(promotion).evaluate(custom.deployment_id)).decision == "pass"
+        canary = await promotion.transition(PromotionCommand(
+            command_id="custom-canary-" + uuid4().hex, environment="rehearsal",
+            expected_version=custom.version, current_state="shadow", target_state="canary",
+            traffic_basis_points=5000, actor="test", reason="custom frozen minimum fixture"))
+        await fill_window((repo, promotion, canary), count=22, stable_count=23,
+                          changes=lambda i: {"observed_at": datetime.now(UTC)},
+                          stable_changes=lambda i: {"observed_at": datetime.now(UTC)})
+        assert (await PolicyHealthEvaluator(promotion).evaluate(canary.deployment_id)).decision == "pass"
+        source, artifact, receipt, accepted = await frozen_leaf((repo, promotion, canary), *counts)
+        local = await api_detail(repo, canary)
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record("custom-" + "-".join(map(str, counts)), {
+            "thresholds": source.thresholds, "authority_accepts": accepted, "local": local, "active": body})
+        valid = counts == (22, 23)
+        assert accepted == valid
+>       assert ("canary_health" in sources(local)) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '098b707a-e8f7-48e7-98ff-3e73558e9f1a', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+E        +  where {'canary_health': {'receipt_id': '098b707a-e8f7-48e7-98ff-3e73558e9f1a', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '7b1692bf-ff43-48dd-9888-0f9b6fa4935f', 'environment': 'rehearsal', 'version': 6, 'state': 'canary', ...})
+
+tests/distributed/test_ops_minimum_evidence.py:225: AssertionError
+___________ test_custom_deployment_minima_not_global_twenty[counts1] ___________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109ca8750>, <core.distributed.promotion_repository....ionRepository object at 0x109e97c90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x1093ba5d0>)
+counts = (22, 20)
+
+    @pytest.mark.parametrize("counts", [(20, 23), (22, 20), (22, 23)])
+    async def test_custom_deployment_minima_not_global_twenty(health_repo, counts):
+        # 新 immutable Shadow snapshot 冻结更高下限，不改写已存在的部署。
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow", command_prefix="minimum-custom-" + uuid4().hex)
+        repo, promotion, shadow = fixture
+        thresholds = PolicyThresholds(candidate_min_runs=22, stable_min_runs=23)
+        async with repo.session_factory() as session, session.begin():
+            original = await session.get(PolicyDeploymentRecord, str(shadow.deployment_id))
+            values = {c.name: deepcopy(getattr(original, c.name)) for c in original.__table__.columns}
+            values.update(deployment_id=str(uuid4()), version=shadow.version + 1,
+                          command_id="custom-frozen-" + uuid4().hex, created_at=datetime.now(UTC),
+                          thresholds=thresholds.model_dump(mode="json"), thresholds_hash=thresholds.digest)
+            custom = PolicyDeploymentRecord(**values)
+            session.add(custom)
+            await session.flush()
+            head = await session.get(PolicyEnvironmentHeadRecord, "rehearsal")
+            head.current_deployment_id, head.current_version = custom.deployment_id, custom.version
+        await fill_window((repo, promotion, custom), state="shadow", count=23, paired=True,
+                          changes=lambda i: {"observed_at": datetime.now(UTC)},
+                          stable_changes=lambda i: {"observed_at": datetime.now(UTC)})
+        assert (await PolicyHealthEvaluator(promotion).evaluate(custom.deployment_id)).decision == "pass"
+        canary = await promotion.transition(PromotionCommand(
+            command_id="custom-canary-" + uuid4().hex, environment="rehearsal",
+            expected_version=custom.version, current_state="shadow", target_state="canary",
+            traffic_basis_points=5000, actor="test", reason="custom frozen minimum fixture"))
+        await fill_window((repo, promotion, canary), count=22, stable_count=23,
+                          changes=lambda i: {"observed_at": datetime.now(UTC)},
+                          stable_changes=lambda i: {"observed_at": datetime.now(UTC)})
+        assert (await PolicyHealthEvaluator(promotion).evaluate(canary.deployment_id)).decision == "pass"
+        source, artifact, receipt, accepted = await frozen_leaf((repo, promotion, canary), *counts)
+        local = await api_detail(repo, canary)
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record("custom-" + "-".join(map(str, counts)), {
+            "thresholds": source.thresholds, "authority_accepts": accepted, "local": local, "active": body})
+        valid = counts == (22, 23)
+        assert accepted == valid
+>       assert ("canary_health" in sources(local)) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '3c39f5e7-965d-4ff7-a3ee-b32137b33bc9', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+E        +  where {'canary_health': {'receipt_id': '3c39f5e7-965d-4ff7-a3ee-b32137b33bc9', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '44005b35-d679-45aa-9b62-a8280bbae465', 'environment': 'rehearsal', 'version': 6, 'state': 'canary', ...})
+
+tests/distributed/test_ops_minimum_evidence.py:225: AssertionError
+=========================== short test summary info ============================
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_local_canary_minimum_is_gate_specific_and_shadow_history_survives[counts0] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': 'b6ff1e5e-1fa9-43fb-95dc-cf270cebe444', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_local_canary_minimum_is_gate_specific_and_shadow_history_survives[counts1] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '1502807a-e79b-48b4-9475-2cfd56cbdfb9', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_local_canary_minimum_is_gate_specific_and_shadow_history_survives[counts2] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': 'd932f365-b4ee-477e-986b-a89307e9c2ba', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_active_complete_chain_uses_exact_minimum_leaf[counts0] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_active_complete_chain_uses_exact_minimum_leaf[counts1] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_active_complete_chain_uses_exact_minimum_leaf[counts2] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_local_shadow_requires_both_frozen_minima[counts0] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'e5d6ca9f-d1af-4798-8c5a-df81b2996622', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+ +  where {'shadow_health': {'receipt_id': 'e5d6ca9f-d1af-4798-8c5a-df81b2996622', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': 'a2bdb2db-884a-4c89-9de8-52a3f3381431', 'environment': 'rehearsal', 'version': 4, 'state': 'shadow', ...})
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_local_shadow_requires_both_frozen_minima[counts1] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '643b207b-38d5-4d02-93fa-f3cddbad2673', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+ +  where {'shadow_health': {'receipt_id': '643b207b-38d5-4d02-93fa-f3cddbad2673', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': 'cc050d46-e0d7-4e2b-820e-127aae62d3c5', 'environment': 'rehearsal', 'version': 4, 'state': 'shadow', ...})
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_local_shadow_requires_both_frozen_minima[counts2] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'a4eb4c4b-f39d-42dc-ac68-49438c65c040', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+ +  where {'shadow_health': {'receipt_id': 'a4eb4c4b-f39d-42dc-ac68-49438c65c040', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '72bfb468-5c35-47c7-888f-ada8a71cba4e', 'environment': 'rehearsal', 'version': 4, 'state': 'shadow', ...})
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_custom_deployment_minima_not_global_twenty[counts0] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '098b707a-e8f7-48e7-98ff-3e73558e9f1a', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+ +  where {'canary_health': {'receipt_id': '098b707a-e8f7-48e7-98ff-3e73558e9f1a', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '7b1692bf-ff43-48dd-9888-0f9b6fa4935f', 'environment': 'rehearsal', 'version': 6, 'state': 'canary', ...})
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_custom_deployment_minima_not_global_twenty[counts1] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '3c39f5e7-965d-4ff7-a3ee-b32137b33bc9', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+ +  where {'canary_health': {'receipt_id': '3c39f5e7-965d-4ff7-a3ee-b32137b33bc9', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '44005b35-d679-45aa-9b62-a8280bbae465', 'environment': 'rehearsal', 'version': 6, 'state': 'canary', ...})
+11 failed, 13 passed in 9.20s

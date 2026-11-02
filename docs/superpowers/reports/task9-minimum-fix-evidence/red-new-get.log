@@ -1,0 +1,696 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+FFF.FFF.FFF.......FF...F                                                 [100%]
+=================================== FAILURES ===================================
+_ test_local_canary_minimum_is_gate_specific_and_shadow_history_survives[counts0] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10b339f10>, <core.distributed.promotion_repository....ionRepository object at 0x10a0fdbd0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b26bd10>)
+counts = (0, 0)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_local_canary_minimum_is_gate_specific_and_shadow_history_survives(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="canary", command_prefix="minimum-local-" + uuid4().hex)
+        repo, _, canary = fixture
+        source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+        body = await api_detail(repo, canary)
+        record("local-canary-" + "-".join(map(str, counts)), {
+            "counts": counts, "thresholds": source.thresholds, "authority_accepts": accepted,
+            "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+        health = sources(body)
+        assert health["shadow_health"]["status"] == "passed"
+        assert health["shadow_health"]["health_source"]["relation"] == "consumed_chain"
+>       assert ("canary_health" in health) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '54693be5-4b6e-4f80-9a64-21a4cdabe4b5', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+tests/distributed/test_ops_minimum_evidence.py:134: AssertionError
+_ test_local_canary_minimum_is_gate_specific_and_shadow_history_survives[counts1] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10afc2690>, <core.distributed.promotion_repository....ionRepository object at 0x10b8fd090>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b9ad450>)
+counts = (19, 20)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_local_canary_minimum_is_gate_specific_and_shadow_history_survives(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="canary", command_prefix="minimum-local-" + uuid4().hex)
+        repo, _, canary = fixture
+        source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+        body = await api_detail(repo, canary)
+        record("local-canary-" + "-".join(map(str, counts)), {
+            "counts": counts, "thresholds": source.thresholds, "authority_accepts": accepted,
+            "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+        health = sources(body)
+        assert health["shadow_health"]["status"] == "passed"
+        assert health["shadow_health"]["health_source"]["relation"] == "consumed_chain"
+>       assert ("canary_health" in health) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': 'dd0053f6-eb23-48f1-8d66-5df17521d89c', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+tests/distributed/test_ops_minimum_evidence.py:134: AssertionError
+_ test_local_canary_minimum_is_gate_specific_and_shadow_history_survives[counts2] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10bb3f990>, <core.distributed.promotion_repository....ionRepository object at 0x10bb83b90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10bc29150>)
+counts = (20, 19)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_local_canary_minimum_is_gate_specific_and_shadow_history_survives(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="canary", command_prefix="minimum-local-" + uuid4().hex)
+        repo, _, canary = fixture
+        source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+        body = await api_detail(repo, canary)
+        record("local-canary-" + "-".join(map(str, counts)), {
+            "counts": counts, "thresholds": source.thresholds, "authority_accepts": accepted,
+            "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+        health = sources(body)
+        assert health["shadow_health"]["status"] == "passed"
+        assert health["shadow_health"]["health_source"]["relation"] == "consumed_chain"
+>       assert ("canary_health" in health) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '17ce45be-c1aa-4bc2-9a8f-3f2c1ee1c1a6', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+tests/distributed/test_ops_minimum_evidence.py:134: AssertionError
+_________ test_active_complete_chain_uses_exact_minimum_leaf[counts0] __________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10b609e90>, <core.distributed.promotion_repository....ionRepository object at 0x10afcabd0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b350890>)
+counts = (0, 0)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_active_complete_chain_uses_exact_minimum_leaf(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="canary", command_prefix="minimum-active-" + uuid4().hex)
+        repo, _, _ = fixture
+        canary, artifact, receipt, accepted = await frozen_leaf(fixture, *counts)
+        active = await append_active(repo, canary, artifact, receipt)
+        body = await api_detail(repo, active)
+        record("active-" + "-".join(map(str, counts)), {
+            "thresholds": canary.thresholds, "authority_accepts": accepted,
+            "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+        health = sources(body)
+>       assert set(health) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+tests/distributed/test_ops_minimum_evidence.py:151: AssertionError
+_________ test_active_complete_chain_uses_exact_minimum_leaf[counts1] __________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10bdbfc10>, <core.distributed.promotion_repository....ionRepository object at 0x10b0c56d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b0c6e50>)
+counts = (19, 20)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_active_complete_chain_uses_exact_minimum_leaf(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="canary", command_prefix="minimum-active-" + uuid4().hex)
+        repo, _, _ = fixture
+        canary, artifact, receipt, accepted = await frozen_leaf(fixture, *counts)
+        active = await append_active(repo, canary, artifact, receipt)
+        body = await api_detail(repo, active)
+        record("active-" + "-".join(map(str, counts)), {
+            "thresholds": canary.thresholds, "authority_accepts": accepted,
+            "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+        health = sources(body)
+>       assert set(health) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+tests/distributed/test_ops_minimum_evidence.py:151: AssertionError
+_________ test_active_complete_chain_uses_exact_minimum_leaf[counts2] __________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10be33110>, <core.distributed.promotion_repository....ionRepository object at 0x10be33710>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10bf5c0d0>)
+counts = (20, 19)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_active_complete_chain_uses_exact_minimum_leaf(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="canary", command_prefix="minimum-active-" + uuid4().hex)
+        repo, _, _ = fixture
+        canary, artifact, receipt, accepted = await frozen_leaf(fixture, *counts)
+        active = await append_active(repo, canary, artifact, receipt)
+        body = await api_detail(repo, active)
+        record("active-" + "-".join(map(str, counts)), {
+            "thresholds": canary.thresholds, "authority_accepts": accepted,
+            "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+        health = sources(body)
+>       assert set(health) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+tests/distributed/test_ops_minimum_evidence.py:151: AssertionError
+____________ test_local_shadow_requires_both_frozen_minima[counts0] ____________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10b326390>, <core.distributed.promotion_repository....ionRepository object at 0x10bc5e790>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10bb58650>)
+counts = (0, 0)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_local_shadow_requires_both_frozen_minima(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow", command_prefix="minimum-shadow-" + uuid4().hex)
+        source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+        body = await api_detail(fixture[0], source)
+        record("local-shadow-" + "-".join(map(str, counts)), {
+            "authority_accepts": accepted, "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+>       assert ("shadow_health" in sources(body)) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '4b4de22e-b5cf-40d1-b236-e2a25a316bc7', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+E        +  where {'shadow_health': {'receipt_id': '4b4de22e-b5cf-40d1-b236-e2a25a316bc7', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '7e7896cd-38fd-4b30-a497-2e1b63c0ca01', 'environment': 'rehearsal', 'version': 4, 'state': 'shadow', ...})
+
+tests/distributed/test_ops_minimum_evidence.py:166: AssertionError
+____________ test_local_shadow_requires_both_frozen_minima[counts1] ____________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10ba18e50>, <core.distributed.promotion_repository....ionRepository object at 0x10bf26bd0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b159e90>)
+counts = (19, 20)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_local_shadow_requires_both_frozen_minima(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow", command_prefix="minimum-shadow-" + uuid4().hex)
+        source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+        body = await api_detail(fixture[0], source)
+        record("local-shadow-" + "-".join(map(str, counts)), {
+            "authority_accepts": accepted, "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+>       assert ("shadow_health" in sources(body)) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'c8aeb279-c29f-45f5-a3df-c62aab9b8b4c', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+E        +  where {'shadow_health': {'receipt_id': 'c8aeb279-c29f-45f5-a3df-c62aab9b8b4c', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '485c406a-ea52-4d7c-967e-69c49174e19e', 'environment': 'rehearsal', 'version': 4, 'state': 'shadow', ...})
+
+tests/distributed/test_ops_minimum_evidence.py:166: AssertionError
+____________ test_local_shadow_requires_both_frozen_minima[counts2] ____________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10bbe4cd0>, <core.distributed.promotion_repository....ionRepository object at 0x10bab6790>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10bb10950>)
+counts = (20, 19)
+
+    @pytest.mark.parametrize("counts", [(0, 0), (19, 20), (20, 19), (20, 20)])
+    async def test_local_shadow_requires_both_frozen_minima(health_repo, counts):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow", command_prefix="minimum-shadow-" + uuid4().hex)
+        source, _, receipt, accepted = await frozen_leaf(fixture, *counts)
+        body = await api_detail(fixture[0], source)
+        record("local-shadow-" + "-".join(map(str, counts)), {
+            "authority_accepts": accepted, "exact_receipt": receipt.receipt_id, "body": body})
+        valid = counts[0] >= 20 and counts[1] >= 20
+        assert accepted == valid
+>       assert ("shadow_health" in sources(body)) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '95cf1213-405e-415f-a554-7bd317e52828', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+E        +  where {'shadow_health': {'receipt_id': '95cf1213-405e-415f-a554-7bd317e52828', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '7580ca20-6c8d-4888-b288-c8b4dbfb98a3', 'environment': 'rehearsal', 'version': 4, 'state': 'shadow', ...})
+
+tests/distributed/test_ops_minimum_evidence.py:166: AssertionError
+___________ test_custom_deployment_minima_not_global_twenty[counts0] ___________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10bf3cf90>, <core.distributed.promotion_repository....ionRepository object at 0x10b877790>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10c0a72d0>)
+counts = (20, 23)
+
+    @pytest.mark.parametrize("counts", [(20, 23), (22, 20), (22, 23)])
+    async def test_custom_deployment_minima_not_global_twenty(health_repo, counts):
+        # 新 immutable Shadow snapshot 冻结更高下限，不改写已存在的部署。
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow", command_prefix="minimum-custom-" + uuid4().hex)
+        repo, promotion, shadow = fixture
+        thresholds = PolicyThresholds(candidate_min_runs=22, stable_min_runs=23)
+        async with repo.session_factory() as session, session.begin():
+            original = await session.get(PolicyDeploymentRecord, str(shadow.deployment_id))
+            values = {c.name: deepcopy(getattr(original, c.name)) for c in original.__table__.columns}
+            values.update(deployment_id=str(uuid4()), version=shadow.version + 1,
+                          command_id="custom-frozen-" + uuid4().hex, created_at=datetime.now(UTC),
+                          thresholds=thresholds.model_dump(mode="json"), thresholds_hash=thresholds.digest)
+            custom = PolicyDeploymentRecord(**values)
+            session.add(custom)
+            await session.flush()
+            head = await session.get(PolicyEnvironmentHeadRecord, "rehearsal")
+            head.current_deployment_id, head.current_version = custom.deployment_id, custom.version
+        await fill_window((repo, promotion, custom), state="shadow", count=23, paired=True,
+                          changes=lambda i: {"observed_at": datetime.now(UTC)},
+                          stable_changes=lambda i: {"observed_at": datetime.now(UTC)})
+        assert (await PolicyHealthEvaluator(promotion).evaluate(custom.deployment_id)).decision == "pass"
+        canary = await promotion.transition(PromotionCommand(
+            command_id="custom-canary-" + uuid4().hex, environment="rehearsal",
+            expected_version=custom.version, current_state="shadow", target_state="canary",
+            traffic_basis_points=5000, actor="test", reason="custom frozen minimum fixture"))
+        await fill_window((repo, promotion, canary), count=22, stable_count=23,
+                          changes=lambda i: {"observed_at": datetime.now(UTC)},
+                          stable_changes=lambda i: {"observed_at": datetime.now(UTC)})
+        assert (await PolicyHealthEvaluator(promotion).evaluate(canary.deployment_id)).decision == "pass"
+        source, artifact, receipt, accepted = await frozen_leaf((repo, promotion, canary), *counts)
+        local = await api_detail(repo, canary)
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record("custom-" + "-".join(map(str, counts)), {
+            "thresholds": source.thresholds, "authority_accepts": accepted, "local": local, "active": body})
+        valid = counts == (22, 23)
+        assert accepted == valid
+>       assert ("canary_health" in sources(local)) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': 'c87f29f8-8985-49c8-887c-43c7e6915228', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+E        +  where {'canary_health': {'receipt_id': 'c87f29f8-8985-49c8-887c-43c7e6915228', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '2f51b3c9-99db-4c40-903c-672e2eb13df7', 'environment': 'rehearsal', 'version': 6, 'state': 'canary', ...})
+
+tests/distributed/test_ops_minimum_evidence.py:224: AssertionError
+___________ test_custom_deployment_minima_not_global_twenty[counts1] ___________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10b9504d0>, <core.distributed.promotion_repository....ionRepository object at 0x10be5a210>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10c364150>)
+counts = (22, 20)
+
+    @pytest.mark.parametrize("counts", [(20, 23), (22, 20), (22, 23)])
+    async def test_custom_deployment_minima_not_global_twenty(health_repo, counts):
+        # 新 immutable Shadow snapshot 冻结更高下限，不改写已存在的部署。
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow", command_prefix="minimum-custom-" + uuid4().hex)
+        repo, promotion, shadow = fixture
+        thresholds = PolicyThresholds(candidate_min_runs=22, stable_min_runs=23)
+        async with repo.session_factory() as session, session.begin():
+            original = await session.get(PolicyDeploymentRecord, str(shadow.deployment_id))
+            values = {c.name: deepcopy(getattr(original, c.name)) for c in original.__table__.columns}
+            values.update(deployment_id=str(uuid4()), version=shadow.version + 1,
+                          command_id="custom-frozen-" + uuid4().hex, created_at=datetime.now(UTC),
+                          thresholds=thresholds.model_dump(mode="json"), thresholds_hash=thresholds.digest)
+            custom = PolicyDeploymentRecord(**values)
+            session.add(custom)
+            await session.flush()
+            head = await session.get(PolicyEnvironmentHeadRecord, "rehearsal")
+            head.current_deployment_id, head.current_version = custom.deployment_id, custom.version
+        await fill_window((repo, promotion, custom), state="shadow", count=23, paired=True,
+                          changes=lambda i: {"observed_at": datetime.now(UTC)},
+                          stable_changes=lambda i: {"observed_at": datetime.now(UTC)})
+        assert (await PolicyHealthEvaluator(promotion).evaluate(custom.deployment_id)).decision == "pass"
+        canary = await promotion.transition(PromotionCommand(
+            command_id="custom-canary-" + uuid4().hex, environment="rehearsal",
+            expected_version=custom.version, current_state="shadow", target_state="canary",
+            traffic_basis_points=5000, actor="test", reason="custom frozen minimum fixture"))
+        await fill_window((repo, promotion, canary), count=22, stable_count=23,
+                          changes=lambda i: {"observed_at": datetime.now(UTC)},
+                          stable_changes=lambda i: {"observed_at": datetime.now(UTC)})
+        assert (await PolicyHealthEvaluator(promotion).evaluate(canary.deployment_id)).decision == "pass"
+        source, artifact, receipt, accepted = await frozen_leaf((repo, promotion, canary), *counts)
+        local = await api_detail(repo, canary)
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record("custom-" + "-".join(map(str, counts)), {
+            "thresholds": source.thresholds, "authority_accepts": accepted, "local": local, "active": body})
+        valid = counts == (22, 23)
+        assert accepted == valid
+>       assert ("canary_health" in sources(local)) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '41bc5a76-83bc-4b9c-aea9-8bf5319bc971', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+E        +  where {'canary_health': {'receipt_id': '41bc5a76-83bc-4b9c-aea9-8bf5319bc971', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '24d579e4-4d32-4c11-8318-016cdaa97ba5', 'environment': 'rehearsal', 'version': 6, 'state': 'canary', ...})
+
+tests/distributed/test_ops_minimum_evidence.py:224: AssertionError
+______ test_active_local_baseline_keeps_consumed_keys_not_new_canary_leaf ______
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10b56eaa0>
+operation = 'INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric... $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)'
+seq_of_parameters = [('45dc50b0d9d48806e197e2778530ab129dd00b5446b7c1ae637c3a97f7327556', 'bb8ed1a4-9ac9-4c8e-9fb5-277dd9c0391e', '9345f47...1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', ...), ...]
+
+    async def _executemany(self, operation, seq_of_parameters):
+        adapt_connection = self._adapt_connection
+    
+        self.description = None
+        async with adapt_connection._execute_mutex:
+            await adapt_connection._check_type_cache_invalidation(
+                self._invalidate_schema_cache_asof
+            )
+    
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            try:
+>               return await self._connection.executemany(
+                    operation, seq_of_parameters
+                )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:578: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:424: in executemany
+    return await self._executemany(command, args, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:2030: in _executemany
+    result, _ = await self._do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:2066: in _do_execute
+    result = await executor(stmt, None)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.UniqueViolationError: duplicate key value violates unique constraint "policy_observations_pkey"
+E   DETAIL:  Key (observation_key)=(45dc50b0d9d48806e197e2778530ab129dd00b5446b7c1ae637c3a97f7327556) already exists.
+
+asyncpg/protocol/protocol.pyx:254: UniqueViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10c04e410>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10bdb3490>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10bacebd0>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10c46b6d0>
+parameters = [('45dc50b0d9d48806e197e2778530ab129dd00b5446b7c1ae637c3a97f7327556', 'bb8ed1a4-9ac9-4c8e-9fb5-277dd9c0391e', '9345f47...1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', ...), ...]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1945: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:961: in do_executemany
+    cursor.executemany(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:590: in executemany
+    return self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:582: in _executemany
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10b86a4d0>>
+error = UniqueViolationError('duplicate key value violates unique constraint "policy_observations_pkey"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "policy_observations_pkey"
+E                   DETAIL:  Key (observation_key)=(45dc50b0d9d48806e197e2778530ab129dd00b5446b7c1ae637c3a97f7327556) already exists.
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10be5b250>, <core.distributed.promotion_repository....ionRepository object at 0x10c112bd0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10beeb9d0>)
+
+    async def test_active_local_baseline_keeps_consumed_keys_not_new_canary_leaf(health_repo):
+        fixture, canary, rows = await real_active_fixture(
+            health_repo, command_prefix="minimum-baseline-" + uuid4().hex)
+        repo, promotion, active = fixture
+        before = sources(await api_detail(repo, active))
+        await fill_window(fixture, state="active", stable_count=0,
+                          changes={"observed_at": active.created_at + timedelta(microseconds=1)})
+        window = await PolicyHealthEvaluator(promotion).evaluate(active.deployment_id)
+        assert window.decision == "pass"
+        # 推进 Canary 新观测不改变 Active 在审批时已冻结的基线。
+>       await fill_window((repo, promotion, canary), count=21,
+                          changes={"observed_at": datetime.now(UTC)},
+                          stable_changes={"observed_at": datetime.now(UTC)})
+
+tests/distributed/test_ops_minimum_evidence.py:255: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_policy_health.py:276: in fill_window
+    async with repo.session_factory() as session, session.begin():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1885: in __aexit__
+    await greenlet_spawn(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/util.py:147: in __exit__
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/util.py:145: in __exit__
+    self.commit()
+<string>:2: in commit
+    ???
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1316: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1290: in _prepare_impl
+    self.session.flush()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4353: in flush
+    self._flush(objects)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4488: in _flush
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4449: in _flush
+    flush_context.execute()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1945: in _exec_single_context
+    self.dialect.do_executemany(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:961: in do_executemany
+    cursor.executemany(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:590: in executemany
+    return self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:582: in _executemany
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10b86a4d0>>
+error = UniqueViolationError('duplicate key value violates unique constraint "policy_observations_pkey"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "policy_observations_pkey"
+E                   DETAIL:  Key (observation_key)=(45dc50b0d9d48806e197e2778530ab129dd00b5446b7c1ae637c3a97f7327556) already exists.
+E                   [SQL: INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric_contract_version, terminal_status, latency_seconds, input_tokens, output_tokens, cost, commit_outcome, permission_outcome, structured_result, structured_decision_count, unknown_decision_count, rehearsal_id, operation, server_error_code, fault_injected, injected, observed_at, source_trace_id, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::INTEGER, $8::VARCHAR, $9::NUMERIC(20, 6), $10::INTEGER, $11::INTEGER, $12::NUMERIC(20, 8), $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::INTEGER, $17::INTEGER, $18::VARCHAR, $19::VARCHAR, $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: [('45dc50b0d9d48806e197e2778530ab129dd00b5446b7c1ae637c3a97f7327556', 'bb8ed1a4-9ac9-4c8e-9fb5-277dd9c0391e', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('9f6ee8340532030d9a87fe66d66fc11809c32ce506f58e368377bdbdb40bed18', '1af0740d-6979-4d98-9518-8dfcb6185057', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('05dbf3048765aa7f97023d6505ae8fbc758b48723a8a9131897d72e4da017ae9', '22e3f80a-fd7b-4771-902e-2978b5aa5e8b', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('2d85bc3f49bee2302ff24b69505cd43011f19b3b06776e9deb1f4cea6b12a64a', '1ab47093-ab9a-4a9d-bdd9-13bb49a34b89', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('2175c4c4984a78d7b321931423e8e5654e4ac3ad3561aca53b2e5a49e3e0c8bd', 'a5a356ec-efae-48b9-95bb-8fe34b2a636c', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('7a513d57b12813b78b793dec1f55960b7ccd51975b71b097eea931e967c403dc', '0a1a7dbe-c787-4c0b-87ce-ed62ffc4e7c6', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('22ad151c14b699a44ede6b257f95c47a8b719b17c047c2fc1be0b5b508d2a76e', '4a4403f6-7e8b-4381-95ff-f9c21b418988', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('9fd0ec69a218fb187b4b5feb212dce0db2e2a70e0b24bd0fdac43f79ca3a24e8', 'ec2fd190-e9dd-422d-9187-03c2f9ae586c', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))  ... displaying 10 of 42 total bound parameter sets ...  ('afdac815f328941107f2255a1a8141afc6a3c61339fe46974e6bdcee678ad52f', 'a8ea40dd-537b-4d06-a1c8-39a3ff73fb10', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9', 'stable', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188078, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('f91bf8ac53e6dfb14a9c726ccb1182cb111fcf898a9452bfce8554a5ac573794', '7138b2cb-0080-443a-a86d-0a031eb5e27e', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9', 'stable', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188078, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+=========================== short test summary info ============================
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_local_canary_minimum_is_gate_specific_and_shadow_history_survives[counts0] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '54693be5-4b6e-4f80-9a64-21a4cdabe4b5', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_local_canary_minimum_is_gate_specific_and_shadow_history_survives[counts1] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': 'dd0053f6-eb23-48f1-8d66-5df17521d89c', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_local_canary_minimum_is_gate_specific_and_shadow_history_survives[counts2] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '17ce45be-c1aa-4bc2-9a8f-3f2c1ee1c1a6', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_active_complete_chain_uses_exact_minimum_leaf[counts0] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_active_complete_chain_uses_exact_minimum_leaf[counts1] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_active_complete_chain_uses_exact_minimum_leaf[counts2] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_local_shadow_requires_both_frozen_minima[counts0] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '4b4de22e-b5cf-40d1-b236-e2a25a316bc7', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+ +  where {'shadow_health': {'receipt_id': '4b4de22e-b5cf-40d1-b236-e2a25a316bc7', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '7e7896cd-38fd-4b30-a497-2e1b63c0ca01', 'environment': 'rehearsal', 'version': 4, 'state': 'shadow', ...})
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_local_shadow_requires_both_frozen_minima[counts1] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'c8aeb279-c29f-45f5-a3df-c62aab9b8b4c', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+ +  where {'shadow_health': {'receipt_id': 'c8aeb279-c29f-45f5-a3df-c62aab9b8b4c', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '485c406a-ea52-4d7c-967e-69c49174e19e', 'environment': 'rehearsal', 'version': 4, 'state': 'shadow', ...})
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_local_shadow_requires_both_frozen_minima[counts2] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '95cf1213-405e-415f-a554-7bd317e52828', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+ +  where {'shadow_health': {'receipt_id': '95cf1213-405e-415f-a554-7bd317e52828', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '7580ca20-6c8d-4888-b288-c8b4dbfb98a3', 'environment': 'rehearsal', 'version': 4, 'state': 'shadow', ...})
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_custom_deployment_minima_not_global_twenty[counts0] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': 'c87f29f8-8985-49c8-887c-43c7e6915228', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+ +  where {'canary_health': {'receipt_id': 'c87f29f8-8985-49c8-887c-43c7e6915228', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '2f51b3c9-99db-4c40-903c-672e2eb13df7', 'environment': 'rehearsal', 'version': 6, 'state': 'canary', ...})
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_custom_deployment_minima_not_global_twenty[counts1] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '41bc5a76-83bc-4b9c-aea9-8bf5319bc971', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+ +  where {'canary_health': {'receipt_id': '41bc5a76-83bc-4b9c-aea9-8bf5319bc971', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}} = sources({'deployment_id': '24d579e4-4d32-4c11-8318-016cdaa97ba5', 'environment': 'rehearsal', 'version': 6, 'state': 'canary', ...})
+FAILED tests/distributed/test_ops_minimum_evidence.py::test_active_local_baseline_keeps_consumed_keys_not_new_canary_leaf - sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "policy_observations_pkey"
+DETAIL:  Key (observation_key)=(45dc50b0d9d48806e197e2778530ab129dd00b5446b7c1ae637c3a97f7327556) already exists.
+[SQL: INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric_contract_version, terminal_status, latency_seconds, input_tokens, output_tokens, cost, commit_outcome, permission_outcome, structured_result, structured_decision_count, unknown_decision_count, rehearsal_id, operation, server_error_code, fault_injected, injected, observed_at, source_trace_id, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::INTEGER, $8::VARCHAR, $9::NUMERIC(20, 6), $10::INTEGER, $11::INTEGER, $12::NUMERIC(20, 8), $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::INTEGER, $17::INTEGER, $18::VARCHAR, $19::VARCHAR, $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)]
+[parameters: [('45dc50b0d9d48806e197e2778530ab129dd00b5446b7c1ae637c3a97f7327556', 'bb8ed1a4-9ac9-4c8e-9fb5-277dd9c0391e', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('9f6ee8340532030d9a87fe66d66fc11809c32ce506f58e368377bdbdb40bed18', '1af0740d-6979-4d98-9518-8dfcb6185057', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('05dbf3048765aa7f97023d6505ae8fbc758b48723a8a9131897d72e4da017ae9', '22e3f80a-fd7b-4771-902e-2978b5aa5e8b', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('2d85bc3f49bee2302ff24b69505cd43011f19b3b06776e9deb1f4cea6b12a64a', '1ab47093-ab9a-4a9d-bdd9-13bb49a34b89', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('2175c4c4984a78d7b321931423e8e5654e4ac3ad3561aca53b2e5a49e3e0c8bd', 'a5a356ec-efae-48b9-95bb-8fe34b2a636c', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('7a513d57b12813b78b793dec1f55960b7ccd51975b71b097eea931e967c403dc', '0a1a7dbe-c787-4c0b-87ce-ed62ffc4e7c6', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('22ad151c14b699a44ede6b257f95c47a8b719b17c047c2fc1be0b5b508d2a76e', '4a4403f6-7e8b-4381-95ff-f9c21b418988', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('9fd0ec69a218fb187b4b5feb212dce0db2e2a70e0b24bd0fdac43f79ca3a24e8', 'ec2fd190-e9dd-422d-9187-03c2f9ae586c', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188076, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))  ... displaying 10 of 42 total bound parameter sets ...  ('afdac815f328941107f2255a1a8141afc6a3c61339fe46974e6bdcee678ad52f', 'a8ea40dd-537b-4d06-a1c8-39a3ff73fb10', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9', 'stable', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188078, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc)), ('f91bf8ac53e6dfb14a9c726ccb1182cb111fcf898a9452bfce8554a5ac573794', '7138b2cb-0080-443a-a86d-0a031eb5e27e', '9345f47f-b5d5-4f57-88ea-48546bc1c93a', '778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9', 'stable', 'rehearsal-health', 1, 'completed', Decimal('1'), 10, 5, Decimal('0.01'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 3, 26, 40, 188078, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+12 failed, 12 passed in 9.59s
