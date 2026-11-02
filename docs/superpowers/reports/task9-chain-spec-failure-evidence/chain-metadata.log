@@ -1,0 +1,859 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+.F.F.FFF.F.F.....                                                        [100%]
+=================================== FAILURES ===================================
+_ test_referenced_health_metadata_is_a_real_chain_requirement[issuer-foreign-issuer-active] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10ddb7a90>, <core.distributed.promotion_repository....ionRepository object at 0x10ddb4090>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10daddb50>)
+target = 'active', field = 'issuer', value = 'foreign-issuer'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("issuer", "foreign-issuer"), ("model_identity", "foreign-model"),
+        ("data_role", "simulation"), ("policy_hash", "f" * 64),
+        ("runtime_hash", "e" * 64), ("source_revision", "foreign-source"),
+    ])
+    async def test_referenced_health_metadata_is_a_real_chain_requirement(health_repo, target, field, value):
+        repo, deployment, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployment)
+        shown = [r for r in body["gate_receipts"] if r["health_source"]]
+        record("metadata-" + target + "-" + field, {**proof, "body": body, "poison": {field: value}})
+        if target == "canary" and field in {"policy_hash", "runtime_hash", "source_revision"}:
+            assert len(shown) == 1
+        else:
+>           assert not shown, "a broken exact receipt must not authenticate any Active consumed chain"
+E           AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+E           assert not [{'receipt_id': 'ba983c3f-e5b3-4f3c-a373-59dac4fd39a8', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_chain_metadata.py:30: AssertionError
+_ test_referenced_health_metadata_is_a_real_chain_requirement[model_identity-foreign-model-active] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10e6152d0>, <core.distributed.promotion_repository....ionRepository object at 0x10e63d790>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e4bc250>)
+target = 'active', field = 'model_identity', value = 'foreign-model'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("issuer", "foreign-issuer"), ("model_identity", "foreign-model"),
+        ("data_role", "simulation"), ("policy_hash", "f" * 64),
+        ("runtime_hash", "e" * 64), ("source_revision", "foreign-source"),
+    ])
+    async def test_referenced_health_metadata_is_a_real_chain_requirement(health_repo, target, field, value):
+        repo, deployment, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployment)
+        shown = [r for r in body["gate_receipts"] if r["health_source"]]
+        record("metadata-" + target + "-" + field, {**proof, "body": body, "poison": {field: value}})
+        if target == "canary" and field in {"policy_hash", "runtime_hash", "source_revision"}:
+            assert len(shown) == 1
+        else:
+>           assert not shown, "a broken exact receipt must not authenticate any Active consumed chain"
+E           AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+E           assert not [{'receipt_id': '74af16d5-1e37-4525-8c87-7782f2264c6a', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_chain_metadata.py:30: AssertionError
+_ test_referenced_health_metadata_is_a_real_chain_requirement[data_role-simulation-active] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10e4d4550>, <core.distributed.promotion_repository....ionRepository object at 0x10e4d7410>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e5c0190>)
+target = 'active', field = 'data_role', value = 'simulation'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("issuer", "foreign-issuer"), ("model_identity", "foreign-model"),
+        ("data_role", "simulation"), ("policy_hash", "f" * 64),
+        ("runtime_hash", "e" * 64), ("source_revision", "foreign-source"),
+    ])
+    async def test_referenced_health_metadata_is_a_real_chain_requirement(health_repo, target, field, value):
+        repo, deployment, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployment)
+        shown = [r for r in body["gate_receipts"] if r["health_source"]]
+        record("metadata-" + target + "-" + field, {**proof, "body": body, "poison": {field: value}})
+        if target == "canary" and field in {"policy_hash", "runtime_hash", "source_revision"}:
+            assert len(shown) == 1
+        else:
+>           assert not shown, "a broken exact receipt must not authenticate any Active consumed chain"
+E           AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+E           assert not [{'receipt_id': 'f22fd818-cc80-4515-9a60-cb5724cd314c', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_chain_metadata.py:30: AssertionError
+_ test_referenced_health_metadata_is_a_real_chain_requirement[policy_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff-canary] _
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10e8265c0>
+operation = 'INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_h...::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)'
+parameters = ('de737da1-26db-4b80-8add-03653f5eb552', 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 'shadow_h...d5388cacd49941ff1c6a5764f233a3ef02803f6be52a', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "policy_gate_receipts" violates foreign key constraint "policy_gate_receipts_policy_hash_fkey"
+E   DETAIL:  Key (policy_hash)=(ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) is not present in table "policy_artifacts".
+
+asyncpg/protocol/protocol.pyx:197: ForeignKeyViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10e8013d0>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10e703c10>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10e801250>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10e87b950>
+parameters = [('de737da1-26db-4b80-8add-03653f5eb552', 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 'shadow_...5388cacd49941ff1c6a5764f233a3ef02803f6be52a', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10dad7b50>>
+error = ForeignKeyViolationError('insert or update on table "policy_gate_receipts" violates foreign key constraint "policy_gate_receipts_policy_hash_fkey"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "policy_gate_receipts" violates foreign key constraint "policy_gate_receipts_policy_hash_fkey"
+E                   DETAIL:  Key (policy_hash)=(ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) is not present in table "policy_artifacts".
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10e75dd90>, <core.distributed.promotion_repository....ionRepository object at 0x10e6d6b90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e7df1d0>)
+target = 'canary', field = 'policy_hash'
+value = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("issuer", "foreign-issuer"), ("model_identity", "foreign-model"),
+        ("data_role", "simulation"), ("policy_hash", "f" * 64),
+        ("runtime_hash", "e" * 64), ("source_revision", "foreign-source"),
+    ])
+    async def test_referenced_health_metadata_is_a_real_chain_requirement(health_repo, target, field, value):
+>       repo, deployment, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_chain_metadata.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_independent_integrity.py:53: in transition_fixture
+    ident = await append_receipt(repo, original, **health_poison)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/distributed/test_ops_health_binding.py:87: in append_receipt
+    async with repo.session_factory() as session, session.begin():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1885: in __aexit__
+    await greenlet_spawn(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/util.py:147: in __exit__
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/util.py:145: in __exit__
+    self.commit()
+<string>:2: in commit
+    ???
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1316: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1290: in _prepare_impl
+    self.session.flush()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4353: in flush
+    self._flush(objects)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4488: in _flush
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4449: in _flush
+    flush_context.execute()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: in _exec_single_context
+    self.dialect.do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10dad7b50>>
+error = ForeignKeyViolationError('insert or update on table "policy_gate_receipts" violates foreign key constraint "policy_gate_receipts_policy_hash_fkey"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "policy_gate_receipts" violates foreign key constraint "policy_gate_receipts_policy_hash_fkey"
+E                   DETAIL:  Key (policy_hash)=(ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) is not present in table "policy_artifacts".
+E                   [SQL: INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_hash, source_revision, model_identity, data_role, sample_count, cost, details, issued_at, issuer, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('de737da1-26db-4b80-8add-03653f5eb552', 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 'shadow_health', 'passed', '19677a7ffed7f0a07155d5388cacd49941ff1c6a5764f233a3ef02803f6be52a', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', 'cf10f717244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'server-policy-health-v1', 'holdout_validated', 20, Decimal('0.40000000'), '{"deployment_id": "a55443fa-c498-4d29-ada8-b270cabe505e", "deployment_version": 4, "metric_contract_version": 1, "thresholds_hash": "35cc4c7fdffb8c80 ... (3541 characters truncated) ... , "fault_injected_count": 0, "injected_commit_failure_count": 0, "natural_failure_count": 0}, "fixture_revision": "ff580399b2d042e48ae5db2cd0cdb460"}', datetime.datetime(2026, 11, 2, 0, 25, 46, 950396, tzinfo=datetime.timezone.utc), 'policy-health', datetime.datetime(2026, 11, 2, 0, 25, 46, 955429, tzinfo=datetime.timezone.utc))]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+_ test_referenced_health_metadata_is_a_real_chain_requirement[policy_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff-active] _
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10f249060>
+operation = 'INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_h...::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)'
+parameters = ('30da1a65-915c-4d59-b5e3-a43142353867', 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 'canary_h...dc32913fdbf1e55138e02a2890b1cb3a0083b9a25315', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "policy_gate_receipts" violates foreign key constraint "policy_gate_receipts_policy_hash_fkey"
+E   DETAIL:  Key (policy_hash)=(ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) is not present in table "policy_artifacts".
+
+asyncpg/protocol/protocol.pyx:197: ForeignKeyViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10d773250>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10f5218d0>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10e63cdd0>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10e425c90>
+parameters = [('30da1a65-915c-4d59-b5e3-a43142353867', 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 'canary_...c32913fdbf1e55138e02a2890b1cb3a0083b9a25315', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10db7dd50>>
+error = ForeignKeyViolationError('insert or update on table "policy_gate_receipts" violates foreign key constraint "policy_gate_receipts_policy_hash_fkey"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "policy_gate_receipts" violates foreign key constraint "policy_gate_receipts_policy_hash_fkey"
+E                   DETAIL:  Key (policy_hash)=(ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) is not present in table "policy_artifacts".
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10f520650>, <core.distributed.promotion_repository....ionRepository object at 0x10e2d1650>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10dd28410>)
+target = 'active', field = 'policy_hash'
+value = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("issuer", "foreign-issuer"), ("model_identity", "foreign-model"),
+        ("data_role", "simulation"), ("policy_hash", "f" * 64),
+        ("runtime_hash", "e" * 64), ("source_revision", "foreign-source"),
+    ])
+    async def test_referenced_health_metadata_is_a_real_chain_requirement(health_repo, target, field, value):
+>       repo, deployment, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_chain_metadata.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_independent_integrity.py:53: in transition_fixture
+    ident = await append_receipt(repo, original, **health_poison)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/distributed/test_ops_health_binding.py:87: in append_receipt
+    async with repo.session_factory() as session, session.begin():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1885: in __aexit__
+    await greenlet_spawn(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/util.py:147: in __exit__
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/util.py:145: in __exit__
+    self.commit()
+<string>:2: in commit
+    ???
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1316: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1290: in _prepare_impl
+    self.session.flush()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4353: in flush
+    self._flush(objects)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4488: in _flush
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4449: in _flush
+    flush_context.execute()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: in _exec_single_context
+    self.dialect.do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10db7dd50>>
+error = ForeignKeyViolationError('insert or update on table "policy_gate_receipts" violates foreign key constraint "policy_gate_receipts_policy_hash_fkey"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "policy_gate_receipts" violates foreign key constraint "policy_gate_receipts_policy_hash_fkey"
+E                   DETAIL:  Key (policy_hash)=(ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) is not present in table "policy_artifacts".
+E                   [SQL: INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_hash, source_revision, model_identity, data_role, sample_count, cost, details, issued_at, issuer, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('30da1a65-915c-4d59-b5e3-a43142353867', 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 'canary_health', 'passed', 'af70bea2afaad3490d78dc32913fdbf1e55138e02a2890b1cb3a0083b9a25315', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', 'cf10f717244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'server-policy-health-v1', 'holdout_validated', 20, Decimal('0.40000000'), '{"deployment_id": "c269612b-522f-4426-91af-e50e5935032f", "deployment_version": 5, "metric_contract_version": 1, "thresholds_hash": "35cc4c7fdffb8c80 ... (3544 characters truncated) ... , "fault_injected_count": 0, "injected_commit_failure_count": 0, "natural_failure_count": 0}, "fixture_revision": "d5afae9525304e7196d2775b3197fabe"}', datetime.datetime(2026, 11, 2, 0, 25, 47, 693960, tzinfo=datetime.timezone.utc), 'policy-health', datetime.datetime(2026, 11, 2, 0, 25, 47, 701190, tzinfo=datetime.timezone.utc))]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+_ test_referenced_health_metadata_is_a_real_chain_requirement[runtime_hash-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee-active] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10e652f50>, <core.distributed.promotion_repository....ionRepository object at 0x10e651010>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e45bd50>)
+target = 'active', field = 'runtime_hash'
+value = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("issuer", "foreign-issuer"), ("model_identity", "foreign-model"),
+        ("data_role", "simulation"), ("policy_hash", "f" * 64),
+        ("runtime_hash", "e" * 64), ("source_revision", "foreign-source"),
+    ])
+    async def test_referenced_health_metadata_is_a_real_chain_requirement(health_repo, target, field, value):
+        repo, deployment, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployment)
+        shown = [r for r in body["gate_receipts"] if r["health_source"]]
+        record("metadata-" + target + "-" + field, {**proof, "body": body, "poison": {field: value}})
+        if target == "canary" and field in {"policy_hash", "runtime_hash", "source_revision"}:
+            assert len(shown) == 1
+        else:
+>           assert not shown, "a broken exact receipt must not authenticate any Active consumed chain"
+E           AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+E           assert not [{'receipt_id': '4d3f9ecf-ce10-40ff-a90c-94075c8e7646', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_chain_metadata.py:30: AssertionError
+_ test_referenced_health_metadata_is_a_real_chain_requirement[source_revision-foreign-source-active] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10ead2450>, <core.distributed.promotion_repository....ionRepository object at 0x10e54a410>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e9a9690>)
+target = 'active', field = 'source_revision', value = 'foreign-source'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("issuer", "foreign-issuer"), ("model_identity", "foreign-model"),
+        ("data_role", "simulation"), ("policy_hash", "f" * 64),
+        ("runtime_hash", "e" * 64), ("source_revision", "foreign-source"),
+    ])
+    async def test_referenced_health_metadata_is_a_real_chain_requirement(health_repo, target, field, value):
+        repo, deployment, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployment)
+        shown = [r for r in body["gate_receipts"] if r["health_source"]]
+        record("metadata-" + target + "-" + field, {**proof, "body": body, "poison": {field: value}})
+        if target == "canary" and field in {"policy_hash", "runtime_hash", "source_revision"}:
+            assert len(shown) == 1
+        else:
+>           assert not shown, "a broken exact receipt must not authenticate any Active consumed chain"
+E           AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+E           assert not [{'receipt_id': '56e21612-691d-4027-a573-2fdc69fee5a9', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_chain_metadata.py:30: AssertionError
+=========================== short test summary info ============================
+FAILED ::test_referenced_health_metadata_is_a_real_chain_requirement[issuer-foreign-issuer-active] - AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+assert not [{'receipt_id': 'ba983c3f-e5b3-4f3c-a373-59dac4fd39a8', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+FAILED ::test_referenced_health_metadata_is_a_real_chain_requirement[model_identity-foreign-model-active] - AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+assert not [{'receipt_id': '74af16d5-1e37-4525-8c87-7782f2264c6a', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+FAILED ::test_referenced_health_metadata_is_a_real_chain_requirement[data_role-simulation-active] - AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+assert not [{'receipt_id': 'f22fd818-cc80-4515-9a60-cb5724cd314c', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+FAILED ::test_referenced_health_metadata_is_a_real_chain_requirement[policy_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff-canary] - sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "policy_gate_receipts" violates foreign key constraint "policy_gate_receipts_policy_hash_fkey"
+DETAIL:  Key (policy_hash)=(ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) is not present in table "policy_artifacts".
+[SQL: INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_hash, source_revision, model_identity, data_role, sample_count, cost, details, issued_at, issuer, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+[parameters: ('de737da1-26db-4b80-8add-03653f5eb552', 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 'shadow_health', 'passed', '19677a7ffed7f0a07155d5388cacd49941ff1c6a5764f233a3ef02803f6be52a', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', 'cf10f717244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'server-policy-health-v1', 'holdout_validated', 20, Decimal('0.40000000'), '{"deployment_id": "a55443fa-c498-4d29-ada8-b270cabe505e", "deployment_version": 4, "metric_contract_version": 1, "thresholds_hash": "35cc4c7fdffb8c80 ... (3541 characters truncated) ... , "fault_injected_count": 0, "injected_commit_failure_count": 0, "natural_failure_count": 0}, "fixture_revision": "ff580399b2d042e48ae5db2cd0cdb460"}', datetime.datetime(2026, 11, 2, 0, 25, 46, 950396, tzinfo=datetime.timezone.utc), 'policy-health', datetime.datetime(2026, 11, 2, 0, 25, 46, 955429, tzinfo=datetime.timezone.utc))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+FAILED ::test_referenced_health_metadata_is_a_real_chain_requirement[policy_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff-active] - sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "policy_gate_receipts" violates foreign key constraint "policy_gate_receipts_policy_hash_fkey"
+DETAIL:  Key (policy_hash)=(ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) is not present in table "policy_artifacts".
+[SQL: INSERT INTO policy_gate_receipts (receipt_id, policy_hash, gate_type, status, evidence_hash, protocol_hash, runtime_hash, source_revision, model_identity, data_role, sample_count, cost, details, issued_at, issuer, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::INTEGER, $12::NUMERIC(20, 8), $13::JSON, $14::TIMESTAMP WITH TIME ZONE, $15::VARCHAR, $16::TIMESTAMP WITH TIME ZONE)]
+[parameters: ('30da1a65-915c-4d59-b5e3-a43142353867', 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 'canary_health', 'passed', 'af70bea2afaad3490d78dc32913fdbf1e55138e02a2890b1cb3a0083b9a25315', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', 'cf10f717244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'server-policy-health-v1', 'holdout_validated', 20, Decimal('0.40000000'), '{"deployment_id": "c269612b-522f-4426-91af-e50e5935032f", "deployment_version": 5, "metric_contract_version": 1, "thresholds_hash": "35cc4c7fdffb8c80 ... (3544 characters truncated) ... , "fault_injected_count": 0, "injected_commit_failure_count": 0, "natural_failure_count": 0}, "fixture_revision": "d5afae9525304e7196d2775b3197fabe"}', datetime.datetime(2026, 11, 2, 0, 25, 47, 693960, tzinfo=datetime.timezone.utc), 'policy-health', datetime.datetime(2026, 11, 2, 0, 25, 47, 701190, tzinfo=datetime.timezone.utc))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+FAILED ::test_referenced_health_metadata_is_a_real_chain_requirement[runtime_hash-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee-active] - AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+assert not [{'receipt_id': '4d3f9ecf-ce10-40ff-a90c-94075c8e7646', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+FAILED ::test_referenced_health_metadata_is_a_real_chain_requirement[source_revision-foreign-source-active] - AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+assert not [{'receipt_id': '56e21612-691d-4027-a573-2fdc69fee5a9', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+7 failed, 10 passed in 9.02s

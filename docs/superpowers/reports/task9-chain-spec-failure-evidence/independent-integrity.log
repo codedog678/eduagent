@@ -1,0 +1,154 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+...........................F.F.F.F.F...........                          [100%]
+=================================== FAILURES ===================================
+_ test_poisoned_referenced_health_cannot_prove_complete_consumption[sample_count-0-active] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10e3278d0>, <core.distributed.promotion_repository....ionRepository object at 0x10f256f10>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e8de550>)
+target = 'active', field = 'sample_count', value = 0
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("sample_count", 0), ("cost", Decimal(0)), ("status", "unknown"),
+        ("protocol_hash", "e" * 64), ("gate_type", "formal_holdout"),
+    ])
+    async def test_poisoned_referenced_health_cannot_prove_complete_consumption(health_repo, target, field, value):
+        repo, deployed, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployed)
+        record("referenced-" + target + "-" + field, {**proof, "poison": {field: value}, "body": body})
+        gate = "shadow_health" if target == "canary" else "canary_health"
+        # A foreign artifact/gate is outside latest's scope; it may not be consumed by Active approval.
+        if target == "canary" and field in {"protocol_hash", "gate_type"}:
+            assert any(r["gate_type"] == gate for r in body["gate_receipts"])
+        else:
+            assert not any(r["gate_type"] == gate for r in body["gate_receipts"])
+        if target == "active":
+>           assert not [r for r in body["gate_receipts"] if r["health_source"]], (
+                "invalid exact canary health must not authenticate an Active consumed chain")
+E           AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+E           assert not [{'receipt_id': '3def1502-a4e9-47d8-95aa-43f8dbe4175e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_independent_integrity.py:156: AssertionError
+_ test_poisoned_referenced_health_cannot_prove_complete_consumption[cost-value1-active] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10e780a90>, <core.distributed.promotion_repository....ionRepository object at 0x10f06d2d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10f316e10>)
+target = 'active', field = 'cost', value = Decimal('0')
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("sample_count", 0), ("cost", Decimal(0)), ("status", "unknown"),
+        ("protocol_hash", "e" * 64), ("gate_type", "formal_holdout"),
+    ])
+    async def test_poisoned_referenced_health_cannot_prove_complete_consumption(health_repo, target, field, value):
+        repo, deployed, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployed)
+        record("referenced-" + target + "-" + field, {**proof, "poison": {field: value}, "body": body})
+        gate = "shadow_health" if target == "canary" else "canary_health"
+        # A foreign artifact/gate is outside latest's scope; it may not be consumed by Active approval.
+        if target == "canary" and field in {"protocol_hash", "gate_type"}:
+            assert any(r["gate_type"] == gate for r in body["gate_receipts"])
+        else:
+            assert not any(r["gate_type"] == gate for r in body["gate_receipts"])
+        if target == "active":
+>           assert not [r for r in body["gate_receipts"] if r["health_source"]], (
+                "invalid exact canary health must not authenticate an Active consumed chain")
+E           AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+E           assert not [{'receipt_id': '99a9d297-27e4-497d-910d-b9ee3ce9d2c4', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_independent_integrity.py:156: AssertionError
+_ test_poisoned_referenced_health_cannot_prove_complete_consumption[status-unknown-active] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10e16c8d0>, <core.distributed.promotion_repository....ionRepository object at 0x10e76cb90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10eebc210>)
+target = 'active', field = 'status', value = 'unknown'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("sample_count", 0), ("cost", Decimal(0)), ("status", "unknown"),
+        ("protocol_hash", "e" * 64), ("gate_type", "formal_holdout"),
+    ])
+    async def test_poisoned_referenced_health_cannot_prove_complete_consumption(health_repo, target, field, value):
+        repo, deployed, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployed)
+        record("referenced-" + target + "-" + field, {**proof, "poison": {field: value}, "body": body})
+        gate = "shadow_health" if target == "canary" else "canary_health"
+        # A foreign artifact/gate is outside latest's scope; it may not be consumed by Active approval.
+        if target == "canary" and field in {"protocol_hash", "gate_type"}:
+            assert any(r["gate_type"] == gate for r in body["gate_receipts"])
+        else:
+            assert not any(r["gate_type"] == gate for r in body["gate_receipts"])
+        if target == "active":
+>           assert not [r for r in body["gate_receipts"] if r["health_source"]], (
+                "invalid exact canary health must not authenticate an Active consumed chain")
+E           AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+E           assert not [{'receipt_id': '31386272-2570-4516-8140-ce1af1ac376f', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_independent_integrity.py:156: AssertionError
+_ test_poisoned_referenced_health_cannot_prove_complete_consumption[protocol_hash-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee-active] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10e9530d0>, <core.distributed.promotion_repository....ionRepository object at 0x10eda4a50>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10f251610>)
+target = 'active', field = 'protocol_hash'
+value = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("sample_count", 0), ("cost", Decimal(0)), ("status", "unknown"),
+        ("protocol_hash", "e" * 64), ("gate_type", "formal_holdout"),
+    ])
+    async def test_poisoned_referenced_health_cannot_prove_complete_consumption(health_repo, target, field, value):
+        repo, deployed, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployed)
+        record("referenced-" + target + "-" + field, {**proof, "poison": {field: value}, "body": body})
+        gate = "shadow_health" if target == "canary" else "canary_health"
+        # A foreign artifact/gate is outside latest's scope; it may not be consumed by Active approval.
+        if target == "canary" and field in {"protocol_hash", "gate_type"}:
+            assert any(r["gate_type"] == gate for r in body["gate_receipts"])
+        else:
+            assert not any(r["gate_type"] == gate for r in body["gate_receipts"])
+        if target == "active":
+>           assert not [r for r in body["gate_receipts"] if r["health_source"]], (
+                "invalid exact canary health must not authenticate an Active consumed chain")
+E           AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+E           assert not [{'receipt_id': '8571d441-deee-47e5-bd59-b4471841283f', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_independent_integrity.py:156: AssertionError
+_ test_poisoned_referenced_health_cannot_prove_complete_consumption[gate_type-formal_holdout-active] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10f59a410>, <core.distributed.promotion_repository....ionRepository object at 0x10ed87510>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e18c3d0>)
+target = 'active', field = 'gate_type', value = 'formal_holdout'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("sample_count", 0), ("cost", Decimal(0)), ("status", "unknown"),
+        ("protocol_hash", "e" * 64), ("gate_type", "formal_holdout"),
+    ])
+    async def test_poisoned_referenced_health_cannot_prove_complete_consumption(health_repo, target, field, value):
+        repo, deployed, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployed)
+        record("referenced-" + target + "-" + field, {**proof, "poison": {field: value}, "body": body})
+        gate = "shadow_health" if target == "canary" else "canary_health"
+        # A foreign artifact/gate is outside latest's scope; it may not be consumed by Active approval.
+        if target == "canary" and field in {"protocol_hash", "gate_type"}:
+            assert any(r["gate_type"] == gate for r in body["gate_receipts"])
+        else:
+            assert not any(r["gate_type"] == gate for r in body["gate_receipts"])
+        if target == "active":
+>           assert not [r for r in body["gate_receipts"] if r["health_source"]], (
+                "invalid exact canary health must not authenticate an Active consumed chain")
+E           AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+E           assert not [{'receipt_id': '0398d919-e36a-44fd-9358-7f15dc5314d2', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-wholespec-3f2b2095-92a9-45b5-bcf8-55b2e2eabd2c/test_independent_integrity.py:156: AssertionError
+=========================== short test summary info ============================
+FAILED ::test_poisoned_referenced_health_cannot_prove_complete_consumption[sample_count-0-active] - AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+assert not [{'receipt_id': '3def1502-a4e9-47d8-95aa-43f8dbe4175e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+FAILED ::test_poisoned_referenced_health_cannot_prove_complete_consumption[cost-value1-active] - AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+assert not [{'receipt_id': '99a9d297-27e4-497d-910d-b9ee3ce9d2c4', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+FAILED ::test_poisoned_referenced_health_cannot_prove_complete_consumption[status-unknown-active] - AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+assert not [{'receipt_id': '31386272-2570-4516-8140-ce1af1ac376f', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+FAILED ::test_poisoned_referenced_health_cannot_prove_complete_consumption[protocol_hash-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee-active] - AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+assert not [{'receipt_id': '8571d441-deee-47e5-bd59-b4471841283f', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+FAILED ::test_poisoned_referenced_health_cannot_prove_complete_consumption[gate_type-formal_holdout-active] - AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+assert not [{'receipt_id': '0398d919-e36a-44fd-9358-7f15dc5314d2', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+5 failed, 42 passed in 25.26s
