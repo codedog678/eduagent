@@ -25,7 +25,8 @@ EduAgent 以自适应教学为高一致性场景：一次答题会同时影响�
 
 [查看当前证据索引](docs/engineering/interview-readiness.md) ·
 [查看 Task 10 验收记录](docs/engineering/m3-policy-promotion-acceptance.md) ·
-[查看远程 CI](https://github.com/codedog678/eduagent/actions/runs/41457794154)
+[查看远程 CI](https://github.com/codedog678/eduagent/actions/runs/41457794154) ·
+[分支对比与过程归档](docs/engineering/github-publication-20261102.md)
 
 ## 从能运行到可信交付
 

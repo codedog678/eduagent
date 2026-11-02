@@ -10,6 +10,26 @@
 
 ---
 
+## Execution Record — 2026-11-02
+
+The checklist below preserves the original implementation plan. Completed task outcomes
+and actual verification are recorded here rather than implying that every proposed
+command was executed verbatim.
+
+| Task | Result | Commit / evidence |
+| --- | --- | --- |
+| 1. Fact index | Completed; stale Task 9/10 statuses removed | `09d72a5` |
+| 2. README | Completed; Harness narrative and M0-M3 proof moved to first screen | `2a39150` |
+| 3. Playbook | Completed; spoken scripts, whiteboard and demo route | `4ba8895` |
+| 4. Deep-dive | Completed; six L1-L4 topic groups | `3419471` |
+| 5. Consistency | Completed; 88 local file links checked, claim scan manually distinguished prohibitions from assertions | `f0c900c`, `f1b2a3e` |
+| 6. Final audit | Completed; formatting and documentation-only scope checked | `f1b2a3e` |
+
+No new runtime tests or model requests were performed in this documentation phase.
+Later GitHub publication, missing historical JUnit files, branch ancestry checks and
+remote branch verification are recorded in
+[GitHub publication archive](../../engineering/github-publication-20261102.md).
+
 ## File Map
 
 | File | Responsibility | Change |

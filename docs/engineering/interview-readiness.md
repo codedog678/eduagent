@@ -1,7 +1,8 @@
 # EduAgent 技术面试证据索引
 
-核对日期：2026-11-02。当前代码 revision 为 `e4ea5c3`，Task 10 实现与
-fixture-only 工程验收绑定 source revision `f8b8e3c`。M1 Durable Run Plane、
+核对日期：2026-11-02。运行证据基线为 `e4ea5c3`，Task 10 实现与
+fixture-only 工程验收绑定 source revision `f8b8e3c`。最新文档与主线同步记录见
+[GitHub 分支对比与发布归档](github-publication-20261102.md)。M1 Durable Run Plane、
 M2 Bounded Expert Plane 和 M3 Trusted Policy Promotion 的实现链路均已落地。
 
 Task 10 已完成真实 PostgreSQL/Redis 多进程测试、SIGKILL 接管、自动回滚、
