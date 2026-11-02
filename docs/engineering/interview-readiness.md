@@ -1,19 +1,17 @@
 # EduAgent 技术面试证据索引
 
-核对日期：2026-11-02。当前索引覆盖已验收的 M1、M2、M3 Tasks1–8，
-以及 `0b2247b` 的演示兼容修复。Task8 首次独立规格审查复现四个缺口，
-修复冻结于 `a4691bf`：定向 457 / 完整后端 1400 项通过，均无失败、错误或跳过。
-新的独立规格复审通过，但代码审查复现权限观测与晋级事务之间的并发漏洞，
-并发修复冻结于 `4c9b204`：定向 469 / 完整后端 1412 项通过，
-父侧已核验 XML 与源码摘要；新的独立规格复审通过（469 项矩阵与 19 个探测），
-但代码审查又复现异常退出时跳过存储权限检查。异常修复冻结于 `e432812`，
-定向 568 / 完整后端 1483 项通过；新的独立规格审查 FAIL，
-复现清理包装异常丢失硬原因链。原因链修复已冻结于 `5c38e26`，
-定向 692 / 完整后端 1607 项通过；父侧核验全部证据哈希与源码摘要匹配。
-新的独立规格复审通过（692 项矩阵与 32 项探测），独立代码审查也通过
-（完整后端 1607 项、32 项新增探测）。完整 Task8 已验收，
-失败与恢复审查记录均保留；Task9 可启动。
-Policies 页面和完整灰度演练尚待验收；最终交付时需重新核对本页与实际代码、运行证据。
+核对日期：2026-11-02。当前代码 revision 为 `e4ea5c3`，Task 10 实现与
+fixture-only 工程验收绑定 source revision `f8b8e3c`。M1 Durable Run Plane、
+M2 Bounded Expert Plane 和 M3 Trusted Policy Promotion 的实现链路均已落地。
+
+Task 10 已完成真实 PostgreSQL/Redis 多进程测试、SIGKILL 接管、自动回滚、
+Compose 动态 smoke 和远程 CI。Task 9 的 Policies 功能已验证，但独立审查未完整
+封存；正式 eligible Judge v3 campaign rehearsal 因缺少外部前置条件未执行。
+这些边界不能被改写为“正式策略已发布”或“模型/学习效果已提升”。
+
+本页只维护可用于面试陈述的当前事实与证据入口。现场话术见
+[面试讲解手册](interview-playbook.md)，分层技术追问见
+[技术深挖手册](interview-technical-deep-dive.md)。
 
 项目适合从三个问题展开：如何可靠执行 Agent，如何保护学习证据，
 如何判断一项算法修改是否值得发布。每个问题都应能定位到机制、
@@ -28,10 +26,10 @@ Policies 页面和完整灰度演练尚待验收；最终交付时需重新核�
 | 超时与取消是否真正释放资源？ | 有界预算、deadline、取消 drain 后释放存储锁 | [并发边界](harness-concurrency-20261029.md)、[Shadow 取消与锁审查](../superpowers/reports/2026-11-01-m3-task7-shadow.md) | 不响应取消的内部任务会持续持锁，不能声称强制终止 |
 | 获得提示后答对能否算掌握？ | 首次独立作答与受助证据分离，回复/测验/学习状态同一 SQLite 事务 | [Tutor Harness 回归](../../python/tests/test_tutor_harness.py)、[L05 原始分析](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/analysis.md) | 学习状态模型与教学效果实验是不同层次 |
 | Judge 输出格式正确是否就可信？ | v3 verdict/reason/criterion/evidence 一致性校验，一次 repair，失败归 unknown；[Judge v3](../../python/evals/optimization/judge_v3.py) | [v3 测试](../../python/tests/evals/test_judge_v3.py)、[评分重放](../../python/evals/optimization/gates.py) | schema 有效不证明语义正确；unknown 不授予资格 |
-| 如何避免新旧策略混跑？ | 受理时固定 policy/deployment/namespace，尝试与专家继承；[policy_assignment](../../python/core/distributed/policy_assignment.py) | [版本固定回归](../../python/tests/distributed/test_policy_pinning.py)、[Task6 审查](../superpowers/reports/2026-11-01-m3-task6-execution.md) | 自动回滚只影响新受理 Run；Task8 旧/新 Run 回归已验收，完整多进程闭环仍待 Task10 |
+| 如何避免新旧策略混跑？ | 受理时固定 policy/deployment/namespace，尝试与专家继承；[policy_assignment](../../python/core/distributed/policy_assignment.py) | [版本固定回归](../../python/tests/distributed/test_policy_pinning.py)、[Task6 审查](../superpowers/reports/2026-11-01-m3-task6-execution.md) | 自动回滚只影响新受理 Run；真实多进程 fixture 已验证旧 Run binding、新 Run stable binding 和迟到 observation，但 fixture 不授予正式发布资格 |
 | 如何证明候选没有污染主状态？ | 无提交权的 Shadow 执行、专用 store 与 stream、文件锁 | [Shadow 回归](../../python/tests/distributed/test_shadow_worker.py)、[Task7 审查及 JUnit](../superpowers/reports/2026-11-01-m3-task7-shadow.md) | 隔离执行证明工程边界，不能证明候选改善教学质量 |
 | 缺少费用或结构判定时能否晋级？ | 全尝试账本、真实判定分子/分母、缺失证据 HOLD；[policy_health](../../python/core/distributed/policy_health.py) | [Task8 实现与冻结测试](../superpowers/reports/2026-11-01-m3-task8-health.md)、[健康回归](../../python/tests/distributed/test_policy_health.py) | fixture 的 Decimal 费用只检验算法；实际费用缺失保持 unknown；Task8 已验收，正式模型资格仍缺独立证据 |
-| 两个 evaluator 同时回滚怎么办？ | 同事务冻结观察集合、锁定 head、CAS 更新、审计与 Outbox；观测发布共享 head 锁，已消费前序硬违规不被滚动窗口淘汰 | [Task8 原因链修复完整 JUnit](../../python/tests/distributed/evidence/2026-11-01-m3-task8-cause-full.xml)、[真实发布交错回归](../../python/tests/distributed/test_policy_health_publication.py)、[独立代码审查](../superpowers/reports/2026-11-02-m3-task8-code-recovery.md) | 独立完整后端 1607 项通过，SPEC/CODE PASS；完整多进程受控演练尚待 Task10 |
+| 两个 evaluator 同时回滚怎么办？ | 同事务冻结观察集合、锁定 head、CAS 更新、审计与 Outbox；观测发布共享 head 锁，已消费前序硬违规不被滚动窗口淘汰 | [Task8 原因链修复完整 JUnit](../../python/tests/distributed/evidence/2026-11-01-m3-task8-cause-full.xml)、[真实发布交错回归](../../python/tests/distributed/test_policy_health_publication.py)、[独立代码审查](../superpowers/reports/2026-11-02-m3-task8-code-recovery.md) | 独立完整后端 1607 项通过，SPEC/CODE PASS；Task 10 多进程 fixture 已验证自动回滚与迟到 observation |
 
 ```mermaid
 flowchart LR
@@ -47,40 +45,27 @@ flowchart LR
     S --> T
 ```
 
-## Harness 岗位：五分钟讲解
+## 岗位阅读路径
 
-1. **一分钟建立权威边界。** PostgreSQL 保存执行身份与租约，Redis
-   可重复投递，SQLite 保存教学业务事务。指出控制面与学习状态的区别。
-2. **一分钟复现故障。** 运行专家强杀演示，展示 token 1→2、唯一 accepted
-   result、迟到或过期结果记录、未变化的学习状态摘要。
-3. **一分钟解释并发漏洞。** 展示真实等锁回归：SQL 里的时间检查可能发生
-   在等待锁之前。最终权限判断必须发生在所有阻塞锁之后，并检查 attempt
-   deadline，不能只看 lease。
-4. **一分钟解释评分。** 对比自动契约、工程交付和语义质量；展示
-   unknown、原始裁判、一次 repair、评分重放与费用预留。
-5. **一分钟说明边界。** SQLite 仍单写，模板基准不代表模型容量，教学效果
-   仍需真实学生研究。M3 未验收部分不能作为已完成发布能力演示。
+### Harness 工程主线
 
-可直接运行的 template 演示命令、依赖、数据库权限和本机实跑摘要见
-[演示验证](../superpowers/reports/2026-11-01-m3-demo-startup.md)。
-演示没有新模型请求；保留 unknown cost 与被强杀 attempt 的失败事实。
+1. 权威状态与投递解耦；
+2. lease、fencing 和锁后权限复核；
+3. 有界专家计算与唯一业务写权限；
+4. policy identity、Shadow、Canary 和事务化回滚；
+5. Trace、故障注入和证据边界。
 
-## Agent 算法岗位：五分钟讲解
+### Agent 算法支线
 
-1. **一分钟说明算法作用点。** Tutor 原生工具循环选择搜索、全文读取、
-   知识关系和澄清；Coordinator 在原授权与预算内规划、委派与重规划。
-   检索采用词法/可选向量召回及 RRF，来源由服务端校验。
-2. **一分钟展示真实失败。** L02 的未读来源问题、L01 的 findings 数量超限、
-   必要备题无法交付与预算不足，各自具有不同修复对象。不能把失败计划
-   改名为 completed。
-3. **一分钟解释修改策略。** 优先减少重复上下文、明确契约、保留只读专家
-   和原子提交；修正机会与任务预算共用。引用结构合法仍需要语义支持审核。
-4. **一分钟比较证据。** 第五轮固定六例自动 5/6、30 模型请求；
-   原计划完成 5/5 的分母排除 L01。未触发的新分支有本地回归，却没有该轮
-   模型因果证据。展示失败、分母、配置和账本。
-5. **一分钟解释发布资格。** 开发轨迹用于定位问题，独立校准与留出用于
-   资格验证；旧开发复评 100% 仍是 `validation_required`。运行保护措施与
-   教学效果应分别报告。
+1. Tutor/Coordinator 的工具选择、预算和来源授权；
+2. 自动契约、Judge v3、`unknown` 与语义质量；
+3. 开发重放、独立校准、留出集和正式发布资格；
+4. 算法候选如何进入 Shadow/Canary，而不是直接替换线上策略。
+
+可直接使用的话术、白板顺序和演示步骤统一放在
+[面试讲解手册](interview-playbook.md)；本页不再复制脚本。
+
+## Agent 算法证据补充
 
 具体失败、改动触发计数、固定配置、费用区间和逐条回复见
 [第五轮分析](../evals/harness-long-runs/20261027-source-recovery-deepseek-flash/analysis.md)。
@@ -93,13 +78,20 @@ flowchart LR
 [校准状态](../evals/rsi-review-20261027/calibration-status.json)、
 [混合评分开发重放](../evals/rsi-review-20261029/analysis.md)。
 
-## 最终交付仍需核对
+## 当前证据矩阵
 
-| 项目 | 当前事实 | 完成所需证据 |
-| --- | --- | --- |
-| 健康与自动回滚 | 原因链修复冻结 `5c38e26`，完整 Task8 已独立 SPEC/CODE PASS；代码审查重新运行完整后端 1607 项与 32 项探测 | Task10 再验证真实多进程灰度演练闭环 |
-| Policies 只读界面 | Task9 尚待实现 | 脱敏分页 API、Trace 版本关联、桌面/移动端 Playwright 与生产 build |
-| 真实基础设施闭环 | Task10 尚待实现 | 两 Run Worker、Shadow、health 进程；强杀接管、签名故障、旧/新 Run 与迟到观察的证据 |
-| 正式模型资格 | 现有开发重放与历史评测不满足 Judge v3 资格 | 合格 campaign、独立校准、正式留出与真实模型账本；缺项须记录实际前提，不能生成假回执 |
-| Compose / CI | 本机没有 Docker 动态烟测证据 | 静态解析需与实际 CI/容器运行区分，成功与失败产物均归档 |
-| 面试陈述 | 当前页为阶段索引 | 完整验收后更新状态、运行版本、证据链接，并检查 README 与最终行为一致 |
+| 范围 | 当前事实 | 可以主张 | 不能主张 |
+| --- | --- | --- | --- |
+| M1 Run Plane | PostgreSQL/Redis 真实多进程接管通过 | 可恢复、可审计、旧 token 不能提交 | 外部副作用 exactly-once |
+| M2 Expert Plane | SIGKILL 接管、唯一 accepted result、父侧采用 | 专家计算可独立恢复且不能直接写学习状态 | learner-state 水平多写 |
+| M3 Promotion | fixture Shadow/Canary/rollback 与 Compose CI 通过 | 控制面实现和工程故障路径通过 | 正式策略可发布 |
+| Task 9 Ops | 功能、build 和 54 项 Playwright 已验证 | 可查看脱敏策略证据 | 独立验收完整封存 |
+| 正式 rehearsal | 未执行 | 缺失前置条件会 fail closed | 真实模型效果提升 |
+| 教学效果 | 未进行真实学生因果研究 | 独立/受助证据被区分记录 | 学习效果提升 |
+
+绑定 `f8b8e3c` 的最终验证结果为：非分布式 `850 passed, 56 skipped`，
+PostgreSQL/Redis 分布式矩阵 `1537 passed`，Ops Playwright `54 passed`；
+GitHub Actions backend、frontend、package、compose-smoke 和
+distributed-integration 均成功。详见
+[Task 10 验收记录](m3-policy-promotion-acceptance.md)和
+[远程 CI #41457794154](https://github.com/codedog678/eduagent/actions/runs/41457794154)。
