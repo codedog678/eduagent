@@ -4,12 +4,13 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_CEILING
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from sqlalchemy import func, select, text, tuple_
 from sqlalchemy.dialects.postgresql import insert
 
 from .contracts import RunStatus, canonical_hash
+from .health_evidence_identity import observation_key, same_distribution
 from .models import DistributedRun, DistributedRunAttempt, DistributedStep
 from .promotion_contracts import PolicyObservation, PolicyThresholds
 from .promotion_models import (
@@ -36,13 +37,6 @@ def server_diagnostic_code(exc):
             return type(current).__name__
         current = current.__cause__
     return type(exc).__name__
-
-
-def observation_key(run_id, deployment_id, cohort, metric_contract_version):
-    return canonical_hash({
-        "run_id": str(UUID(str(run_id))), "deployment_id": str(UUID(str(deployment_id))),
-        "cohort": cohort, "metric_contract_version": metric_contract_version,
-    })
 
 
 def nearest_rank(values, percentile):
@@ -132,16 +126,6 @@ def _observation(row):
     return PolicyObservation.model_validate({
         name: getattr(row, name) for name in PolicyObservation.model_fields
     })
-
-
-def same_distribution(candidate, stable):
-    if not candidate or not stable or any(row.rehearsal_id is None for row in candidate + stable):
-        return False
-    c = Counter((row.rehearsal_id, row.operation) for row in candidate)
-    s = Counter((row.rehearsal_id, row.operation) for row in stable)
-    return c.keys() == s.keys() and all(
-        c[bucket] * len(stable) == s[bucket] * len(candidate) for bucket in c
-    )
 
 
 def proportional_baseline(candidate, pool, thresholds):

@@ -652,7 +652,8 @@ class PromotionRepository(ShadowRepositoryMixin):
         session, *, artifact, deployment, gate_type, receipt,
     ):
         """Validate frozen evidence, not just the receipt's claimed status."""
-        from .policy_health import _observation, evaluate_window, observation_key, same_distribution
+        from .health_evidence_identity import frozen_leaf_identity_matches
+        from .policy_health import _observation, evaluate_window
 
         cohort = "shadow" if gate_type == "shadow_health" else "candidate"
         if (
@@ -704,8 +705,6 @@ class PromotionRepository(ShadowRepositoryMixin):
                 or window.deployment_version != deployment.version
                 or window.metric_contract_version != 1
                 or window.thresholds_hash != thresholds.digest
-                or window.observation_start_key != flat[0]
-                or window.observation_end_key != flat[-1]
                 or details.get("candidate_stats") != window.candidate_stats
                 or details.get("stable_stats") != window.stable_stats
                 or receipt.evidence_hash != canonical_hash(details)
@@ -721,6 +720,11 @@ class PromotionRepository(ShadowRepositoryMixin):
                 return None
             candidate = [_observation(by_key[key]) for key in keys["candidate"]]
             stable = [_observation(by_key[key]) for key in keys["stable"]]
+            if not frozen_leaf_identity_matches(
+                candidate, stable, window, cohort=cohort, passed=True,
+                max_runs=thresholds.window_max_runs,
+            ):
+                return None
             for rows, expected_cohort, policy_hash in (
                 (candidate, cohort, deployment.candidate_policy_hash),
                 (stable, "stable", deployment.stable_policy_hash),
@@ -731,21 +735,11 @@ class PromotionRepository(ShadowRepositoryMixin):
                     str(row.deployment_id) != deployment.deployment_id
                     or row.cohort != expected_cohort or row.policy_hash != policy_hash
                     or row.metric_contract_version != 1
-                    or row.observation_key != observation_key(
-                        row.run_id, row.deployment_id, row.cohort, row.metric_contract_version)
                     or row.observed_at > window.evaluated_at
                     or by_key[row.observation_key].created_at > window.evaluated_at
                     for row in rows
                 ):
                     return None
-            if cohort == "shadow":
-                if {row.run_id for row in candidate} != {row.run_id for row in stable}:
-                    return None
-            elif (
-                not same_distribution(candidate, stable)
-                or any(row.state_namespace == "production" for row in candidate + stable)
-            ):
-                return None
             result = evaluate_window(candidate, stable, thresholds)
             if (
                 result.decision != "pass"

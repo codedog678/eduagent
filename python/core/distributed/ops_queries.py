@@ -18,6 +18,7 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from .expert_contracts import ExpertUsage
+from .health_evidence_identity import frozen_leaf_identity_matches
 from .expert_models import (
     DistributedExpertJob,
     DistributedExpertResult,
@@ -555,6 +556,13 @@ class OpsQueries:
         ).limit(2 * thresholds.window_max_runs)))
         by_key = {row.observation_key: row for row in records}
         if len(by_key) != len(flat):
+            return False
+        if not frozen_leaf_identity_matches(
+            [by_key[key] for key in keys["candidate"]],
+            [by_key[key] for key in keys["stable"]],
+            window, cohort="shadow" if gate == "shadow_health" else "candidate",
+            passed=receipt.status == "passed", max_runs=thresholds.window_max_runs,
+        ):
             return False
         # Active 的合法基线来自已消费 Canary；其余来源必须绑定本部署。
         stable_deployment = deployment
