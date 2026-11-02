@@ -258,4 +258,3 @@ Agent 做成了可恢复、可审计、可受控发布的 Harness，并保留了
 | “支持业务状态水平扩展” | “Run/Expert 控制面可多进程恢复；Harness SQLite 业务状态仍单写。” |
 | “测试通过就证明教学有效” | “测试证明工程不变量；教学效果需要独立真实学生研究。” |
 | “accepted expert result 就是最终回答” | “accepted 只是可审计草稿，仍需父侧 adopted 和业务事务提交。” |
-

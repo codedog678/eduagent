@@ -347,4 +347,3 @@ PostgreSQL 聚合的当前状态。生产化下一步应增加：
 | Health 与回滚 | [policy_health.py](../../python/core/distributed/policy_health.py) |
 | Promotion 写平面 | [promotion_repository.py](../../python/core/distributed/promotion_repository.py) |
 | 多进程闭环 | [test_policy_promotion.py](../../python/tests/integration/test_policy_promotion.py) |
-
