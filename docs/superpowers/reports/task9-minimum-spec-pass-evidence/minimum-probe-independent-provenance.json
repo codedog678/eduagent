@@ -1,0 +1,7 @@
+{
+  "original_sha256": "9dd0f1af701773411e54056a9144179eedec89b15d5554027f65ae28c5ee312e",
+  "owned_sha256": "10596ff2e440ed44317f5e68b4106de5d22ea3ffaa5e4e8445840a3da3c5f6a3",
+  "diff": "--- docs/superpowers/reports/task9-minimum-spec-failure-evidence/test_minimum_evidence.py\n+++ owned/test_minimum_evidence.py\n@@ -108,5 +108,9 @@\n     assert proof[\"repository_accepts\"] == valid\n     shown = [r for r in proof[\"active\"][\"gate_receipts\"] if r[\"health_source\"]]\n     assert bool(shown) == valid, \"under-minimum exact Canary evidence must break entire Active chain\"\n-    local = [r for r in proof[\"local\"][\"gate_receipts\"] if r[\"health_source\"] and r[\"status\"] == \"passed\"]\n+    local = [r for r in proof[\"local\"][\"gate_receipts\"]\n+             if r[\"gate_type\"] == \"canary_health\" and r[\"health_source\"] and r[\"status\"] == \"passed\"]\n     assert bool(local) == valid, \"under-minimum local evidence cannot be a trusted passed source\"\n+    shadow = [r for r in proof[\"local\"][\"gate_receipts\"]\n+              if r[\"gate_type\"] == \"shadow_health\" and r[\"health_source\"]]\n+    assert len(shadow) == 1 and shadow[0][\"status\"] == \"passed\"\n",
+  "original_gitblob_equal": true,
+  "gate_specific_correction_not_product_edit": true
+}
