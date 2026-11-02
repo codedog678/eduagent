@@ -1,0 +1,220 @@
+{
+  "db": "m3_t9_codee8c530_11c145650ae144acb56ff14ed586dc4c",
+  "deployment_id": "18c08308-d3ce-4dd6-aca7-4ad3e213426a",
+  "constraints": [
+    {
+      "relname": "policy_audit_events",
+      "conname": "policy_audit_events_deployment_id_fkey",
+      "contype": "f",
+      "convalidated": true,
+      "definition": "FOREIGN KEY (deployment_id) REFERENCES policy_deployments(deployment_id)"
+    },
+    {
+      "relname": "policy_audit_events",
+      "conname": "policy_audit_events_pkey",
+      "contype": "p",
+      "convalidated": true,
+      "definition": "PRIMARY KEY (event_id)"
+    },
+    {
+      "relname": "policy_audit_events",
+      "conname": "uq_policy_audit_command_deployment_event_type",
+      "contype": "u",
+      "convalidated": true,
+      "definition": "UNIQUE (command_id)"
+    },
+    {
+      "relname": "policy_deployments",
+      "conname": "policy_deployments_candidate_policy_hash_fkey",
+      "contype": "f",
+      "convalidated": true,
+      "definition": "FOREIGN KEY (candidate_policy_hash) REFERENCES policy_artifacts(policy_hash)"
+    },
+    {
+      "relname": "policy_deployments",
+      "conname": "policy_deployments_command_id_key",
+      "contype": "u",
+      "convalidated": true,
+      "definition": "UNIQUE (command_id)"
+    },
+    {
+      "relname": "policy_deployments",
+      "conname": "policy_deployments_pkey",
+      "contype": "p",
+      "convalidated": true,
+      "definition": "PRIMARY KEY (deployment_id)"
+    },
+    {
+      "relname": "policy_deployments",
+      "conname": "policy_deployments_previous_stable_deployment_id_fkey",
+      "contype": "f",
+      "convalidated": true,
+      "definition": "FOREIGN KEY (previous_stable_deployment_id) REFERENCES policy_deployments(deployment_id)"
+    },
+    {
+      "relname": "policy_deployments",
+      "conname": "policy_deployments_stable_policy_hash_fkey",
+      "contype": "f",
+      "convalidated": true,
+      "definition": "FOREIGN KEY (stable_policy_hash) REFERENCES policy_artifacts(policy_hash)"
+    },
+    {
+      "relname": "policy_deployments",
+      "conname": "uq_policy_deployment_environment_version",
+      "contype": "u",
+      "convalidated": true,
+      "definition": "UNIQUE (environment, version)"
+    },
+    {
+      "relname": "policy_gate_receipts",
+      "conname": "policy_gate_receipts_pkey",
+      "contype": "p",
+      "convalidated": true,
+      "definition": "PRIMARY KEY (receipt_id)"
+    },
+    {
+      "relname": "policy_gate_receipts",
+      "conname": "policy_gate_receipts_policy_hash_fkey",
+      "contype": "f",
+      "convalidated": true,
+      "definition": "FOREIGN KEY (policy_hash) REFERENCES policy_artifacts(policy_hash)"
+    },
+    {
+      "relname": "policy_gate_receipts",
+      "conname": "uq_policy_gate_evidence",
+      "contype": "u",
+      "convalidated": true,
+      "definition": "UNIQUE (policy_hash, gate_type, evidence_hash)"
+    },
+    {
+      "relname": "policy_health_windows",
+      "conname": "policy_health_windows_deployment_id_fkey",
+      "contype": "f",
+      "convalidated": true,
+      "definition": "FOREIGN KEY (deployment_id) REFERENCES policy_deployments(deployment_id)"
+    },
+    {
+      "relname": "policy_health_windows",
+      "conname": "policy_health_windows_pkey",
+      "contype": "p",
+      "convalidated": true,
+      "definition": "PRIMARY KEY (window_id)"
+    },
+    {
+      "relname": "policy_observations",
+      "conname": "policy_observations_deployment_id_fkey",
+      "contype": "f",
+      "convalidated": true,
+      "definition": "FOREIGN KEY (deployment_id) REFERENCES policy_deployments(deployment_id)"
+    },
+    {
+      "relname": "policy_observations",
+      "conname": "policy_observations_pkey",
+      "contype": "p",
+      "convalidated": true,
+      "definition": "PRIMARY KEY (observation_key)"
+    },
+    {
+      "relname": "policy_observations",
+      "conname": "policy_observations_policy_hash_fkey",
+      "contype": "f",
+      "convalidated": true,
+      "definition": "FOREIGN KEY (policy_hash) REFERENCES policy_artifacts(policy_hash)"
+    },
+    {
+      "relname": "policy_observations",
+      "conname": "policy_observations_run_id_fkey",
+      "contype": "f",
+      "convalidated": true,
+      "definition": "FOREIGN KEY (run_id) REFERENCES distributed_runs(id)"
+    }
+  ],
+  "triggers": [
+    {
+      "relname": "policy_artifacts",
+      "tgname": "trg_policy_artifacts_append_only",
+      "tgenabled": "O",
+      "trigger_type": 27,
+      "definition": "CREATE TRIGGER trg_policy_artifacts_append_only BEFORE DELETE OR UPDATE ON public.policy_artifacts FOR EACH ROW EXECUTE FUNCTION reject_m3_append_only_change()"
+    },
+    {
+      "relname": "policy_audit_events",
+      "tgname": "trg_policy_audit_events_append_only",
+      "tgenabled": "O",
+      "trigger_type": 27,
+      "definition": "CREATE TRIGGER trg_policy_audit_events_append_only BEFORE DELETE OR UPDATE ON public.policy_audit_events FOR EACH ROW EXECUTE FUNCTION reject_m3_append_only_change()"
+    },
+    {
+      "relname": "policy_deployments",
+      "tgname": "trg_policy_deployments_append_only",
+      "tgenabled": "O",
+      "trigger_type": 27,
+      "definition": "CREATE TRIGGER trg_policy_deployments_append_only BEFORE DELETE OR UPDATE ON public.policy_deployments FOR EACH ROW EXECUTE FUNCTION reject_m3_append_only_change()"
+    },
+    {
+      "relname": "policy_gate_receipts",
+      "tgname": "trg_policy_gate_receipts_append_only",
+      "tgenabled": "O",
+      "trigger_type": 27,
+      "definition": "CREATE TRIGGER trg_policy_gate_receipts_append_only BEFORE DELETE OR UPDATE ON public.policy_gate_receipts FOR EACH ROW EXECUTE FUNCTION reject_m3_append_only_change()"
+    },
+    {
+      "relname": "policy_health_windows",
+      "tgname": "trg_policy_health_windows_append_only",
+      "tgenabled": "O",
+      "trigger_type": 27,
+      "definition": "CREATE TRIGGER trg_policy_health_windows_append_only BEFORE DELETE OR UPDATE ON public.policy_health_windows FOR EACH ROW EXECUTE FUNCTION reject_m3_append_only_change()"
+    },
+    {
+      "relname": "policy_observations",
+      "tgname": "trg_policy_observations_append_only",
+      "tgenabled": "O",
+      "trigger_type": 27,
+      "definition": "CREATE TRIGGER trg_policy_observations_append_only BEFORE DELETE OR UPDATE ON public.policy_observations FOR EACH ROW EXECUTE FUNCTION reject_m3_append_only_change()"
+    }
+  ],
+  "write_rejections": [
+    {
+      "table": "policy_artifacts",
+      "error_class": "DBAPIError",
+      "rejected": true,
+      "existing_row_targeted": true,
+      "savepoint_rolled_back": true
+    },
+    {
+      "table": "policy_audit_events",
+      "error_class": "DBAPIError",
+      "rejected": true,
+      "existing_row_targeted": true,
+      "savepoint_rolled_back": true
+    },
+    {
+      "table": "policy_deployments",
+      "error_class": "DBAPIError",
+      "rejected": true,
+      "existing_row_targeted": true,
+      "savepoint_rolled_back": true
+    },
+    {
+      "table": "policy_gate_receipts",
+      "error_class": "DBAPIError",
+      "rejected": true,
+      "existing_row_targeted": true,
+      "savepoint_rolled_back": true
+    },
+    {
+      "table": "policy_health_windows",
+      "error_class": "DBAPIError",
+      "rejected": true,
+      "existing_row_targeted": true,
+      "savepoint_rolled_back": true
+    },
+    {
+      "table": "policy_observations",
+      "error_class": "DBAPIError",
+      "rejected": true,
+      "existing_row_targeted": true,
+      "savepoint_rolled_back": true
+    }
+  ]
+}

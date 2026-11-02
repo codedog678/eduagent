@@ -1,0 +1,968 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+.FFFFFF.FFFFFF.FFFFFF.FFFFFF.FFFFFF.FFFFFF                               [100%]
+=================================== FAILURES ===================================
+_ test_local_get_authenticates_entire_frozen_leaf[canary-candidate-commit_failed] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a2b7450>, <core.distributed.promotion_repository....ionRepository object at 0x10a332dd0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a21d990>)
+state = 'canary', label = 'candidate', poison = 'commit_failed'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '8d486b2d-4060-4af1-aec9-00035af17e7d', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[canary-candidate-terminal_failed] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109d8aa90>, <core.distributed.promotion_repository....ionRepository object at 0x10a37e350>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a29e850>)
+state = 'canary', label = 'candidate', poison = 'terminal_failed'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '4ec12afd-dfc5-4764-8510-f3fb0036aa7f', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[canary-candidate-permission_violation] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a2a7050>, <core.distributed.promotion_repository....ionRepository object at 0x109a0ced0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a5ad410>)
+state = 'canary', label = 'candidate', poison = 'permission_violation'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '6e648992-03bd-49c4-9079-6b6f875d2b52', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[canary-candidate-unknown_counter] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a6f6150>, <core.distributed.promotion_repository....ionRepository object at 0x10a646e50>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a7852d0>)
+state = 'canary', label = 'candidate', poison = 'unknown_counter'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '6dc84b5b-b237-48b9-a34f-a02ec68f186e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[canary-candidate-invalid_counter] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a8e33d0>, <core.distributed.promotion_repository....ionRepository object at 0x10a69c450>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a95e850>)
+state = 'canary', label = 'candidate', poison = 'invalid_counter'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '4f29f450-c24c-45da-8cc6-e7acde3f30c7', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[canary-candidate-stats_claim] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a6a9890>, <core.distributed.promotion_repository....ionRepository object at 0x10a6f3210>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a6388d0>)
+state = 'canary', label = 'candidate', poison = 'stats_claim'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': 'ba231972-4789-4a2f-85c3-32e8b8f44abf', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[canary-stable-commit_failed] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109bc5290>, <core.distributed.promotion_repository....ionRepository object at 0x10a9dadd0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a9cbc50>)
+state = 'canary', label = 'stable', poison = 'commit_failed'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '975651cb-58b1-4308-8f44-20d5b734d212', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[canary-stable-terminal_failed] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10aa87a50>, <core.distributed.promotion_repository....ionRepository object at 0x10aa879d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10aad6850>)
+state = 'canary', label = 'stable', poison = 'terminal_failed'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '2960a5c1-5a0f-4455-afcb-14db38889760', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[canary-stable-permission_violation] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a2dff10>, <core.distributed.promotion_repository....ionRepository object at 0x10a7fdd10>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a44e410>)
+state = 'canary', label = 'stable', poison = 'permission_violation'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '13ae2a8f-8d05-4eb1-9657-1c89a4484ac4', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[canary-stable-unknown_counter] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a5d2590>, <core.distributed.promotion_repository....ionRepository object at 0x10a729b90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a5ca810>)
+state = 'canary', label = 'stable', poison = 'unknown_counter'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '20d6eefe-3c94-46de-b927-be15862bd357', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[canary-stable-invalid_counter] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a792e90>, <core.distributed.promotion_repository....ionRepository object at 0x10a77f290>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a484dd0>)
+state = 'canary', label = 'stable', poison = 'invalid_counter'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '0afa7578-56e9-4b14-a7cb-b193df4ca039', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+__ test_local_get_authenticates_entire_frozen_leaf[canary-stable-stats_claim] __
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a7fcf50>, <core.distributed.promotion_repository....ionRepository object at 0x10a7fcd10>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a854150>)
+state = 'canary', label = 'stable', poison = 'stats_claim'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '203bda50-97b7-49b3-839d-8936b620f365', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-commit_failed] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109c12690>, <core.distributed.promotion_repository....ionRepository object at 0x10a3c02d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a255410>)
+state = 'shadow', label = 'candidate', poison = 'commit_failed'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '9ffc7326-3428-4788-804b-0cd7f28c614c', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-terminal_failed] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10aa064d0>, <core.distributed.promotion_repository....ionRepository object at 0x10a6653d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a666810>)
+state = 'shadow', label = 'candidate', poison = 'terminal_failed'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'a34cb6c8-0769-421e-b40b-ea27ee3470f0', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-permission_violation] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10aad4790>, <core.distributed.promotion_repository....ionRepository object at 0x10a9b8250>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10aa4e850>)
+state = 'shadow', label = 'candidate', poison = 'permission_violation'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'b80941df-71d5-4fe8-af79-643ab0787e3f', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-unknown_counter] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10aa2ae10>, <core.distributed.promotion_repository....ionRepository object at 0x10aa2ab90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x109dcdb10>)
+state = 'shadow', label = 'candidate', poison = 'unknown_counter'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'dfb26a36-48e8-4004-b8d9-36d46bd647c5', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-invalid_counter] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a84fc50>, <core.distributed.promotion_repository....ionRepository object at 0x10a8fd350>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a8fe850>)
+state = 'shadow', label = 'candidate', poison = 'invalid_counter'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'f17137e8-c44d-40f2-8b98-313db9f13153', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-stats_claim] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a7abb90>, <core.distributed.promotion_repository....ionRepository object at 0x10aae5c50>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a3185d0>)
+state = 'shadow', label = 'candidate', poison = 'stats_claim'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '530886a9-97b2-4b37-9c7c-69e1b16a09ce', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[shadow-stable-commit_failed] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a88ef50>, <core.distributed.promotion_repository....ionRepository object at 0x10a20ce90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a84f1d0>)
+state = 'shadow', label = 'stable', poison = 'commit_failed'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '5d1f642a-97c4-4161-9551-93b9c0a56b85', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[shadow-stable-terminal_failed] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a7b8ad0>, <core.distributed.promotion_repository....ionRepository object at 0x10a3d1f50>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a47bd50>)
+state = 'shadow', label = 'stable', poison = 'terminal_failed'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'f2430924-7ed4-4f1d-bb7e-a0e799698baa', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[shadow-stable-permission_violation] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a700c50>, <core.distributed.promotion_repository....ionRepository object at 0x10a9a6550>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a82c2d0>)
+state = 'shadow', label = 'stable', poison = 'permission_violation'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '6602b6c2-670d-442e-bcb2-cd782ee072d4', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[shadow-stable-unknown_counter] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a816d90>, <core.distributed.promotion_repository....ionRepository object at 0x10adf5ed0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10ae4da50>)
+state = 'shadow', label = 'stable', poison = 'unknown_counter'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '25f04ec8-dbf8-4d1f-b649-4c6cb7a64be3', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_local_get_authenticates_entire_frozen_leaf[shadow-stable-invalid_counter] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10aeca010>, <core.distributed.promotion_repository....ionRepository object at 0x10a2550d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10af02d10>)
+state = 'shadow', label = 'stable', poison = 'invalid_counter'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '26486879-86cd-4b92-bddd-cfb01952768d', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+__ test_local_get_authenticates_entire_frozen_leaf[shadow-stable-stats_claim] __
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109dabd90>, <core.distributed.promotion_repository....ionRepository object at 0x10abd1e50>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a646410>)
+state = 'shadow', label = 'stable', poison = 'stats_claim'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+        record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        shown = sources(body)
+>       assert (gate in shown) == valid
+E       AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'b66fd353-5452-404f-8b3c-73166f78269e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:198: AssertionError
+_ test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-commit_failed] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a5a8dd0>, <core.distributed.promotion_repository....ionRepository object at 0x10a30e790>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10abc6810>)
+label = 'candidate', poison = 'commit_failed'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record(f"active-{label}-{poison}", {**proof, "body": body})
+        shown = sources(body)
+>       assert set(shown) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:216: AssertionError
+_ test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-terminal_failed] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10b06ca50>, <core.distributed.promotion_repository....ionRepository object at 0x10ad39450>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b016cd0>)
+label = 'candidate', poison = 'terminal_failed'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record(f"active-{label}-{poison}", {**proof, "body": body})
+        shown = sources(body)
+>       assert set(shown) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:216: AssertionError
+_ test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-permission_violation] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10ad0b090>, <core.distributed.promotion_repository....ionRepository object at 0x109942990>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x109d7ad10>)
+label = 'candidate', poison = 'permission_violation'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record(f"active-{label}-{poison}", {**proof, "body": body})
+        shown = sources(body)
+>       assert set(shown) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:216: AssertionError
+_ test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-unknown_counter] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a5f9ad0>, <core.distributed.promotion_repository....ionRepository object at 0x10aa5ccd0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10af15110>)
+label = 'candidate', poison = 'unknown_counter'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record(f"active-{label}-{poison}", {**proof, "body": body})
+        shown = sources(body)
+>       assert set(shown) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:216: AssertionError
+_ test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-invalid_counter] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a8d8ad0>, <core.distributed.promotion_repository....ionRepository object at 0x10ac05b50>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b0ddd90>)
+label = 'candidate', poison = 'invalid_counter'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record(f"active-{label}-{poison}", {**proof, "body": body})
+        shown = sources(body)
+>       assert set(shown) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:216: AssertionError
+_ test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-stats_claim] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10b142e10>, <core.distributed.promotion_repository....ionRepository object at 0x109940590>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a77dd90>)
+label = 'candidate', poison = 'stats_claim'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record(f"active-{label}-{poison}", {**proof, "body": body})
+        shown = sources(body)
+>       assert set(shown) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:216: AssertionError
+_ test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-commit_failed] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10ab03f10>, <core.distributed.promotion_repository....ionRepository object at 0x10a753610>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a6f7bd0>)
+label = 'stable', poison = 'commit_failed'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record(f"active-{label}-{poison}", {**proof, "body": body})
+        shown = sources(body)
+>       assert set(shown) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:216: AssertionError
+_ test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-terminal_failed] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109ec7050>, <core.distributed.promotion_repository....ionRepository object at 0x10a638e10>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a8b2d10>)
+label = 'stable', poison = 'terminal_failed'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record(f"active-{label}-{poison}", {**proof, "body": body})
+        shown = sources(body)
+>       assert set(shown) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:216: AssertionError
+_ test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-permission_violation] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a714bd0>, <core.distributed.promotion_repository....ionRepository object at 0x10b15d6d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x109cd6810>)
+label = 'stable', poison = 'permission_violation'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record(f"active-{label}-{poison}", {**proof, "body": body})
+        shown = sources(body)
+>       assert set(shown) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:216: AssertionError
+_ test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-unknown_counter] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10b1ae390>, <core.distributed.promotion_repository....ionRepository object at 0x10a9da810>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a703d50>)
+label = 'stable', poison = 'unknown_counter'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record(f"active-{label}-{poison}", {**proof, "body": body})
+        shown = sources(body)
+>       assert set(shown) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:216: AssertionError
+_ test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-invalid_counter] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10ad1c0d0>, <core.distributed.promotion_repository....ionRepository object at 0x10ae67f90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b2b6410>)
+label = 'stable', poison = 'invalid_counter'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record(f"active-{label}-{poison}", {**proof, "body": body})
+        shown = sources(body)
+>       assert set(shown) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:216: AssertionError
+_ test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-stats_claim] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10b0bad90>, <core.distributed.promotion_repository....ionRepository object at 0x10b17fd90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b1129d0>)
+label = 'stable', poison = 'stats_claim'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+        record(f"active-{label}-{poison}", {**proof, "body": body})
+        shown = sources(body)
+>       assert set(shown) == ({"canary_health", "shadow_health"} if valid else set())
+E       AssertionError: assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-whole-code-e8c530ed-1f7b-4826-85cc-098395a0c814/test_complementary_metrics.py:216: AssertionError
+=========================== short test summary info ============================
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[canary-candidate-commit_failed] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '8d486b2d-4060-4af1-aec9-00035af17e7d', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[canary-candidate-terminal_failed] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '4ec12afd-dfc5-4764-8510-f3fb0036aa7f', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[canary-candidate-permission_violation] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '6e648992-03bd-49c4-9079-6b6f875d2b52', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[canary-candidate-unknown_counter] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '6dc84b5b-b237-48b9-a34f-a02ec68f186e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[canary-candidate-invalid_counter] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '4f29f450-c24c-45da-8cc6-e7acde3f30c7', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[canary-candidate-stats_claim] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': 'ba231972-4789-4a2f-85c3-32e8b8f44abf', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[canary-stable-commit_failed] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '975651cb-58b1-4308-8f44-20d5b734d212', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[canary-stable-terminal_failed] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '2960a5c1-5a0f-4455-afcb-14db38889760', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[canary-stable-permission_violation] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '13ae2a8f-8d05-4eb1-9657-1c89a4484ac4', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[canary-stable-unknown_counter] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '20d6eefe-3c94-46de-b927-be15862bd357', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[canary-stable-invalid_counter] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '0afa7578-56e9-4b14-a7cb-b193df4ca039', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[canary-stable-stats_claim] - AssertionError: assert ('canary_health' in {'canary_health': {'receipt_id': '203bda50-97b7-49b3-839d-8936b620f365', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-commit_failed] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '9ffc7326-3428-4788-804b-0cd7f28c614c', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-terminal_failed] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'a34cb6c8-0769-421e-b40b-ea27ee3470f0', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-permission_violation] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'b80941df-71d5-4fe8-af79-643ab0787e3f', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-unknown_counter] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'dfb26a36-48e8-4004-b8d9-36d46bd647c5', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-invalid_counter] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'f17137e8-c44d-40f2-8b98-313db9f13153', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-stats_claim] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '530886a9-97b2-4b37-9c7c-69e1b16a09ce', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[shadow-stable-commit_failed] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '5d1f642a-97c4-4161-9551-93b9c0a56b85', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[shadow-stable-terminal_failed] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'f2430924-7ed4-4f1d-bb7e-a0e799698baa', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[shadow-stable-permission_violation] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '6602b6c2-670d-442e-bcb2-cd782ee072d4', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[shadow-stable-unknown_counter] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '25f04ec8-dbf8-4d1f-b649-4c6cb7a64be3', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[shadow-stable-invalid_counter] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': '26486879-86cd-4b92-bddd-cfb01952768d', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_local_get_authenticates_entire_frozen_leaf[shadow-stable-stats_claim] - AssertionError: assert ('shadow_health' in {'shadow_health': {'receipt_id': 'b66fd353-5452-404f-8b3c-73166f78269e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-commit_failed] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-terminal_failed] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-permission_violation] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-unknown_counter] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-invalid_counter] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-stats_claim] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-commit_failed] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-terminal_failed] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-permission_violation] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-unknown_counter] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-invalid_counter] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-stats_claim] - AssertionError: assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+36 failed, 6 passed in 22.59s
