@@ -5,6 +5,8 @@
 [是什么](#是什么) · [做了什么](#做了什么) · [怎么做的](#怎么做的) ·
 [技术栈](#技术栈) · [重难点](#重难点) · [测试](#测试)
 
+[整体架构图](#整体架构) · [学习数据流转图](#学习数据流转) · [教育学原理](#教育学原理)
+
 ## 是什么
 
 EduAgent 是一个面向英语学习的多 Agent 教学系统。学生可以围绕知识点完成
@@ -35,6 +37,45 @@ EduAgent 是一个面向英语学习的多 Agent 教学系统。学生可以围�
 
 ## 怎么做的
 
+### 整体架构
+
+教学应用由交互层、Harness、Agent 执行层和学习状态层组成。下面展示普通模式的
+组件关系；分布式任务调度在后面的执行架构图中展开。
+
+```mermaid
+flowchart TB
+    UI["React 学习界面<br/>练习 / 答疑 / 历史 / 复习"] --> API["FastAPI<br/>REST / WebSocket"]
+    API --> H["LearningHarness<br/>去重 / 超时 / 检查点 / 事务提交"]
+
+    subgraph EXEC["Agent 执行层"]
+        ORCH["AgentOrchestrator + EventBus"]
+        ROLES["Assessment / Tutor<br/>Curriculum / Engagement"]
+        COORD["Coordinator<br/>复合计划 / 专家委派 / 有界重规划"]
+        TUTOR["TutorRuntime<br/>上下文构建 / 原生工具循环"]
+        TOOLS["受限工具层<br/>历史检索 / 来源读取 / 知识查询"]
+        ORCH --> ROLES
+        COORD --> TUTOR
+        ROLES --> TUTOR
+        TUTOR --> TOOLS
+        COORD --> TOOLS
+    end
+
+    H --> ORCH
+    H --> COORD
+    ROLES --> MODEL["学习者模型 / 知识 DAG / SM-2"]
+    TUTOR --> LLM["LLMService<br/>模型调用 / 额度 / 本地回退"]
+    COORD --> LLM
+    TOOLS --> HISTORY["LearningHistory<br/>对话 / 学习证据 / 长期记忆检索"]
+    HISTORY --> DB["SQLite<br/>测验 / 证据 / 计划 / 检查点"]
+    H -->|"提交本轮业务状态与结果"| DB
+    MODEL -.->|"状态由 Harness 纳入检查点"| DB
+```
+
+普通答题经 EventBus 驱动四个角色；REST 自由答疑由 Tutor 使用 TutorRuntime，
+复合任务则由 Coordinator 按需组织专家和最终导师回复。图中的角色仍在同一个
+进程内运行；独立 Expert Worker 属于后面的分布式模式。学习者模型和 Agent
+上下文在进程内使用，持久化由 Harness 统一提交，重启时从检查点恢复。
+
 ### 教学流程：状态、证据与 Agent 协作
 
 一次练习的主要流程：
@@ -54,6 +95,79 @@ Tutor 使用原生工具调用协议。工具参数由严格 schema 校验，学
 和可选的 `bge-m3` 向量召回，用 RRF 合并结果，来源原文可以分页读取。
 没有模型密钥时使用明确标记的本地规则或模板；向量不可用时回退到关键词检索。
 
+### 学习数据流转
+
+以一次测验作答及其后续答疑为例。掌握度和学习记录走不同的更新路径：
+所有合法作答都会保存行为证据，只有首次独立作答进入 BKT 和复习计划更新。
+
+```mermaid
+sequenceDiagram
+    actor S as 学生 / 前端
+    participant H as Harness
+    participant A as 教学 Agent
+    participant D as SQLite
+    Note over S,D: ① 出题：答案保留在服务端
+    S->>H: 请求练习
+    H->>D: 保存题目、答案和测验状态
+    H-->>S: 返回题干、选项和 quiz_id
+    Note over S,D: ② 作答：判分与学习证据分离
+    S->>H: 提交选项、request_id 和 quiz_id
+    H->>D: 读取题目，校验归属和请求指纹
+    alt 首次作答且未求助
+        H->>A: 判分后更新 BKT 和 SM-2
+    else 重试、提示后或对话求助后作答
+        H->>A: 保留掌握度和复习计划，记录受助表现
+    end
+    A-->>H: 反馈、学习状态和后续建议
+    H->>D: 同事务提交测验、证据、检查点和结果
+    D-->>H: 提交成功
+    H-->>S: 返回反馈，相同请求可重放
+    Note over S,D: ③ 后续答疑：从已提交证据接续
+    S->>H: 追问或补充回答
+    H->>D: 读取主题历史、评估证据和待答计划
+    H->>A: 按预算构建上下文，Tutor 回答
+    A-->>H: 公开回复或待答问题
+    H->>D: 同事务保存回复、待答状态和本题受助标记
+    D-->>H: 提交成功
+    H-->>S: 返回回复，需要补充时等待下一轮
+```
+
+该图表示逻辑数据流，Agent 内部调用由 EventBus 或 Coordinator 编排。
+例如，学生第一次答错，随后请求提示并答对：第一次独立错答会更新掌握度，
+后续正确答案记为受助表现，保留练习过程，但不会把提示后的正确直接计为独立掌握。
+失败时恢复本轮之前的学习状态，并保留失败执行记录。
+
+### 教育学原理
+
+系统将学习证据用于下一步教学决策：先判断学生当前能独立完成什么，再决定
+提供多少帮助、是否回到前置知识，以及何时再次复习。
+
+| 原理与依据 | 在系统中的落实 | 适用边界 |
+| --- | --- | --- |
+| **形成性评价**：用学习过程中的证据调整后续教学（Black & Wiliam, 1998） | 错答后保留重试机会，给出线索检查建议；评估结果用于补救、课程推荐和复习 | 自动判分与提示是形成性反馈机制，反馈的教学质量仍需审阅 |
+| **支架式教学**：为当前任务提供逐步支持（Wood、Bruner & Ross, 1976） | 主动求助时按“思路检查 → 学科判断框架 → 选项验证”升级提示；答案与解析由学生主动查看 | 当前是固定三级提示；尚未实现经验证的个性化支架撤除策略 |
+| **元认知与自我调节学习**：支持学生检查理解、监控策略并调整学习（Zimmerman, 2002） | 提示要求圈出线索、说明选择依据和排除理由；允许选择求助时机，并可选记录答题把握程度 | 只提供部分调节支架，未实现完整 SRL 测量，也不将把握程度直接当作能力 |
+| **知识追踪**：通过连续作答推断知识状态（Corbett & Anderson, 1995） | 按“学习者 × 知识点”用 BKT 维护掌握概率，考虑猜测、失误、初始掌握与学习转移 | 当前仅独立作答更新；学习转移只在答对后应用，属于项目改动，参数未经真实学生数据拟合 |
+| **前置知识与循序学习**：学习任务应考虑已有基础 | 用 DAG 表达知识依赖，课程推荐和推进测验检查前置知识；基础不足时建议先补练 | 图谱和门槛是人工配置的教学规则，不代表已验证的最优学习路径 |
+| **间隔练习**：将练习分散到不同时间（Cepeda 等, 2006） | 用 SM-2 调整复习间隔和难度因子，展示到期项目与七天计划 | SM-2 是调度实现；保持率为启发式估计，尚未证明该配置下的长期保持收益 |
+
+独立与受助证据分离是贯穿这些机制的设计原则：支架可以帮助完成当前任务，
+受助成功需要与后续独立练习分别记录。Engagement 的节奏建议来自近期正确率、
+耗时和会话长度等行为规则，用于提供支持，不视为经过验证的情绪诊断。
+
+<details>
+<summary>教育学参考文献</summary>
+
+- Black, P., & Wiliam, D. (1998). *Assessment and Classroom Learning*. [DOI](https://doi.org/10.1080/0969595980050102)
+- Wood, D., Bruner, J. S., & Ross, G. (1976). *The Role of Tutoring in Problem Solving*. [DOI](https://doi.org/10.1111/j.1469-7610.1976.tb00381.x)
+- Zimmerman, B. J. (2002). *Becoming a Self-Regulated Learner: An Overview*. [DOI](https://doi.org/10.1207/s15430421tip4102_2)
+- Corbett, A. T., & Anderson, J. R. (1995). *Knowledge tracing: Modeling the acquisition of procedural knowledge*. [DOI](https://doi.org/10.1007/BF01099821)
+- Cepeda, N. J., et al. (2006). *Distributed practice in verbal recall tasks: A review and quantitative synthesis*. [DOI](https://doi.org/10.1037/0033-2909.132.3.354)
+
+这些文献用于说明设计依据，不构成 EduAgent 学习效果的实证结论。
+
+</details>
+
 ### 执行架构：分开任务调度与业务提交
 
 普通模式由一个后端进程执行教学任务，SQLite 保存业务状态；同一学习者的
@@ -61,7 +175,7 @@ Tutor 使用原生工具调用协议。工具参数由严格 schema 校验，学
 和 Redis 来管理任务投递、租约和故障恢复：
 
 ```mermaid
-flowchart LR
+flowchart TB
     API["分布式 API"] --> PG["PostgreSQL<br/>任务状态 / 租约 / 策略绑定"]
     PG --> OUT["事务 Outbox"]
     OUT --> REDIS["Redis Streams<br/>任务投递"]
