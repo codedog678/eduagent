@@ -1,0 +1,1339 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+........................................................................ [ 33%]
+..........................................................FF....FF...... [ 66%]
+........................................................................ [ 99%]
+.                                                                        [100%]
+=================================== FAILURES ===================================
+_____ test_actual_observation_schema_is_authenticated[changes13-candidate] _____
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10a9158a0>
+operation = 'INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric... $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)'
+parameters = ('97c25e98a69ca94f6ba9d65ae3971ce77dbb9bbcb73cf20893f6b7926ed9a923', '821a4ff7-4086-49cb-bb64-76c1331eaa03', '92ba2697...5d703995a3f', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.NumericValueOutOfRangeError: numeric field overflow
+E   DETAIL:  A field with precision 20, scale 6 cannot hold an infinite value.
+
+asyncpg/protocol/protocol.pyx:197: NumericValueOutOfRangeError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10cbbb490>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10c586a50>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10cfcb810>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10cfcb910>
+parameters = [('97c25e98a69ca94f6ba9d65ae3971ce77dbb9bbcb73cf20893f6b7926ed9a923', '821a4ff7-4086-49cb-bb64-76c1331eaa03', '92ba269...d703995a3f', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10a85c130>>
+error = NumericValueOutOfRangeError('numeric field overflow')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.Error: <class 'asyncpg.exceptions.NumericValueOutOfRangeError'>: numeric field overflow
+E                   DETAIL:  A field with precision 20, scale 6 cannot hold an infinite value.
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: Error
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10ada7b50>, <core.distributed.promotion_repository....ionRepository object at 0x10d083810>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10cc4a9d0>)
+label = 'candidate', changes = {'latency_seconds': Decimal('Infinity')}
+
+    @pytest.mark.parametrize("label", ["candidate", "stable"])
+    @pytest.mark.parametrize("changes", SCHEMA_ATTACKS)
+    async def test_actual_observation_schema_is_authenticated(health_repo, label, changes):
+>       repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", "custom", label, row_changes=changes)
+
+tests/distributed/test_ops_frozen_metrics.py:302: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_ops_frozen_metrics.py:167: in append_altered_leaf
+    await session.flush()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
+    await greenlet_spawn(self.sync_session.flush, objects=objects)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4353: in flush
+    self._flush(objects)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4488: in _flush
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4449: in _flush
+    flush_context.execute()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: in _exec_single_context
+    self.dialect.do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10a85c130>>
+error = NumericValueOutOfRangeError('numeric field overflow')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.DBAPIError: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.NumericValueOutOfRangeError'>: numeric field overflow
+E                   DETAIL:  A field with precision 20, scale 6 cannot hold an infinite value.
+E                   [SQL: INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric_contract_version, terminal_status, latency_seconds, input_tokens, output_tokens, cost, commit_outcome, permission_outcome, structured_result, structured_decision_count, unknown_decision_count, rehearsal_id, operation, server_error_code, fault_injected, injected, observed_at, source_trace_id, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::INTEGER, $8::VARCHAR, $9::NUMERIC(20, 6), $10::INTEGER, $11::INTEGER, $12::NUMERIC(20, 8), $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::INTEGER, $17::INTEGER, $18::VARCHAR, $19::VARCHAR, $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('97c25e98a69ca94f6ba9d65ae3971ce77dbb9bbcb73cf20893f6b7926ed9a923', '821a4ff7-4086-49cb-bb64-76c1331eaa03', '92ba2697-99d1-4b9d-b9d9-f5d703995a3f', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('Infinity'), 10, 5, Decimal('0.01000000'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 8, 11, 15, 785813, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]
+E                   (Background on this error at: https://sqlalche.me/e/20/dbapi)
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: DBAPIError
+______ test_actual_observation_schema_is_authenticated[changes13-stable] _______
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10a8e3a60>
+operation = 'INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric... $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)'
+parameters = ('5b9b948f453e368bc93a5687e3f229e7540b2a335fb776c0207092826bfb48e0', 'c56a0465-5afa-4c37-ab73-2c56cbcc9d3b', 'b493353a...4-363d50f26dc9', '778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9', 'stable', 'rehearsal-health', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.NumericValueOutOfRangeError: numeric field overflow
+E   DETAIL:  A field with precision 20, scale 6 cannot hold an infinite value.
+
+asyncpg/protocol/protocol.pyx:197: NumericValueOutOfRangeError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10cf89d90>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10c8ffdd0>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10b6f4690>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10acfe810>
+parameters = [('5b9b948f453e368bc93a5687e3f229e7540b2a335fb776c0207092826bfb48e0', 'c56a0465-5afa-4c37-ab73-2c56cbcc9d3b', 'b493353...-363d50f26dc9', '778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9', 'stable', 'rehearsal-health', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10c82e6b0>>
+error = NumericValueOutOfRangeError('numeric field overflow')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.Error: <class 'asyncpg.exceptions.NumericValueOutOfRangeError'>: numeric field overflow
+E                   DETAIL:  A field with precision 20, scale 6 cannot hold an infinite value.
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: Error
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10c8ff510>, <core.distributed.promotion_repository....ionRepository object at 0x10b9b3490>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10c013550>)
+label = 'stable', changes = {'latency_seconds': Decimal('Infinity')}
+
+    @pytest.mark.parametrize("label", ["candidate", "stable"])
+    @pytest.mark.parametrize("changes", SCHEMA_ATTACKS)
+    async def test_actual_observation_schema_is_authenticated(health_repo, label, changes):
+>       repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", "custom", label, row_changes=changes)
+
+tests/distributed/test_ops_frozen_metrics.py:302: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_ops_frozen_metrics.py:167: in append_altered_leaf
+    await session.flush()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
+    await greenlet_spawn(self.sync_session.flush, objects=objects)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4353: in flush
+    self._flush(objects)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4488: in _flush
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4449: in _flush
+    flush_context.execute()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: in _exec_single_context
+    self.dialect.do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10c82e6b0>>
+error = NumericValueOutOfRangeError('numeric field overflow')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.DBAPIError: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.NumericValueOutOfRangeError'>: numeric field overflow
+E                   DETAIL:  A field with precision 20, scale 6 cannot hold an infinite value.
+E                   [SQL: INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric_contract_version, terminal_status, latency_seconds, input_tokens, output_tokens, cost, commit_outcome, permission_outcome, structured_result, structured_decision_count, unknown_decision_count, rehearsal_id, operation, server_error_code, fault_injected, injected, observed_at, source_trace_id, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::INTEGER, $8::VARCHAR, $9::NUMERIC(20, 6), $10::INTEGER, $11::INTEGER, $12::NUMERIC(20, 8), $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::INTEGER, $17::INTEGER, $18::VARCHAR, $19::VARCHAR, $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('5b9b948f453e368bc93a5687e3f229e7540b2a335fb776c0207092826bfb48e0', 'c56a0465-5afa-4c37-ab73-2c56cbcc9d3b', 'b493353a-1fcb-4eac-8874-363d50f26dc9', '778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9', 'stable', 'rehearsal-health', 1, 'completed', Decimal('Infinity'), 10, 5, Decimal('0.01000000'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 8, 11, 16, 380910, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]
+E                   (Background on this error at: https://sqlalche.me/e/20/dbapi)
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: DBAPIError
+_____ test_actual_observation_schema_is_authenticated[changes16-candidate] _____
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10d7be080>
+operation = 'INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric... $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)'
+parameters = ('05fa8005a707815f2587c2fd7562423197a690407777e900362537458d33a490', '48f1a506-072b-42f8-85fe-28a81850663e', 'c9990d09...b4fb27deeff', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.NumericValueOutOfRangeError: numeric field overflow
+E   DETAIL:  A field with precision 20, scale 8 cannot hold an infinite value.
+
+asyncpg/protocol/protocol.pyx:197: NumericValueOutOfRangeError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10d9fae10>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10a9acad0>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10da12990>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10da136d0>
+parameters = [('05fa8005a707815f2587c2fd7562423197a690407777e900362537458d33a490', '48f1a506-072b-42f8-85fe-28a81850663e', 'c9990d0...4fb27deeff', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10c82d3f0>>
+error = NumericValueOutOfRangeError('numeric field overflow')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.Error: <class 'asyncpg.exceptions.NumericValueOutOfRangeError'>: numeric field overflow
+E                   DETAIL:  A field with precision 20, scale 8 cannot hold an infinite value.
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: Error
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10c684990>, <core.distributed.promotion_repository....ionRepository object at 0x10c3abb90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10c859790>)
+label = 'candidate', changes = {'cost': Decimal('Infinity')}
+
+    @pytest.mark.parametrize("label", ["candidate", "stable"])
+    @pytest.mark.parametrize("changes", SCHEMA_ATTACKS)
+    async def test_actual_observation_schema_is_authenticated(health_repo, label, changes):
+>       repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", "custom", label, row_changes=changes)
+
+tests/distributed/test_ops_frozen_metrics.py:302: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_ops_frozen_metrics.py:167: in append_altered_leaf
+    await session.flush()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
+    await greenlet_spawn(self.sync_session.flush, objects=objects)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4353: in flush
+    self._flush(objects)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4488: in _flush
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4449: in _flush
+    flush_context.execute()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: in _exec_single_context
+    self.dialect.do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10c82d3f0>>
+error = NumericValueOutOfRangeError('numeric field overflow')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.DBAPIError: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.NumericValueOutOfRangeError'>: numeric field overflow
+E                   DETAIL:  A field with precision 20, scale 8 cannot hold an infinite value.
+E                   [SQL: INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric_contract_version, terminal_status, latency_seconds, input_tokens, output_tokens, cost, commit_outcome, permission_outcome, structured_result, structured_decision_count, unknown_decision_count, rehearsal_id, operation, server_error_code, fault_injected, injected, observed_at, source_trace_id, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::INTEGER, $8::VARCHAR, $9::NUMERIC(20, 6), $10::INTEGER, $11::INTEGER, $12::NUMERIC(20, 8), $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::INTEGER, $17::INTEGER, $18::VARCHAR, $19::VARCHAR, $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('05fa8005a707815f2587c2fd7562423197a690407777e900362537458d33a490', '48f1a506-072b-42f8-85fe-28a81850663e', 'c9990d09-3798-46d6-8121-7b4fb27deeff', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1.000000'), 10, 5, Decimal('Infinity'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 8, 11, 18, 345260, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]
+E                   (Background on this error at: https://sqlalche.me/e/20/dbapi)
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: DBAPIError
+______ test_actual_observation_schema_is_authenticated[changes16-stable] _______
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10d133760>
+operation = 'INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric... $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)'
+parameters = ('0c0964ee8dc86de62b8257b95b71736a3cc4cc1e0adad3a3969513225ab06965', '9e0629b9-9560-4e13-94c7-6205e63d7a9c', '26e37846...f-d42593646eb0', '778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9', 'stable', 'rehearsal-health', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.NumericValueOutOfRangeError: numeric field overflow
+E   DETAIL:  A field with precision 20, scale 8 cannot hold an infinite value.
+
+asyncpg/protocol/protocol.pyx:197: NumericValueOutOfRangeError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10a539b90>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10c9c7010>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10ae3ad50>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10ae3a1d0>
+parameters = [('0c0964ee8dc86de62b8257b95b71736a3cc4cc1e0adad3a3969513225ab06965', '9e0629b9-9560-4e13-94c7-6205e63d7a9c', '26e3784...-d42593646eb0', '778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9', 'stable', 'rehearsal-health', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10c82fe20>>
+error = NumericValueOutOfRangeError('numeric field overflow')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.Error: <class 'asyncpg.exceptions.NumericValueOutOfRangeError'>: numeric field overflow
+E                   DETAIL:  A field with precision 20, scale 8 cannot hold an infinite value.
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: Error
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a69c250>, <core.distributed.promotion_repository....ionRepository object at 0x10ba68d90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10bf6ac50>)
+label = 'stable', changes = {'cost': Decimal('Infinity')}
+
+    @pytest.mark.parametrize("label", ["candidate", "stable"])
+    @pytest.mark.parametrize("changes", SCHEMA_ATTACKS)
+    async def test_actual_observation_schema_is_authenticated(health_repo, label, changes):
+>       repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", "custom", label, row_changes=changes)
+
+tests/distributed/test_ops_frozen_metrics.py:302: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_ops_frozen_metrics.py:167: in append_altered_leaf
+    await session.flush()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
+    await greenlet_spawn(self.sync_session.flush, objects=objects)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4353: in flush
+    self._flush(objects)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4488: in _flush
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4449: in _flush
+    flush_context.execute()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: in _exec_single_context
+    self.dialect.do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10c82fe20>>
+error = NumericValueOutOfRangeError('numeric field overflow')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.DBAPIError: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.NumericValueOutOfRangeError'>: numeric field overflow
+E                   DETAIL:  A field with precision 20, scale 8 cannot hold an infinite value.
+E                   [SQL: INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric_contract_version, terminal_status, latency_seconds, input_tokens, output_tokens, cost, commit_outcome, permission_outcome, structured_result, structured_decision_count, unknown_decision_count, rehearsal_id, operation, server_error_code, fault_injected, injected, observed_at, source_trace_id, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::INTEGER, $8::VARCHAR, $9::NUMERIC(20, 6), $10::INTEGER, $11::INTEGER, $12::NUMERIC(20, 8), $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::INTEGER, $17::INTEGER, $18::VARCHAR, $19::VARCHAR, $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('0c0964ee8dc86de62b8257b95b71736a3cc4cc1e0adad3a3969513225ab06965', '9e0629b9-9560-4e13-94c7-6205e63d7a9c', '26e37846-76e0-4de4-aeef-d42593646eb0', '778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9', 'stable', 'rehearsal-health', 1, 'completed', Decimal('1.000000'), 10, 5, Decimal('Infinity'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 8, 11, 18, 989804, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]
+E                   (Background on this error at: https://sqlalche.me/e/20/dbapi)
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: DBAPIError
+=========================== short test summary info ============================
+FAILED tests/distributed/test_ops_frozen_metrics.py::test_actual_observation_schema_is_authenticated[changes13-candidate] - sqlalchemy.exc.DBAPIError: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.NumericValueOutOfRangeError'>: numeric field overflow
+DETAIL:  A field with precision 20, scale 6 cannot hold an infinite value.
+[SQL: INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric_contract_version, terminal_status, latency_seconds, input_tokens, output_tokens, cost, commit_outcome, permission_outcome, structured_result, structured_decision_count, unknown_decision_count, rehearsal_id, operation, server_error_code, fault_injected, injected, observed_at, source_trace_id, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::INTEGER, $8::VARCHAR, $9::NUMERIC(20, 6), $10::INTEGER, $11::INTEGER, $12::NUMERIC(20, 8), $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::INTEGER, $17::INTEGER, $18::VARCHAR, $19::VARCHAR, $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)]
+[parameters: ('97c25e98a69ca94f6ba9d65ae3971ce77dbb9bbcb73cf20893f6b7926ed9a923', '821a4ff7-4086-49cb-bb64-76c1331eaa03', '92ba2697-99d1-4b9d-b9d9-f5d703995a3f', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('Infinity'), 10, 5, Decimal('0.01000000'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 8, 11, 15, 785813, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]
+(Background on this error at: https://sqlalche.me/e/20/dbapi)
+FAILED tests/distributed/test_ops_frozen_metrics.py::test_actual_observation_schema_is_authenticated[changes13-stable] - sqlalchemy.exc.DBAPIError: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.NumericValueOutOfRangeError'>: numeric field overflow
+DETAIL:  A field with precision 20, scale 6 cannot hold an infinite value.
+[SQL: INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric_contract_version, terminal_status, latency_seconds, input_tokens, output_tokens, cost, commit_outcome, permission_outcome, structured_result, structured_decision_count, unknown_decision_count, rehearsal_id, operation, server_error_code, fault_injected, injected, observed_at, source_trace_id, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::INTEGER, $8::VARCHAR, $9::NUMERIC(20, 6), $10::INTEGER, $11::INTEGER, $12::NUMERIC(20, 8), $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::INTEGER, $17::INTEGER, $18::VARCHAR, $19::VARCHAR, $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)]
+[parameters: ('5b9b948f453e368bc93a5687e3f229e7540b2a335fb776c0207092826bfb48e0', 'c56a0465-5afa-4c37-ab73-2c56cbcc9d3b', 'b493353a-1fcb-4eac-8874-363d50f26dc9', '778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9', 'stable', 'rehearsal-health', 1, 'completed', Decimal('Infinity'), 10, 5, Decimal('0.01000000'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 8, 11, 16, 380910, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]
+(Background on this error at: https://sqlalche.me/e/20/dbapi)
+FAILED tests/distributed/test_ops_frozen_metrics.py::test_actual_observation_schema_is_authenticated[changes16-candidate] - sqlalchemy.exc.DBAPIError: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.NumericValueOutOfRangeError'>: numeric field overflow
+DETAIL:  A field with precision 20, scale 8 cannot hold an infinite value.
+[SQL: INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric_contract_version, terminal_status, latency_seconds, input_tokens, output_tokens, cost, commit_outcome, permission_outcome, structured_result, structured_decision_count, unknown_decision_count, rehearsal_id, operation, server_error_code, fault_injected, injected, observed_at, source_trace_id, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::INTEGER, $8::VARCHAR, $9::NUMERIC(20, 6), $10::INTEGER, $11::INTEGER, $12::NUMERIC(20, 8), $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::INTEGER, $17::INTEGER, $18::VARCHAR, $19::VARCHAR, $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)]
+[parameters: ('05fa8005a707815f2587c2fd7562423197a690407777e900362537458d33a490', '48f1a506-072b-42f8-85fe-28a81850663e', 'c9990d09-3798-46d6-8121-7b4fb27deeff', '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'candidate', 'rehearsal-health', 1, 'completed', Decimal('1.000000'), 10, 5, Decimal('Infinity'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 8, 11, 18, 345260, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]
+(Background on this error at: https://sqlalche.me/e/20/dbapi)
+FAILED tests/distributed/test_ops_frozen_metrics.py::test_actual_observation_schema_is_authenticated[changes16-stable] - sqlalchemy.exc.DBAPIError: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.NumericValueOutOfRangeError'>: numeric field overflow
+DETAIL:  A field with precision 20, scale 8 cannot hold an infinite value.
+[SQL: INSERT INTO policy_observations (observation_key, run_id, deployment_id, policy_hash, cohort, state_namespace, metric_contract_version, terminal_status, latency_seconds, input_tokens, output_tokens, cost, commit_outcome, permission_outcome, structured_result, structured_decision_count, unknown_decision_count, rehearsal_id, operation, server_error_code, fault_injected, injected, observed_at, source_trace_id, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::INTEGER, $8::VARCHAR, $9::NUMERIC(20, 6), $10::INTEGER, $11::INTEGER, $12::NUMERIC(20, 8), $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::INTEGER, $17::INTEGER, $18::VARCHAR, $19::VARCHAR, $20::VARCHAR, $21::BOOLEAN, $22::BOOLEAN, $23::TIMESTAMP WITH TIME ZONE, $24::VARCHAR, $25::TIMESTAMP WITH TIME ZONE)]
+[parameters: ('0c0964ee8dc86de62b8257b95b71736a3cc4cc1e0adad3a3969513225ab06965', '9e0629b9-9560-4e13-94c7-6205e63d7a9c', '26e37846-76e0-4de4-aeef-d42593646eb0', '778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9', 'stable', 'rehearsal-health', 1, 'completed', Decimal('1.000000'), 10, 5, Decimal('Infinity'), 'succeeded', 'allowed', 'valid', 10, 0, 'health', 'learning_task', None, False, False, datetime.datetime(2026, 11, 2, 8, 11, 18, 989804, tzinfo=datetime.timezone.utc), 'cccccccccccccccccccccccccccccccc', datetime.datetime(2026, 11, 1, 0, 0, tzinfo=datetime.timezone.utc))]
+(Background on this error at: https://sqlalche.me/e/20/dbapi)
+4 failed, 213 passed in 83.39s (0:01:23)

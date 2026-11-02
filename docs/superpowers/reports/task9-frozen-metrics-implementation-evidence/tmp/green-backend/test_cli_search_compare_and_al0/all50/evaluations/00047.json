@@ -1,0 +1,1422 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": true,
+    "case_id": "live-51-assisted-passive",
+    "category": "学习证据",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [],
+    "execution_outcome": "completed",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.assistance / quiz.eval-live-51-q1",
+        "rule": "s1.assistance.recorded=true；s1 提交后 assisted=true，attempts=0。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": true,
+        "path": "s2.evaluation.is_correct",
+        "rule": "等于 true。",
+        "status": "passed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": true,
+        "path": "s2.learning_evidence",
+        "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice、attempt=1。",
+        "status": "passed"
+      },
+      {
+        "id": "H4",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.grammar_passive",
+        "rule": "场景前后所有 KnowledgeState 字段相同，mastery=0.1、attempts=0、correct_count=0。",
+        "status": "passed"
+      },
+      {
+        "id": "H5",
+        "method": "automatic",
+        "passed": true,
+        "path": "learning_evidence 与 quiz.eval-live-51-q1",
+        "rule": "有与 q1 关联的 assistance 和 assessment；最终 quiz.attempts=1、assisted=true、solved=true。",
+        "status": "passed"
+      },
+      {
+        "id": "H6",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s1.teaching_response.response",
+        "rule": "提示检查被动结构 be 后的过去分词，不直接提供 sent 或选 A；候选想法不算独立评估。",
+        "status": "review_pending"
+      },
+      {
+        "id": "S1",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "hint_direct",
+        "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。",
+        "status": "review_pending"
+      },
+      {
+        "id": "S2",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "hint_paraphrase",
+        "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。",
+        "status": "review_pending"
+      },
+      {
+        "id": "S3",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "hint_elimination",
+        "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：满足本条语义规则且无事实错误；1 分：部分正确但遗漏；0 分：事实错误或编造证据。",
+        "actionability": "2 分：完成本条请求且给出可执行下一步；1 分：可用但不充分；0 分：无指导或违反提示限制。",
+        "targeting": "2 分：使用本条实际输入及可见证据；1 分：通用说明；0 分：忽略输入或证据。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "review_pending",
+    "title": "证据：被动提示后答对仍非独立"
+  },
+  "capability": "learning_evidence",
+  "case_id": "live-51-assisted-passive",
+  "evaluation_index": 47,
+  "judge_identity": {
+    "model": "template",
+    "provider": "template",
+    "thinking": "disabled"
+  },
+  "metering": [
+    {
+      "request_no": 131,
+      "reservation_cny": 0.022288,
+      "role": "task",
+      "status": "unconfirmed",
+      "usage": null
+    },
+    {
+      "estimated_off_peak_cny": 5e-05,
+      "estimated_peak_cny": 0.0001,
+      "request_no": 132,
+      "reservation_cny": 0.035376,
+      "role": "judge",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 10,
+        "output_tokens": 10
+      }
+    }
+  ],
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE"
+      ],
+      "evidence": [
+        {
+          "body": {
+            "assisted": true,
+            "source_refs": []
+          },
+          "kind": "assistance",
+          "quiz_id": "eval-live-51-q1",
+          "source_ref": "evidence:d574aa00-3db2-4610-8760-4fd3f7ee54b8"
+        },
+        {
+          "body": {
+            "assisted": true,
+            "attempt": 1,
+            "confidence": 0.8,
+            "hints_used": 0,
+            "independent": false,
+            "is_correct": true,
+            "knowledge_id": "grammar_passive",
+            "mastery_updated": false,
+            "outcome": "guided_practice",
+            "question": "The letter was ____ yesterday.",
+            "quiz_id": "eval-live-51-q1",
+            "source_refs": [],
+            "student_answer": "A. sent"
+          },
+          "kind": "assessment",
+          "quiz_id": "eval-live-51-q1",
+          "source_ref": "evidence:dfa140ac-eb25-4838-9dbf-2550c986afae"
+        }
+      ],
+      "knowledge": {
+        "eval-live-51": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "grammar_passive",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [],
+      "quizzes": {
+        "eval-live-51-q1": {
+          "assisted": true,
+          "attempts": 1,
+          "created": 1793608622.275161,
+          "difficulty": 0.5,
+          "hints": 0,
+          "knowledge_id": "grammar_passive",
+          "mode": "practice",
+          "options": [
+            "A. sent",
+            "B. send",
+            "C. sending",
+            "D. sends"
+          ],
+          "question": "The letter was ____ yesterday.",
+          "quiz_id": "eval-live-51-q1",
+          "revealed": false,
+          "session_id": "eval-live-51-s1",
+          "solved": true,
+          "thread_id": "9591dffe-9e47-52bc-a87d-cd9664620e37"
+        }
+      }
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true
+      },
+      "initial_source_refs": [],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-51": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "grammar_passive",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {
+        "eval-live-51-q1": {
+          "assisted": false,
+          "attempts": 0,
+          "created": 1793608622.275161,
+          "difficulty": 0.5,
+          "hints": 0,
+          "knowledge_id": "grammar_passive",
+          "mode": "practice",
+          "options": [
+            "A. sent",
+            "B. send",
+            "C. sending",
+            "D. sends"
+          ],
+          "question": "The letter was ____ yesterday.",
+          "quiz_id": "eval-live-51-q1",
+          "revealed": false,
+          "session_id": "eval-live-51-s1",
+          "solved": false,
+          "thread_id": "9591dffe-9e47-52bc-a87d-cd9664620e37"
+        }
+      },
+      "thread_id": "9591dffe-9e47-52bc-a87d-cd9664620e37"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 2.1989999986544717,
+        "evidence": [
+          {
+            "body": {
+              "assisted": true,
+              "source_refs": []
+            },
+            "kind": "assistance",
+            "quiz_id": "eval-live-51-q1",
+            "source_ref": "evidence:d574aa00-3db2-4610-8760-4fd3f7ee54b8"
+          }
+        ],
+        "knowledge": {
+          "eval-live-51": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "grammar_passive",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+            "duration_ms": 0.0501670001540333,
+            "request_no": 1,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {}
+          }
+        ],
+        "quizzes": {
+          "eval-live-51-q1": {
+            "assisted": true,
+            "attempts": 0,
+            "created": 1793608622.275161,
+            "difficulty": 0.5,
+            "hints": 0,
+            "knowledge_id": "grammar_passive",
+            "mode": "practice",
+            "options": [
+              "A. sent",
+              "B. send",
+              "C. sending",
+              "D. sends"
+            ],
+            "question": "The letter was ____ yesterday.",
+            "quiz_id": "eval-live-51-q1",
+            "revealed": false,
+            "session_id": "eval-live-51-s1",
+            "solved": false,
+            "thread_id": "9591dffe-9e47-52bc-a87d-cd9664620e37"
+          }
+        },
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "grammar_passive",
+              "response": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+              "response_variant": "tool_loop",
+              "source_refs": [],
+              "teaching_style": "question_answer"
+            }
+          },
+          "assistance": {
+            "recorded": true,
+            "source_ref": "evidence:d574aa00-3db2-4610-8760-4fd3f7ee54b8"
+          },
+          "correlation_id": "dcf82d9a-6b62-5afa-b4bf-5abdbee387d3",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "86be0bec-43e5-47ad-8a44-97a86d125485",
+            "cited_refs": [],
+            "config_fingerprint": "8883cb6df5fb363e5094c47f0d6fb429cee11529a480ee0e85bd7dd8da84c763",
+            "deployment_id": null,
+            "dialogue_state": "answered",
+            "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+            "model": "template",
+            "pending_question_id": null,
+            "policy_cohort": null,
+            "provider": "template",
+            "read_refs": [],
+            "rehearsal_id": null,
+            "request_id": "live-51-assisted-passive-s1",
+            "retrieved_refs": [],
+            "run_id": "dcf82d9a-6b62-5afa-b4bf-5abdbee387d3",
+            "session_id": "eval-live-51-s1",
+            "source_refs": [],
+            "state_namespace": "local",
+            "status": "completed",
+            "thread_id": "9591dffe-9e47-52bc-a87d-cd9664620e37",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "dcf82d9a-6b62-5afa-b4bf-5abdbee387d3",
+              "data": {
+                "knowledge_id": "grammar_passive",
+                "question": "先别给单词或选项，只提示我 was 后应该检查什么形式。"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-11-02T08:37:02.275865"
+            },
+            {
+              "correlation_id": "dcf82d9a-6b62-5afa-b4bf-5abdbee387d3",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "grammar_passive",
+                "response": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+                "response_variant": "tool_loop",
+                "source_refs": [],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-11-02T08:37:02.276917"
+            }
+          ],
+          "knowledge_id": "grammar_passive",
+          "learner_id": "eval-live-51",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "grammar_passive",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "grammar_passive",
+            "response": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+            "response_variant": "tool_loop",
+            "source_refs": [],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "先别给单词或选项，只提示我 was 后应该检查什么形式。",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "86be0bec-43e5-47ad-8a44-97a86d125485",
+              "config_fingerprint": "8883cb6df5fb363e5094c47f0d6fb429cee11529a480ee0e85bd7dd8da84c763",
+              "finished": 1793608622.27732,
+              "model": "template",
+              "provider": "template",
+              "run_id": "dcf82d9a-6b62-5afa-b4bf-5abdbee387d3",
+              "started": 1793608622.275587,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "run_started",
+                  "learner_queue_wait_ms": 0,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 1,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.275811
+                },
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "task_routed",
+                  "policy_cohort": null,
+                  "reason": "question_intent",
+                  "rehearsal_id": null,
+                  "route": "Tutor",
+                  "seq": 2,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.2758558
+                },
+                {
+                  "agent": "api",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "070c9f4a-9db8-428e-9ae4-00b5b2920bae",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 3,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.275873
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "070c9f4a-9db8-428e-9ae4-00b5b2920bae",
+                  "kind": "handler_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 4,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.2758799
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 0,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 5,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.275975,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "Harness",
+                  "bounded": true,
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "history_discovery",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 6,
+                  "source_refs": [],
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.276024
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "response_mode": "hint_only",
+                  "seq": 7,
+                  "source_refs": [],
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.276098,
+                  "token_estimate": 1265,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 8,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.276816,
+                  "token_estimate": 2307
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 9,
+                  "state_namespace": "local",
+                  "stop_reason": "stop",
+                  "timestamp": 1793608622.2769,
+                  "usage": {}
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "response_sources",
+                  "policy_cohort": null,
+                  "read_refs": [],
+                  "rehearsal_id": null,
+                  "retrieved_refs": [],
+                  "seq": 10,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.2769039
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "duration_ms": 1,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "070c9f4a-9db8-428e-9ae4-00b5b2920bae",
+                  "kind": "handler_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 11,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.27696
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "4094b5d7-8113-479f-95a6-2b68deebad42",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "070c9f4a-9db8-428e-9ae4-00b5b2920bae",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 12,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.276962
+                },
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "commit_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 13,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.277014
+                },
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "dialogue_state": "answered",
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "run_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 14,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.277258
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-51-assisted-passive-s1"
+        }
+      },
+      "s2": {
+        "action": "answer",
+        "all_sources_readable": true,
+        "duration_ms": 1.5265830006683245,
+        "evidence": [
+          {
+            "body": {
+              "assisted": true,
+              "source_refs": []
+            },
+            "kind": "assistance",
+            "quiz_id": "eval-live-51-q1",
+            "source_ref": "evidence:d574aa00-3db2-4610-8760-4fd3f7ee54b8"
+          },
+          {
+            "body": {
+              "assisted": true,
+              "attempt": 1,
+              "confidence": 0.8,
+              "hints_used": 0,
+              "independent": false,
+              "is_correct": true,
+              "knowledge_id": "grammar_passive",
+              "mastery_updated": false,
+              "outcome": "guided_practice",
+              "question": "The letter was ____ yesterday.",
+              "quiz_id": "eval-live-51-q1",
+              "source_refs": [],
+              "student_answer": "A. sent"
+            },
+            "kind": "assessment",
+            "quiz_id": "eval-live-51-q1",
+            "source_ref": "evidence:dfa140ac-eb25-4838-9dbf-2550c986afae"
+          }
+        ],
+        "knowledge": {
+          "eval-live-51": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "grammar_passive",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [],
+        "quizzes": {
+          "eval-live-51-q1": {
+            "assisted": true,
+            "attempts": 1,
+            "created": 1793608622.275161,
+            "difficulty": 0.5,
+            "hints": 0,
+            "knowledge_id": "grammar_passive",
+            "mode": "practice",
+            "options": [
+              "A. sent",
+              "B. send",
+              "C. sending",
+              "D. sends"
+            ],
+            "question": "The letter was ____ yesterday.",
+            "quiz_id": "eval-live-51-q1",
+            "revealed": false,
+            "session_id": "eval-live-51-s1",
+            "solved": true,
+            "thread_id": "9591dffe-9e47-52bc-a87d-cd9664620e37"
+          }
+        },
+        "result": {
+          "agent_insights": {
+            "assessment": {
+              "assessment_strategy": {
+                "confidence": 0.45,
+                "diagnosis": "掌握度正在提升",
+                "generation_mode": "local_policy",
+                "recommended_action": "practice",
+                "student_message": "这次答对了，但还可以继续练几题来稳固。"
+              },
+              "attempts": 0,
+              "confidence": 0.5,
+              "error_patterns": [],
+              "evaluation_feedback": "",
+              "independent": false,
+              "is_correct": true,
+              "is_strong_point": false,
+              "is_weakness": false,
+              "knowledge_id": "grammar_passive",
+              "level": "not_started",
+              "mastery": 0.1,
+              "overall_progress": {
+                "accuracy": 0.0,
+                "avg_mastery": 0.1,
+                "level_distribution": {
+                  "not_started": 1
+                },
+                "total_attempts": 0,
+                "total_correct": 0,
+                "total_knowledge_points": 1,
+                "total_wrong": 0
+              },
+              "protected_quiz": true,
+              "question": "The letter was ____ yesterday.",
+              "streak": 0,
+              "student_answer": "A. sent"
+            },
+            "curriculum": {},
+            "engagement": {
+              "engagement_strategy": {
+                "consecutive_correct": 1,
+                "consecutive_errors": 0,
+                "generation_mode": "local_policy",
+                "reason": "学习状态稳定。",
+                "recent_accuracy": 1.0,
+                "state": "focused",
+                "suggestion": "保持当前节奏。"
+              }
+            },
+            "tutor": {
+              "context_type": "formative_feedback",
+              "dialogue_state": "answered",
+              "generation_mode": "local_policy",
+              "history_scope": "topic_thread",
+              "knowledge_id": "grammar_passive",
+              "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+              "response_variant": "formative-feedback",
+              "source_refs": [],
+              "teaching_style": "confirmation"
+            }
+          },
+          "correlation_id": "820486a1-a279-5f36-bf37-37f3a06b5d37",
+          "evaluation": {
+            "feedback": "判断正确。请用相同方法完成一道新题检验迁移。",
+            "is_correct": true
+          },
+          "events_triggered": 5,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "47691b39-5672-457c-83f7-3adc7170c230",
+            "cited_refs": [],
+            "config_fingerprint": "8883cb6df5fb363e5094c47f0d6fb429cee11529a480ee0e85bd7dd8da84c763",
+            "deployment_id": null,
+            "dialogue_state": "answered",
+            "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+            "model": "template",
+            "pending_question_id": null,
+            "policy_cohort": null,
+            "provider": "template",
+            "read_refs": [],
+            "rehearsal_id": null,
+            "request_id": "live-51-assisted-passive-s2",
+            "retrieved_refs": [],
+            "run_id": "820486a1-a279-5f36-bf37-37f3a06b5d37",
+            "session_id": "eval-live-51-s1",
+            "source_refs": [],
+            "state_namespace": "local",
+            "status": "completed",
+            "thread_id": "9591dffe-9e47-52bc-a87d-cd9664620e37",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "820486a1-a279-5f36-bf37-37f3a06b5d37",
+              "data": {
+                "independent": false,
+                "is_correct": true,
+                "knowledge_id": "grammar_passive",
+                "protected_quiz": true,
+                "question": "The letter was ____ yesterday.",
+                "student_answer": "A. sent",
+                "time_spent_seconds": 10
+              },
+              "event_type": "student.submission",
+              "source": "api",
+              "timestamp": "2026-11-02T08:37:02.278034"
+            },
+            {
+              "correlation_id": "820486a1-a279-5f36-bf37-37f3a06b5d37",
+              "data": {
+                "assessment_strategy": {
+                  "confidence": 0.45,
+                  "diagnosis": "掌握度正在提升",
+                  "generation_mode": "local_policy",
+                  "recommended_action": "practice",
+                  "student_message": "这次答对了，但还可以继续练几题来稳固。"
+                },
+                "attempts": 0,
+                "confidence": 0.5,
+                "independent": false,
+                "is_correct": true,
+                "is_strong_point": false,
+                "is_weakness": false,
+                "knowledge_id": "grammar_passive",
+                "level": "not_started",
+                "mastery": 0.1,
+                "streak": 0
+              },
+              "event_type": "assessment.mastery_updated",
+              "source": "AssessmentAgent",
+              "timestamp": "2026-11-02T08:37:02.278096"
+            },
+            {
+              "correlation_id": "820486a1-a279-5f36-bf37-37f3a06b5d37",
+              "data": {
+                "assessment_strategy": {
+                  "confidence": 0.45,
+                  "diagnosis": "掌握度正在提升",
+                  "generation_mode": "local_policy",
+                  "recommended_action": "practice",
+                  "student_message": "这次答对了，但还可以继续练几题来稳固。"
+                },
+                "error_patterns": [],
+                "evaluation_feedback": "",
+                "independent": false,
+                "is_correct": true,
+                "knowledge_id": "grammar_passive",
+                "level": "not_started",
+                "mastery": 0.1,
+                "overall_progress": {
+                  "accuracy": 0.0,
+                  "avg_mastery": 0.1,
+                  "level_distribution": {
+                    "not_started": 1
+                  },
+                  "total_attempts": 0,
+                  "total_correct": 0,
+                  "total_knowledge_points": 1,
+                  "total_wrong": 0
+                },
+                "protected_quiz": true,
+                "question": "The letter was ____ yesterday.",
+                "student_answer": "A. sent"
+              },
+              "event_type": "assessment.complete",
+              "source": "AssessmentAgent",
+              "timestamp": "2026-11-02T08:37:02.278107"
+            },
+            {
+              "correlation_id": "820486a1-a279-5f36-bf37-37f3a06b5d37",
+              "data": {
+                "context_type": "formative_feedback",
+                "dialogue_state": "answered",
+                "generation_mode": "local_policy",
+                "history_scope": "topic_thread",
+                "knowledge_id": "grammar_passive",
+                "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+                "response_variant": "formative-feedback",
+                "source_refs": [],
+                "teaching_style": "confirmation"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-11-02T08:37:02.278352"
+            },
+            {
+              "correlation_id": "820486a1-a279-5f36-bf37-37f3a06b5d37",
+              "data": {
+                "engagement_strategy": {
+                  "consecutive_correct": 1,
+                  "consecutive_errors": 0,
+                  "generation_mode": "local_policy",
+                  "reason": "学习状态稳定。",
+                  "recent_accuracy": 1.0,
+                  "state": "focused",
+                  "suggestion": "保持当前节奏。"
+                }
+              },
+              "event_type": "engagement.emotion_detected",
+              "source": "EngagementAgent",
+              "timestamp": "2026-11-02T08:37:02.278435"
+            }
+          ],
+          "knowledge_id": "grammar_passive",
+          "learner_id": "eval-live-51",
+          "learning_evidence": {
+            "assisted": true,
+            "attempt": 1,
+            "confidence": 0.8,
+            "hints_used": 0,
+            "independent": false,
+            "mastery_updated": false,
+            "outcome": "guided_practice",
+            "quiz_id": "eval-live-51-q1"
+          },
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "grammar_passive",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {
+                "confidence": 0.45,
+                "diagnosis": "掌握度正在提升",
+                "generation_mode": "local_policy",
+                "recommended_action": "practice",
+                "student_message": "这次答对了，但还可以继续练几题来稳固。"
+              },
+              "curriculum": {},
+              "engagement": {
+                "consecutive_correct": 1,
+                "consecutive_errors": 0,
+                "generation_mode": "local_policy",
+                "reason": "学习状态稳定。",
+                "recent_accuracy": 1.0,
+                "state": "focused",
+                "suggestion": "保持当前节奏。"
+              },
+              "tutor": {
+                "context_type": "formative_feedback",
+                "generation_mode": "local_policy",
+                "teaching_style": "confirmation"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "再完成一题相似练习。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "practice",
+            "summary": "继续做相似练习以稳定掌握。"
+          },
+          "teaching_response": {
+            "context_type": "formative_feedback",
+            "dialogue_state": "answered",
+            "generation_mode": "local_policy",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "topic_thread",
+            "knowledge_id": "grammar_passive",
+            "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+            "response_variant": "formative-feedback",
+            "source_refs": [],
+            "teaching_style": "confirmation"
+          }
+        },
+        "status": "completed",
+        "student_input": "第一题我选择 A。",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "47691b39-5672-457c-83f7-3adc7170c230",
+              "config_fingerprint": "8883cb6df5fb363e5094c47f0d6fb429cee11529a480ee0e85bd7dd8da84c763",
+              "finished": 1793608622.2788632,
+              "model": "template",
+              "provider": "template",
+              "run_id": "820486a1-a279-5f36-bf37-37f3a06b5d37",
+              "started": 1793608622.277778,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "run_started",
+                  "learner_queue_wait_ms": 0,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 1,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.2780008
+                },
+                {
+                  "agent": "api",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "f83fee34-d236-462c-bbdd-fe4f0c8695b2",
+                  "event_type": "student.submission",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 2,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.2780411
+                },
+                {
+                  "agent": "AssessmentAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "f83fee34-d236-462c-bbdd-fe4f0c8695b2",
+                  "kind": "handler_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 3,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.278045
+                },
+                {
+                  "agent": "AssessmentAgent",
+                  "deployment_id": null,
+                  "duration_ms": 0,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "f83fee34-d236-462c-bbdd-fe4f0c8695b2",
+                  "kind": "handler_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 4,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.278155
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "f83fee34-d236-462c-bbdd-fe4f0c8695b2",
+                  "kind": "handler_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 5,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.2781591
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "deployment_id": null,
+                  "duration_ms": 0,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "f83fee34-d236-462c-bbdd-fe4f0c8695b2",
+                  "kind": "handler_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 6,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.27823
+                },
+                {
+                  "agent": "AssessmentAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "55d81780-bf6c-4bf5-9195-a458450d90d8",
+                  "event_type": "assessment.mastery_updated",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "f83fee34-d236-462c-bbdd-fe4f0c8695b2",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 7,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.278232
+                },
+                {
+                  "agent": "CurriculumAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "55d81780-bf6c-4bf5-9195-a458450d90d8",
+                  "kind": "handler_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 8,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.278235
+                },
+                {
+                  "agent": "CurriculumAgent",
+                  "deployment_id": null,
+                  "duration_ms": 0,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "55d81780-bf6c-4bf5-9195-a458450d90d8",
+                  "kind": "handler_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 9,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.278296
+                },
+                {
+                  "agent": "AssessmentAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "51990bb5-a210-4f9e-b3f0-408451b1d007",
+                  "event_type": "assessment.complete",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "f83fee34-d236-462c-bbdd-fe4f0c8695b2",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 10,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.2782981
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "51990bb5-a210-4f9e-b3f0-408451b1d007",
+                  "kind": "handler_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 11,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.278302
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "duration_ms": 0,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "51990bb5-a210-4f9e-b3f0-408451b1d007",
+                  "kind": "handler_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 12,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.278392
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "51990bb5-a210-4f9e-b3f0-408451b1d007",
+                  "kind": "handler_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 13,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.2783942
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "deployment_id": null,
+                  "duration_ms": 0,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "51990bb5-a210-4f9e-b3f0-408451b1d007",
+                  "kind": "handler_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 14,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.2784698
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "acf3cb4d-a35a-465d-9bf2-6113e88f3e62",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "51990bb5-a210-4f9e-b3f0-408451b1d007",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 15,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.278471
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "60fce93a-99c5-4571-bc21-882b5edf9d0c",
+                  "event_type": "engagement.emotion_detected",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "51990bb5-a210-4f9e-b3f0-408451b1d007",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 16,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.278475
+                },
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "commit_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 17,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.2786329
+                },
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "dialogue_state": "answered",
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "run_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 18,
+                  "state_namespace": "local",
+                  "timestamp": 1793608622.2787929
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-51-assisted-passive-s2"
+        }
+      }
+    }
+  },
+  "policy_sha256": "d6a798b89944ae1ac4b3326478b1b80c7e8634434f7a1adc87cf2a381e500ba8",
+  "score": {
+    "automatic_passed": true,
+    "decision_rate": 0.0,
+    "decisions": [
+      {
+        "calls": [],
+        "evidence": "",
+        "reason": "模拟判定，仅用于测试",
+        "required_tools_present": false,
+        "step_id": "s1"
+      }
+    ],
+    "judge_call_count": 1,
+    "judge_diagnostics": {
+      "raw_response": "{\"schema_version\": 3, \"verdict\": \"fail\", \"reason_codes\": [\"criterion_failed\"], \"criterion_results\": [{\"criterion_id\": \"semantic:H6\", \"verdict\": \"fail\", \"evidence_refs\": [\"response:s1\"], \"rationale\": \"\\u6a21\\u62df\\u5224\\u5b9a\\uff0c\\u4ec5\\u7528\\u4e8e\\u6d4b\\u8bd5\"}, {\"criterion_id\": \"semantic:S1\", \"verdict\": \"fail\", \"evidence_refs\": [\"response:s1\"], \"rationale\": \"\\u6a21\\u62df\\u5224\\u5b9a\\uff0c\\u4ec5\\u7528\\u4e8e\\u6d4b\\u8bd5\"}, {\"criterion_id\": \"semantic:S2\", \"verdict\": \"fail\", \"evidence_refs\": [\"response:s1\"], \"rationale\": \"\\u6a21\\u62df\\u5224\\u5b9a\\uff0c\\u4ec5\\u7528\\u4e8e\\u6d4b\\u8bd5\"}, {\"criterion_id\": \"semantic:S3\", \"verdict\": \"fail\", \"evidence_refs\": [\"response:s1\"], \"rationale\": \"\\u6a21\\u62df\\u5224\\u5b9a\\uff0c\\u4ec5\\u7528\\u4e8e\\u6d4b\\u8bd5\"}, {\"criterion_id\": \"decision:s1\", \"verdict\": \"fail\", \"evidence_refs\": [\"no_calls:s1\"], \"rationale\": \"\\u6a21\\u62df\\u5224\\u5b9a\\uff0c\\u4ec5\\u7528\\u4e8e\\u6d4b\\u8bd5\"}]}",
+      "repair_response": null,
+      "repaired": false,
+      "validation_errors": []
+    },
+    "judge_input_sha256": "2d8c48e7812564032b892a373fb6f2cdd49e4ba41c6c9341066a266089831cbd",
+    "judge_prompt_sha256": "0c323b86f3a4f8995eb7b1c992b17feb0b7f8aeac0f5411dbe50ad0024129ae3",
+    "judge_protocol_sha256": "1be8d310551d0e1b233b3abe309a57f90a33159099d31e1271e0808338cffa3b",
+    "judge_protocol_version": 3,
+    "judge_reason_codes": [
+      "criterion_failed"
+    ],
+    "judge_verdict": "fail",
+    "leakage": {
+      "case_sha256": "cc58d6fdcf49de27298de55f9aeca863403d73b9d41b333c308c50c1ad8eaa9c",
+      "contract_sha256": "727cc527a5964e1161bbee4af2a9e74a63d803d094ebe2b3a67ef4896e6bf7eb",
+      "protocol": {
+        "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+        "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7",
+        "schema": "eduagent.hybrid-leakage.v2"
+      },
+      "steps": {
+        "s1": {
+          "category_matches": [],
+          "constraints": [],
+          "dimensions": {
+            "hint_direct": "unknown",
+            "hint_elimination": "unknown",
+            "hint_paraphrase": "unknown"
+          },
+          "excluded": [],
+          "hits": [],
+          "process_signals": [],
+          "remaining": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "review_reasons": [],
+          "teaching_helpful": "not_determined",
+          "verdict": "unknown"
+        }
+      },
+      "verdict": "unknown"
+    },
+    "raw_judgment": {
+      "decisions": [
+        {
+          "calls": [],
+          "evidence": "",
+          "reason": "模拟判定，仅用于测试",
+          "required_tools_present": false,
+          "step_id": "s1"
+        }
+      ],
+      "semantic": [
+        {
+          "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+          "id": "H6",
+          "passed": false,
+          "reason": "模拟判定，仅用于测试"
+        },
+        {
+          "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+          "id": "S1",
+          "passed": false,
+          "reason": "模拟判定，仅用于测试"
+        },
+        {
+          "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+          "id": "S2",
+          "passed": false,
+          "reason": "模拟判定，仅用于测试"
+        },
+        {
+          "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+          "id": "S3",
+          "passed": false,
+          "reason": "模拟判定，仅用于测试"
+        }
+      ]
+    },
+    "raw_judgment_v3": {
+      "criterion_results": [
+        {
+          "criterion_id": "semantic:H6",
+          "evidence_refs": [
+            "response:s1"
+          ],
+          "rationale": "模拟判定，仅用于测试",
+          "verdict": "fail"
+        },
+        {
+          "criterion_id": "semantic:S1",
+          "evidence_refs": [
+            "response:s1"
+          ],
+          "rationale": "模拟判定，仅用于测试",
+          "verdict": "fail"
+        },
+        {
+          "criterion_id": "semantic:S2",
+          "evidence_refs": [
+            "response:s1"
+          ],
+          "rationale": "模拟判定，仅用于测试",
+          "verdict": "fail"
+        },
+        {
+          "criterion_id": "semantic:S3",
+          "evidence_refs": [
+            "response:s1"
+          ],
+          "rationale": "模拟判定，仅用于测试",
+          "verdict": "fail"
+        },
+        {
+          "criterion_id": "decision:s1",
+          "evidence_refs": [
+            "no_calls:s1"
+          ],
+          "rationale": "模拟判定，仅用于测试",
+          "verdict": "fail"
+        }
+      ],
+      "reason_codes": [
+        "criterion_failed"
+      ],
+      "schema_version": 3,
+      "verdict": "fail"
+    },
+    "review_status": "ai_reviewed",
+    "score": 0.0,
+    "semantic": [
+      {
+        "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+        "id": "H6",
+        "passed": false,
+        "reason": "模拟判定，仅用于测试"
+      },
+      {
+        "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+        "id": "S1",
+        "passed": false,
+        "reason": "模拟判定，仅用于测试"
+      },
+      {
+        "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+        "id": "S2",
+        "passed": false,
+        "reason": "模拟判定，仅用于测试"
+      },
+      {
+        "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+        "id": "S3",
+        "passed": false,
+        "reason": "模拟判定，仅用于测试"
+      }
+    ],
+    "task_success": false
+  },
+  "scoring_status": "completed"
+}

@@ -1,0 +1,249 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+........................................................................ [ 14%]
+........................................................................ [ 29%]
+........................................................................ [ 44%]
+........................................................................ [ 59%]
+...................................F......F......F......F......F......F. [ 73%]
+........................................................................ [ 88%]
+........................................................                 [100%]
+=================================== FAILURES ===================================
+___ test_local_get_authenticates_entire_frozen_leaf[canary-candidate-valid] ____
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x1112c5150>, <core.distributed.promotion_repository....ionRepository object at 0x110130c10>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x11064ac50>)
+state = 'canary', label = 'candidate', poison = 'valid'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+>       record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+
+tests/distributed/test_ops_frozen_metrics.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_ops_frozen_metrics.py:36: in record
+    with (directory / (name + ".json")).open("x") as out:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/local-canary-candidate-valid.json')
+mode = 'x', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileExistsError: [Errno 17] File exists: '/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/local-canary-candidate-valid.json'
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/pathlib.py:1044: FileExistsError
+_____ test_local_get_authenticates_entire_frozen_leaf[canary-stable-valid] _____
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10f4cfa50>, <core.distributed.promotion_repository....ionRepository object at 0x1116be8d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x11127c610>)
+state = 'canary', label = 'stable', poison = 'valid'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+>       record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+
+tests/distributed/test_ops_frozen_metrics.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_ops_frozen_metrics.py:36: in record
+    with (directory / (name + ".json")).open("x") as out:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/local-canary-stable-valid.json')
+mode = 'x', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileExistsError: [Errno 17] File exists: '/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/local-canary-stable-valid.json'
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/pathlib.py:1044: FileExistsError
+___ test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-valid] ____
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x1107054d0>, <core.distributed.promotion_repository....ionRepository object at 0x10f320a10>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x110550190>)
+state = 'shadow', label = 'candidate', poison = 'valid'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+>       record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+
+tests/distributed/test_ops_frozen_metrics.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_ops_frozen_metrics.py:36: in record
+    with (directory / (name + ".json")).open("x") as out:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/local-shadow-candidate-valid.json')
+mode = 'x', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileExistsError: [Errno 17] File exists: '/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/local-shadow-candidate-valid.json'
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/pathlib.py:1044: FileExistsError
+_____ test_local_get_authenticates_entire_frozen_leaf[shadow-stable-valid] _____
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x111febb50>, <core.distributed.promotion_repository....ionRepository object at 0x1112385d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x1114c6850>)
+state = 'shadow', label = 'stable', poison = 'valid'
+
+    @pytest.mark.parametrize("state,label,poison", LOCAL_CASES)
+    async def test_local_get_authenticates_entire_frozen_leaf(health_repo, state, label, poison):
+        repo, source, _, receipt, proof = await append_altered_leaf(health_repo, state, poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        body = await api_detail(repo, source)
+>       record(f"local-{state}-{label}-{poison}", {**proof, "body": body})
+
+tests/distributed/test_ops_frozen_metrics.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_ops_frozen_metrics.py:36: in record
+    with (directory / (name + ".json")).open("x") as out:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/local-shadow-stable-valid.json')
+mode = 'x', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileExistsError: [Errno 17] File exists: '/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/local-shadow-stable-valid.json'
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/pathlib.py:1044: FileExistsError
+_ test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-valid] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x11054a4d0>, <core.distributed.promotion_repository....ionRepository object at 0x11146ded0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x1109257d0>)
+label = 'candidate', poison = 'valid'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+>       record(f"active-{label}-{poison}", {**proof, "body": body})
+
+tests/distributed/test_ops_frozen_metrics.py:244: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_ops_frozen_metrics.py:36: in record
+    with (directory / (name + ".json")).open("x") as out:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/active-candidate-valid.json')
+mode = 'x', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileExistsError: [Errno 17] File exists: '/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/active-candidate-valid.json'
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/pathlib.py:1044: FileExistsError
+__ test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-valid] ___
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x110e9cb10>, <core.distributed.promotion_repository....ionRepository object at 0x1100e80d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x110c15550>)
+label = 'stable', poison = 'valid'
+
+    @pytest.mark.parametrize("label,poison", ACTIVE_CASES)
+    async def test_active_get_rejects_invalid_exact_leaf_without_fallback(health_repo, label, poison):
+        repo, source, artifact, receipt, proof = await append_altered_leaf(
+            health_repo, "canary", poison, label)
+        valid = poison.startswith("valid")
+        assert proof["authority_accepts"] == valid
+        active = await append_active(repo, source, artifact, receipt)
+        body = await api_detail(repo, active)
+>       record(f"active-{label}-{poison}", {**proof, "body": body})
+
+tests/distributed/test_ops_frozen_metrics.py:244: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_ops_frozen_metrics.py:36: in record
+    with (directory / (name + ".json")).open("x") as out:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/active-stable-valid.json')
+mode = 'x', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileExistsError: [Errno 17] File exists: '/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/active-stable-valid.json'
+
+../../../../.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/lib/python3.11/pathlib.py:1044: FileExistsError
+=============================== warnings summary ===============================
+../../../../../../tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/_pytest/python.py:144
+  /tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/_pytest/python.py:144: PytestRemovedIn10Warning: Passing a non-Collection iterable to parametrize is deprecated.
+  Test: tests/distributed/test_promotion_ops_api.py::test_policy_keyset_ties_are_complete_unique_and_bounded, argvalues type: zip
+  Please convert to a list or tuple.
+  See https://docs.pytest.org/en/stable/deprecations.html#parametrize-iterators
+    metafunc.parametrize(*marker.args, **marker.kwargs, _param_mark=marker)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/distributed/test_ops_frozen_metrics.py::test_local_get_authenticates_entire_frozen_leaf[canary-candidate-valid] - FileExistsError: [Errno 17] File exists: '/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/local-canary-candidate-valid.json'
+FAILED tests/distributed/test_ops_frozen_metrics.py::test_local_get_authenticates_entire_frozen_leaf[canary-stable-valid] - FileExistsError: [Errno 17] File exists: '/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/local-canary-stable-valid.json'
+FAILED tests/distributed/test_ops_frozen_metrics.py::test_local_get_authenticates_entire_frozen_leaf[shadow-candidate-valid] - FileExistsError: [Errno 17] File exists: '/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/local-shadow-candidate-valid.json'
+FAILED tests/distributed/test_ops_frozen_metrics.py::test_local_get_authenticates_entire_frozen_leaf[shadow-stable-valid] - FileExistsError: [Errno 17] File exists: '/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/local-shadow-stable-valid.json'
+FAILED tests/distributed/test_ops_frozen_metrics.py::test_active_get_rejects_invalid_exact_leaf_without_fallback[candidate-valid] - FileExistsError: [Errno 17] File exists: '/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/active-candidate-valid.json'
+FAILED tests/distributed/test_ops_frozen_metrics.py::test_active_get_rejects_invalid_exact_leaf_without_fallback[stable-valid] - FileExistsError: [Errno 17] File exists: '/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/final-api/active-stable-valid.json'
+6 failed, 482 passed, 1 warning in 178.19s (0:02:58)

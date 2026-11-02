@@ -1,0 +1,352 @@
+{
+  "budget_id": "rsi-20261027-real-01",
+  "created_at": "2026-10-28T19:18:30.924770+00:00",
+  "dataset_sha256": "6bd0de4b98386636b595bd1dac84b97bd3e7704c126df0553579ab1b1b9aafd4",
+  "generator_identity": {
+    "model": "deepseek-v4-pro",
+    "provider": "deepseek",
+    "thinking": "disabled"
+  },
+  "items": [
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N34, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-34-vocab-direction",
+        "category": "跨会话记忆",
+        "difficulty": "intermediate",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N34 发现目标后读取完整正文，口令是“先画物品方向，再选借入或借出”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先画物品方向，再选借入或借出”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先画物品方向，再选借入或借出",
+            "search_query": "N34"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N34 补充 {index}。问题：N34 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-34-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-34-old",
+            "target": {
+              "content_prefix": "N34 旧笔记。\n",
+              "content_repeat": {
+                "count": 60,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先画物品方向，再选借入或借出。",
+              "message_id": "eval-live-34-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-34",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N34 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-34-new",
+            "student_input": "N34 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取借还方向口令",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N34 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-34-vocab-direction",
+      "id": "01",
+      "intended_group": "retrieval_correct",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。只返回JSON：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N34 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N34 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先画物品方向，再选借入或借出。\", \"created\": 1792995681.583232, \"knowledge_id\": \"vocab_basic\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-34-target\", \"thread_id\": \"b08cd324-bd5e-50aa-b604-244b3d51f9d7\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"准确回答学生的问题，逐字引用笔记末尾的口令，并指明来源。不得编造、改写口令或漏掉先后顺序。\", \"style\": \"用两句话\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/01.json",
+      "source_sha256": "f02582715439ca881477b74ae78ee33128278ed9b195d4286acbc3a5f4ce2172",
+      "step_id": "s1"
+    },
+    {
+      "case": {
+        "acceptable_tool_paths": [
+          "search_learning_history(query=N38, limit=10) → read_learning_history(搜索所得目标) → 回答。"
+        ],
+        "capability": "full_history_retrieval",
+        "case_id": "live-38-receiver-checklist",
+        "category": "跨会话记忆",
+        "difficulty": "advanced",
+        "evaluation_role": "agent_primary",
+        "expected_behavior": [
+          "搜索 N38 发现目标后读取完整正文，口令是“先圈提交物，再找接收方”。",
+          "引用本条真实目标来源；目标不在初始上下文，搜索摘要也不含口令。",
+          "预置不满足截断条件则标 fixture_invalid，不计为检索成功。"
+        ],
+        "expected_model_requests_max": 3,
+        "failure_examples": [
+          "只读取摘要就编出口令。",
+          "引用另一条变体的目标来源或口令。"
+        ],
+        "hard_checks": [
+          {
+            "id": "H1",
+            "method": "fixture_validation",
+            "path": "ContextBuilder 初始消息 / search.excerpt",
+            "rule": "初始上下文没有目标正文和口令；搜索摘要不含口令；target 正文长度≤3000。不满足时整个场景不进入模型成功率分母。"
+          },
+          {
+            "id": "H2",
+            "method": "automatic",
+            "path": "s1.trace.steps",
+            "rule": "存在成功 search_learning_history，随后存在成功 read_learning_history 且其 source_refs 含目标来源。"
+          },
+          {
+            "id": "H3",
+            "method": "automatic",
+            "path": "s1.execution",
+            "rule": "status=completed、dialogue_state=answered；source_refs 包含目标来源。"
+          },
+          {
+            "id": "H4",
+            "method": "automatic",
+            "path": "s1.teaching_response.response",
+            "rule": "规范化引号、空白后包含“先圈提交物，再找接收方”。"
+          },
+          {
+            "id": "H5",
+            "method": "automatic",
+            "path": "learner.knowledge_states.vocab_basic",
+            "rule": "所有 KnowledgeState 字段保持不变。"
+          },
+          {
+            "id": "S1",
+            "method": "semantic_review",
+            "path": "retrieval_source",
+            "rule": "实际完整读取请求对应的目标来源，搜索摘要或仅出现目标短语不能替代读取。"
+          },
+          {
+            "id": "S2",
+            "method": "semantic_review",
+            "path": "retrieval_answer",
+            "rule": "正确回答学生针对目标原文的问题，解释符合已读取原文；不能只引用目标短语而答非所问。"
+          },
+          {
+            "id": "S3",
+            "method": "semantic_review",
+            "path": "retrieval_consistency",
+            "rule": "回复不否认已取得的目标信息，不将已引用的内容说成不存在、无关或仍需学生提供。"
+          }
+        ],
+        "initial_facts": {
+          "active_quiz": null,
+          "evaluator_only": {
+            "expected_quote": "先圈提交物，再找接收方",
+            "search_query": "N38"
+          },
+          "history_recipe": {
+            "decoys": {
+              "content_template": "N38 补充 {index}。问题：N38 旧笔记的口令原文是什么？请读完再回答。 无口令正文。",
+              "count": 9,
+              "insert_order": "先插入 target，再按 index=1..9 插入 decoys。",
+              "message_id_template": "eval-live-38-decoy-{index}",
+              "role": "user"
+            },
+            "session_id": "eval-live-38-old",
+            "target": {
+              "content_prefix": "N38 旧笔记。\n",
+              "content_repeat": {
+                "count": 64,
+                "text": "过程整理备忘记录。"
+              },
+              "content_suffix": "\n核对口令原文：先圈提交物，再找接收方。",
+              "message_id": "eval-live-38-target",
+              "role": "user"
+            }
+          },
+          "knowledge_state": "采用统一初始 KnowledgeState。",
+          "model_visible": "只应看到最近 8 条记录和自动检索前 5 条的摘要；目标旧笔记不在这些记录中。工具可搜索和读取当前 learner 的旧历史。",
+          "pending_question": null
+        },
+        "knowledge_id": "vocab_basic",
+        "learner_id": "eval-live-38",
+        "quality_anchors": {
+          "accuracy": "2 分：口令与正文一致且来源正确；1 分：抓住意思但未按请求提供原文；0 分：猜测口令或用错来源。",
+          "actionability": "2 分：清晰给出可直接使用的口令及来源；1 分：答案被冗长内容淹没；0 分：未完成查找。",
+          "targeting": "2 分：提供 N38 的指定口令；1 分：夹带无关讲解；0 分：回答另一笔记。"
+        },
+        "review_status": "authored_not_executed",
+        "schema": "eduagent.tutor-live-review.v2",
+        "steps": [
+          {
+            "action": "converse",
+            "api_input": null,
+            "followup_policy": null,
+            "id": "s1",
+            "input_delivery": null,
+            "instruction": null,
+            "quiz_id": null,
+            "session_id": "eval-live-38-new",
+            "student_input": "N38 旧笔记的口令原文是什么？请读完再回答。"
+          }
+        ],
+        "template_case_id": "live-08-retrieve-full-old-note",
+        "title": "旧笔记：读取提交物与接收方口令",
+        "tool_decision_criteria": {
+          "s1": [
+            "必须先成功搜索获得目标，再读取该 source_ref；query 应发现 N38 的目标，不能仅靠摘要猜口令。"
+          ]
+        }
+      },
+      "case_id": "live-38-receiver-checklist",
+      "id": "02",
+      "intended_group": "retrieval_correct",
+      "messages": [
+        {
+          "content": "你为英语教学评测构造一条受控响应。按要求输出中文教学回复。只返回JSON：{\"response\":\"回复正文\"}。不要解释构造过程。",
+          "role": "system"
+        },
+        {
+          "content": "{\"context\": {\"student_input\": \"N38 旧笔记的口令原文是什么？请读完再回答。\", \"read_source\": {\"content\": \"N38 旧笔记。\\n过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。过程整理备忘记录。\\n核对口令原文：先圈提交物，再找接收方。\", \"created\": 1792995926.3596559, \"knowledge_id\": \"vocab_basic\", \"next_cursor\": null, \"role\": \"user\", \"source_ref\": \"message:eval-live-38-target\", \"thread_id\": \"6859136a-b2d4-5589-aa8b-4147c7fead27\", \"truncated\": false, \"version\": 1}}, \"requirement\": \"准确回答学生的问题，逐字引用笔记末尾的口令，并指明来源。不得编造、改写口令或漏掉先后顺序。\", \"style\": \"用简短列表\"}",
+          "role": "user"
+        }
+      ],
+      "semantic_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "source_path": "docs/evals/rsi-campaigns/20261027-real-01/calibration/evidence/03.json",
+      "source_sha256": "edc85fa7b66cf80f763578edfa4b0c4f8f9053356ef25fe4a2ef3ef767af243e",
+      "step_id": "s1"
+    }
+  ],
+  "judge_identity": {
+    "model": "deepseek-flash",
+    "provider": "deepseek",
+    "thinking": "disabled"
+  },
+  "judge_prompt_sha256": "0c323b86f3a4f8995eb7b1c992b17feb0b7f8aeac0f5411dbe50ad0024129ae3",
+  "judge_protocol_sha256": "1be8d310551d0e1b233b3abe309a57f90a33159099d31e1271e0808338cffa3b",
+  "max_new_requests": 2,
+  "pricing": {
+    "currency": "CNY",
+    "model": "deepseek-v4-pro",
+    "per_million_tokens": {
+      "off_peak": {
+        "input_hit": 0.15,
+        "input_miss": 4.5,
+        "output": 13.5
+      },
+      "peak": {
+        "input_hit": 0.3,
+        "input_miss": 9.0,
+        "output": 27.0
+      }
+    },
+    "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+    "verified_date": "2026-10-29"
+  },
+  "schema": "eduagent.fresh-calibration.v1",
+  "scoring_protocol": {
+    "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+    "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7",
+    "schema": "eduagent.hybrid-leakage.v2"
+  },
+  "source_revision": "frozen",
+  "start_budget": {
+    "requests": 0
+  }
+}

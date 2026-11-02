@@ -1,0 +1,1079 @@
+{
+    "case_id": "live-14-finished-past",
+    "capability": "multi_turn_continuation",
+    "evaluation_index": 1,
+    "policy_sha256": "d6a798b89944ae1ac4b3326478b1b80c7e8634434f7a1adc87cf2a381e500ba8",
+    "scoring_status": "completed",
+    "automatic": {
+        "case_id": "live-14-finished-past",
+        "category": "\u6f84\u6e05\u4e0e\u63a5\u7eed",
+        "title": "\u65f6\u6001\uff1a\u8865\u5145\u5df2\u7ed3\u675f\u4e8b\u4ef6\u540e\u63a5\u7eed",
+        "evaluation_role": "agent_primary",
+        "status": "review_pending",
+        "automatic_passed": true,
+        "hard_checks": [
+            {
+                "id": "H1",
+                "method": "automatic",
+                "path": "s1.execution",
+                "rule": "status=completed\u3001dialogue_state=awaiting_student\u3001pending_question_id \u975e\u7a7a\uff1bask_student \u4e3a\u5355\u72ec\u8c03\u7528\u3002",
+                "passed": true,
+                "status": "passed"
+            },
+            {
+                "id": "H2",
+                "method": "automatic",
+                "path": "s2.execution",
+                "rule": "status=completed\u3001dialogue_state=answered\uff0canswered_question_id \u7b49\u4e8e s1.pending_question_id\u3002",
+                "passed": true,
+                "status": "passed"
+            },
+            {
+                "id": "H3",
+                "method": "automatic",
+                "path": "pending_questions",
+                "rule": "s1 \u5f85\u7b54\u8bb0\u5f55\u7684 answered_by \u975e\u7a7a\uff0c\u573a\u666f\u7ed3\u675f\u6ca1\u6709\u672a\u56de\u7b54\u7684\u8be5\u95ee\u9898\u3002",
+                "passed": true,
+                "status": "passed"
+            },
+            {
+                "id": "H4",
+                "method": "automatic",
+                "path": "learner.knowledge_states.grammar_tenses",
+                "rule": "\u6240\u6709 KnowledgeState \u5b57\u6bb5\u4fdd\u6301\u4e0d\u53d8\u3002",
+                "passed": true,
+                "status": "passed"
+            },
+            {
+                "id": "H5",
+                "method": "semantic_review",
+                "path": "s1/s2.teaching_response.response",
+                "rule": "s1 \u7d22\u53d6\u9898\u5e72\uff1bs2 \u7528 last Sunday \u4e0e\u5df2\u7ed3\u675f\u4e8b\u4ef6\u89e3\u91ca\u4e00\u822c\u8fc7\u53bb\u65f6\uff0c\u4e0d\u80fd\u5957\u7528 since \u89c4\u5219\u3002",
+                "passed": null,
+                "status": "review_pending"
+            }
+        ],
+        "execution_outcome": "completed",
+        "execution_failures": [],
+        "annotations": {},
+        "quality_review": {
+            "status": "review_pending",
+            "reviewer": null,
+            "scores": null,
+            "anchors": {
+                "accuracy": "2 \u5206\uff1a\u6ee1\u8db3\u672c\u6761\u8bed\u4e49\u89c4\u5219\u4e14\u65e0\u4e8b\u5b9e\u9519\u8bef\uff1b1 \u5206\uff1a\u90e8\u5206\u6b63\u786e\u4f46\u9057\u6f0f\uff1b0 \u5206\uff1a\u4e8b\u5b9e\u9519\u8bef\u6216\u7f16\u9020\u8bc1\u636e\u3002",
+                "targeting": "2 \u5206\uff1a\u4f7f\u7528\u672c\u6761\u5b9e\u9645\u8f93\u5165\u53ca\u53ef\u89c1\u8bc1\u636e\uff1b1 \u5206\uff1a\u901a\u7528\u8bf4\u660e\uff1b0 \u5206\uff1a\u5ffd\u7565\u8f93\u5165\u6216\u8bc1\u636e\u3002",
+                "actionability": "2 \u5206\uff1a\u5b8c\u6210\u672c\u6761\u8bf7\u6c42\u4e14\u7ed9\u51fa\u53ef\u6267\u884c\u4e0b\u4e00\u6b65\uff1b1 \u5206\uff1a\u53ef\u7528\u4f46\u4e0d\u5145\u5206\uff1b0 \u5206\uff1a\u65e0\u6307\u5bfc\u6216\u8fdd\u53cd\u63d0\u793a\u9650\u5236\u3002"
+            }
+        }
+    },
+    "observed": {
+        "initial": {
+            "knowledge": {
+                "eval-live-14": {
+                    "knowledge_id": "grammar_tenses",
+                    "mastery": 0.1,
+                    "alpha": 1.0,
+                    "beta": 9.0,
+                    "attempts": 0,
+                    "correct_count": 0,
+                    "last_attempt": null,
+                    "streak": 0
+                }
+            },
+            "quizzes": {},
+            "thread_id": "b466c67f-ac76-5f5f-be11-8f394515514f"
+        },
+        "fixture_validation": {
+            "valid": true,
+            "checks": {
+                "default_knowledge": true,
+                "no_answer_fields_in_context": true,
+                "no_preexisting_pending": true
+            },
+            "initial_source_refs": []
+        },
+        "steps": {
+            "s1": {
+                "action": "converse",
+                "student_input": "\u8fd9\u4e00\u9898\u4e3a\u4ec0\u4e48\u4e0d\u80fd\u7528\u73b0\u5728\u5b8c\u6210\u65f6\uff1f\u6211\u8fd8\u6ca1\u6709\u53d1\u9898\u5e72\u3002",
+                "status": "completed",
+                "result": {
+                    "learner_id": "eval-live-14",
+                    "knowledge_id": "grammar_tenses",
+                    "correlation_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+                    "evaluation": null,
+                    "teaching_response": {
+                        "response": "\u8bf7\u63d0\u4f9b\u539f\u53e5\u3002",
+                        "teaching_style": "question_answer",
+                        "context_type": "question",
+                        "knowledge_id": "grammar_tenses",
+                        "hint_level": null,
+                        "hint_count": null,
+                        "generation_mode": "native_tools",
+                        "response_variant": "tool_loop",
+                        "history_scope": "durable_thread",
+                        "source_refs": [],
+                        "dialogue_state": "awaiting_student"
+                    },
+                    "next_topic_recommendation": null,
+                    "review_snapshot": {
+                        "knowledge_id": "grammar_tenses",
+                        "next_review": null,
+                        "retention": null,
+                        "urgency": "low",
+                        "is_due": false,
+                        "days_since_review": null,
+                        "top_due_items": []
+                    },
+                    "agent_insights": {
+                        "assessment": {},
+                        "tutor": {
+                            "knowledge_id": "grammar_tenses",
+                            "response": "\u8bf7\u63d0\u4f9b\u539f\u53e5\u3002",
+                            "teaching_style": "question_answer",
+                            "context_type": "question",
+                            "generation_mode": "native_tools",
+                            "response_variant": "tool_loop",
+                            "history_scope": "durable_thread",
+                            "source_refs": [],
+                            "dialogue_state": "awaiting_student"
+                        },
+                        "curriculum": {},
+                        "engagement": {}
+                    },
+                    "teaching_decision": {
+                        "strategy": "answer_question",
+                        "priority": "normal",
+                        "summary": "\u4f18\u5148\u56de\u7b54\u5b66\u751f\u5f53\u524d\u95ee\u9898\uff0c\u5e76\u7ed3\u5408\u5f53\u524d\u77e5\u8bc6\u70b9\u4e0a\u4e0b\u6587\u3002",
+                        "next_action": "\u7ee7\u7eed\u56f4\u7ed5\u5b66\u751f\u8ffd\u95ee\u505a\u9488\u5bf9\u6027\u89e3\u91ca\u3002",
+                        "rationale": "\u7531\u672c\u5730\u6559\u5b66\u7b56\u7565\u6839\u636e\u5404 Agent \u8f93\u51fa\u6c47\u603b\u751f\u6210\u3002",
+                        "generation_mode": "local_policy",
+                        "agent_votes": {
+                            "assessment": {},
+                            "curriculum": {},
+                            "engagement": {},
+                            "tutor": {
+                                "context_type": "question",
+                                "teaching_style": "question_answer",
+                                "generation_mode": "native_tools"
+                            }
+                        }
+                    },
+                    "interaction_events": [
+                        {
+                            "event_type": "student.question",
+                            "source": "api",
+                            "data": {
+                                "knowledge_id": "grammar_tenses",
+                                "question": "\u8fd9\u4e00\u9898\u4e3a\u4ec0\u4e48\u4e0d\u80fd\u7528\u73b0\u5728\u5b8c\u6210\u65f6\uff1f\u6211\u8fd8\u6ca1\u6709\u53d1\u9898\u5e72\u3002"
+                            },
+                            "timestamp": "2026-11-02T08:25:06.685590",
+                            "correlation_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33"
+                        },
+                        {
+                            "event_type": "tutor.teaching_response",
+                            "source": "TutorAgent",
+                            "data": {
+                                "knowledge_id": "grammar_tenses",
+                                "response": "\u8bf7\u63d0\u4f9b\u539f\u53e5\u3002",
+                                "teaching_style": "question_answer",
+                                "context_type": "question",
+                                "generation_mode": "native_tools",
+                                "response_variant": "tool_loop",
+                                "history_scope": "durable_thread",
+                                "source_refs": [],
+                                "dialogue_state": "awaiting_student"
+                            },
+                            "timestamp": "2026-11-02T08:25:06.686718",
+                            "correlation_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33"
+                        }
+                    ],
+                    "events_triggered": 2,
+                    "execution": {
+                        "request_id": "live-14-finished-past-s1",
+                        "run_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+                        "attempt_id": "1c129db3-ad8d-4b7e-9640-7ae8f966cc15",
+                        "session_id": "eval-live-14-s1",
+                        "thread_id": "b466c67f-ac76-5f5f-be11-8f394515514f",
+                        "status": "completed",
+                        "dialogue_state": "awaiting_student",
+                        "pending_question_id": "c8f75062-49e7-42b3-95d6-131af62c02b1",
+                        "answered_question_id": null,
+                        "source_refs": [],
+                        "retrieved_refs": [],
+                        "read_refs": [],
+                        "cited_refs": [],
+                        "app_version": "0.3.0",
+                        "trace_schema_version": 1,
+                        "provider": "template",
+                        "model": "template",
+                        "config_fingerprint": "8883cb6df5fb363e5094c47f0d6fb429cee11529a480ee0e85bd7dd8da84c763",
+                        "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                        "deployment_id": null,
+                        "policy_cohort": null,
+                        "state_namespace": "local",
+                        "rehearsal_id": null
+                    }
+                },
+                "trace": {
+                    "request_id": "live-14-finished-past-s1",
+                    "attempts": [
+                        {
+                            "attempt_id": "1c129db3-ad8d-4b7e-9640-7ae8f966cc15",
+                            "run_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33",
+                            "status": "completed",
+                            "stop_reason": null,
+                            "started": 1793607906.6853251,
+                            "finished": 1793607906.687125,
+                            "app_version": "0.3.0",
+                            "trace_schema_version": 1,
+                            "provider": "template",
+                            "model": "template",
+                            "config_fingerprint": "8883cb6df5fb363e5094c47f0d6fb429cee11529a480ee0e85bd7dd8da84c763",
+                            "steps": [
+                                {
+                                    "seq": 1,
+                                    "kind": "run_started",
+                                    "agent": "Harness",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.685458,
+                                    "learner_queue_wait_ms": 0
+                                },
+                                {
+                                    "seq": 2,
+                                    "kind": "task_routed",
+                                    "agent": "Harness",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.68558,
+                                    "route": "Tutor",
+                                    "reason": "question_intent"
+                                },
+                                {
+                                    "seq": 3,
+                                    "kind": "event_dispatched",
+                                    "agent": "api",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.6856,
+                                    "event_id": "2392c3b7-12a8-4a66-8795-ebb99f42f4e8",
+                                    "event_type": "student.question",
+                                    "parent_event_id": null
+                                },
+                                {
+                                    "seq": 4,
+                                    "kind": "handler_started",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.685607,
+                                    "event_id": "2392c3b7-12a8-4a66-8795-ebb99f42f4e8"
+                                },
+                                {
+                                    "seq": 5,
+                                    "kind": "memory_retrieval",
+                                    "agent": "Harness",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.685718,
+                                    "lexical_hits": 0,
+                                    "semantic_hits": 0,
+                                    "vectors_searched": 0,
+                                    "elapsed_ms": 0,
+                                    "degraded_reason": null,
+                                    "embedding_usage": {},
+                                    "rerank_usage": {},
+                                    "rerank_error": null,
+                                    "semantic_threshold": 0.55
+                                },
+                                {
+                                    "seq": 6,
+                                    "kind": "history_discovery",
+                                    "agent": "Harness",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.685774,
+                                    "source_refs": [],
+                                    "bounded": true
+                                },
+                                {
+                                    "seq": 7,
+                                    "kind": "context_built",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.685844,
+                                    "source_refs": [],
+                                    "omitted_refs": [],
+                                    "token_estimate": 949,
+                                    "tutor_policy_version": "2026-10-25.3",
+                                    "response_mode": "explanation",
+                                    "estimate_method": "utf8_bytes_div_3"
+                                },
+                                {
+                                    "seq": 8,
+                                    "kind": "before_model",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.6865559,
+                                    "model_call": 1,
+                                    "token_estimate": 1911
+                                },
+                                {
+                                    "seq": 9,
+                                    "kind": "after_model",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.686645,
+                                    "model_call": 1,
+                                    "stop_reason": "tool_calls",
+                                    "usage": {}
+                                },
+                                {
+                                    "seq": 10,
+                                    "kind": "budget_used",
+                                    "agent": "Tutor",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.68665,
+                                    "resource": "tool",
+                                    "used": 1,
+                                    "task_id": null,
+                                    "parent_run_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33"
+                                },
+                                {
+                                    "seq": 11,
+                                    "kind": "before_tool",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.686651,
+                                    "tool": "ask_student",
+                                    "tool_call_id": "script-1",
+                                    "task_id": null,
+                                    "parent_run_id": "d5864fd6-5f23-5210-a8fe-ad2767984e33"
+                                },
+                                {
+                                    "seq": 12,
+                                    "kind": "after_tool",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.686688,
+                                    "tool": "ask_student",
+                                    "tool_call_id": "script-1",
+                                    "task_id": null,
+                                    "status": "ok",
+                                    "source_refs": [],
+                                    "error_code": null,
+                                    "cached": false,
+                                    "elapsed_ms": 0,
+                                    "result_keys": [
+                                        "question",
+                                        "terminal"
+                                    ]
+                                },
+                                {
+                                    "seq": 13,
+                                    "kind": "response_sources",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.6867042,
+                                    "retrieved_refs": [],
+                                    "read_refs": [],
+                                    "cited_refs": []
+                                },
+                                {
+                                    "seq": 14,
+                                    "kind": "handler_completed",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.686767,
+                                    "event_id": "2392c3b7-12a8-4a66-8795-ebb99f42f4e8",
+                                    "duration_ms": 1
+                                },
+                                {
+                                    "seq": 15,
+                                    "kind": "event_dispatched",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.686769,
+                                    "event_id": "31a6d459-5e18-4289-8231-2a7d125799c2",
+                                    "event_type": "tutor.teaching_response",
+                                    "parent_event_id": "2392c3b7-12a8-4a66-8795-ebb99f42f4e8"
+                                },
+                                {
+                                    "seq": 16,
+                                    "kind": "commit_started",
+                                    "agent": "Harness",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.686831
+                                },
+                                {
+                                    "seq": 17,
+                                    "kind": "run_completed",
+                                    "agent": "Harness",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.6870458,
+                                    "dialogue_state": "awaiting_student"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "model_turns": [
+                    {
+                        "request_no": 1,
+                        "content": "",
+                        "tool_calls": [
+                            {
+                                "id": "script-1",
+                                "name": "ask_student",
+                                "arguments": {
+                                    "question": "\u8bf7\u63d0\u4f9b\u539f\u53e5\u3002"
+                                },
+                                "batch_size": 1
+                            }
+                        ],
+                        "stop_reason": "tool_calls",
+                        "usage": {},
+                        "duration_ms": 0.05283299833536148
+                    }
+                ],
+                "tool_results": [],
+                "quizzes": {},
+                "knowledge": {
+                    "eval-live-14": {
+                        "knowledge_id": "grammar_tenses",
+                        "mastery": 0.1,
+                        "alpha": 1.0,
+                        "beta": 9.0,
+                        "attempts": 0,
+                        "correct_count": 0,
+                        "last_attempt": null,
+                        "streak": 0
+                    }
+                },
+                "evidence": [],
+                "duration_ms": 2.4002909995033406,
+                "all_sources_readable": true
+            },
+            "s2": {
+                "action": "converse",
+                "student_input": "\u9898\u5e72\u662f We visited the museum last Sunday. \u8fd9\u6b21\u53c2\u89c2\u5df2\u7ecf\u7ed3\u675f\u3002\u4e3a\u4ec0\u4e48\u7528 visited\uff1f",
+                "status": "completed",
+                "result": {
+                    "learner_id": "eval-live-14",
+                    "knowledge_id": "grammar_tenses",
+                    "correlation_id": "2673a3aa-795f-5501-a9c5-4e1b3978268c",
+                    "evaluation": null,
+                    "teaching_response": {
+                        "response": "\u79bb\u7ebf\u811a\u672c\u5360\u4f4d\u63d0\u793a\uff1b\u8bed\u4e49\u6ca1\u6709\u8bc4\u4f30\u3002\u8bf7\u68c0\u67e5\u9898\u5e72\u4e2d\u7684\u7ed3\u6784\u6216\u4e0a\u4e0b\u6587\u7ebf\u7d22\u3002 MOCK_BASELINE",
+                        "teaching_style": "question_answer",
+                        "context_type": "question",
+                        "knowledge_id": "grammar_tenses",
+                        "hint_level": null,
+                        "hint_count": null,
+                        "generation_mode": "native_tools",
+                        "response_variant": "tool_loop",
+                        "history_scope": "durable_thread",
+                        "source_refs": [
+                            "message:4ed4cb3a-3cd6-4f28-b8a0-fbdbcc3eb90a",
+                            "message:99d985fa-3ce2-4e52-829e-5630ea15cbd5"
+                        ],
+                        "dialogue_state": "answered"
+                    },
+                    "next_topic_recommendation": null,
+                    "review_snapshot": {
+                        "knowledge_id": "grammar_tenses",
+                        "next_review": null,
+                        "retention": null,
+                        "urgency": "low",
+                        "is_due": false,
+                        "days_since_review": null,
+                        "top_due_items": []
+                    },
+                    "agent_insights": {
+                        "assessment": {},
+                        "tutor": {
+                            "knowledge_id": "grammar_tenses",
+                            "response": "\u79bb\u7ebf\u811a\u672c\u5360\u4f4d\u63d0\u793a\uff1b\u8bed\u4e49\u6ca1\u6709\u8bc4\u4f30\u3002\u8bf7\u68c0\u67e5\u9898\u5e72\u4e2d\u7684\u7ed3\u6784\u6216\u4e0a\u4e0b\u6587\u7ebf\u7d22\u3002 MOCK_BASELINE",
+                            "teaching_style": "question_answer",
+                            "context_type": "question",
+                            "generation_mode": "native_tools",
+                            "response_variant": "tool_loop",
+                            "history_scope": "durable_thread",
+                            "source_refs": [
+                                "message:4ed4cb3a-3cd6-4f28-b8a0-fbdbcc3eb90a",
+                                "message:99d985fa-3ce2-4e52-829e-5630ea15cbd5"
+                            ],
+                            "dialogue_state": "answered"
+                        },
+                        "curriculum": {},
+                        "engagement": {}
+                    },
+                    "teaching_decision": {
+                        "strategy": "answer_question",
+                        "priority": "normal",
+                        "summary": "\u4f18\u5148\u56de\u7b54\u5b66\u751f\u5f53\u524d\u95ee\u9898\uff0c\u5e76\u7ed3\u5408\u5f53\u524d\u77e5\u8bc6\u70b9\u4e0a\u4e0b\u6587\u3002",
+                        "next_action": "\u7ee7\u7eed\u56f4\u7ed5\u5b66\u751f\u8ffd\u95ee\u505a\u9488\u5bf9\u6027\u89e3\u91ca\u3002",
+                        "rationale": "\u7531\u672c\u5730\u6559\u5b66\u7b56\u7565\u6839\u636e\u5404 Agent \u8f93\u51fa\u6c47\u603b\u751f\u6210\u3002",
+                        "generation_mode": "local_policy",
+                        "agent_votes": {
+                            "assessment": {},
+                            "curriculum": {},
+                            "engagement": {},
+                            "tutor": {
+                                "context_type": "question",
+                                "teaching_style": "question_answer",
+                                "generation_mode": "native_tools"
+                            }
+                        }
+                    },
+                    "interaction_events": [
+                        {
+                            "event_type": "student.question",
+                            "source": "api",
+                            "data": {
+                                "knowledge_id": "grammar_tenses",
+                                "question": "\u9898\u5e72\u662f We visited the museum last Sunday. \u8fd9\u6b21\u53c2\u89c2\u5df2\u7ecf\u7ed3\u675f\u3002\u4e3a\u4ec0\u4e48\u7528 visited\uff1f"
+                            },
+                            "timestamp": "2026-11-02T08:25:06.687935",
+                            "correlation_id": "2673a3aa-795f-5501-a9c5-4e1b3978268c"
+                        },
+                        {
+                            "event_type": "tutor.teaching_response",
+                            "source": "TutorAgent",
+                            "data": {
+                                "knowledge_id": "grammar_tenses",
+                                "response": "\u79bb\u7ebf\u811a\u672c\u5360\u4f4d\u63d0\u793a\uff1b\u8bed\u4e49\u6ca1\u6709\u8bc4\u4f30\u3002\u8bf7\u68c0\u67e5\u9898\u5e72\u4e2d\u7684\u7ed3\u6784\u6216\u4e0a\u4e0b\u6587\u7ebf\u7d22\u3002 MOCK_BASELINE",
+                                "teaching_style": "question_answer",
+                                "context_type": "question",
+                                "generation_mode": "native_tools",
+                                "response_variant": "tool_loop",
+                                "history_scope": "durable_thread",
+                                "source_refs": [
+                                    "message:4ed4cb3a-3cd6-4f28-b8a0-fbdbcc3eb90a",
+                                    "message:99d985fa-3ce2-4e52-829e-5630ea15cbd5"
+                                ],
+                                "dialogue_state": "answered"
+                            },
+                            "timestamp": "2026-11-02T08:25:06.689116",
+                            "correlation_id": "2673a3aa-795f-5501-a9c5-4e1b3978268c"
+                        }
+                    ],
+                    "events_triggered": 2,
+                    "execution": {
+                        "request_id": "live-14-finished-past-s2",
+                        "run_id": "2673a3aa-795f-5501-a9c5-4e1b3978268c",
+                        "attempt_id": "118d01c1-646f-4d95-b99f-28c236bf98ee",
+                        "session_id": "eval-live-14-s1",
+                        "thread_id": "b466c67f-ac76-5f5f-be11-8f394515514f",
+                        "status": "completed",
+                        "dialogue_state": "answered",
+                        "pending_question_id": null,
+                        "answered_question_id": "c8f75062-49e7-42b3-95d6-131af62c02b1",
+                        "source_refs": [
+                            "message:4ed4cb3a-3cd6-4f28-b8a0-fbdbcc3eb90a",
+                            "message:99d985fa-3ce2-4e52-829e-5630ea15cbd5"
+                        ],
+                        "retrieved_refs": [
+                            "message:99d985fa-3ce2-4e52-829e-5630ea15cbd5"
+                        ],
+                        "read_refs": [],
+                        "cited_refs": [],
+                        "app_version": "0.3.0",
+                        "trace_schema_version": 1,
+                        "provider": "template",
+                        "model": "template",
+                        "config_fingerprint": "8883cb6df5fb363e5094c47f0d6fb429cee11529a480ee0e85bd7dd8da84c763",
+                        "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                        "deployment_id": null,
+                        "policy_cohort": null,
+                        "state_namespace": "local",
+                        "rehearsal_id": null
+                    }
+                },
+                "trace": {
+                    "request_id": "live-14-finished-past-s2",
+                    "attempts": [
+                        {
+                            "attempt_id": "118d01c1-646f-4d95-b99f-28c236bf98ee",
+                            "run_id": "2673a3aa-795f-5501-a9c5-4e1b3978268c",
+                            "status": "completed",
+                            "stop_reason": null,
+                            "started": 1793607906.687752,
+                            "finished": 1793607906.689462,
+                            "app_version": "0.3.0",
+                            "trace_schema_version": 1,
+                            "provider": "template",
+                            "model": "template",
+                            "config_fingerprint": "8883cb6df5fb363e5094c47f0d6fb429cee11529a480ee0e85bd7dd8da84c763",
+                            "steps": [
+                                {
+                                    "seq": 1,
+                                    "kind": "run_started",
+                                    "agent": "Harness",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.6878998,
+                                    "learner_queue_wait_ms": 0
+                                },
+                                {
+                                    "seq": 2,
+                                    "kind": "task_routed",
+                                    "agent": "Harness",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.687926,
+                                    "route": "Tutor",
+                                    "reason": "pending_question"
+                                },
+                                {
+                                    "seq": 3,
+                                    "kind": "event_dispatched",
+                                    "agent": "api",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.687943,
+                                    "event_id": "fbd77f6b-98c5-40ce-86c6-146964c75b72",
+                                    "event_type": "student.question",
+                                    "parent_event_id": null
+                                },
+                                {
+                                    "seq": 4,
+                                    "kind": "handler_started",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.687949,
+                                    "event_id": "fbd77f6b-98c5-40ce-86c6-146964c75b72"
+                                },
+                                {
+                                    "seq": 5,
+                                    "kind": "memory_retrieval",
+                                    "agent": "Harness",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.688173,
+                                    "lexical_hits": 1,
+                                    "semantic_hits": 0,
+                                    "vectors_searched": 0,
+                                    "elapsed_ms": 0,
+                                    "degraded_reason": null,
+                                    "embedding_usage": {},
+                                    "rerank_usage": {},
+                                    "rerank_error": null,
+                                    "semantic_threshold": 0.55
+                                },
+                                {
+                                    "seq": 6,
+                                    "kind": "context_built",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.688311,
+                                    "source_refs": [
+                                        "message:4ed4cb3a-3cd6-4f28-b8a0-fbdbcc3eb90a",
+                                        "message:99d985fa-3ce2-4e52-829e-5630ea15cbd5"
+                                    ],
+                                    "omitted_refs": [],
+                                    "token_estimate": 1246,
+                                    "tutor_policy_version": "2026-10-25.3",
+                                    "response_mode": "explanation",
+                                    "estimate_method": "utf8_bytes_div_3"
+                                },
+                                {
+                                    "seq": 7,
+                                    "kind": "before_model",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.688996,
+                                    "model_call": 1,
+                                    "token_estimate": 2207
+                                },
+                                {
+                                    "seq": 8,
+                                    "kind": "after_model",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.6890938,
+                                    "model_call": 1,
+                                    "stop_reason": "stop",
+                                    "usage": {}
+                                },
+                                {
+                                    "seq": 9,
+                                    "kind": "response_sources",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.689098,
+                                    "retrieved_refs": [
+                                        "message:99d985fa-3ce2-4e52-829e-5630ea15cbd5"
+                                    ],
+                                    "read_refs": [],
+                                    "cited_refs": []
+                                },
+                                {
+                                    "seq": 10,
+                                    "kind": "handler_completed",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.689176,
+                                    "event_id": "fbd77f6b-98c5-40ce-86c6-146964c75b72",
+                                    "duration_ms": 1
+                                },
+                                {
+                                    "seq": 11,
+                                    "kind": "event_dispatched",
+                                    "agent": "TutorAgent",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.6891782,
+                                    "event_id": "6c7671f2-05ea-4dc9-a806-e9ce82d47206",
+                                    "event_type": "tutor.teaching_response",
+                                    "parent_event_id": "fbd77f6b-98c5-40ce-86c6-146964c75b72"
+                                },
+                                {
+                                    "seq": 12,
+                                    "kind": "commit_started",
+                                    "agent": "Harness",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.689235
+                                },
+                                {
+                                    "seq": 13,
+                                    "kind": "run_completed",
+                                    "agent": "Harness",
+                                    "deployment_id": null,
+                                    "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                                    "policy_cohort": null,
+                                    "state_namespace": "local",
+                                    "rehearsal_id": null,
+                                    "timestamp": 1793607906.689405,
+                                    "dialogue_state": "answered"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "model_turns": [
+                    {
+                        "request_no": 2,
+                        "content": "\u79bb\u7ebf\u811a\u672c\u5360\u4f4d\u63d0\u793a\uff1b\u8bed\u4e49\u6ca1\u6709\u8bc4\u4f30\u3002\u8bf7\u68c0\u67e5\u9898\u5e72\u4e2d\u7684\u7ed3\u6784\u6216\u4e0a\u4e0b\u6587\u7ebf\u7d22\u3002 MOCK_BASELINE",
+                        "tool_calls": [],
+                        "stop_reason": "stop",
+                        "usage": {},
+                        "duration_ms": 0.05795800097985193
+                    }
+                ],
+                "tool_results": [],
+                "quizzes": {},
+                "knowledge": {
+                    "eval-live-14": {
+                        "knowledge_id": "grammar_tenses",
+                        "mastery": 0.1,
+                        "alpha": 1.0,
+                        "beta": 9.0,
+                        "attempts": 0,
+                        "correct_count": 0,
+                        "last_attempt": null,
+                        "streak": 0
+                    }
+                },
+                "evidence": [],
+                "duration_ms": 2.354374999413267,
+                "all_sources_readable": true
+            }
+        },
+        "final": {
+            "knowledge": {
+                "eval-live-14": {
+                    "knowledge_id": "grammar_tenses",
+                    "mastery": 0.1,
+                    "alpha": 1.0,
+                    "beta": 9.0,
+                    "attempts": 0,
+                    "correct_count": 0,
+                    "last_attempt": null,
+                    "streak": 0
+                }
+            },
+            "quizzes": {},
+            "evidence": [],
+            "pending_questions": [
+                {
+                    "id": "c8f75062-49e7-42b3-95d6-131af62c02b1",
+                    "answered_by": "06a56a7a-8ebe-4469-b95d-de8064f4d6b8"
+                }
+            ],
+            "assistant_history": [
+                "\u8bf7\u63d0\u4f9b\u539f\u53e5\u3002",
+                "\u79bb\u7ebf\u811a\u672c\u5360\u4f4d\u63d0\u793a\uff1b\u8bed\u4e49\u6ca1\u6709\u8bc4\u4f30\u3002\u8bf7\u68c0\u67e5\u9898\u5e72\u4e2d\u7684\u7ed3\u6784\u6216\u4e0a\u4e0b\u6587\u7ebf\u7d22\u3002 MOCK_BASELINE"
+            ]
+        }
+    },
+    "judge_identity": {
+        "provider": "template",
+        "model": "template",
+        "thinking": "disabled"
+    },
+    "score": {
+        "semantic": [
+            {
+                "id": "H5",
+                "passed": false,
+                "reason": "\u6a21\u62df\u5224\u5b9a\uff0c\u4ec5\u7528\u4e8e\u6d4b\u8bd5",
+                "evidence": "\u8bf7\u63d0\u4f9b\u539f\u53e5\u3002\u2026\u2026\u79bb\u7ebf\u811a\u672c\u5360\u4f4d\u63d0\u793a\uff1b\u8bed\u4e49\u6ca1\u6709\u8bc4\u4f30\u3002\u8bf7\u68c0\u67e5\u9898\u5e72\u4e2d\u7684\u7ed3\u6784\u6216\u4e0a\u4e0b\u6587\u7ebf\u7d22\u3002 MOCK_BASELINE"
+            }
+        ],
+        "decisions": [
+            {
+                "step_id": "s1",
+                "required_tools_present": false,
+                "calls": [
+                    {
+                        "index": 0,
+                        "selection_correct": false,
+                        "arguments_correct": false
+                    }
+                ],
+                "reason": "\u6a21\u62df\u5224\u5b9a\uff0c\u4ec5\u7528\u4e8e\u6d4b\u8bd5",
+                "evidence": ""
+            },
+            {
+                "step_id": "s2",
+                "required_tools_present": false,
+                "calls": [],
+                "reason": "\u6a21\u62df\u5224\u5b9a\uff0c\u4ec5\u7528\u4e8e\u6d4b\u8bd5",
+                "evidence": ""
+            }
+        ],
+        "raw_judgment": {
+            "semantic": [
+                {
+                    "id": "H5",
+                    "passed": false,
+                    "reason": "\u6a21\u62df\u5224\u5b9a\uff0c\u4ec5\u7528\u4e8e\u6d4b\u8bd5",
+                    "evidence": "\u8bf7\u63d0\u4f9b\u539f\u53e5\u3002\u2026\u2026\u79bb\u7ebf\u811a\u672c\u5360\u4f4d\u63d0\u793a\uff1b\u8bed\u4e49\u6ca1\u6709\u8bc4\u4f30\u3002\u8bf7\u68c0\u67e5\u9898\u5e72\u4e2d\u7684\u7ed3\u6784\u6216\u4e0a\u4e0b\u6587\u7ebf\u7d22\u3002 MOCK_BASELINE"
+                }
+            ],
+            "decisions": [
+                {
+                    "step_id": "s1",
+                    "required_tools_present": false,
+                    "calls": [
+                        {
+                            "index": 0,
+                            "selection_correct": false,
+                            "arguments_correct": false
+                        }
+                    ],
+                    "reason": "\u6a21\u62df\u5224\u5b9a\uff0c\u4ec5\u7528\u4e8e\u6d4b\u8bd5",
+                    "evidence": ""
+                },
+                {
+                    "step_id": "s2",
+                    "required_tools_present": false,
+                    "calls": [],
+                    "reason": "\u6a21\u62df\u5224\u5b9a\uff0c\u4ec5\u7528\u4e8e\u6d4b\u8bd5",
+                    "evidence": ""
+                }
+            ]
+        },
+        "leakage": {
+            "protocol": {
+                "schema": "eduagent.hybrid-leakage.v2",
+                "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+                "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7"
+            },
+            "contract_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "case_sha256": "e50ede72c6f4cfb3039f893c7d407e6a9f065e46e4e01c178f1d571f36c064bd",
+            "steps": {},
+            "verdict": "not_applicable"
+        },
+        "task_success": false,
+        "automatic_passed": true,
+        "decision_rate": 0.0,
+        "score": 0.0,
+        "review_status": "ai_reviewed",
+        "judge_protocol_version": 3,
+        "judge_protocol_sha256": "1be8d310551d0e1b233b3abe309a57f90a33159099d31e1271e0808338cffa3b",
+        "judge_verdict": "fail",
+        "judge_reason_codes": [
+            "criterion_failed"
+        ],
+        "raw_judgment_v3": {
+            "schema_version": 3,
+            "verdict": "fail",
+            "reason_codes": [
+                "criterion_failed"
+            ],
+            "criterion_results": [
+                {
+                    "criterion_id": "semantic:H5",
+                    "verdict": "fail",
+                    "evidence_refs": [
+                        "response:s1",
+                        "response:s2"
+                    ],
+                    "rationale": "\u6a21\u62df\u5224\u5b9a\uff0c\u4ec5\u7528\u4e8e\u6d4b\u8bd5"
+                },
+                {
+                    "criterion_id": "decision:s1",
+                    "verdict": "fail",
+                    "evidence_refs": [
+                        "call:s1:0"
+                    ],
+                    "rationale": "\u6a21\u62df\u5224\u5b9a\uff0c\u4ec5\u7528\u4e8e\u6d4b\u8bd5"
+                },
+                {
+                    "criterion_id": "decision:s2",
+                    "verdict": "fail",
+                    "evidence_refs": [
+                        "no_calls:s2"
+                    ],
+                    "rationale": "\u6a21\u62df\u5224\u5b9a\uff0c\u4ec5\u7528\u4e8e\u6d4b\u8bd5"
+                }
+            ]
+        },
+        "judge_diagnostics": {
+            "raw_response": "{\"schema_version\": 3, \"verdict\": \"fail\", \"reason_codes\": [\"criterion_failed\"], \"criterion_results\": [{\"criterion_id\": \"semantic:H5\", \"verdict\": \"fail\", \"evidence_refs\": [\"response:s1\", \"response:s2\"], \"rationale\": \"\\u6a21\\u62df\\u5224\\u5b9a\\uff0c\\u4ec5\\u7528\\u4e8e\\u6d4b\\u8bd5\"}, {\"criterion_id\": \"decision:s1\", \"verdict\": \"fail\", \"evidence_refs\": [\"call:s1:0\"], \"rationale\": \"\\u6a21\\u62df\\u5224\\u5b9a\\uff0c\\u4ec5\\u7528\\u4e8e\\u6d4b\\u8bd5\"}, {\"criterion_id\": \"decision:s2\", \"verdict\": \"fail\", \"evidence_refs\": [\"no_calls:s2\"], \"rationale\": \"\\u6a21\\u62df\\u5224\\u5b9a\\uff0c\\u4ec5\\u7528\\u4e8e\\u6d4b\\u8bd5\"}]}",
+            "repair_response": null,
+            "validation_errors": [],
+            "repaired": false
+        },
+        "judge_call_count": 1,
+        "judge_prompt_sha256": "0c323b86f3a4f8995eb7b1c992b17feb0b7f8aeac0f5411dbe50ad0024129ae3",
+        "judge_input_sha256": "ecf423bc9f3a3964d2152a708a18593475b761fbed355cca4b5d6ba0d55864ad"
+    },
+    "metering": [
+        {
+            "request_no": 1,
+            "reservation_cny": 0.01991,
+            "usage": null,
+            "status": "unconfirmed",
+            "role": "task"
+        },
+        {
+            "request_no": 2,
+            "reservation_cny": 0.02169,
+            "usage": null,
+            "status": "unconfirmed",
+            "role": "task"
+        },
+        {
+            "request_no": 3,
+            "reservation_cny": 0.034534,
+            "usage": {
+                "input_tokens": 10,
+                "output_tokens": 10
+            },
+            "status": "usage_recorded",
+            "role": "judge",
+            "estimated_peak_cny": 0.0001,
+            "estimated_off_peak_cny": 5e-05
+        }
+    ]
+}

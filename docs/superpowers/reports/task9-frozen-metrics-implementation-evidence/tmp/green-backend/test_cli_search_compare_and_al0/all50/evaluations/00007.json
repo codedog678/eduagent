@@ -1,0 +1,1424 @@
+{
+  "automatic": {
+    "annotations": {},
+    "automatic_passed": true,
+    "case_id": "live-11-assisted-correct-not-independent",
+    "category": "学习证据",
+    "evaluation_role": "agent_primary",
+    "execution_failures": [],
+    "execution_outcome": "completed",
+    "hard_checks": [
+      {
+        "id": "H1",
+        "method": "automatic",
+        "passed": true,
+        "path": "s1.assistance / quiz.eval-live-11-q1",
+        "rule": "s1.assistance.recorded=true；s1 提交后 assisted=true，attempts=0。",
+        "status": "passed"
+      },
+      {
+        "id": "H2",
+        "method": "automatic",
+        "passed": true,
+        "path": "s2.evaluation.is_correct",
+        "rule": "等于 true。",
+        "status": "passed"
+      },
+      {
+        "id": "H3",
+        "method": "automatic",
+        "passed": true,
+        "path": "s2.learning_evidence",
+        "rule": "independent=false、mastery_updated=false、assisted=true、outcome=guided_practice、attempt=1。",
+        "status": "passed"
+      },
+      {
+        "id": "H4",
+        "method": "automatic",
+        "passed": true,
+        "path": "learner.knowledge_states.vocab_basic",
+        "rule": "场景前后所有 KnowledgeState 字段相同，mastery=0.1、attempts=0、correct_count=0。",
+        "status": "passed"
+      },
+      {
+        "id": "H5",
+        "method": "automatic",
+        "passed": true,
+        "path": "learning_evidence 与 quiz.eval-live-11-q1",
+        "rule": "有与 q1 关联的 assistance 和 assessment；最终 quiz.attempts=1、assisted=true、solved=true。",
+        "status": "passed"
+      },
+      {
+        "id": "H6",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "s1.teaching_response.response",
+        "rule": "提示利用公开数量语境且有可执行判断点，没有直接推荐 B 或给完整词义答案。",
+        "status": "review_pending"
+      },
+      {
+        "id": "S1",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "hint_direct",
+        "rule": "不直接给出正确选项、答案词形、完整待填句或待判断词的完整词义。",
+        "status": "review_pending"
+      },
+      {
+        "id": "S2",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "hint_paraphrase",
+        "rule": "不通过等价改写、翻译、同义词或完整变形表让学生直接对应出本题答案。",
+        "status": "review_pending"
+      },
+      {
+        "id": "S3",
+        "method": "semantic_review",
+        "passed": null,
+        "path": "hint_elimination",
+        "rule": "不逐项排除其余选项，也不组合提示使正确选项成为无需学生判断的唯一剩余答案。",
+        "status": "review_pending"
+      }
+    ],
+    "quality_review": {
+      "anchors": {
+        "accuracy": "2 分：提示线索正确且不越过学生要求直接代答；1 分：提示正确但过于泛化；0 分：错误提示或直接给答案。",
+        "actionability": "2 分：让学生检查资源数量或列举语境再比选项；1 分：只说看上下文；0 分：直接代答或不给方法。",
+        "targeting": "2 分：围绕列举资源与 everywhere 的语境；1 分：只讲通用猜词；0 分：无关内容。"
+      },
+      "reviewer": null,
+      "scores": null,
+      "status": "review_pending"
+    },
+    "status": "review_pending",
+    "title": "受助后答对不计为独立掌握证据"
+  },
+  "capability": "learning_evidence",
+  "case_id": "live-11-assisted-correct-not-independent",
+  "evaluation_index": 7,
+  "judge_identity": {
+    "model": "template",
+    "provider": "template",
+    "thinking": "disabled"
+  },
+  "metering": [
+    {
+      "request_no": 18,
+      "reservation_cny": 0.021814,
+      "role": "task",
+      "status": "unconfirmed",
+      "usage": null
+    },
+    {
+      "estimated_off_peak_cny": 5e-05,
+      "estimated_peak_cny": 0.0001,
+      "request_no": 19,
+      "reservation_cny": 0.035574,
+      "role": "judge",
+      "status": "usage_recorded",
+      "usage": {
+        "input_tokens": 10,
+        "output_tokens": 10
+      }
+    }
+  ],
+  "observed": {
+    "final": {
+      "assistant_history": [
+        "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE"
+      ],
+      "evidence": [
+        {
+          "body": {
+            "assisted": true,
+            "source_refs": []
+          },
+          "kind": "assistance",
+          "quiz_id": "eval-live-11-q1",
+          "source_ref": "evidence:bb48215c-f89b-4590-a526-8debc12fafb2"
+        },
+        {
+          "body": {
+            "assisted": true,
+            "attempt": 1,
+            "confidence": 0.8,
+            "hints_used": 0,
+            "independent": false,
+            "is_correct": true,
+            "knowledge_id": "vocab_basic",
+            "mastery_updated": false,
+            "outcome": "guided_practice",
+            "question": "Choose the closest meaning of abundant: The region has abundant natural resources: forests, rivers and fertile land everywhere.",
+            "quiz_id": "eval-live-11-q1",
+            "source_refs": [],
+            "student_answer": "B. plentiful"
+          },
+          "kind": "assessment",
+          "quiz_id": "eval-live-11-q1",
+          "source_ref": "evidence:533c7f57-0ede-4208-8f20-6094f2d03c3c"
+        }
+      ],
+      "knowledge": {
+        "eval-live-11": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "pending_questions": [],
+      "quizzes": {
+        "eval-live-11-q1": {
+          "assisted": true,
+          "attempts": 1,
+          "created": 1793608621.79756,
+          "difficulty": 0.5,
+          "hints": 0,
+          "knowledge_id": "vocab_basic",
+          "mode": "practice",
+          "options": [
+            "A. rare",
+            "B. plentiful",
+            "C. dangerous",
+            "D. hidden"
+          ],
+          "question": "Choose the closest meaning of abundant: The region has abundant natural resources: forests, rivers and fertile land everywhere.",
+          "quiz_id": "eval-live-11-q1",
+          "revealed": false,
+          "session_id": "eval-live-11-s1",
+          "solved": true,
+          "thread_id": "12944dba-f60e-505e-ac62-d2123271c666"
+        }
+      }
+    },
+    "fixture_validation": {
+      "checks": {
+        "default_knowledge": true,
+        "no_answer_fields_in_context": true,
+        "no_preexisting_pending": true
+      },
+      "initial_source_refs": [],
+      "valid": true
+    },
+    "initial": {
+      "knowledge": {
+        "eval-live-11": {
+          "alpha": 1.0,
+          "attempts": 0,
+          "beta": 9.0,
+          "correct_count": 0,
+          "knowledge_id": "vocab_basic",
+          "last_attempt": null,
+          "mastery": 0.1,
+          "streak": 0
+        }
+      },
+      "quizzes": {
+        "eval-live-11-q1": {
+          "assisted": false,
+          "attempts": 0,
+          "created": 1793608621.79756,
+          "difficulty": 0.5,
+          "hints": 0,
+          "knowledge_id": "vocab_basic",
+          "mode": "practice",
+          "options": [
+            "A. rare",
+            "B. plentiful",
+            "C. dangerous",
+            "D. hidden"
+          ],
+          "question": "Choose the closest meaning of abundant: The region has abundant natural resources: forests, rivers and fertile land everywhere.",
+          "quiz_id": "eval-live-11-q1",
+          "revealed": false,
+          "session_id": "eval-live-11-s1",
+          "solved": false,
+          "thread_id": "12944dba-f60e-505e-ac62-d2123271c666"
+        }
+      },
+      "thread_id": "12944dba-f60e-505e-ac62-d2123271c666"
+    },
+    "steps": {
+      "s1": {
+        "action": "converse",
+        "all_sources_readable": true,
+        "duration_ms": 2.0688749973487575,
+        "evidence": [
+          {
+            "body": {
+              "assisted": true,
+              "source_refs": []
+            },
+            "kind": "assistance",
+            "quiz_id": "eval-live-11-q1",
+            "source_ref": "evidence:bb48215c-f89b-4590-a526-8debc12fafb2"
+          }
+        ],
+        "knowledge": {
+          "eval-live-11": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "vocab_basic",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [
+          {
+            "content": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+            "duration_ms": 0.04650000118999742,
+            "request_no": 1,
+            "stop_reason": "stop",
+            "tool_calls": [],
+            "usage": {}
+          }
+        ],
+        "quizzes": {
+          "eval-live-11-q1": {
+            "assisted": true,
+            "attempts": 0,
+            "created": 1793608621.79756,
+            "difficulty": 0.5,
+            "hints": 0,
+            "knowledge_id": "vocab_basic",
+            "mode": "practice",
+            "options": [
+              "A. rare",
+              "B. plentiful",
+              "C. dangerous",
+              "D. hidden"
+            ],
+            "question": "Choose the closest meaning of abundant: The region has abundant natural resources: forests, rivers and fertile land everywhere.",
+            "quiz_id": "eval-live-11-q1",
+            "revealed": false,
+            "session_id": "eval-live-11-s1",
+            "solved": false,
+            "thread_id": "12944dba-f60e-505e-ac62-d2123271c666"
+          }
+        },
+        "result": {
+          "agent_insights": {
+            "assessment": {},
+            "curriculum": {},
+            "engagement": {},
+            "tutor": {
+              "context_type": "question",
+              "dialogue_state": "answered",
+              "generation_mode": "native_tools",
+              "history_scope": "durable_thread",
+              "knowledge_id": "vocab_basic",
+              "response": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+              "response_variant": "tool_loop",
+              "source_refs": [],
+              "teaching_style": "question_answer"
+            }
+          },
+          "assistance": {
+            "recorded": true,
+            "source_ref": "evidence:bb48215c-f89b-4590-a526-8debc12fafb2"
+          },
+          "correlation_id": "7e902b9f-8ab9-5a51-9b66-af36d809bf98",
+          "evaluation": null,
+          "events_triggered": 2,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "782fa815-e162-4dee-97bd-7f030d478d3a",
+            "cited_refs": [],
+            "config_fingerprint": "8883cb6df5fb363e5094c47f0d6fb429cee11529a480ee0e85bd7dd8da84c763",
+            "deployment_id": null,
+            "dialogue_state": "answered",
+            "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+            "model": "template",
+            "pending_question_id": null,
+            "policy_cohort": null,
+            "provider": "template",
+            "read_refs": [],
+            "rehearsal_id": null,
+            "request_id": "live-11-assisted-correct-not-independent-s1",
+            "retrieved_refs": [],
+            "run_id": "7e902b9f-8ab9-5a51-9b66-af36d809bf98",
+            "session_id": "eval-live-11-s1",
+            "source_refs": [],
+            "state_namespace": "local",
+            "status": "completed",
+            "thread_id": "12944dba-f60e-505e-ac62-d2123271c666",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "7e902b9f-8ab9-5a51-9b66-af36d809bf98",
+              "data": {
+                "knowledge_id": "vocab_basic",
+                "question": "不要直接告诉我词义或正确选项，先提醒我根据句子里的哪类线索判断 abundant。"
+              },
+              "event_type": "student.question",
+              "source": "api",
+              "timestamp": "2026-11-02T08:37:01.798179"
+            },
+            {
+              "correlation_id": "7e902b9f-8ab9-5a51-9b66-af36d809bf98",
+              "data": {
+                "context_type": "question",
+                "dialogue_state": "answered",
+                "generation_mode": "native_tools",
+                "history_scope": "durable_thread",
+                "knowledge_id": "vocab_basic",
+                "response": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+                "response_variant": "tool_loop",
+                "source_refs": [],
+                "teaching_style": "question_answer"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-11-02T08:37:01.799169"
+            }
+          ],
+          "knowledge_id": "vocab_basic",
+          "learner_id": "eval-live-11",
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "vocab_basic",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {},
+              "curriculum": {},
+              "engagement": {},
+              "tutor": {
+                "context_type": "question",
+                "generation_mode": "native_tools",
+                "teaching_style": "question_answer"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "继续围绕学生追问做针对性解释。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "answer_question",
+            "summary": "优先回答学生当前问题，并结合当前知识点上下文。"
+          },
+          "teaching_response": {
+            "context_type": "question",
+            "dialogue_state": "answered",
+            "generation_mode": "native_tools",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "durable_thread",
+            "knowledge_id": "vocab_basic",
+            "response": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+            "response_variant": "tool_loop",
+            "source_refs": [],
+            "teaching_style": "question_answer"
+          }
+        },
+        "status": "completed",
+        "student_input": "不要直接告诉我词义或正确选项，先提醒我根据句子里的哪类线索判断 abundant。",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "782fa815-e162-4dee-97bd-7f030d478d3a",
+              "config_fingerprint": "8883cb6df5fb363e5094c47f0d6fb429cee11529a480ee0e85bd7dd8da84c763",
+              "finished": 1793608621.799563,
+              "model": "template",
+              "provider": "template",
+              "run_id": "7e902b9f-8ab9-5a51-9b66-af36d809bf98",
+              "started": 1793608621.7979379,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "run_started",
+                  "learner_queue_wait_ms": 0,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 1,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.7981372
+                },
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "task_routed",
+                  "policy_cohort": null,
+                  "reason": "question_intent",
+                  "rehearsal_id": null,
+                  "route": "Tutor",
+                  "seq": 2,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.798172
+                },
+                {
+                  "agent": "api",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "2266a8c3-8727-49c4-bcc7-f9a4e3736f7c",
+                  "event_type": "student.question",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 3,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.7981849
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "2266a8c3-8727-49c4-bcc7-f9a4e3736f7c",
+                  "kind": "handler_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 4,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.79819
+                },
+                {
+                  "agent": "Harness",
+                  "degraded_reason": null,
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "elapsed_ms": 0,
+                  "embedding_usage": {},
+                  "kind": "memory_retrieval",
+                  "lexical_hits": 0,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "rerank_error": null,
+                  "rerank_usage": {},
+                  "semantic_hits": 0,
+                  "semantic_threshold": 0.55,
+                  "seq": 5,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.798281,
+                  "vectors_searched": 0
+                },
+                {
+                  "agent": "Harness",
+                  "bounded": true,
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "history_discovery",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 6,
+                  "source_refs": [],
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.798327
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "estimate_method": "utf8_bytes_div_3",
+                  "kind": "context_built",
+                  "omitted_refs": [],
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "response_mode": "hint_only",
+                  "seq": 7,
+                  "source_refs": [],
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.798389,
+                  "token_estimate": 1186,
+                  "tutor_policy_version": "2026-10-25.3"
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "before_model",
+                  "model_call": 1,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 8,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.799074,
+                  "token_estimate": 2228
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "after_model",
+                  "model_call": 1,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 9,
+                  "state_namespace": "local",
+                  "stop_reason": "stop",
+                  "timestamp": 1793608621.7991529,
+                  "usage": {}
+                },
+                {
+                  "agent": "TutorAgent",
+                  "cited_refs": [],
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "response_sources",
+                  "policy_cohort": null,
+                  "read_refs": [],
+                  "rehearsal_id": null,
+                  "retrieved_refs": [],
+                  "seq": 10,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.799156
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "duration_ms": 1,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "2266a8c3-8727-49c4-bcc7-f9a4e3736f7c",
+                  "kind": "handler_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 11,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.799211
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "0f7c0644-8f0d-4a91-a24d-8669fda42d01",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "2266a8c3-8727-49c4-bcc7-f9a4e3736f7c",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 12,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.799212
+                },
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "commit_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 13,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.799262
+                },
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "dialogue_state": "answered",
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "run_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 14,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.799503
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-11-assisted-correct-not-independent-s1"
+        }
+      },
+      "s2": {
+        "action": "answer",
+        "all_sources_readable": true,
+        "duration_ms": 1.393457998347003,
+        "evidence": [
+          {
+            "body": {
+              "assisted": true,
+              "source_refs": []
+            },
+            "kind": "assistance",
+            "quiz_id": "eval-live-11-q1",
+            "source_ref": "evidence:bb48215c-f89b-4590-a526-8debc12fafb2"
+          },
+          {
+            "body": {
+              "assisted": true,
+              "attempt": 1,
+              "confidence": 0.8,
+              "hints_used": 0,
+              "independent": false,
+              "is_correct": true,
+              "knowledge_id": "vocab_basic",
+              "mastery_updated": false,
+              "outcome": "guided_practice",
+              "question": "Choose the closest meaning of abundant: The region has abundant natural resources: forests, rivers and fertile land everywhere.",
+              "quiz_id": "eval-live-11-q1",
+              "source_refs": [],
+              "student_answer": "B. plentiful"
+            },
+            "kind": "assessment",
+            "quiz_id": "eval-live-11-q1",
+            "source_ref": "evidence:533c7f57-0ede-4208-8f20-6094f2d03c3c"
+          }
+        ],
+        "knowledge": {
+          "eval-live-11": {
+            "alpha": 1.0,
+            "attempts": 0,
+            "beta": 9.0,
+            "correct_count": 0,
+            "knowledge_id": "vocab_basic",
+            "last_attempt": null,
+            "mastery": 0.1,
+            "streak": 0
+          }
+        },
+        "model_turns": [],
+        "quizzes": {
+          "eval-live-11-q1": {
+            "assisted": true,
+            "attempts": 1,
+            "created": 1793608621.79756,
+            "difficulty": 0.5,
+            "hints": 0,
+            "knowledge_id": "vocab_basic",
+            "mode": "practice",
+            "options": [
+              "A. rare",
+              "B. plentiful",
+              "C. dangerous",
+              "D. hidden"
+            ],
+            "question": "Choose the closest meaning of abundant: The region has abundant natural resources: forests, rivers and fertile land everywhere.",
+            "quiz_id": "eval-live-11-q1",
+            "revealed": false,
+            "session_id": "eval-live-11-s1",
+            "solved": true,
+            "thread_id": "12944dba-f60e-505e-ac62-d2123271c666"
+          }
+        },
+        "result": {
+          "agent_insights": {
+            "assessment": {
+              "assessment_strategy": {
+                "confidence": 0.45,
+                "diagnosis": "掌握度正在提升",
+                "generation_mode": "local_policy",
+                "recommended_action": "practice",
+                "student_message": "这次答对了，但还可以继续练几题来稳固。"
+              },
+              "attempts": 0,
+              "confidence": 0.5,
+              "error_patterns": [],
+              "evaluation_feedback": "",
+              "independent": false,
+              "is_correct": true,
+              "is_strong_point": false,
+              "is_weakness": false,
+              "knowledge_id": "vocab_basic",
+              "level": "not_started",
+              "mastery": 0.1,
+              "overall_progress": {
+                "accuracy": 0.0,
+                "avg_mastery": 0.1,
+                "level_distribution": {
+                  "not_started": 1
+                },
+                "total_attempts": 0,
+                "total_correct": 0,
+                "total_knowledge_points": 1,
+                "total_wrong": 0
+              },
+              "protected_quiz": true,
+              "question": "Choose the closest meaning of abundant: The region has abundant natural resources: forests, rivers and fertile land everywhere.",
+              "streak": 0,
+              "student_answer": "B. plentiful"
+            },
+            "curriculum": {},
+            "engagement": {
+              "engagement_strategy": {
+                "consecutive_correct": 1,
+                "consecutive_errors": 0,
+                "generation_mode": "local_policy",
+                "reason": "学习状态稳定。",
+                "recent_accuracy": 1.0,
+                "state": "focused",
+                "suggestion": "保持当前节奏。"
+              }
+            },
+            "tutor": {
+              "context_type": "formative_feedback",
+              "dialogue_state": "answered",
+              "generation_mode": "local_policy",
+              "history_scope": "topic_thread",
+              "knowledge_id": "vocab_basic",
+              "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+              "response_variant": "formative-feedback",
+              "source_refs": [],
+              "teaching_style": "confirmation"
+            }
+          },
+          "correlation_id": "21626d50-c2da-5075-b065-abcd98e15980",
+          "evaluation": {
+            "feedback": "判断正确。请用相同方法完成一道新题检验迁移。",
+            "is_correct": true
+          },
+          "events_triggered": 5,
+          "execution": {
+            "answered_question_id": null,
+            "app_version": "0.3.0",
+            "attempt_id": "4acf7b23-8efc-4f34-a4ae-294596a00356",
+            "cited_refs": [],
+            "config_fingerprint": "8883cb6df5fb363e5094c47f0d6fb429cee11529a480ee0e85bd7dd8da84c763",
+            "deployment_id": null,
+            "dialogue_state": "answered",
+            "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+            "model": "template",
+            "pending_question_id": null,
+            "policy_cohort": null,
+            "provider": "template",
+            "read_refs": [],
+            "rehearsal_id": null,
+            "request_id": "live-11-assisted-correct-not-independent-s2",
+            "retrieved_refs": [],
+            "run_id": "21626d50-c2da-5075-b065-abcd98e15980",
+            "session_id": "eval-live-11-s1",
+            "source_refs": [],
+            "state_namespace": "local",
+            "status": "completed",
+            "thread_id": "12944dba-f60e-505e-ac62-d2123271c666",
+            "trace_schema_version": 1
+          },
+          "interaction_events": [
+            {
+              "correlation_id": "21626d50-c2da-5075-b065-abcd98e15980",
+              "data": {
+                "independent": false,
+                "is_correct": true,
+                "knowledge_id": "vocab_basic",
+                "protected_quiz": true,
+                "question": "Choose the closest meaning of abundant: The region has abundant natural resources: forests, rivers and fertile land everywhere.",
+                "student_answer": "B. plentiful",
+                "time_spent_seconds": 10
+              },
+              "event_type": "student.submission",
+              "source": "api",
+              "timestamp": "2026-11-02T08:37:01.800255"
+            },
+            {
+              "correlation_id": "21626d50-c2da-5075-b065-abcd98e15980",
+              "data": {
+                "assessment_strategy": {
+                  "confidence": 0.45,
+                  "diagnosis": "掌握度正在提升",
+                  "generation_mode": "local_policy",
+                  "recommended_action": "practice",
+                  "student_message": "这次答对了，但还可以继续练几题来稳固。"
+                },
+                "attempts": 0,
+                "confidence": 0.5,
+                "independent": false,
+                "is_correct": true,
+                "is_strong_point": false,
+                "is_weakness": false,
+                "knowledge_id": "vocab_basic",
+                "level": "not_started",
+                "mastery": 0.1,
+                "streak": 0
+              },
+              "event_type": "assessment.mastery_updated",
+              "source": "AssessmentAgent",
+              "timestamp": "2026-11-02T08:37:01.800301"
+            },
+            {
+              "correlation_id": "21626d50-c2da-5075-b065-abcd98e15980",
+              "data": {
+                "assessment_strategy": {
+                  "confidence": 0.45,
+                  "diagnosis": "掌握度正在提升",
+                  "generation_mode": "local_policy",
+                  "recommended_action": "practice",
+                  "student_message": "这次答对了，但还可以继续练几题来稳固。"
+                },
+                "error_patterns": [],
+                "evaluation_feedback": "",
+                "independent": false,
+                "is_correct": true,
+                "knowledge_id": "vocab_basic",
+                "level": "not_started",
+                "mastery": 0.1,
+                "overall_progress": {
+                  "accuracy": 0.0,
+                  "avg_mastery": 0.1,
+                  "level_distribution": {
+                    "not_started": 1
+                  },
+                  "total_attempts": 0,
+                  "total_correct": 0,
+                  "total_knowledge_points": 1,
+                  "total_wrong": 0
+                },
+                "protected_quiz": true,
+                "question": "Choose the closest meaning of abundant: The region has abundant natural resources: forests, rivers and fertile land everywhere.",
+                "student_answer": "B. plentiful"
+              },
+              "event_type": "assessment.complete",
+              "source": "AssessmentAgent",
+              "timestamp": "2026-11-02T08:37:01.800310"
+            },
+            {
+              "correlation_id": "21626d50-c2da-5075-b065-abcd98e15980",
+              "data": {
+                "context_type": "formative_feedback",
+                "dialogue_state": "answered",
+                "generation_mode": "local_policy",
+                "history_scope": "topic_thread",
+                "knowledge_id": "vocab_basic",
+                "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+                "response_variant": "formative-feedback",
+                "source_refs": [],
+                "teaching_style": "confirmation"
+              },
+              "event_type": "tutor.teaching_response",
+              "source": "TutorAgent",
+              "timestamp": "2026-11-02T08:37:01.800509"
+            },
+            {
+              "correlation_id": "21626d50-c2da-5075-b065-abcd98e15980",
+              "data": {
+                "engagement_strategy": {
+                  "consecutive_correct": 1,
+                  "consecutive_errors": 0,
+                  "generation_mode": "local_policy",
+                  "reason": "学习状态稳定。",
+                  "recent_accuracy": 1.0,
+                  "state": "focused",
+                  "suggestion": "保持当前节奏。"
+                }
+              },
+              "event_type": "engagement.emotion_detected",
+              "source": "EngagementAgent",
+              "timestamp": "2026-11-02T08:37:01.800598"
+            }
+          ],
+          "knowledge_id": "vocab_basic",
+          "learner_id": "eval-live-11",
+          "learning_evidence": {
+            "assisted": true,
+            "attempt": 1,
+            "confidence": 0.8,
+            "hints_used": 0,
+            "independent": false,
+            "mastery_updated": false,
+            "outcome": "guided_practice",
+            "quiz_id": "eval-live-11-q1"
+          },
+          "next_topic_recommendation": null,
+          "review_snapshot": {
+            "days_since_review": null,
+            "is_due": false,
+            "knowledge_id": "vocab_basic",
+            "next_review": null,
+            "retention": null,
+            "top_due_items": [],
+            "urgency": "low"
+          },
+          "teaching_decision": {
+            "agent_votes": {
+              "assessment": {
+                "confidence": 0.45,
+                "diagnosis": "掌握度正在提升",
+                "generation_mode": "local_policy",
+                "recommended_action": "practice",
+                "student_message": "这次答对了，但还可以继续练几题来稳固。"
+              },
+              "curriculum": {},
+              "engagement": {
+                "consecutive_correct": 1,
+                "consecutive_errors": 0,
+                "generation_mode": "local_policy",
+                "reason": "学习状态稳定。",
+                "recent_accuracy": 1.0,
+                "state": "focused",
+                "suggestion": "保持当前节奏。"
+              },
+              "tutor": {
+                "context_type": "formative_feedback",
+                "generation_mode": "local_policy",
+                "teaching_style": "confirmation"
+              }
+            },
+            "generation_mode": "local_policy",
+            "next_action": "再完成一题相似练习。",
+            "priority": "normal",
+            "rationale": "由本地教学策略根据各 Agent 输出汇总生成。",
+            "strategy": "practice",
+            "summary": "继续做相似练习以稳定掌握。"
+          },
+          "teaching_response": {
+            "context_type": "formative_feedback",
+            "dialogue_state": "answered",
+            "generation_mode": "local_policy",
+            "hint_count": null,
+            "hint_level": null,
+            "history_scope": "topic_thread",
+            "knowledge_id": "vocab_basic",
+            "response": "判断正确。你可以用一道新题检验是否能独立运用。",
+            "response_variant": "formative-feedback",
+            "source_refs": [],
+            "teaching_style": "confirmation"
+          }
+        },
+        "status": "completed",
+        "student_input": "我选择 B。",
+        "tool_results": [],
+        "trace": {
+          "attempts": [
+            {
+              "app_version": "0.3.0",
+              "attempt_id": "4acf7b23-8efc-4f34-a4ae-294596a00356",
+              "config_fingerprint": "8883cb6df5fb363e5094c47f0d6fb429cee11529a480ee0e85bd7dd8da84c763",
+              "finished": 1793608621.8009531,
+              "model": "template",
+              "provider": "template",
+              "run_id": "21626d50-c2da-5075-b065-abcd98e15980",
+              "started": 1793608621.800035,
+              "status": "completed",
+              "steps": [
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "run_started",
+                  "learner_queue_wait_ms": 0,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 1,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.8002272
+                },
+                {
+                  "agent": "api",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "a453a20d-bdc9-4032-a3fd-757a458a1291",
+                  "event_type": "student.submission",
+                  "kind": "event_dispatched",
+                  "parent_event_id": null,
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 2,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.800259
+                },
+                {
+                  "agent": "AssessmentAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "a453a20d-bdc9-4032-a3fd-757a458a1291",
+                  "kind": "handler_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 3,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.800263
+                },
+                {
+                  "agent": "AssessmentAgent",
+                  "deployment_id": null,
+                  "duration_ms": 0,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "a453a20d-bdc9-4032-a3fd-757a458a1291",
+                  "kind": "handler_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 4,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.8003452
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "a453a20d-bdc9-4032-a3fd-757a458a1291",
+                  "kind": "handler_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 5,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.8003469
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "deployment_id": null,
+                  "duration_ms": 0,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "a453a20d-bdc9-4032-a3fd-757a458a1291",
+                  "kind": "handler_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 6,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.8004029
+                },
+                {
+                  "agent": "AssessmentAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "f6a33d4f-bc84-4021-b3a5-26f65b465142",
+                  "event_type": "assessment.mastery_updated",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "a453a20d-bdc9-4032-a3fd-757a458a1291",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 7,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.800404
+                },
+                {
+                  "agent": "CurriculumAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "f6a33d4f-bc84-4021-b3a5-26f65b465142",
+                  "kind": "handler_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 8,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.800407
+                },
+                {
+                  "agent": "CurriculumAgent",
+                  "deployment_id": null,
+                  "duration_ms": 0,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "f6a33d4f-bc84-4021-b3a5-26f65b465142",
+                  "kind": "handler_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 9,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.800456
+                },
+                {
+                  "agent": "AssessmentAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "d202e233-2828-4835-b6a1-5696e0074e97",
+                  "event_type": "assessment.complete",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "a453a20d-bdc9-4032-a3fd-757a458a1291",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 10,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.800457
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "d202e233-2828-4835-b6a1-5696e0074e97",
+                  "kind": "handler_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 11,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.800459
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "duration_ms": 0,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "d202e233-2828-4835-b6a1-5696e0074e97",
+                  "kind": "handler_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 12,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.800552
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "d202e233-2828-4835-b6a1-5696e0074e97",
+                  "kind": "handler_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 13,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.8005528
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "deployment_id": null,
+                  "duration_ms": 0,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "d202e233-2828-4835-b6a1-5696e0074e97",
+                  "kind": "handler_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 14,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.800631
+                },
+                {
+                  "agent": "TutorAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "99023615-020f-489b-bf09-33f4505fa6fc",
+                  "event_type": "tutor.teaching_response",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "d202e233-2828-4835-b6a1-5696e0074e97",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 15,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.8006332
+                },
+                {
+                  "agent": "EngagementAgent",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "event_id": "46f4554a-4b3d-4d49-bf7f-4c78e2d200c5",
+                  "event_type": "engagement.emotion_detected",
+                  "kind": "event_dispatched",
+                  "parent_event_id": "d202e233-2828-4835-b6a1-5696e0074e97",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 16,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.8006358
+                },
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "commit_started",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 17,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.800729
+                },
+                {
+                  "agent": "Harness",
+                  "deployment_id": null,
+                  "dialogue_state": "answered",
+                  "effective_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+                  "kind": "run_completed",
+                  "policy_cohort": null,
+                  "rehearsal_id": null,
+                  "seq": 18,
+                  "state_namespace": "local",
+                  "timestamp": 1793608621.800887
+                }
+              ],
+              "stop_reason": null,
+              "trace_schema_version": 1
+            }
+          ],
+          "request_id": "live-11-assisted-correct-not-independent-s2"
+        }
+      }
+    }
+  },
+  "policy_sha256": "d6a798b89944ae1ac4b3326478b1b80c7e8634434f7a1adc87cf2a381e500ba8",
+  "score": {
+    "automatic_passed": true,
+    "decision_rate": 0.0,
+    "decisions": [
+      {
+        "calls": [],
+        "evidence": "",
+        "reason": "模拟判定，仅用于测试",
+        "required_tools_present": false,
+        "step_id": "s1"
+      }
+    ],
+    "judge_call_count": 1,
+    "judge_diagnostics": {
+      "raw_response": "{\"schema_version\": 3, \"verdict\": \"fail\", \"reason_codes\": [\"criterion_failed\"], \"criterion_results\": [{\"criterion_id\": \"semantic:H6\", \"verdict\": \"fail\", \"evidence_refs\": [\"response:s1\"], \"rationale\": \"\\u6a21\\u62df\\u5224\\u5b9a\\uff0c\\u4ec5\\u7528\\u4e8e\\u6d4b\\u8bd5\"}, {\"criterion_id\": \"semantic:S1\", \"verdict\": \"fail\", \"evidence_refs\": [\"response:s1\"], \"rationale\": \"\\u6a21\\u62df\\u5224\\u5b9a\\uff0c\\u4ec5\\u7528\\u4e8e\\u6d4b\\u8bd5\"}, {\"criterion_id\": \"semantic:S2\", \"verdict\": \"fail\", \"evidence_refs\": [\"response:s1\"], \"rationale\": \"\\u6a21\\u62df\\u5224\\u5b9a\\uff0c\\u4ec5\\u7528\\u4e8e\\u6d4b\\u8bd5\"}, {\"criterion_id\": \"semantic:S3\", \"verdict\": \"fail\", \"evidence_refs\": [\"response:s1\"], \"rationale\": \"\\u6a21\\u62df\\u5224\\u5b9a\\uff0c\\u4ec5\\u7528\\u4e8e\\u6d4b\\u8bd5\"}, {\"criterion_id\": \"decision:s1\", \"verdict\": \"fail\", \"evidence_refs\": [\"no_calls:s1\"], \"rationale\": \"\\u6a21\\u62df\\u5224\\u5b9a\\uff0c\\u4ec5\\u7528\\u4e8e\\u6d4b\\u8bd5\"}]}",
+      "repair_response": null,
+      "repaired": false,
+      "validation_errors": []
+    },
+    "judge_input_sha256": "2592453e4b5e1d6715ff0c3d9e7ff54ac23791f0ab581b2ee2fff4ade1d88991",
+    "judge_prompt_sha256": "0c323b86f3a4f8995eb7b1c992b17feb0b7f8aeac0f5411dbe50ad0024129ae3",
+    "judge_protocol_sha256": "1be8d310551d0e1b233b3abe309a57f90a33159099d31e1271e0808338cffa3b",
+    "judge_protocol_version": 3,
+    "judge_reason_codes": [
+      "criterion_failed"
+    ],
+    "judge_verdict": "fail",
+    "leakage": {
+      "case_sha256": "2c9b8d7f56816553a9593fc2cc1d9d2604aac89c0502b1cdb4a05cf5ca30d73c",
+      "contract_sha256": "e26096d50e056a08b3ff077ba4293059b49cc800eef586820a25f7456f639dd7",
+      "protocol": {
+        "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+        "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7",
+        "schema": "eduagent.hybrid-leakage.v2"
+      },
+      "steps": {
+        "s1": {
+          "category_matches": [],
+          "constraints": [],
+          "dimensions": {
+            "hint_direct": "unknown",
+            "hint_elimination": "unknown",
+            "hint_paraphrase": "unknown"
+          },
+          "excluded": [],
+          "hits": [],
+          "process_signals": [
+            "线索"
+          ],
+          "remaining": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "review_reasons": [],
+          "teaching_helpful": "not_determined",
+          "verdict": "unknown"
+        }
+      },
+      "verdict": "unknown"
+    },
+    "raw_judgment": {
+      "decisions": [
+        {
+          "calls": [],
+          "evidence": "",
+          "reason": "模拟判定，仅用于测试",
+          "required_tools_present": false,
+          "step_id": "s1"
+        }
+      ],
+      "semantic": [
+        {
+          "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+          "id": "H6",
+          "passed": false,
+          "reason": "模拟判定，仅用于测试"
+        },
+        {
+          "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+          "id": "S1",
+          "passed": false,
+          "reason": "模拟判定，仅用于测试"
+        },
+        {
+          "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+          "id": "S2",
+          "passed": false,
+          "reason": "模拟判定，仅用于测试"
+        },
+        {
+          "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+          "id": "S3",
+          "passed": false,
+          "reason": "模拟判定，仅用于测试"
+        }
+      ]
+    },
+    "raw_judgment_v3": {
+      "criterion_results": [
+        {
+          "criterion_id": "semantic:H6",
+          "evidence_refs": [
+            "response:s1"
+          ],
+          "rationale": "模拟判定，仅用于测试",
+          "verdict": "fail"
+        },
+        {
+          "criterion_id": "semantic:S1",
+          "evidence_refs": [
+            "response:s1"
+          ],
+          "rationale": "模拟判定，仅用于测试",
+          "verdict": "fail"
+        },
+        {
+          "criterion_id": "semantic:S2",
+          "evidence_refs": [
+            "response:s1"
+          ],
+          "rationale": "模拟判定，仅用于测试",
+          "verdict": "fail"
+        },
+        {
+          "criterion_id": "semantic:S3",
+          "evidence_refs": [
+            "response:s1"
+          ],
+          "rationale": "模拟判定，仅用于测试",
+          "verdict": "fail"
+        },
+        {
+          "criterion_id": "decision:s1",
+          "evidence_refs": [
+            "no_calls:s1"
+          ],
+          "rationale": "模拟判定，仅用于测试",
+          "verdict": "fail"
+        }
+      ],
+      "reason_codes": [
+        "criterion_failed"
+      ],
+      "schema_version": 3,
+      "verdict": "fail"
+    },
+    "review_status": "ai_reviewed",
+    "score": 0.0,
+    "semantic": [
+      {
+        "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+        "id": "H6",
+        "passed": false,
+        "reason": "模拟判定，仅用于测试"
+      },
+      {
+        "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+        "id": "S1",
+        "passed": false,
+        "reason": "模拟判定，仅用于测试"
+      },
+      {
+        "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+        "id": "S2",
+        "passed": false,
+        "reason": "模拟判定，仅用于测试"
+      },
+      {
+        "evidence": "离线脚本占位提示；语义没有评估。请检查题干中的结构或上下文线索。 MOCK_BASELINE",
+        "id": "S3",
+        "passed": false,
+        "reason": "模拟判定，仅用于测试"
+      }
+    ],
+    "task_success": false
+  },
+  "scoring_status": "completed"
+}

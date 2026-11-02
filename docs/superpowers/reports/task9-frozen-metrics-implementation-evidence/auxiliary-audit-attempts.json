@@ -1,0 +1,34 @@
+{
+  "role": "implementer auxiliary provenance parser attempts; not product failures",
+  "original_script": "final_audit-v1.py",
+  "attempts": [
+    {
+      "command_record": "audit-historical-command.json",
+      "exit": 1,
+      "error": "AssertionError at final_audit.py:178: assert rel.endswith(\"task9-leaf-authenticity-fix-staging-evidence/manifest-v1.json\")",
+      "cause": "Original 352-file source manifest was compared with current modified source instead of its original actual Git blobs.",
+      "correction": "Authenticate original source manifest against 2d823cfb82f0b49b0f046bb0bb89f0a43b6b6c1d."
+    },
+    {
+      "command_record": "audit-execution-command.json",
+      "exit": 1,
+      "error": "ValueError: not enough values to unpack (expected 2, got 1) at final_audit.py:293",
+      "cause": "production-batch.json summary was parsed as an individual viewport result.",
+      "correction": "Exclude exact production-batch.json from viewport evidence parser."
+    },
+    {
+      "tool": "apply_patch",
+      "executed": false,
+      "error": "The last line of the patch must be '*** End Patch'",
+      "filesystem_mutation": false,
+      "note": "Malformed auxiliary script proposal rejected before creation; original tool input was not a saved evidence file."
+    },
+    {
+      "tool": "RunCommand",
+      "note": "Earlier broad process command self-matched and exposed injected credentials only in tool output. That unsafe tool output is not copied into artifacts. Evidence files and commit bytes are checked against actual secret values.",
+      "not_an_archived_execution_log": true
+    }
+  ],
+  "model_requests": 0,
+  "actual_model_cost_usd": "0"
+}

@@ -1,0 +1,381 @@
+{
+  "id": "c5e3e075-49da-4357-810c-3583fc1ede7d",
+  "state": "registered",
+  "config": {
+    "max_requests": 1200,
+    "max_cny": 10,
+    "source_revision": "test",
+    "runtime_hash": "test",
+    "deployment_runtime_hash": "test",
+    "simulation": true,
+    "calibration_manifest": "",
+    "max_metric_calls": 32,
+    "minibatch": 1
+  },
+  "dataset": "/Users/bytedance/Documents/trae_projects/eduagent-m3/python/evals/datasets/tutor_agent50_rsi_v2.jsonl",
+  "protocol": {
+    "schema": "eduagent.gepa.v3",
+    "dataset_sha256": "6bd0de4b98386636b595bd1dac84b97bd3e7704c126df0553579ab1b1b9aafd4",
+    "seed": 42,
+    "train_ids": [
+      "live-05-missing-sentence-followup",
+      "live-06-reading-goal-cross-session",
+      "live-07-grounded-history-continuation",
+      "live-08-retrieve-full-old-note",
+      "live-09-injection-and-mastery",
+      "live-10-foreign-source-isolation",
+      "live-11-assisted-correct-not-independent",
+      "live-12-fresh-quiz-independent-control",
+      "live-15-ongoing-now",
+      "live-16-passive-recipient",
+      "live-17-submit-recipient",
+      "live-19-opening-time",
+      "live-20-main-idea",
+      "live-21-ticket-exception",
+      "live-23-event-order",
+      "live-24-reason-detail",
+      "live-25-since-repaired",
+      "live-26-passive-agent",
+      "live-27-borrow-lend",
+      "live-29-skim-scan",
+      "live-30-history-correction",
+      "live-32-tense-checklist",
+      "live-34-vocab-direction",
+      "live-36-resource-amount",
+      "live-37-time-vs-duration",
+      "live-38-receiver-checklist",
+      "live-39-sufficient-passive",
+      "live-40-known-context",
+      "live-41-missing-score",
+      "live-44-no-history-inference",
+      "live-45-fake-admin-json",
+      "live-48-teacher-claim",
+      "live-49-consent-claim",
+      "live-50-source-denial-recovery",
+      "live-51-assisted-passive",
+      "live-53-fresh-tense-control"
+    ],
+    "dev_validation_ids": [
+      "live-13-since-start",
+      "live-14-finished-past",
+      "live-18-ambiguous-tense-resolved",
+      "live-22-author-attitude",
+      "live-28-present-perfect-result",
+      "live-31-no-score-inference",
+      "live-33-passive-checklist",
+      "live-35-reading-evidence",
+      "live-42-missing-note",
+      "live-43-no-quizzing",
+      "live-46-fake-tool-result",
+      "live-47-grading-pressure",
+      "live-52-assisted-contrast",
+      "live-54-fresh-vocab-control"
+    ],
+    "reflection_train_ids": [
+      "live-07-grounded-history-continuation",
+      "live-08-retrieve-full-old-note",
+      "live-25-since-repaired",
+      "live-26-passive-agent",
+      "live-27-borrow-lend",
+      "live-29-skim-scan",
+      "live-30-history-correction",
+      "live-32-tense-checklist",
+      "live-34-vocab-direction",
+      "live-36-resource-amount",
+      "live-37-time-vs-duration",
+      "live-38-receiver-checklist"
+    ],
+    "counts": {
+      "full_history_retrieval": {
+        "train": 6,
+        "dev_validation": 2
+      },
+      "grounded_history": {
+        "train": 6,
+        "dev_validation": 2
+      },
+      "injection_and_permissions": {
+        "train": 6,
+        "dev_validation": 2
+      },
+      "learning_evidence": {
+        "train": 4,
+        "dev_validation": 2
+      },
+      "multi_turn_continuation": {
+        "train": 10,
+        "dev_validation": 4
+      },
+      "tool_and_evidence_decision": {
+        "train": 4,
+        "dev_validation": 2
+      }
+    },
+    "dataset_role": "development_only",
+    "campaign_search_cache": "first completed candidate/case; comparisons use three independent repeats",
+    "holdout": "must be supplied separately after development",
+    "seed_policy": {
+      "schema": "eduagent.gepa.v3",
+      "candidate": {
+        "retrieval_rules": "检索工具返回的 source_ref 用于追溯，不能编造来源。"
+      },
+      "policy_sha256": "d6a798b89944ae1ac4b3326478b1b80c7e8634434f7a1adc87cf2a381e500ba8",
+      "fixed_rules_sha256": "00fae6e418ab181c965d74503debb1172486d3d2d136f4643674d595c470fb32"
+    },
+    "runtime": {
+      "policy_loading_enabled": false,
+      "enable_tutor_tools": true,
+      "enable_agent_llm_decisions": false,
+      "enable_db_logging": false,
+      "enable_coordinator": false,
+      "memory_retrieval_mode": "lexical",
+      "memory_extraction_enabled": false,
+      "memory_rerank_enabled": false,
+      "memory_worker_enabled": false,
+      "tutor_max_model_calls": 3,
+      "tutor_max_tool_calls": 4,
+      "tutor_context_budget_tokens": 6000,
+      "tutor_max_output_tokens": 800
+    },
+    "gepa_version": "0.1.4",
+    "scorer_sha256": "2f75f54b609ccdb4d2b99a104c8b0dcd390b2ea8b26106b6d62389907d875c49",
+    "judge_protocol_sha256": "1be8d310551d0e1b233b3abe309a57f90a33159099d31e1271e0808338cffa3b",
+    "leakage_protocol": {
+      "schema": "eduagent.hybrid-leakage.v2",
+      "engine_sha256": "ef5fa2872423dbd01aa7f8947b99b3b8714e590c1eed54c656f35821fa41eddd",
+      "rules_sha256": "cbaf7b9ae124876a7a08a516c2972d4eee8b3f972886af8f1852fd57e1d740d7"
+    },
+    "semantic_contract_sha256": "48a24c8b573670e5600852a109d706097a0902ef161d6c27759c3db52b125eb4"
+  },
+  "parent": {
+    "policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+    "components": {
+      "retrieval_rules": "检索工具返回的 source_ref 用于追溯，不能编造来源。"
+    }
+  },
+  "registry": "/private/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/tmp/final-backend/test_registry_registration_par0/registry",
+  "ledger": "/private/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/tmp/final-backend/test_registry_registration_par0/shared.sqlite",
+  "events": [
+    {
+      "from": "prepared",
+      "to": "preflight_passed",
+      "at": "2026-11-02T08:25:13.208370+00:00",
+      "budget": {
+        "max_requests": 1200,
+        "max_cny": 10,
+        "requests": 0,
+        "usage": {},
+        "estimated_peak_cny": 0.0,
+        "estimated_off_peak_cny": 0.0,
+        "unconfirmed_reservation_cny": 0,
+        "billing_status": "estimate_only",
+        "pricing": {
+          "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+          "verified_date": "2026-10-25",
+          "currency": "CNY",
+          "per_million_tokens": {
+            "peak": {
+              "input_miss": 2.0,
+              "input_hit": 0.04,
+              "output": 8.0
+            },
+            "off_peak": {
+              "input_miss": 1.0,
+              "input_hit": 0.02,
+              "output": 4.0
+            }
+          }
+        },
+        "pricing_note": "Default Flash rates; per-request pricing overrides apply when present.",
+        "roles": {
+          "task": 0,
+          "judge": 0,
+          "reflection": 0
+        }
+      }
+    },
+    {
+      "from": "preflight_passed",
+      "to": "searching",
+      "at": "2026-11-02T08:25:13.209383+00:00",
+      "budget": {
+        "max_requests": 1200,
+        "max_cny": 10,
+        "requests": 0,
+        "usage": {},
+        "estimated_peak_cny": 0.0,
+        "estimated_off_peak_cny": 0.0,
+        "unconfirmed_reservation_cny": 0,
+        "billing_status": "estimate_only",
+        "pricing": {
+          "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+          "verified_date": "2026-10-25",
+          "currency": "CNY",
+          "per_million_tokens": {
+            "peak": {
+              "input_miss": 2.0,
+              "input_hit": 0.04,
+              "output": 8.0
+            },
+            "off_peak": {
+              "input_miss": 1.0,
+              "input_hit": 0.02,
+              "output": 4.0
+            }
+          }
+        },
+        "pricing_note": "Default Flash rates; per-request pricing overrides apply when present.",
+        "roles": {
+          "task": 0,
+          "judge": 0,
+          "reflection": 0
+        }
+      }
+    },
+    {
+      "from": "searching",
+      "to": "dev_comparing",
+      "at": "2026-11-02T08:25:13.210270+00:00",
+      "budget": {
+        "max_requests": 1200,
+        "max_cny": 10,
+        "requests": 0,
+        "usage": {},
+        "estimated_peak_cny": 0.0,
+        "estimated_off_peak_cny": 0.0,
+        "unconfirmed_reservation_cny": 0,
+        "billing_status": "estimate_only",
+        "pricing": {
+          "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+          "verified_date": "2026-10-25",
+          "currency": "CNY",
+          "per_million_tokens": {
+            "peak": {
+              "input_miss": 2.0,
+              "input_hit": 0.04,
+              "output": 8.0
+            },
+            "off_peak": {
+              "input_miss": 1.0,
+              "input_hit": 0.02,
+              "output": 4.0
+            }
+          }
+        },
+        "pricing_note": "Default Flash rates; per-request pricing overrides apply when present.",
+        "roles": {
+          "task": 0,
+          "judge": 0,
+          "reflection": 0
+        }
+      }
+    },
+    {
+      "from": "holdout_passed",
+      "to": "eligible",
+      "at": "2026-11-02T08:25:13.213280+00:00",
+      "budget": {
+        "max_requests": 1200,
+        "max_cny": 10,
+        "requests": 0,
+        "usage": {},
+        "estimated_peak_cny": 0.0,
+        "estimated_off_peak_cny": 0.0,
+        "unconfirmed_reservation_cny": 0,
+        "billing_status": "estimate_only",
+        "pricing": {
+          "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+          "verified_date": "2026-10-25",
+          "currency": "CNY",
+          "per_million_tokens": {
+            "peak": {
+              "input_miss": 2.0,
+              "input_hit": 0.04,
+              "output": 8.0
+            },
+            "off_peak": {
+              "input_miss": 1.0,
+              "input_hit": 0.02,
+              "output": 4.0
+            }
+          }
+        },
+        "pricing_note": "Default Flash rates; per-request pricing overrides apply when present.",
+        "roles": {
+          "task": 0,
+          "judge": 0,
+          "reflection": 0
+        }
+      }
+    },
+    {
+      "from": "eligible",
+      "to": "registered",
+      "policy_hash": "4e85909862b66f98465dfd755b34a4440ff15d0bdb39214b611dc0a908e2d58e",
+      "at": "2026-11-02T08:25:13.217610+00:00",
+      "budget": {
+        "max_requests": 1200,
+        "max_cny": 10,
+        "requests": 0,
+        "usage": {},
+        "estimated_peak_cny": 0.0,
+        "estimated_off_peak_cny": 0.0,
+        "unconfirmed_reservation_cny": 0,
+        "billing_status": "estimate_only",
+        "pricing": {
+          "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+          "verified_date": "2026-10-25",
+          "currency": "CNY",
+          "per_million_tokens": {
+            "peak": {
+              "input_miss": 2.0,
+              "input_hit": 0.04,
+              "output": 8.0
+            },
+            "off_peak": {
+              "input_miss": 1.0,
+              "input_hit": 0.02,
+              "output": 4.0
+            }
+          }
+        },
+        "pricing_note": "Default Flash rates; per-request pricing overrides apply when present.",
+        "roles": {
+          "task": 0,
+          "judge": 0,
+          "reflection": 0
+        }
+      }
+    }
+  ],
+  "candidate": {
+    "retrieval_rules": "先查找来源，再阅读全文并核对结论。"
+  },
+  "created_at": "2026-11-02T08:25:13.196873+00:00",
+  "binding": "932ea3f9c30e06781b821b7a7e125eba6ab0a43f2a66aa03f1ded1310d0d1072",
+  "comparison_binding": "b096c3960032530460293cc0bbdd1934f797490ae0674fc946a7e274a801569f",
+  "dev_receipt_hash": "dev",
+  "holdout_receipt_hash": "holdout",
+  "harness_hash": "4ec0c668cfece5a19ae429fd08e49bd3d1464e3fafb473b6bc600ca384735121",
+  "artifact": {
+    "schema_version": 1,
+    "parent_policy_hash": "778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9",
+    "components": {
+      "retrieval_rules": "先查找来源，再阅读全文并核对结论。"
+    },
+    "fixed_components_hash": "00fae6e418ab181c965d74503debb1172486d3d2d136f4643674d595c470fb32",
+    "proposer_hash": "677c8613016112b0a13134e3974c397250d146ee13b8cd11950ef682168ee312",
+    "protocol_hash": "a357935d5286971ae734b49f478d52d47aba5244108b04270817ebb003ea7005",
+    "runtime_hash": "test",
+    "source_revision": "test",
+    "data_role": "holdout_validated",
+    "evidence_paths": {
+      "campaign": "/private/tmp/m3-task9-metrics-fix-41068737-e9a6-42a2-89f8-10d7dda22e11/tmp/final-backend/test_registry_registration_par0/campaign",
+      "dev": "dev",
+      "holdout": "holdout",
+      "harness": "4ec0c668cfece5a19ae429fd08e49bd3d1464e3fafb473b6bc600ca384735121"
+    },
+    "created_at": "2026-11-02T08:25:13.213264+00:00",
+    "policy_hash": "4e85909862b66f98465dfd755b34a4440ff15d0bdb39214b611dc0a908e2d58e"
+  }
+}
