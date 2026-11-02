@@ -1,0 +1,139 @@
+
+Running 54 tests using 2 workers
+
+[1/54] [desktop] › e2e/ops.spec.ts:417:1 › renders populated Ops workflows with pagination, detail, trace, and stale workers
+[2/54] [mobile] › e2e/ops.spec.ts:417:1 › renders populated Ops workflows with pagination, detail, trace, and stale workers
+[3/54] [desktop] › e2e/ops.spec.ts:457:1 › shows loading and empty states without layout shift
+[4/54] [mobile] › e2e/ops.spec.ts:457:1 › shows loading and empty states without layout shift
+[5/54] [desktop] › e2e/ops.spec.ts:468:1 › shows retryable API errors and recovers
+[6/54] [mobile] › e2e/ops.spec.ts:468:1 › shows retryable API errors and recovers
+[7/54] [desktop] › e2e/ops.spec.ts:484:1 › keeps bearer token in session storage and retries authorization
+[8/54] [mobile] › e2e/ops.spec.ts:484:1 › keeps bearer token in session storage and retries authorization
+[9/54] [desktop] › e2e/ops.spec.ts:503:1 › policy evidence filters, cursor pages, detail, metrics and audit are read only
+[10/54] [mobile] › e2e/ops.spec.ts:503:1 › policy evidence filters, cursor pages, detail, metrics and audit are read only
+[11/54] [desktop] › e2e/ops.spec.ts:557:1 › policy loading, empty filters and stale requests do not restore old evidence
+[12/54] [mobile] › e2e/ops.spec.ts:557:1 › policy loading, empty filters and stale requests do not restore old evidence
+[13/54] [desktop] › e2e/ops.spec.ts:571:1 › policy errors and detail errors have independent retry recovery
+[14/54] [mobile] › e2e/ops.spec.ts:571:1 › policy errors and detail errors have independent retry recovery
+[15/54] [desktop] › e2e/ops.spec.ts:583:1 › policy strict response guard rejects extra freeform fields
+[16/54] [desktop] › e2e/ops.spec.ts:591:1 › policy authentication uses existing Ops token and clears it on lock
+[17/54] [mobile] › e2e/ops.spec.ts:583:1 › policy strict response guard rejects extra freeform fields
+[18/54] [mobile] › e2e/ops.spec.ts:591:1 › policy authentication uses existing Ops token and clears it on lock
+[19/54] [desktop] › e2e/ops.spec.ts:604:1 › policy Run and Trace display stored immutable identity and link version evidence
+[20/54] [mobile] › e2e/ops.spec.ts:604:1 › policy Run and Trace display stored immutable identity and link version evidence
+[21/54] [mobile] › e2e/ops.spec.ts:626:1 › policy legacy Run and Trace identity remains unavailable without current policy fallback
+[22/54] [mobile] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects actor freeform
+[23/54] [mobile] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects hash identity
+[24/54] [mobile] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects missing required binding
+[25/54] [mobile] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects raw namespace
+[26/54] [mobile] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects detail nested extras
+[27/54] [mobile] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects detail invalid metric
+[28/54] [mobile] › e2e/ops.spec.ts:658:1 › policy strict health and audit guards reject freeform aggregates and reasons
+[29/54] [mobile] › e2e/ops.spec.ts:674:1 › policy detail empty evidence is explicitly unavailable
+[30/54] [mobile] › e2e/ops.spec.ts:685:1 › policy detail selection ignores delayed previous version responses
+[31/54] [mobile] › e2e/ops.spec.ts:712:3 › health source consumed is explicit and does not claim a new passing window
+  1) [desktop] › e2e/ops.spec.ts:604:1 › policy Run and Trace display stored immutable identity and link version evidence 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('dialog', { name: '运行详情' }).getByText('candidate', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('dialog', { name: '运行详情' }).getByText('candidate', { exact: true }) with timeout 5000ms
+      - waiting for getByRole('dialog', { name: '运行详情' }).getByText('candidate', { exact: true })
+        - waiting for navigation to finish...
+        - navigated to "http://127.0.0.1:56738/ops/#/runs"
+
+
+      608 |   const drawer = page.getByRole('dialog', { name: '运行详情' })
+      609 |   await expect(drawer.getByText('b'.repeat(64), { exact: true })).toBeVisible()
+    > 610 |   await expect(drawer.getByText('candidate', { exact: true })).toBeVisible()
+          |                                                                ^
+      611 |   await drawer.getByRole('link', { name: 'a'.repeat(32) }).click()
+      612 |   await expect(page.getByRole('heading', { name: '运行 Trace' })).toBeVisible()
+      613 |   await expect(page.getByText('b'.repeat(64), { exact: true })).toBeVisible()
+        at /private/tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042/frontend/e2e/ops.spec.ts:610:64
+
+    Error Context: ../ui54-output/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../ui54-output/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../ui54-output/ops-policy-Run-and-Trace-d-2b09b-y-and-link-version-evidence-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[32/54] [mobile] › e2e/ops.spec.ts:712:3 › health source old-local is explicit and does not claim a new passing window
+[33/54] [desktop] › e2e/ops.spec.ts:626:1 › policy legacy Run and Trace identity remains unavailable without current policy fallback
+[34/54] [mobile] › e2e/ops.spec.ts:712:3 › health source missing is explicit and does not claim a new passing window
+[35/54] [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects actor freeform
+[36/54] [mobile] › e2e/ops.spec.ts:741:3 › closed health source rejects extra
+[37/54] [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects hash identity
+[38/54] [mobile] › e2e/ops.spec.ts:741:3 › closed health source rejects wrong-local
+[39/54] [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects missing required binding
+[40/54] [mobile] › e2e/ops.spec.ts:741:3 › closed health source rejects null-health
+  2) [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects missing required binding 
+
+    Test timeout of 30000ms exceeded.
+
+
+[41/54] [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects raw namespace
+  3) [mobile] › e2e/ops.spec.ts:741:3 › closed health source rejects null-health ───────────────────
+
+    Test timeout of 30000ms exceeded.
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/响应格式错误/)
+    Expected: visible
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText(/响应格式错误/) with timeout 5000ms
+      - waiting for getByText(/响应格式错误/)
+      - Test timeout of 30000ms exceeded.
+
+
+      749 |     await page.route(`**/ops-api/ops/policies/deployments/${deploymentId}`, (route) => route.fulfill({ json: body }))
+      750 |     await page.goto(`/ops/#/policies/${deploymentId}`)
+    > 751 |     await expect(page.getByText(/响应格式错误/)).toBeVisible()
+          |                                            ^
+      752 |     await expect(page.getByText('private-source-value', { exact: true })).toHaveCount(0)
+      753 |   })
+      754 | }
+        at /private/tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042/frontend/e2e/ops.spec.ts:751:44
+
+    Error Context: ../ui54-output/ops-closed-health-source-rejects-null-health-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../ui54-output/ops-closed-health-source-rejects-null-health-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../ui54-output/ops-closed-health-source-rejects-null-health-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[42/54] [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects detail nested extras
+[43/54] [mobile] › e2e/ops.spec.ts:741:3 › closed health source rejects nonpassing-consumed
+[44/54] [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects detail invalid metric
+[45/54] [desktop] › e2e/ops.spec.ts:658:1 › policy strict health and audit guards reject freeform aggregates and reasons
+[46/54] [desktop] › e2e/ops.spec.ts:674:1 › policy detail empty evidence is explicitly unavailable
+[47/54] [desktop] › e2e/ops.spec.ts:685:1 › policy detail selection ignores delayed previous version responses
+[48/54] [desktop] › e2e/ops.spec.ts:712:3 › health source consumed is explicit and does not claim a new passing window
+[49/54] [desktop] › e2e/ops.spec.ts:712:3 › health source old-local is explicit and does not claim a new passing window
+[50/54] [desktop] › e2e/ops.spec.ts:712:3 › health source missing is explicit and does not claim a new passing window
+[51/54] [desktop] › e2e/ops.spec.ts:741:3 › closed health source rejects extra
+[52/54] [desktop] › e2e/ops.spec.ts:741:3 › closed health source rejects wrong-local
+[53/54] [desktop] › e2e/ops.spec.ts:741:3 › closed health source rejects null-health
+[54/54] [desktop] › e2e/ops.spec.ts:741:3 › closed health source rejects nonpassing-consumed
+  3 failed
+    [desktop] › e2e/ops.spec.ts:604:1 › policy Run and Trace display stored immutable identity and link version evidence 
+    [desktop] › e2e/ops.spec.ts:648:3 › policy strict typed response rejects missing required binding 
+    [mobile] › e2e/ops.spec.ts:741:3 › closed health source rejects null-health ────────────────────
+  51 passed (2.6m)

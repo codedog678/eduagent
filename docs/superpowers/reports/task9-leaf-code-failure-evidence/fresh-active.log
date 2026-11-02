@@ -1,0 +1,253 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+.FFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+_ test_fresh_active_requires_authoritatively_valid_exact_leaf[noncanonical_key] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109359cd0>, <core.distributed.promotion_repository....ionRepository object at 0x109af5b50>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10942ee10>)
+poison = 'noncanonical_key'
+
+    @pytest.mark.parametrize("poison", [
+        "valid", "noncanonical_key", "production_namespace",
+        "wrong_distribution", "start_key", "triggered_pass",
+    ])
+    async def test_fresh_active_requires_authoritatively_valid_exact_leaf(health_repo, poison):
+        proof = await altered_leaf(health_repo, "canary", poison)
+        directory = Path(os.environ["REVIEW_OWN"]) / os.environ["EVIDENCE_RUN"]
+        directory.mkdir(exist_ok=True)
+        with (directory / f"active-{poison}.json").open("x") as out:
+            json.dump(proof, out, indent=2, default=str)
+            out.write("\n")
+        valid = poison == "valid"
+        assert proof["authority_accepts"] == valid
+>       assert set(sources(proof["active"])) == (
+            {"canary_health", "shadow_health"} if valid else set()
+        ), "invalid exact Canary leaf must invalidate the entire Active consumed chain"
+E       AssertionError: invalid exact Canary leaf must invalidate the entire Active consumed chain
+E       assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042/test_fresh_active_leaf.py:29: AssertionError
+_ test_fresh_active_requires_authoritatively_valid_exact_leaf[production_namespace] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109b49990>, <core.distributed.promotion_repository....ionRepository object at 0x109249a50>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10935b1d0>)
+poison = 'production_namespace'
+
+    @pytest.mark.parametrize("poison", [
+        "valid", "noncanonical_key", "production_namespace",
+        "wrong_distribution", "start_key", "triggered_pass",
+    ])
+    async def test_fresh_active_requires_authoritatively_valid_exact_leaf(health_repo, poison):
+        proof = await altered_leaf(health_repo, "canary", poison)
+        directory = Path(os.environ["REVIEW_OWN"]) / os.environ["EVIDENCE_RUN"]
+        directory.mkdir(exist_ok=True)
+        with (directory / f"active-{poison}.json").open("x") as out:
+            json.dump(proof, out, indent=2, default=str)
+            out.write("\n")
+        valid = poison == "valid"
+        assert proof["authority_accepts"] == valid
+>       assert set(sources(proof["active"])) == (
+            {"canary_health", "shadow_health"} if valid else set()
+        ), "invalid exact Canary leaf must invalidate the entire Active consumed chain"
+E       AssertionError: invalid exact Canary leaf must invalidate the entire Active consumed chain
+E       assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042/test_fresh_active_leaf.py:29: AssertionError
+_ test_fresh_active_requires_authoritatively_valid_exact_leaf[wrong_distribution] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109570e50>, <core.distributed.promotion_repository....ionRepository object at 0x109d4e4d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x109d1ad90>)
+poison = 'wrong_distribution'
+
+    @pytest.mark.parametrize("poison", [
+        "valid", "noncanonical_key", "production_namespace",
+        "wrong_distribution", "start_key", "triggered_pass",
+    ])
+    async def test_fresh_active_requires_authoritatively_valid_exact_leaf(health_repo, poison):
+        proof = await altered_leaf(health_repo, "canary", poison)
+        directory = Path(os.environ["REVIEW_OWN"]) / os.environ["EVIDENCE_RUN"]
+        directory.mkdir(exist_ok=True)
+        with (directory / f"active-{poison}.json").open("x") as out:
+            json.dump(proof, out, indent=2, default=str)
+            out.write("\n")
+        valid = poison == "valid"
+        assert proof["authority_accepts"] == valid
+>       assert set(sources(proof["active"])) == (
+            {"canary_health", "shadow_health"} if valid else set()
+        ), "invalid exact Canary leaf must invalidate the entire Active consumed chain"
+E       AssertionError: invalid exact Canary leaf must invalidate the entire Active consumed chain
+E       assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042/test_fresh_active_leaf.py:29: AssertionError
+____ test_fresh_active_requires_authoritatively_valid_exact_leaf[start_key] ____
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109f46150>, <core.distributed.promotion_repository....ionRepository object at 0x109c76410>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x109f1c050>)
+poison = 'start_key'
+
+    @pytest.mark.parametrize("poison", [
+        "valid", "noncanonical_key", "production_namespace",
+        "wrong_distribution", "start_key", "triggered_pass",
+    ])
+    async def test_fresh_active_requires_authoritatively_valid_exact_leaf(health_repo, poison):
+        proof = await altered_leaf(health_repo, "canary", poison)
+        directory = Path(os.environ["REVIEW_OWN"]) / os.environ["EVIDENCE_RUN"]
+        directory.mkdir(exist_ok=True)
+        with (directory / f"active-{poison}.json").open("x") as out:
+            json.dump(proof, out, indent=2, default=str)
+            out.write("\n")
+        valid = poison == "valid"
+        assert proof["authority_accepts"] == valid
+>       assert set(sources(proof["active"])) == (
+            {"canary_health", "shadow_health"} if valid else set()
+        ), "invalid exact Canary leaf must invalidate the entire Active consumed chain"
+E       AssertionError: invalid exact Canary leaf must invalidate the entire Active consumed chain
+E       assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042/test_fresh_active_leaf.py:29: AssertionError
+_ test_fresh_active_requires_authoritatively_valid_exact_leaf[triggered_pass] __
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a129e10>, <core.distributed.promotion_repository....ionRepository object at 0x10a021e90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a026410>)
+poison = 'triggered_pass'
+
+    @pytest.mark.parametrize("poison", [
+        "valid", "noncanonical_key", "production_namespace",
+        "wrong_distribution", "start_key", "triggered_pass",
+    ])
+    async def test_fresh_active_requires_authoritatively_valid_exact_leaf(health_repo, poison):
+        proof = await altered_leaf(health_repo, "canary", poison)
+        directory = Path(os.environ["REVIEW_OWN"]) / os.environ["EVIDENCE_RUN"]
+        directory.mkdir(exist_ok=True)
+        with (directory / f"active-{poison}.json").open("x") as out:
+            json.dump(proof, out, indent=2, default=str)
+            out.write("\n")
+        valid = poison == "valid"
+        assert proof["authority_accepts"] == valid
+>       assert set(sources(proof["active"])) == (
+            {"canary_health", "shadow_health"} if valid else set()
+        ), "invalid exact Canary leaf must invalidate the entire Active consumed chain"
+E       AssertionError: invalid exact Canary leaf must invalidate the entire Active consumed chain
+E       assert {'canary_heal...hadow_health'} == set()
+E         
+E         Extra items in the left set:
+E         'canary_health'
+E         'shadow_health'
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - set()
+E         + {
+E         +     'canary_health',
+E         +     'shadow_health',
+E         + }
+
+/tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042/test_fresh_active_leaf.py:29: AssertionError
+=========================== short test summary info ============================
+FAILED ::test_fresh_active_requires_authoritatively_valid_exact_leaf[noncanonical_key] - AssertionError: invalid exact Canary leaf must invalidate the entire Active consumed chain
+assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_fresh_active_requires_authoritatively_valid_exact_leaf[production_namespace] - AssertionError: invalid exact Canary leaf must invalidate the entire Active consumed chain
+assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_fresh_active_requires_authoritatively_valid_exact_leaf[wrong_distribution] - AssertionError: invalid exact Canary leaf must invalidate the entire Active consumed chain
+assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_fresh_active_requires_authoritatively_valid_exact_leaf[start_key] - AssertionError: invalid exact Canary leaf must invalidate the entire Active consumed chain
+assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+FAILED ::test_fresh_active_requires_authoritatively_valid_exact_leaf[triggered_pass] - AssertionError: invalid exact Canary leaf must invalidate the entire Active consumed chain
+assert {'canary_heal...hadow_health'} == set()
+  
+  Extra items in the left set:
+  'canary_health'
+  'shadow_health'
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - set()
+  + {
+  +     'canary_health',
+  +     'shadow_health',
+  + }
+5 failed, 1 passed in 4.08s

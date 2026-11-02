@@ -1,0 +1,74 @@
+{
+  "replacements": {
+    "/tmp/m3-task9-wholespec-90d3cbd2-0290-48f8-aba7-530548519b0e": "/tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042",
+    "a6500f5a4fb8ce1494742735655841230b6124fe": "c52aaababba238ec26282f8c560c8f565a60a09e",
+    "50864": "56737",
+    "50865": "56738",
+    "50866": "56739",
+    "m3_t9_ws90d3_": "m3_t9_wc40baa_",
+    "fresh independent WHOLE SPEC reviewer": "fresh independent WHOLE CODE reviewer",
+    "SPEC prohibits non-loopback connections": "CODE prohibits non-loopback connections"
+  },
+  "scripts": {
+    "bootstrap.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/bootstrap.py",
+      "diff": "--- /Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/bootstrap.py\n+++ /tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042/bootstrap.py\n@@ -10,7 +10,7 @@\n OWN = Path(__file__).parent\n ROOT = Path(\"/Users/bytedance/Documents/trae_projects/eduagent-m3\")\n PRIMARY = ROOT.with_name(\"eduagent\")\n-BASE = \"a6500f5a4fb8ce1494742735655841230b6124fe\"\n+BASE = \"c52aaababba238ec26282f8c560c8f565a60a09e\"\n ARCHIVE = ROOT / \"docs/superpowers/reports/task9-chain-spec-failure-evidence\"\n os.environ[\"GIT_OPTIONAL_LOCKS\"] = \"0\"\n \n"
+    },
+    "prepare.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/prepare.py",
+      "diff": "--- /Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/prepare.py\n+++ /tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042/prepare.py\n@@ -17,7 +17,7 @@\n OWN = Path(__file__).parent\n ROOT = Path(\"/Users/bytedance/Documents/trae_projects/eduagent-m3\")\n A = ROOT / \"docs/superpowers/reports/task9-complete-chain-recovery-evidence\"\n-HEAD = \"a6500f5a4fb8ce1494742735655841230b6124fe\"\n+HEAD = \"c52aaababba238ec26282f8c560c8f565a60a09e\"\n PRODUCT = \"d77299c710a4d330539010d9067c5b4938f4adf1\"\n os.environ[\"GIT_OPTIONAL_LOCKS\"] = \"0\"\n \n@@ -114,7 +114,7 @@\n         manifests[str(p.relative_to(ROOT))] = {\n             \"sha256\": sha(p.read_bytes()), \"declared\": len(mapping), \"checked\": checked}\n     write(\"historical-and-recovery-raw-audit.json\", {\n-        \"role\": \"fresh independent WHOLE SPEC reviewer byte/structure audit, not inherited execution\",\n+        \"role\": \"fresh independent WHOLE CODE reviewer byte/structure audit, not inherited execution\",\n         \"time\": datetime.now(UTC).isoformat(), \"files\": records, \"manifests\": manifests})\n \n \n@@ -143,8 +143,8 @@\n                  \"test_extra_code.py\")):\n         text = (A / name).read_text()\n         text = text.replace(\"85c2759d54fd55691cf69d98df91c81ad9caf65b\", HEAD)\n-        text = text.replace(\"57379\", \"50864\").replace(\"37730\", \"50865\").replace(\"37731\", \"50866\")\n-        text = text.replace(\"m3_t9_fix_\", \"m3_t9_ws90d3_\")\n+        text = text.replace(\"57379\", \"56737\").replace(\"37730\", \"56738\").replace(\"37731\", \"56739\")\n+        text = text.replace(\"m3_t9_fix_\", \"m3_t9_wc40baa_\")\n         (OWN / name).write_text(text)\n     import bootstrap\n     initial = bootstrap.snapshot()\n@@ -162,7 +162,7 @@\n     else:\n         write(\"initial-snapshot.json\", initial)\n         write(\"review-identity.json\", {\n-        \"role\": \"fresh independent WHOLE SPEC reviewer Task9 SPEC reviewer\",\n+        \"role\": \"fresh independent WHOLE CODE reviewer Task9 SPEC reviewer\",\n         \"head\": HEAD, \"product\": PRODUCT, \"base\": \"8869166878a193a1c453376471cbe52c8fa84b3f\",\n         \"own\": str(OWN), \"started_at\": datetime.now(UTC).isoformat(),\n             \"inherited_execution_not_owned\": True, \"model_calls\": 0, \"model_cost_usd\": \"0\"})\n@@ -182,7 +182,7 @@\n         dest.parent.mkdir(parents=True, exist_ok=True)\n         text = (A / \"frontend\" / name).read_text()\n         text = text.replace(\"/tmp/m3-task9-chain-recovery-d7c17eb6-6c53-4bca-9c54-26b53147cd36\", str(OWN))\n-        text = text.replace(\"37730\", \"50865\").replace(\"37731\", \"50866\")\n+        text = text.replace(\"37730\", \"56738\").replace(\"37731\", \"56739\")\n         dest.write_text(text)\n     if not resumed:\n         shutil.copytree(ROOT / \"frontend/node_modules\", front / \"node_modules\", symlinks=True)\n@@ -190,17 +190,17 @@\n         if p.is_symlink():\n             p.resolve().relative_to((front / \"node_modules\").resolve())\n     write(\"shared-pg-identity.json\", asyncio.run(pg_identity()))\n-    for port in (50864, 50865, 50866):\n+    for port in (56737, 56738, 56739):\n         with socket.socket() as sock:\n             assert sock.connect_ex((\"127.0.0.1\", port)) != 0, port\n     service = OWN / \"redis-service\"\n     service.mkdir(mode=0o700)\n-    cmd = [\"/opt/homebrew/bin/redis-server\", \"--bind\", \"127.0.0.1\", \"--port\", \"50864\",\n+    cmd = [\"/opt/homebrew/bin/redis-server\", \"--bind\", \"127.0.0.1\", \"--port\", \"56737\",\n            \"--protected-mode\", \"yes\", \"--daemonize\", \"yes\", \"--dir\", str(service),\n            \"--save\", \"\", \"--appendonly\", \"no\", \"--pidfile\", str(service / \"redis.pid\"),\n            \"--logfile\", str(service / \"redis.log\")]\n     subprocess.run(cmd, check=True)\n-    client = redis.Redis(host=\"127.0.0.1\", port=50864, decode_responses=True)\n+    client = redis.Redis(host=\"127.0.0.1\", port=56737, decode_responses=True)\n     assert client.ping()\n     info = client.info(\"server\")\n     config = client.config_get(\"save\", \"appendonly\", \"dir\")\n@@ -208,7 +208,7 @@\n     assert Path(config[\"dir\"]).resolve() == service.resolve()\n     write(\"owned-redis-identity.json\", {\n         \"time\": datetime.now(UTC).isoformat(), \"command\": cmd, \"pid\": info[\"process_id\"],\n-        \"run_id\": info[\"run_id\"], \"version\": info[\"redis_version\"], \"port\": 50864,\n+        \"run_id\": info[\"run_id\"], \"version\": info[\"redis_version\"], \"port\": 56737,\n         \"config\": config, \"initial_keys\": client.keys(\"*\"), \"shared\": False})\n     assert bootstrap.snapshot() == initial\n     print(json.dumps({\"own\": str(OWN), \"source_count\": 354, \"preparation\": \"complete\",\n"
+    },
+    "review.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/review.py",
+      "diff": "--- /Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/review.py\n+++ /tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042/review.py\n@@ -12,7 +12,7 @@\n OWN = Path(__file__).parent\n ROOT = Path(os.environ.get(\"TASK9_EXEC_ROOT\", \"/Users/bytedance/Documents/trae_projects/eduagent-m3\"))\n PRIMARY = ROOT.with_name(\"eduagent\")\n-HEAD = \"a6500f5a4fb8ce1494742735655841230b6124fe\"\n+HEAD = \"c52aaababba238ec26282f8c560c8f565a60a09e\"\n PG = \"/opt/homebrew/opt/postgresql@16/bin/\"\n PY = \"/tmp/eduagent-m3-patched-runtime/bin/python\"\n \n@@ -62,7 +62,7 @@\n \n def run_pytest(label, args):\n     snapshot(label + \"-before\")\n-    db = \"m3_t9_ws90d3_\" + uuid4().hex\n+    db = \"m3_t9_wc40baa_\" + uuid4().hex\n     cmd_base = [\"-h\", \"127.0.0.1\", \"-p\", \"57432\", \"-U\", \"postgres\", db]\n     subprocess.run([PG + \"createdb\", *cmd_base], check=True)\n     env = os.environ.copy()\n@@ -70,7 +70,7 @@\n         if key == \"DATABASE_URL\" or any(word in key for word in (\"API_KEY\", \"API_TOKEN\", \"SIGNING_SECRET\", \"ASSIGNMENT_SECRET\")):\n             env.pop(key, None)\n     env.update(DISTRIBUTED_TEST_DATABASE_URL=f\"postgresql+asyncpg://postgres@127.0.0.1:57432/{db}\",\n-               DISTRIBUTED_TEST_REDIS_URL=\"redis://127.0.0.1:50864/0\",\n+               DISTRIBUTED_TEST_REDIS_URL=\"redis://127.0.0.1:56737/0\",\n                PYTHONPATH=f\"{ROOT}/python:{OWN}\", PYTHONDONTWRITEBYTECODE=\"1\",\n                PYTHONPYCACHEPREFIX=str(OWN / \"pycache\"), TMPDIR=str(OWN / \"tmp\"),\n                REVIEW_OWN=str(OWN), EVIDENCE_RUN=label, TZ=\"UTC\")\n"
+    },
+    "frontend_run.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/frontend_run.py",
+      "diff": "--- /Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/frontend_run.py\n+++ /tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042/frontend_run.py\n@@ -48,9 +48,9 @@\n     elif mode == \"production\":\n         scenario = sys.argv[3]\n         env.update(SPEC_SCENARIO=scenario, EVIDENCE_RUN=label,\n-                   DISTRIBUTED_TEST_REDIS_URL=\"redis://127.0.0.1:50864/0\",\n+                   DISTRIBUTED_TEST_REDIS_URL=\"redis://127.0.0.1:56737/0\",\n                    SPEC_RUN_TAG=label)\n-        db = \"m3_t9_ws90d3_\" + uuid4().hex\n+        db = \"m3_t9_wc40baa_\" + uuid4().hex\n         args = [\"-h\", \"127.0.0.1\", \"-p\", \"57432\", \"-U\", \"postgres\", db]\n         subprocess.run([review.PG + \"createdb\", *args], check=True)\n         env[\"DISTRIBUTED_TEST_DATABASE_URL\"] = f\"postgresql+asyncpg://postgres@127.0.0.1:57432/{db}\"\n@@ -65,7 +65,7 @@\n                     if server.poll() is not None:\n                         raise RuntimeError((OWN / (label + \"-server.log\")).read_text())\n                     try:\n-                        with urlopen(\"http://127.0.0.1:50866/ops/\", timeout=1) as response:\n+                        with urlopen(\"http://127.0.0.1:56739/ops/\", timeout=1) as response:\n                             if response.status == 200:\n                                 break\n                     except OSError:\n"
+    },
+    "safety.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/safety.py",
+      "diff": "--- /Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/safety.py\n+++ /tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042/safety.py\n@@ -45,7 +45,7 @@\n                 allowed = ipaddress.ip_address(address[0]).is_loopback\n             except ValueError:\n                 allowed = address[0] == \"localhost\"\n-            assert allowed, \"SPEC prohibits non-loopback connections\"\n+            assert allowed, \"CODE prohibits non-loopback connections\"\n         return original(sock, address)\n \n     socket.socket.connect = connect\n"
+    },
+    "conftest.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/conftest.py",
+      "diff": ""
+    },
+    "live_server.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/live_server.py",
+      "diff": "--- /Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/live_server.py\n+++ /tmp/m3-task9-wholecode-40baa8dc-0414-46d1-b816-90149468b042/live_server.py\n@@ -86,4 +86,4 @@\n     Mount(\"/ops-api\", app=api),\n     Mount(\"/\", app=StaticFiles(directory=OWN / \"frontend/dist\", html=True)),\n ])\n-uvicorn.run(app, host=\"127.0.0.1\", port=50866, access_log=False)\n+uvicorn.run(app, host=\"127.0.0.1\", port=56739, access_log=False)\n"
+    },
+    "test_independent_integrity.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/test_independent_integrity.py",
+      "diff": ""
+    },
+    "test_chain_metadata.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/test_chain_metadata.py",
+      "diff": ""
+    },
+    "test_spec_relations.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/test_spec_relations.py",
+      "diff": ""
+    },
+    "test_spec_corroboration.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/test_spec_corroboration.py",
+      "diff": ""
+    },
+    "test_code_attacks.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/test_code_attacks.py",
+      "diff": ""
+    },
+    "test_extra_code.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/test_extra_code.py",
+      "diff": ""
+    },
+    "test_minimum_evidence.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/test_minimum_evidence.py",
+      "diff": ""
+    },
+    "artifact_checks.py": {
+      "origin": "/Users/bytedance/Documents/trae_projects/eduagent-m3/docs/superpowers/reports/task9-minimum-spec-pass-evidence/artifact_checks.py",
+      "diff": ""
+    }
+  }
+}
