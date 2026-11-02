@@ -1,0 +1,211 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+..FFFFFFF                                                                [100%]
+=================================== FAILURES ===================================
+_ test_fresh_complete_get_requires_valid_leaf_identity[canary-noncanonical_key] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a343d10>, <core.distributed.promotion_repository....ionRepository object at 0x109da7750>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a3d8050>)
+state = 'canary', poison = 'noncanonical_key'
+
+    @pytest.mark.parametrize("state,poison", [
+        ("canary", "valid"), ("shadow", "valid"),
+        ("canary", "noncanonical_key"), ("shadow", "noncanonical_key"),
+        ("canary", "production_namespace"), ("canary", "wrong_distribution"),
+        ("shadow", "unpaired_shadow"), ("canary", "start_key"), ("canary", "triggered_pass"),
+    ])
+    async def test_fresh_complete_get_requires_valid_leaf_identity(health_repo, state, poison):
+        proof = await altered_leaf(health_repo, state, poison)
+        directory = Path(os.environ["REVIEW_OWN"]) / os.environ["EVIDENCE_RUN"]
+        directory.mkdir(exist_ok=True)
+        with (directory / f"{state}-{poison}.json").open("x") as out:
+            json.dump(proof, out, indent=2, default=str)
+            out.write("\n")
+        valid = poison == "valid"
+        assert proof["authority_accepts"] == valid, "counterexample/control must reach authority validation"
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        local = sources(proof["local"])
+>       assert (gate in local) == valid, "invalid frozen leaf must not receive a trusted local passed source"
+E       AssertionError: invalid frozen leaf must not receive a trusted local passed source
+E       assert ('canary_health' in {'canary_health': {'receipt_id': '648658a3-bcea-4730-a7e8-33c6b9e8f53e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-leaf-fix-8551ecba-8589-42a0-b9d7-b3873a329816/test_fresh_leaf_identity.py:139: AssertionError
+_ test_fresh_complete_get_requires_valid_leaf_identity[shadow-noncanonical_key] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a267010>, <core.distributed.promotion_repository....ionRepository object at 0x10a3d2910>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a452010>)
+state = 'shadow', poison = 'noncanonical_key'
+
+    @pytest.mark.parametrize("state,poison", [
+        ("canary", "valid"), ("shadow", "valid"),
+        ("canary", "noncanonical_key"), ("shadow", "noncanonical_key"),
+        ("canary", "production_namespace"), ("canary", "wrong_distribution"),
+        ("shadow", "unpaired_shadow"), ("canary", "start_key"), ("canary", "triggered_pass"),
+    ])
+    async def test_fresh_complete_get_requires_valid_leaf_identity(health_repo, state, poison):
+        proof = await altered_leaf(health_repo, state, poison)
+        directory = Path(os.environ["REVIEW_OWN"]) / os.environ["EVIDENCE_RUN"]
+        directory.mkdir(exist_ok=True)
+        with (directory / f"{state}-{poison}.json").open("x") as out:
+            json.dump(proof, out, indent=2, default=str)
+            out.write("\n")
+        valid = poison == "valid"
+        assert proof["authority_accepts"] == valid, "counterexample/control must reach authority validation"
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        local = sources(proof["local"])
+>       assert (gate in local) == valid, "invalid frozen leaf must not receive a trusted local passed source"
+E       AssertionError: invalid frozen leaf must not receive a trusted local passed source
+E       assert ('shadow_health' in {'shadow_health': {'receipt_id': '62892c2c-9091-4cb7-9f14-4e1c3631fe3c', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-leaf-fix-8551ecba-8589-42a0-b9d7-b3873a329816/test_fresh_leaf_identity.py:139: AssertionError
+_ test_fresh_complete_get_requires_valid_leaf_identity[canary-production_namespace] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a662910>, <core.distributed.promotion_repository....ionRepository object at 0x10a658550>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a629110>)
+state = 'canary', poison = 'production_namespace'
+
+    @pytest.mark.parametrize("state,poison", [
+        ("canary", "valid"), ("shadow", "valid"),
+        ("canary", "noncanonical_key"), ("shadow", "noncanonical_key"),
+        ("canary", "production_namespace"), ("canary", "wrong_distribution"),
+        ("shadow", "unpaired_shadow"), ("canary", "start_key"), ("canary", "triggered_pass"),
+    ])
+    async def test_fresh_complete_get_requires_valid_leaf_identity(health_repo, state, poison):
+        proof = await altered_leaf(health_repo, state, poison)
+        directory = Path(os.environ["REVIEW_OWN"]) / os.environ["EVIDENCE_RUN"]
+        directory.mkdir(exist_ok=True)
+        with (directory / f"{state}-{poison}.json").open("x") as out:
+            json.dump(proof, out, indent=2, default=str)
+            out.write("\n")
+        valid = poison == "valid"
+        assert proof["authority_accepts"] == valid, "counterexample/control must reach authority validation"
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        local = sources(proof["local"])
+>       assert (gate in local) == valid, "invalid frozen leaf must not receive a trusted local passed source"
+E       AssertionError: invalid frozen leaf must not receive a trusted local passed source
+E       assert ('canary_health' in {'canary_health': {'receipt_id': '2f3bf1af-8921-41cf-814b-8244a2082f25', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-leaf-fix-8551ecba-8589-42a0-b9d7-b3873a329816/test_fresh_leaf_identity.py:139: AssertionError
+_ test_fresh_complete_get_requires_valid_leaf_identity[canary-wrong_distribution] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a686610>, <core.distributed.promotion_repository....ionRepository object at 0x10a756190>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a8bb590>)
+state = 'canary', poison = 'wrong_distribution'
+
+    @pytest.mark.parametrize("state,poison", [
+        ("canary", "valid"), ("shadow", "valid"),
+        ("canary", "noncanonical_key"), ("shadow", "noncanonical_key"),
+        ("canary", "production_namespace"), ("canary", "wrong_distribution"),
+        ("shadow", "unpaired_shadow"), ("canary", "start_key"), ("canary", "triggered_pass"),
+    ])
+    async def test_fresh_complete_get_requires_valid_leaf_identity(health_repo, state, poison):
+        proof = await altered_leaf(health_repo, state, poison)
+        directory = Path(os.environ["REVIEW_OWN"]) / os.environ["EVIDENCE_RUN"]
+        directory.mkdir(exist_ok=True)
+        with (directory / f"{state}-{poison}.json").open("x") as out:
+            json.dump(proof, out, indent=2, default=str)
+            out.write("\n")
+        valid = poison == "valid"
+        assert proof["authority_accepts"] == valid, "counterexample/control must reach authority validation"
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        local = sources(proof["local"])
+>       assert (gate in local) == valid, "invalid frozen leaf must not receive a trusted local passed source"
+E       AssertionError: invalid frozen leaf must not receive a trusted local passed source
+E       assert ('canary_health' in {'canary_health': {'receipt_id': '819d35bd-360b-4a06-a3e6-eb83c209717e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-leaf-fix-8551ecba-8589-42a0-b9d7-b3873a329816/test_fresh_leaf_identity.py:139: AssertionError
+_ test_fresh_complete_get_requires_valid_leaf_identity[shadow-unpaired_shadow] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a6cbed0>, <core.distributed.promotion_repository....ionRepository object at 0x10a69d0d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a93f9d0>)
+state = 'shadow', poison = 'unpaired_shadow'
+
+    @pytest.mark.parametrize("state,poison", [
+        ("canary", "valid"), ("shadow", "valid"),
+        ("canary", "noncanonical_key"), ("shadow", "noncanonical_key"),
+        ("canary", "production_namespace"), ("canary", "wrong_distribution"),
+        ("shadow", "unpaired_shadow"), ("canary", "start_key"), ("canary", "triggered_pass"),
+    ])
+    async def test_fresh_complete_get_requires_valid_leaf_identity(health_repo, state, poison):
+        proof = await altered_leaf(health_repo, state, poison)
+        directory = Path(os.environ["REVIEW_OWN"]) / os.environ["EVIDENCE_RUN"]
+        directory.mkdir(exist_ok=True)
+        with (directory / f"{state}-{poison}.json").open("x") as out:
+            json.dump(proof, out, indent=2, default=str)
+            out.write("\n")
+        valid = poison == "valid"
+        assert proof["authority_accepts"] == valid, "counterexample/control must reach authority validation"
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        local = sources(proof["local"])
+>       assert (gate in local) == valid, "invalid frozen leaf must not receive a trusted local passed source"
+E       AssertionError: invalid frozen leaf must not receive a trusted local passed source
+E       assert ('shadow_health' in {'shadow_health': {'receipt_id': '8cba26da-4388-453e-b7a2-b3266cab85e9', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-leaf-fix-8551ecba-8589-42a0-b9d7-b3873a329816/test_fresh_leaf_identity.py:139: AssertionError
+____ test_fresh_complete_get_requires_valid_leaf_identity[canary-start_key] ____
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x109bfe450>, <core.distributed.promotion_repository....ionRepository object at 0x10a8b8690>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x109cd0bd0>)
+state = 'canary', poison = 'start_key'
+
+    @pytest.mark.parametrize("state,poison", [
+        ("canary", "valid"), ("shadow", "valid"),
+        ("canary", "noncanonical_key"), ("shadow", "noncanonical_key"),
+        ("canary", "production_namespace"), ("canary", "wrong_distribution"),
+        ("shadow", "unpaired_shadow"), ("canary", "start_key"), ("canary", "triggered_pass"),
+    ])
+    async def test_fresh_complete_get_requires_valid_leaf_identity(health_repo, state, poison):
+        proof = await altered_leaf(health_repo, state, poison)
+        directory = Path(os.environ["REVIEW_OWN"]) / os.environ["EVIDENCE_RUN"]
+        directory.mkdir(exist_ok=True)
+        with (directory / f"{state}-{poison}.json").open("x") as out:
+            json.dump(proof, out, indent=2, default=str)
+            out.write("\n")
+        valid = poison == "valid"
+        assert proof["authority_accepts"] == valid, "counterexample/control must reach authority validation"
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        local = sources(proof["local"])
+>       assert (gate in local) == valid, "invalid frozen leaf must not receive a trusted local passed source"
+E       AssertionError: invalid frozen leaf must not receive a trusted local passed source
+E       assert ('canary_health' in {'canary_health': {'receipt_id': 'ccbc11d0-558d-4968-ba4f-676b57a77351', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-leaf-fix-8551ecba-8589-42a0-b9d7-b3873a329816/test_fresh_leaf_identity.py:139: AssertionError
+_ test_fresh_complete_get_requires_valid_leaf_identity[canary-triggered_pass] __
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10a3d9e50>, <core.distributed.promotion_repository....ionRepository object at 0x10a790a50>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10a409110>)
+state = 'canary', poison = 'triggered_pass'
+
+    @pytest.mark.parametrize("state,poison", [
+        ("canary", "valid"), ("shadow", "valid"),
+        ("canary", "noncanonical_key"), ("shadow", "noncanonical_key"),
+        ("canary", "production_namespace"), ("canary", "wrong_distribution"),
+        ("shadow", "unpaired_shadow"), ("canary", "start_key"), ("canary", "triggered_pass"),
+    ])
+    async def test_fresh_complete_get_requires_valid_leaf_identity(health_repo, state, poison):
+        proof = await altered_leaf(health_repo, state, poison)
+        directory = Path(os.environ["REVIEW_OWN"]) / os.environ["EVIDENCE_RUN"]
+        directory.mkdir(exist_ok=True)
+        with (directory / f"{state}-{poison}.json").open("x") as out:
+            json.dump(proof, out, indent=2, default=str)
+            out.write("\n")
+        valid = poison == "valid"
+        assert proof["authority_accepts"] == valid, "counterexample/control must reach authority validation"
+        gate = "shadow_health" if state == "shadow" else "canary_health"
+        local = sources(proof["local"])
+>       assert (gate in local) == valid, "invalid frozen leaf must not receive a trusted local passed source"
+E       AssertionError: invalid frozen leaf must not receive a trusted local passed source
+E       assert ('canary_health' in {'canary_health': {'receipt_id': 'fed1d438-48bd-4b62-b8d4-5ff3c9f4e768', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+
+/tmp/m3-task9-leaf-fix-8551ecba-8589-42a0-b9d7-b3873a329816/test_fresh_leaf_identity.py:139: AssertionError
+=========================== short test summary info ============================
+FAILED ::test_fresh_complete_get_requires_valid_leaf_identity[canary-noncanonical_key] - AssertionError: invalid frozen leaf must not receive a trusted local passed source
+assert ('canary_health' in {'canary_health': {'receipt_id': '648658a3-bcea-4730-a7e8-33c6b9e8f53e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_fresh_complete_get_requires_valid_leaf_identity[shadow-noncanonical_key] - AssertionError: invalid frozen leaf must not receive a trusted local passed source
+assert ('shadow_health' in {'shadow_health': {'receipt_id': '62892c2c-9091-4cb7-9f14-4e1c3631fe3c', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_fresh_complete_get_requires_valid_leaf_identity[canary-production_namespace] - AssertionError: invalid frozen leaf must not receive a trusted local passed source
+assert ('canary_health' in {'canary_health': {'receipt_id': '2f3bf1af-8921-41cf-814b-8244a2082f25', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_fresh_complete_get_requires_valid_leaf_identity[canary-wrong_distribution] - AssertionError: invalid frozen leaf must not receive a trusted local passed source
+assert ('canary_health' in {'canary_health': {'receipt_id': '819d35bd-360b-4a06-a3e6-eb83c209717e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_fresh_complete_get_requires_valid_leaf_identity[shadow-unpaired_shadow] - AssertionError: invalid frozen leaf must not receive a trusted local passed source
+assert ('shadow_health' in {'shadow_health': {'receipt_id': '8cba26da-4388-453e-b7a2-b3266cab85e9', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_fresh_complete_get_requires_valid_leaf_identity[canary-start_key] - AssertionError: invalid frozen leaf must not receive a trusted local passed source
+assert ('canary_health' in {'canary_health': {'receipt_id': 'ccbc11d0-558d-4968-ba4f-676b57a77351', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+FAILED ::test_fresh_complete_get_requires_valid_leaf_identity[canary-triggered_pass] - AssertionError: invalid frozen leaf must not receive a trusted local passed source
+assert ('canary_health' in {'canary_health': {'receipt_id': 'fed1d438-48bd-4b62-b8d4-5ff3c9f4e768', 'policy_hash': '2537b3d6216e386297a9b26bd1ec7...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}}) == False
+7 failed, 2 passed in 3.42s
