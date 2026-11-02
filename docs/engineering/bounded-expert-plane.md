@@ -193,8 +193,8 @@ Compose 先运行一次 `distributed-migrate`，API、dispatcher、reaper 和 wo
 cd python
 DISTRIBUTED_ENABLED=true \
 DISTRIBUTED_EXPERTS_ENABLED=true \
-DISTRIBUTED_TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/edu_agent \
-DISTRIBUTED_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/edu_agent \
+DISTRIBUTED_TEST_DATABASE_URL="$TEST_DATABASE_URL" \
+DISTRIBUTED_DATABASE_URL="$TEST_DATABASE_URL" \
 DISTRIBUTED_TEST_REDIS_URL=redis://localhost:6379/15 \
 DISTRIBUTED_REDIS_URL=redis://localhost:6379/15 \
 LLM_PROVIDER=template MEMORY_RETRIEVAL_MODE=lexical MEMORY_WORKER_ENABLED=false \
@@ -207,11 +207,12 @@ python -m pytest tests/distributed \
 `docker-compose.yml` 已通过支持 alias 的 YAML 解析；同一组 PostgreSQL、
 Redis 和真实子进程门禁在本地通过。CI 的 `compose-smoke` job 在 Docker
 环境构建完整 profile，提交两次真实 Run，读取 Ops Run/Trace/Expert/Workers，
-并在停止 `expert-worker-a` 后要求第二次 Run 仍完成。运行 JSON、解析后的
-Compose 配置、容器状态和完整日志作为 Actions artifact 留存。Compose 中
-所有分布式进程等待 `distributed-migrate` 成功；dispatcher、reaper 和 worker
-另外等待 `distributed-api` 通过 healthcheck。API 健康不替代迁移结果，
-启动检查不会自动修复缺失或不匹配的 schema marker。
+并在停止 `expert-worker-a` 后要求第二次 Run 仍完成。CI 只归档经过敏感值
+检查的结构化运行 JSON 与容器进程状态；不归档解析后的 Compose（可能含展开
+secret）或完整原始日志。Compose 中所有分布式进程等待
+`distributed-migrate` 成功；dispatcher、reaper 和 worker 另外等待
+`distributed-api` 通过 healthcheck。API 健康不替代迁移结果，启动检查不会
+自动修复缺失或不匹配的 schema marker。
 
 ## 真实故障证据
 

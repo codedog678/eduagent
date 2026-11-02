@@ -87,8 +87,12 @@ _EXPERT_STATUSES = {
 _PROCESS_TYPES = {
     "api",
     "dispatcher",
+    "policy-health",
+    "rehearsal-worker",
     "reaper",
     "run-worker",
+    "shadow-reaper",
+    "shadow-worker",
     "expert-dispatcher",
     "expert-reaper",
     "expert-worker",

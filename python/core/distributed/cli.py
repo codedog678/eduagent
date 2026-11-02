@@ -112,7 +112,7 @@ async def run_forever(command: str) -> None:
                 process = runtime.policy_health()
                 while True:
                     await process.poll_once()
-                    await asyncio.sleep(settings.distributed_heartbeat_seconds)
+                    await asyncio.sleep(settings.promotion_health_poll_seconds)
             elif command == "reaper":
                 reaper = runtime.reaper()
                 while True:

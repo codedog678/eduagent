@@ -198,20 +198,25 @@ distributed profile 启动两个 Run Worker、两个 Expert Worker、两类 disp
 与 reaper，以及只读 Ops Console：
 
 ```bash
+set -a
+source .env
+set +a
 docker compose --profile distributed up --build -d
 open http://localhost:3000/ops/
 ```
 
-本地 Compose 默认 Ops token 为 `local-ops-console`，仅注入
-`distributed-api`；Console 在当前标签页的 session storage 中保存输入值。
-生产环境应覆盖 `OPS_API_TOKEN`，并通过反向代理限制 `/ops/*`。
+Compose 不提交数据库密码、Ops token 或 promotion secret 默认值。Ops token
+仅注入 `distributed-api`；Console 在当前标签页的 session storage 中保存输入值。
+首次配置应把随机生成值写入本地 `.env`，以后复用；已有 `pgdata` 时不能重新
+生成 `POSTGRES_PASSWORD`，除非同时迁移角色密码或明确删除本地卷。生产环境还应
+通过反向代理限制 `/ops/*`。
 
 真实故障演示和固定 template 的控制面基准需在已安装 `python[dev]` 的
 Python 3.11 环境运行。脚本为每次执行创建独立数据库，连接账号需有
 `CREATE DATABASE` 权限，指定的管理数据库需已存在：
 
 ```bash
-export DISTRIBUTED_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/edu_agent
+export DISTRIBUTED_DATABASE_URL="$LOCAL_DISTRIBUTED_DATABASE_URL"
 export DISTRIBUTED_REDIS_URL=redis://localhost:6379/15
 export LLM_PROVIDER=template
 export MEMORY_RETRIEVAL_MODE=lexical
@@ -230,6 +235,26 @@ M3 兼容修复的实跑结果与原始失败见
 峰值队列、错误、成本未知状态及父侧 owner lock 等待代理值；它不代表远程模型
 容量，也不证明 learner-state 可水平多写。完整协议、失败证据和限制见
 [Bounded Expert Plane](docs/engineering/bounded-expert-plane.md)。
+
+### 可信策略晋升（M3）
+
+五分钟 Harness 演练路径：
+
+1. 按上方命令启动 distributed profile，打开 `/ops/` 并确认 Run、Expert、
+   rehearsal、shadow 与 policy-health 进程为 running。
+2. 运行 `python/tests/integration/test_policy_promotion.py`；该测试使用真实
+   PostgreSQL/Redis 和真实进程，但 candidate/receipt 是 fixture，不能发布。
+3. 在 Ops Policies 查看 Shadow、Canary、health window 与 rollback audit，并
+   对照 [M3 验收记录](docs/engineering/m3-policy-promotion-acceptance.md)。
+
+Agent 算法路径从正式 Judge v3 campaign 开始，经 artifact/receipt 完整性检查、
+HMAC cohort 分配、Shadow 隔离、Canary 匹配窗口和事务化回滚。演练 driver 只接受
+正式 eligible campaign，逐请求签发一次性 token，最终发布七类脱敏证据；完整
+公式、失败矩阵和命令见
+[Trusted Policy Promotion](docs/engineering/trusted-policy-promotion.md)。
+
+这些流程验证执行可靠性和证据安全，不把 template、fixture 或控制面健康解释为
+教学质量或学习效果提升。
 
 ### 队列与存储
 
@@ -317,8 +342,25 @@ DEEPSEEK_REASONING_EFFORT=high
 git clone https://github.com/codedog678/eduagent.git
 cd eduagent
 cp .env.example .env
+postgres_password="$(openssl rand -hex 24)"
+ops_token="$(openssl rand -hex 24)"
+promotion_rehearsal_secret="$(openssl rand -hex 32)"
+promotion_assignment_secret="$(openssl rand -hex 32)"
+{
+  echo "POSTGRES_PASSWORD=$postgres_password"
+  echo "DATABASE_URL=postgresql+asyncpg://postgres:${postgres_password}@postgres:5432/edu_agent"
+  echo "DISTRIBUTED_DATABASE_URL=postgresql+asyncpg://postgres:${postgres_password}@postgres:5432/edu_agent"
+  echo "OPS_API_TOKEN=$ops_token"
+  echo "PROMOTION_COMMAND_PRINCIPAL=local-rehearsal"
+  echo "PROMOTION_REHEARSAL_SECRET=$promotion_rehearsal_secret"
+  echo "PROMOTION_ASSIGNMENT_SECRET=$promotion_assignment_secret"
+} >> .env
+unset postgres_password ops_token promotion_rehearsal_secret promotion_assignment_secret
 docker compose up --build -d
 ```
+
+上述 secret 只生成一次并保存在被 Git 忽略的 `.env`。后续启动直接复用；已有
+`pgdata` 时更换 `POSTGRES_PASSWORD` 会使应用无法连接旧卷。
 
 Compose 已转发 `LLM_PROVIDER` 以及 Anthropic、DeepSeek 的配置。使用 Anthropic 时，可在根目录 `.env` 中填写：
 
@@ -352,14 +394,19 @@ curl -X POST 'http://localhost:8888/api/demo/init?learner_id=student_001'
 先在仓库根目录启动数据库：
 
 ```bash
+test -f .env || cp .env.example .env
+# 按 Docker 快速开始章节一次性填写并持久化数据库密码
+set -a
+source .env
+set +a
 docker compose up -d postgres
-cp .env.example .env
 ```
 
 根目录 `.env` 中的本地数据库连接配置：
 
 ```dotenv
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/edu_agent
+POSTGRES_PASSWORD=<与首次 Compose 初始化相同的值>
+DATABASE_URL=postgresql+asyncpg://postgres:<同一密码>@localhost:5432/edu_agent
 ENABLE_DB_LOGGING=true
 ENABLE_AGENT_LLM_DECISIONS=false
 LLM_TIMEOUT_SECONDS=12

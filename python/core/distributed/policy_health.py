@@ -267,7 +267,8 @@ class PolicyObservationRecorder:
                 "completed" if shadow.status == "completed" else
                 "exhausted" if shadow.status == "exhausted" else "terminal_failed",
                 latency_seconds=max(Decimal(0), Decimal(str(
-                    ((shadow.finished_at or shadow.updated_at) - shadow.created_at).total_seconds()))),
+                    ((shadow.finished_at or shadow.updated_at)
+                     - (shadow.started_at or shadow.created_at)).total_seconds()))),
                 input_tokens=usage.get("input_tokens"), output_tokens=usage.get("output_tokens"),
                 cost=usage.get("cost"), commit_outcome="not_attempted",
                 permission_outcome="confirmed_violation" if permission else "isolated",

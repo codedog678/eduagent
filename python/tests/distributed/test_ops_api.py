@@ -199,7 +199,15 @@ async def ops_state(repo, expert_repo):
         await _seed_expert_graph(repo, expert_repo, index)
         for index in range(3)
     ]
-    process_types = ["run-worker", "expert-worker", "dispatcher"]
+    process_types = [
+        "run-worker",
+        "expert-worker",
+        "dispatcher",
+        "policy-health",
+        "rehearsal-worker",
+        "shadow-reaper",
+        "shadow-worker",
+    ]
     for index, process_type in enumerate(process_types):
         await registry.register(
             worker_id=f"ops-worker-{index}",
@@ -518,6 +526,31 @@ async def test_every_ops_response_omits_forbidden_keys_and_seeded_values(
         response = await ops_state.client.get(path)
         assert response.status_code == 200, path
         assert_recursively_redacted(response.json())
+
+
+@pytest.mark.parametrize(
+    "process_type",
+    [
+        "policy-health",
+        "rehearsal-worker",
+        "shadow-reaper",
+        "shadow-worker",
+    ],
+)
+async def test_workers_accept_policy_promotion_process_filters(
+    ops_state,
+    process_type,
+):
+    response = await ops_state.client.get(
+        "/ops/workers",
+        params={"process_type": process_type},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["next_cursor"] is None
+    assert len(body["items"]) == 1
+    assert body["items"][0]["process_type"] == process_type
 
 
 async def test_registry_process_failures_never_escape_into_business_loop():

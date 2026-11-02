@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: edu_agent
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -38,7 +38,7 @@ services:
     ports:
       - "8888:8888"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/edu_agent
+      - DATABASE_URL=${DATABASE_URL:?set DATABASE_URL}
       - LLM_PROVIDER=${LLM_PROVIDER:-auto}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
@@ -87,7 +87,7 @@ services:
       <<: &distributed-env
         DISTRIBUTED_ENABLED: "true"
         DISTRIBUTED_EXPERTS_ENABLED: "true"
-        DISTRIBUTED_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/edu_agent
+        DISTRIBUTED_DATABASE_URL: ${DISTRIBUTED_DATABASE_URL:?set DISTRIBUTED_DATABASE_URL}
         DISTRIBUTED_REDIS_URL: redis://redis:6379/1
         EXPERT_STREAM: ${EXPERT_STREAM:-eduagent:experts}
         EXPERT_CONSUMER_GROUP: ${EXPERT_CONSUMER_GROUP:-eduagent-expert-workers}
@@ -96,7 +96,12 @@ services:
         LLM_PROVIDER: template
         MEMORY_RETRIEVAL_MODE: lexical
         MEMORY_WORKER_ENABLED: "false"
-      OPS_API_TOKEN: ${OPS_API_TOKEN:-local-ops-console}
+        PROMOTION_ENABLED: "true"
+        PROMOTION_COMMAND_PRINCIPAL: ${PROMOTION_COMMAND_PRINCIPAL:?set PROMOTION_COMMAND_PRINCIPAL}
+        PROMOTION_REHEARSAL_SECRET: ${PROMOTION_REHEARSAL_SECRET:?set PROMOTION_REHEARSAL_SECRET}
+        PROMOTION_ASSIGNMENT_SECRET: ${PROMOTION_ASSIGNMENT_SECRET:?set PROMOTION_ASSIGNMENT_SECRET}
+        PROMOTION_FAULT_INJECTION_ENABLED: ${PROMOTION_FAULT_INJECTION_ENABLED:-false}
+      OPS_API_TOKEN: ${OPS_API_TOKEN:?set OPS_API_TOKEN}
     depends_on:
       distributed-migrate:
         condition: service_completed_successfully
@@ -284,6 +289,19 @@ services:
       PROMOTION_REHEARSAL_STORE_ROOT: /app/shadow
     volumes:
       - shadow_harnessdata:/app/shadow
+    depends_on:
+      distributed-migrate:
+        condition: service_completed_successfully
+      distributed-api:
+        condition: service_healthy
+
+  policy-health:
+    profiles: ["distributed"]
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    command: ["python", "-m", "core.distributed.cli", "policy-health"]
+    environment: *distributed-env
     depends_on:
       distributed-migrate:
         condition: service_completed_successfully
