@@ -1,12 +1,127 @@
 # EduAgent
 
-**融合学习者建模、教学支架与间隔复习的多 Agent 英语学习应用。**
+**面向有状态 Agent 的证据驱动执行与策略发布 Harness。**
 
-EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持组织为四个协作角色。系统使用事件驱动方式连接各角色，将学习者表现、知识点依赖和对话上下文用于教学反馈，并通过 React 界面呈现练习、答疑、复习及学习分析。
+EduAgent 以自适应教学为高一致性场景：一次答题会同时影响测验状态、掌握度、
+公开回复和后续计划，因此重试、Worker 崩溃、专家委派或策略切换都不能造成重复
+提交、越权写入或新旧策略混跑。项目从单机事务 Harness 演进到可恢复 Run Plane、
+有界 Expert Plane 和可信策略晋升链路。
 
-项目结合教育技术中的个性化学习与教学支架设计，以及 Python 异步服务、LLM 集成和事件追踪等工程实践。
+> 当前证据证明工程可靠性与证据安全，不证明真实模型质量或学生学习效果。
 
-## 跨会话教学 Harness
+## 核心能力与证据
+
+| 层次 | 解决的问题 | 关键机制 | 已验证证据 |
+| --- | --- | --- | --- |
+| M1 Durable Run Plane | Worker 崩溃后谁有提交权 | PostgreSQL lease/fencing、Outbox；Redis 仅投递 | 真实多进程接管与旧 token 拒绝 |
+| M2 Bounded Expert Plane | 专家如何扩展又不乱写状态 | 冻结快照、双重 fencing、父侧采用 | SIGKILL 接管与唯一 accepted result |
+| M3 Trusted Policy Promotion | 算法候选如何受控上线 | Judge v3、Shadow、Canary、健康窗口、回滚 | fixture 多进程闭环与远程 CI |
+
+- 后端非分布式：`850 passed`，`56 skipped`
+- PostgreSQL/Redis 分布式矩阵：`1537 passed`
+- Ops Console：`54 passed`（desktop + mobile）
+- 远程 CI：backend、frontend、package、compose-smoke、
+  distributed-integration 全部成功
+
+[查看当前证据索引](docs/engineering/interview-readiness.md) ·
+[查看 Task 10 验收记录](docs/engineering/m3-policy-promotion-acceptance.md) ·
+[查看远程 CI](https://github.com/codedog678/eduagent/actions/runs/41457794154)
+
+## 从能运行到可信交付
+
+| 阶段 | 真实矛盾 | 设计决策 | 仍保留的边界 |
+| --- | --- | --- | --- |
+| M0 单机 Harness | 重试不能重复判分或污染学习证据 | 请求指纹、事务提交、独立/受助表现分离 | 单进程业务状态 |
+| M1 Run Plane | lease 过期后的旧 Worker 仍可能继续运行 | 单调 fencing token，所有提交重新验证 authority | 外部模型副作用非 exactly-once |
+| M2 Expert Plane | 专家要独立恢复，但不能拥有业务写权限 | 冻结只读快照、双重 fencing、父侧复核采用 | Harness SQLite 仍单写 |
+| M3 Promotion | 离线分数不能直接授予生产发布权 | 资格绑定、Shadow、Canary、匹配健康窗口和事务回滚 | 正式 campaign rehearsal 未执行 |
+
+这些里程碑来自真实或可复现的失败：锁等待后权限可能过期、旧 Worker 可能继续
+运行、专家结果可能越过父 Run 权限、策略回滚可能与迟到观察交错。项目先固定
+不变量，再通过故障注入、逐条 Trace 和绑定 revision 的验收证据验证，而不是为了
+展示技术栈而增加分布式组件。
+
+## 权威边界
+
+```mermaid
+flowchart LR
+    API["API / Admission"] --> PG["PostgreSQL<br/>Run · Lease · Policy · Audit"]
+    PG --> OUTBOX["Transactional Outbox"]
+    OUTBOX --> REDIS["Redis Streams<br/>delivery only"]
+    REDIS --> RUN["Run Worker"]
+    RUN --> EXPERT["Bounded Expert Workers<br/>frozen read-only snapshot"]
+    EXPERT --> ADOPT["Parent validation<br/>source · policy · fencing"]
+    ADOPT --> SQLITE["Harness SQLite<br/>single-writer learning transaction"]
+    PG --> OPS["Ops / Trace<br/>read-only evidence"]
+    SQLITE --> OPS
+```
+
+1. **PostgreSQL** 是分布式执行身份、租约、策略绑定和审计的权威。
+2. **Redis Streams** 可以重复投递，只提供唤醒与传输，不授予提交权。
+3. **SQLite** 仍是当前教学业务事务的单写权威；M1–M3 不宣称业务状态已水平多写。
+
+## 三个关键工程判断
+
+### 锁等待之后重新验证权限
+
+- **失败：** SQL 条件在等待阻塞锁之前成立，不代表获得锁后 lease、attempt
+  deadline 或 parent epoch 仍有效。
+- **不变量：** 所有阻塞锁之后、每次状态修改之前重新检查 live authority。
+- **证据：** [真实等锁回归](python/tests/distributed/test_lease_lock_time.py)覆盖
+  跨过 lease/deadline 后放锁的交错。
+- **边界：** fencing 阻止旧执行者提交，但不会撤销已经发出的外部模型请求。
+
+### Expert 通过不等于公开交付
+
+- **失败：** schema 合法的专家结果仍可能来自过期 parent、错误 policy 或越权来源。
+- **不变量：** `submitted`、`accepted`、`adopted` 和 `public delivery` 是不同状态。
+- **证据：** [Expert repository](python/core/distributed/expert_repository.py)执行
+  双重 fencing，父 Run Worker 再校验来源、版本和当前可用性。
+- **边界：** 专家可以独立恢复计算，但不能直接提交 BKT、测验、记忆或公开回复。
+
+### 回滚不改写已受理 Run
+
+- **失败：** 若回滚重写正在执行的 Run，重试和专家结果会失去可解释的策略身份。
+- **不变量：** Run 在 admission 时固定 policy/deployment/namespace；回滚只影响
+  新受理 Run。
+- **证据：** [多进程 promotion 集成](python/tests/integration/test_policy_promotion.py)
+  覆盖旧 Run binding、新 stable binding、自动回滚和迟到 observation。
+- **边界：** 该测试使用真实 PostgreSQL/Redis 与真实进程，但 candidate/receipt
+  是 fixture，不能替代正式 campaign。
+
+## 五分钟看懂项目
+
+```bash
+docker compose --profile distributed up --build -d
+curl --fail http://localhost:8890/api/health
+python tools/demo_expert_failover.py
+(cd python && python -m pytest tests/integration/test_policy_promotion.py -q)
+open http://localhost:3000/ops/
+```
+
+启动前需按 `.env.example` 配置本地 PostgreSQL、Redis、Ops token 与 promotion
+secret。专家演示会真实强杀首个 Worker；promotion 集成使用真实基础设施与进程，
+但候选和回执是 `release_eligible=false` 的 fixture。Ops Console 可检查 Run、
+Attempt、Expert、Trace、Policy binding、health window 与 rollback audit。
+
+[五分钟演示细节](docs/engineering/interview-playbook.md#五分钟现场演示) ·
+[完整运行协议](docs/engineering/trusted-policy-promotion.md#运行命令)
+
+## 当前边界
+
+- Harness SQLite 仍是学习状态的单写权威。
+- PostgreSQL 与 SQLite 不提供跨库原子提交。
+- 外部模型副作用不承诺 exactly-once。
+- Task 9 的功能已验证，但独立审查未完整封存。
+- 正式 eligible Judge v3 rehearsal 与真实学生学习效果研究均未执行。
+
+## 应用场景：自适应教学
+
+EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持组织为四个协作角色。
+系统使用事件驱动方式连接各角色，将学习者表现、知识点依赖和对话上下文用于
+教学反馈，并通过 React 界面呈现练习、答疑、复习及学习分析。
+
+### 跨会话教学 Harness
 
 学生可以开始新会话，并继续同一知识点的教学线程。系统将公开对话、错题评估和受助记录保存在 Harness SQLite 中，为 Tutor 构建带来源和预算的上下文。
 
@@ -18,7 +133,7 @@ EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持�
 
 配置见 `.env.example` 的 `TUTOR_*`、`MEMORY_*` 和 `COORDINATOR_*`。长期记忆使用 FTS5 关键词与可选向量检索，已提交的等待计划支持跨轮接续。当前演示 API 仍使用学习者 ID，多用户部署需接入登录主体认证。
 
-## 长期记忆与复合任务（v0.3）
+### 长期记忆与复合任务（v0.3）
 
 记忆继续以 SQLite 中的公开原文为依据。明确偏好和目标保留来源、版本与有效期；新陈述可替代或撤销旧版本，未明确解决的同类冲突保留为候选。学生说“请记住……”时可直接暂存原话，随回复原子提交。稳定画像跨知识点可读；教学片段不改变 BKT。
 
@@ -40,7 +155,7 @@ EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持�
 
 当前限制：向量在授权范围内加载并用 Python 计算余弦，默认最多扫描最近 2000 个块，适用于小规模演示；专家按依赖串行，恢复范围是已提交待答计划，不支持进程中断后的步骤级恢复。重规划有次数、上下文和全轮预算限制；不足时返回部分完成。最新[规划与来源修复复测](docs/evals/harness-long-runs/20261027-source-recovery-deepseek-flash/analysis.md)：后端370项、确定性8/8，自动5/6、30请求，原工程门槛通过，恢复2/2、计划完成5/5（原分母排除L01）。L02不再经过多余诊断，恢复原写作计划成功；L01课程草稿两次findings条数超限，未备题且partial保留。新计划简化与未读来源修复分支实跑均未触发，不能据单次回归推定其真实因果效果。教学内容准确性、材料缺口和内部术语仍待审核；工程门槛通过不能证明真实学习效果。语义阈值未用实网语料校准；教学材料未入库时工具明确返回 `not_provided`。
 
-## 学习体验
+### 学习体验
 
 1. **选择知识点**：围绕词汇、语法、阅读、写作等英语知识点开始练习。
 2. **完成练习**：获取服务端保存的选择题，提交选项，可选记录把握程度。
@@ -49,9 +164,9 @@ EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持�
 5. **接受渐进提示**：主动求助时，依次获得思路检查、学科判断框架和选项验证提示。
 6. **安排后续学习**：查看下一知识点推荐、复习快照、到期项目和学习分析。
 
-## 教育设计
+### 教育设计
 
-### 学习者建模
+#### 学习者建模
 
 系统按“学习者 × 知识点”维护掌握概率、尝试次数、正确次数和连续正确次数，利用 BKT（贝叶斯知识追踪）的观测更新估计掌握状态。
 
@@ -59,7 +174,7 @@ EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持�
 
 每道测验只有首次、未求助的作答更新掌握度与复习计划。重试、提示后作答和查看解析分别记录为辅助学习行为，便于区分独立表现与支架支持下的表现。把握程度可选，不额外增加问卷任务。
 
-### 教学支架
+#### 教学支架
 
 测验错答后保留思考机会，Tutor 先提供形成性反馈；答案与解析由学习者主动查看。测验提示使用本地教学策略，分为三个层级：
 
@@ -71,17 +186,17 @@ EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持�
 
 提示级别随同一测验的求助进程升级。自由答疑通过预算约束的上下文和原生工具查询历史；评估后的传统反馈路径保留近期回复相似度检查。
 
-### 知识依赖与间隔复习
+#### 知识依赖与间隔复习
 
 英语知识点通过 DAG 表达前置依赖。课程角色检查已掌握知识，筛选可学习的候选节点，再结合学习者画像生成推荐。
 
 复习使用 SM-2 调整间隔与难度因子，同时根据掌握度、连续正确次数和距上次复习时间计算启发式记忆保持率，提供到期提醒和七天复习计划。
 
-### 学习状态支持
+#### 学习状态支持
 
 系统结合近期正确率、连续答错、答题速度变化及会话时长估计学习状态，并提供鼓励、节奏调整或休息建议。状态估计用于选择支持策略。
 
-## 四个协作角色
+### 四个协作角色
 
 | Agent | 输入与职责 | 主要输出 |
 |---|---|---|
@@ -92,7 +207,7 @@ EduAgent 将答题评估、个性化辅导、课程推荐与学习状态支持�
 
 各角色运行在同一后端进程中，共享事件总线和学习者模型。Agent 自行订阅相关事件，编排器负责接收交互、发布初始事件、汇总结果并生成教学决策。
 
-## 系统架构
+## 应用运行架构（M0 单进程）
 
 ```mermaid
 flowchart TD
