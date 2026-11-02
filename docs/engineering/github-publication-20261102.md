@@ -125,3 +125,29 @@ git log -8 --oneline origin/main
 ```
 
 若本轮发布完成，前两条比较分别应输出 `0 0`、退出状态 `0`。
+
+## 后续清理与补充归档
+
+首次发布后已核验：GitHub `main` 与 M3 都位于 `b82670b`，两分支差异为 `0 0`，
+README、归档记录和面试材料的远程 blob 与本地一致。
+
+随后按用户“删除不需要的分支”的授权，删除三个远程历史分支、五个本地分支，
+移除三个旧 worktree，并清理两个失效 worktree 注册。正式历史已并入 main，
+两个 M1 临时分支的独有 SHA 经 `git cherry` 确认为已吸收的等价 patch。
+清理后本地与 GitHub 只保留 `main`；上节比较 M3 的命令属于清理前的历史核验。
+
+用户再次要求推送最新代码和文档时，代码已与远程同步，但发现两份旧设计仍受
+忽略规则排除，本次补充归档：
+
+- [评测与工程化设计](../superpowers/specs/2026-10-23-agent-harness-evaluation-design.md)：
+  保留 2026-10-23 的测试数与方案，当前结果另见验收记录；
+- [分层学习者能力设计](../superpowers/specs/2026-10-23-hierarchical-learner-ability-design.md)：
+  仅为历史设计，归档不代表能力模型或难度适配已实施。
+
+本次补充不修改运行时代码，不增加模型请求。此后的同步核验使用：
+
+```bash
+git fetch origin
+git status --short --branch
+git rev-list --left-right --count main...origin/main
+```
