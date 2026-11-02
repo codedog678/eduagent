@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="17" time="6.807" timestamp="2026-11-02T02:08:34.514257+00:00" hostname="HL41657YW6"><testcase classname="" name="test_referenced_health_metadata_is_a_real_chain_requirement[issuer-foreign-issuer-canary]" time="0.727" /><testcase classname="" name="test_referenced_health_metadata_is_a_real_chain_requirement[issuer-foreign-issuer-active]" time="0.406"><failure message="AssertionError: a broken exact receipt must not authenticate any Active consumed chain&#10;assert not [{'receipt_id': 'a2076eba-8564-4d34-96e7-342ff16a5a4a', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10b240610&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10b54cc90&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b54da90&gt;)
+target = 'active', field = 'issuer', value = 'foreign-issuer'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("issuer", "foreign-issuer"), ("model_identity", "foreign-model"),
+        ("data_role", "simulation"), ("policy_hash", "f" * 64),
+        ("runtime_hash", "e" * 64), ("source_revision", "foreign-source"),
+    ])
+    async def test_referenced_health_metadata_is_a_real_chain_requirement(health_repo, target, field, value):
+        if field == "policy_hash":
+            value = health_repo[2].stable_policy_hash
+        repo, deployment, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployment)
+        shown = [r for r in body["gate_receipts"] if r["health_source"]]
+        record("metadata-" + target + "-" + field, {**proof, "body": body, "poison": {field: value}})
+        if target == "canary" and field in {"policy_hash", "runtime_hash", "source_revision"}:
+            assert len(shown) == 1
+        else:
+&gt;           assert not shown, "a broken exact receipt must not authenticate any Active consumed chain"
+E           AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+E           assert not [{'receipt_id': 'a2076eba-8564-4d34-96e7-342ff16a5a4a', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-chain-recovery-d7c17eb6-6c53-4bca-9c54-26b53147cd36/test_chain_metadata.py:32: AssertionError</failure></testcase><testcase classname="" name="test_referenced_health_metadata_is_a_real_chain_requirement[model_identity-foreign-model-canary]" time="0.274" /><testcase classname="" name="test_referenced_health_metadata_is_a_real_chain_requirement[model_identity-foreign-model-active]" time="0.479"><failure message="AssertionError: a broken exact receipt must not authenticate any Active consumed chain&#10;assert not [{'receipt_id': '4522f7b2-287a-4c12-89a3-fc9a058f0547', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10bc82690&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10bc818d0&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10baf0450&gt;)
+target = 'active', field = 'model_identity', value = 'foreign-model'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("issuer", "foreign-issuer"), ("model_identity", "foreign-model"),
+        ("data_role", "simulation"), ("policy_hash", "f" * 64),
+        ("runtime_hash", "e" * 64), ("source_revision", "foreign-source"),
+    ])
+    async def test_referenced_health_metadata_is_a_real_chain_requirement(health_repo, target, field, value):
+        if field == "policy_hash":
+            value = health_repo[2].stable_policy_hash
+        repo, deployment, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployment)
+        shown = [r for r in body["gate_receipts"] if r["health_source"]]
+        record("metadata-" + target + "-" + field, {**proof, "body": body, "poison": {field: value}})
+        if target == "canary" and field in {"policy_hash", "runtime_hash", "source_revision"}:
+            assert len(shown) == 1
+        else:
+&gt;           assert not shown, "a broken exact receipt must not authenticate any Active consumed chain"
+E           AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+E           assert not [{'receipt_id': '4522f7b2-287a-4c12-89a3-fc9a058f0547', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-chain-recovery-d7c17eb6-6c53-4bca-9c54-26b53147cd36/test_chain_metadata.py:32: AssertionError</failure></testcase><testcase classname="" name="test_referenced_health_metadata_is_a_real_chain_requirement[data_role-simulation-canary]" time="0.266" /><testcase classname="" name="test_referenced_health_metadata_is_a_real_chain_requirement[data_role-simulation-active]" time="0.393"><failure message="AssertionError: a broken exact receipt must not authenticate any Active consumed chain&#10;assert not [{'receipt_id': '15a12150-de37-494e-a9d2-c0e5bec0abd0', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10b9fb510&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10bb88590&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10bbc5d10&gt;)
+target = 'active', field = 'data_role', value = 'simulation'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("issuer", "foreign-issuer"), ("model_identity", "foreign-model"),
+        ("data_role", "simulation"), ("policy_hash", "f" * 64),
+        ("runtime_hash", "e" * 64), ("source_revision", "foreign-source"),
+    ])
+    async def test_referenced_health_metadata_is_a_real_chain_requirement(health_repo, target, field, value):
+        if field == "policy_hash":
+            value = health_repo[2].stable_policy_hash
+        repo, deployment, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployment)
+        shown = [r for r in body["gate_receipts"] if r["health_source"]]
+        record("metadata-" + target + "-" + field, {**proof, "body": body, "poison": {field: value}})
+        if target == "canary" and field in {"policy_hash", "runtime_hash", "source_revision"}:
+            assert len(shown) == 1
+        else:
+&gt;           assert not shown, "a broken exact receipt must not authenticate any Active consumed chain"
+E           AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+E           assert not [{'receipt_id': '15a12150-de37-494e-a9d2-c0e5bec0abd0', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-chain-recovery-d7c17eb6-6c53-4bca-9c54-26b53147cd36/test_chain_metadata.py:32: AssertionError</failure></testcase><testcase classname="" name="test_referenced_health_metadata_is_a_real_chain_requirement[policy_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff-canary]" time="0.254" /><testcase classname="" name="test_referenced_health_metadata_is_a_real_chain_requirement[policy_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff-active]" time="0.436"><failure message="AssertionError: a broken exact receipt must not authenticate any Active consumed chain&#10;assert not [{'receipt_id': '7d133347-301f-4596-b92a-1360056f485e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10bd783d0&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10be52550&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10bf22c50&gt;)
+target = 'active', field = 'policy_hash'
+value = '778de32838c91cc035331681df449ecebdbf06632e4648b0611776a07b2cedc9'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("issuer", "foreign-issuer"), ("model_identity", "foreign-model"),
+        ("data_role", "simulation"), ("policy_hash", "f" * 64),
+        ("runtime_hash", "e" * 64), ("source_revision", "foreign-source"),
+    ])
+    async def test_referenced_health_metadata_is_a_real_chain_requirement(health_repo, target, field, value):
+        if field == "policy_hash":
+            value = health_repo[2].stable_policy_hash
+        repo, deployment, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployment)
+        shown = [r for r in body["gate_receipts"] if r["health_source"]]
+        record("metadata-" + target + "-" + field, {**proof, "body": body, "poison": {field: value}})
+        if target == "canary" and field in {"policy_hash", "runtime_hash", "source_revision"}:
+            assert len(shown) == 1
+        else:
+&gt;           assert not shown, "a broken exact receipt must not authenticate any Active consumed chain"
+E           AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+E           assert not [{'receipt_id': '7d133347-301f-4596-b92a-1360056f485e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-chain-recovery-d7c17eb6-6c53-4bca-9c54-26b53147cd36/test_chain_metadata.py:32: AssertionError</failure></testcase><testcase classname="" name="test_referenced_health_metadata_is_a_real_chain_requirement[runtime_hash-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee-canary]" time="0.262" /><testcase classname="" name="test_referenced_health_metadata_is_a_real_chain_requirement[runtime_hash-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee-active]" time="0.382"><failure message="AssertionError: a broken exact receipt must not authenticate any Active consumed chain&#10;assert not [{'receipt_id': 'f1686cf7-0db9-4133-801d-09db1d1a08a3', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10af89290&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10ba5c910&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b3f8690&gt;)
+target = 'active', field = 'runtime_hash'
+value = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("issuer", "foreign-issuer"), ("model_identity", "foreign-model"),
+        ("data_role", "simulation"), ("policy_hash", "f" * 64),
+        ("runtime_hash", "e" * 64), ("source_revision", "foreign-source"),
+    ])
+    async def test_referenced_health_metadata_is_a_real_chain_requirement(health_repo, target, field, value):
+        if field == "policy_hash":
+            value = health_repo[2].stable_policy_hash
+        repo, deployment, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployment)
+        shown = [r for r in body["gate_receipts"] if r["health_source"]]
+        record("metadata-" + target + "-" + field, {**proof, "body": body, "poison": {field: value}})
+        if target == "canary" and field in {"policy_hash", "runtime_hash", "source_revision"}:
+            assert len(shown) == 1
+        else:
+&gt;           assert not shown, "a broken exact receipt must not authenticate any Active consumed chain"
+E           AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+E           assert not [{'receipt_id': 'f1686cf7-0db9-4133-801d-09db1d1a08a3', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-chain-recovery-d7c17eb6-6c53-4bca-9c54-26b53147cd36/test_chain_metadata.py:32: AssertionError</failure></testcase><testcase classname="" name="test_referenced_health_metadata_is_a_real_chain_requirement[source_revision-foreign-source-canary]" time="0.259" /><testcase classname="" name="test_referenced_health_metadata_is_a_real_chain_requirement[source_revision-foreign-source-active]" time="0.385"><failure message="AssertionError: a broken exact receipt must not authenticate any Active consumed chain&#10;assert not [{'receipt_id': 'e9370105-7781-463f-9005-c7ac339fce82', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]">health_repo = (&lt;core.distributed.repository.DistributedRunRepository object at 0x10bc50390&gt;, &lt;core.distributed.promotion_repository....ionRepository object at 0x10bf55b90&gt;, &lt;core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b97b350&gt;)
+target = 'active', field = 'source_revision', value = 'foreign-source'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("issuer", "foreign-issuer"), ("model_identity", "foreign-model"),
+        ("data_role", "simulation"), ("policy_hash", "f" * 64),
+        ("runtime_hash", "e" * 64), ("source_revision", "foreign-source"),
+    ])
+    async def test_referenced_health_metadata_is_a_real_chain_requirement(health_repo, target, field, value):
+        if field == "policy_hash":
+            value = health_repo[2].stable_policy_hash
+        repo, deployment, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployment)
+        shown = [r for r in body["gate_receipts"] if r["health_source"]]
+        record("metadata-" + target + "-" + field, {**proof, "body": body, "poison": {field: value}})
+        if target == "canary" and field in {"policy_hash", "runtime_hash", "source_revision"}:
+            assert len(shown) == 1
+        else:
+&gt;           assert not shown, "a broken exact receipt must not authenticate any Active consumed chain"
+E           AssertionError: a broken exact receipt must not authenticate any Active consumed chain
+E           assert not [{'receipt_id': 'e9370105-7781-463f-9005-c7ac339fce82', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-chain-recovery-d7c17eb6-6c53-4bca-9c54-26b53147cd36/test_chain_metadata.py:32: AssertionError</failure></testcase><testcase classname="" name="test_approval_metadata_masks_earlier_genuine_approval[issuer-foreign-issuer]" time="0.455" /><testcase classname="" name="test_approval_metadata_masks_earlier_genuine_approval[model_identity-foreign-model]" time="0.405" /><testcase classname="" name="test_approval_metadata_masks_earlier_genuine_approval[data_role-simulation]" time="0.392" /><testcase classname="" name="test_approval_metadata_masks_earlier_genuine_approval[status-failed]" time="0.463" /><testcase classname="" name="test_approval_metadata_masks_earlier_genuine_approval[status-unknown]" time="0.412" /></testsuite></testsuites>

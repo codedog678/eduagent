@@ -1,0 +1,313 @@
+diff --git a/python/core/distributed/ops_queries.py b/python/core/distributed/ops_queries.py
+index aa454f8..565a490 100644
+--- a/python/core/distributed/ops_queries.py
++++ b/python/core/distributed/ops_queries.py
+@@ -446,11 +446,12 @@ class OpsQueries:
+                    PolicyGateReceiptRecord.created_at.desc(),
+                    PolicyGateReceiptRecord.receipt_id.desc()).limit(1))
+ 
+-    async def _project_health_sources(self, session, artifact, sources):
++    @classmethod
++    async def _project_health_sources(cls, session, artifact, sources):
+         result = {}
+         for deployment, gate, relation, cutoff, exact_id in sources:
+             # Unidentifiable latest evidence blocks display rather than reviving an old pass.
+-            receipt = await self._latest_health_receipt(session, artifact, deployment, gate, cutoff)
++            receipt = await cls._latest_health_receipt(session, artifact, deployment, gate, cutoff)
+             if receipt is None or (exact_id is not None and receipt.receipt_id != exact_id):
+                 continue
+             details = receipt.details
+@@ -503,7 +504,7 @@ class OpsQueries:
+                         receipt.status != "passed" or window.decision != "pass"
+                         or consumed_latest is None or consumed_latest.window_id != window.window_id
+                     ))
+-                    or not await self._frozen_summary_matches(
++                    or not await cls._frozen_summary_matches(
+                         session, deployment, gate, window, receipt, thresholds,
+                     )
+                 ):
+@@ -517,7 +518,7 @@ class OpsQueries:
+                 )
+             except (ValidationError, ValueError, TypeError, KeyError):
+                 continue
+-            result[gate] = self._gate_receipt(receipt, source)
++            result[gate] = cls._gate_receipt(receipt, source)
+         return list(result.values())
+ 
+     @staticmethod
+@@ -645,6 +646,8 @@ class OpsQueries:
+     @staticmethod
+     async def _consumed_canary(session, deployment, artifact):
+         """Read the exact approval/audit relation, never infer consumption from adjacency."""
++        if artifact is None:
++            return None
+         # 无法识别归属的 latest approval 遮蔽旧 pass；可识别的其它命令不串用。
+         approval = await session.scalar(select(PolicyGateReceiptRecord).where(
+             PolicyGateReceiptRecord.policy_hash == artifact.policy_hash,
+@@ -713,6 +716,13 @@ class OpsQueries:
+                 return None
+         except (ValueError, TypeError):
+             return None
++        # 精确引用的 Canary 自身必须通过叶证据校验，否则整条依赖消费链断开。
++        # Canary 叶校验不回溯 Active；复用有界只读校验，不重放 evaluator 或授权。
++        if not await OpsQueries._project_health_sources(
++            session, artifact,
++            [(canary, "canary_health", "consumed_chain", deployment.created_at, receipt_id)],
++        ):
++            return None
+         return canary, receipt_id
+ 
+     async def list_policy_health_windows(
+diff --git a/python/tests/distributed/test_ops_complete_chain.py b/python/tests/distributed/test_ops_complete_chain.py
+new file mode 100644
+index 0000000..e7ac6fb
+--- /dev/null
++++ b/python/tests/distributed/test_ops_complete_chain.py
+@@ -0,0 +1,247 @@
++"""Task9 S1-R: complete GET chains, exact receipts, and independent history."""
++
++from copy import deepcopy
++from datetime import UTC, datetime, timedelta
++from decimal import Decimal
++from types import SimpleNamespace
++from uuid import uuid4
++
++import pytest
++from sqlalchemy import select
++
++from core.distributed.policy_health import PolicyHealthEvaluator
++from core.distributed.promotion_contracts import PromotionCommand, canonical_hash
++from core.distributed.promotion_models import (
++    PolicyArtifactRecord, PolicyAuditEventRecord, PolicyDeploymentRecord,
++    PolicyGateReceiptRecord, PolicyHealthWindowRecord,
++)
++from core.distributed.promotion_repository import PromotionRepository
++from tests.distributed.test_ops_health_binding import append_receipt, health_pair
++from tests.distributed.test_ops_source_integrity import api_detail
++from tests.distributed.test_policy_health import fill_window, health_repo
++from tests.distributed.test_policy_health_corrections import real_active_fixture
++
++pytestmark = pytest.mark.distributed_integration
++
++
++def sources(body):
++    return {r["gate_type"]: r for r in body["gate_receipts"] if r["health_source"]}
++
++
++async def referenced_active(fixture, poison=None, reference="exact"):
++    prepared, _, _ = await real_active_fixture(
++        fixture, stop_at="canary", command_prefix="complete-chain-" + uuid4().hex,
++    )
++    repo, _, canary = prepared
++    async with repo.session_factory() as session:
++        source = await session.get(PolicyDeploymentRecord, str(canary.deployment_id))
++        values = {c.name: deepcopy(getattr(source, c.name)) for c in source.__table__.columns}
++        artifact = await session.get(PolicyArtifactRecord, canary.candidate_policy_hash)
++        original = await session.scalar(select(PolicyGateReceiptRecord).where(
++            PolicyGateReceiptRecord.gate_type == "canary_health",
++            PolicyGateReceiptRecord.details["deployment_id"].as_string() == str(canary.deployment_id),
++        ))
++    changes = {}
++    if poison:
++        metadata = {
++            "sample_count": 0, "cost": Decimal(0), "status_unknown": "unknown",
++            "status_failed": "failed", "protocol_hash": "e" * 64,
++            "gate_type": "formal_holdout", "issuer": "foreign-issuer",
++            "model_identity": "foreign-model", "data_role": "simulation",
++            "policy_hash": canary.stable_policy_hash, "runtime_hash": "e" * 64,
++            "source_revision": "foreign-source",
++        }
++        if poison in metadata:
++            field = "status" if poison.startswith("status_") else poison
++            changes[field] = metadata[poison]
++        elif poison == "evidence_hash":
++            changes["evidence_hash"] = "d" * 64
++        elif poison == "issued_before_deployment":
++            changes["issued_at"] = canary.created_at - timedelta(microseconds=1)
++        elif poison == "issued_after_cutoff":
++            changes["issued_at"] = datetime.now(UTC) + timedelta(days=1)
++        elif poison == "created_after_cutoff":
++            changes["created_at"] = datetime.now(UTC) + timedelta(days=1)
++        elif poison in {"missing_details", "list_details"}:
++            changes["details"] = None if poison == "missing_details" else []
++        else:
++            details = deepcopy(original.details)
++            invalid = {
++                "deployment_id": str(uuid4()), "deployment_version": canary.version + 1,
++                "bool_version": True, "metric_contract_version": 2,
++                "bool_contract": True, "thresholds_hash": "e" * 64,
++                "window_id": "d" * 64, "gate_cohort": "shadow",
++                "observation_keys": {"candidate": [], "stable": []},
++                "candidate_stats": {}, "stable_stats": {},
++            }
++            if poison == "missing_window":
++                details.pop("window_id")
++            else:
++                field = {"bool_version": "deployment_version",
++                         "bool_contract": "metric_contract_version"}.get(poison, poison)
++                details[field] = invalid[poison]
++            changes["details"] = details
++    health = original
++    if changes:
++        ident = await append_receipt(repo, original, **changes)
++        async with repo.session_factory() as session:
++            health = await session.get(PolicyGateReceiptRecord, ident)
++    # 原始合法 leaf 保留；审批必须验证精确 ID，不能拿另一个合法来源替换。
++    now = datetime.now(UTC)
++    command = PromotionCommand(
++        command_id="complete-active-" + uuid4().hex, environment="rehearsal",
++        expected_version=canary.version, current_state="canary", target_state="active",
++        traffic_basis_points=10000, actor="test", reason="complete immutable GET chain",
++    )
++    command_hash = canonical_hash({"command_type": "transition", "command": command.model_dump(mode="json")})
++    required = ["shadow_health", "canary_health", "promotion_approval"]
++    values.update(
++        deployment_id=str(uuid4()), command_id=command.command_id, state="active",
++        version=canary.version + 1, traffic_basis_points=10000, created_at=now,
++        actor=command.actor, reason=command.reason, required_receipts=required,
++    )
++    active = PolicyDeploymentRecord(**values)
++    async with repo.session_factory() as session, session.begin():
++        session.add(active)
++        await session.flush()
++        session.add(PolicyAuditEventRecord(
++            event_id=str(uuid4()), command_id=command.command_id, deployment_id=active.deployment_id,
++            environment=command.environment, event_type="promotion_transitioned",
++            actor=command.actor, reason=command.reason, created_at=now,
++            details={"command_hash": command_hash, "from_state": "canary", "to_state": "active",
++                     "from_version": canary.version, "to_version": active.version,
++                     "required_receipts": required},
++        ))
++        await PromotionRepository._create_promotion_approval(
++            session, command=command, artifact=artifact,
++            canary_health=SimpleNamespace(
++                receipt_id=health.receipt_id, evidence_hash=health.evidence_hash,
++                sample_count=health.sample_count, details=original.details,
++            ),
++            command_hash=command_hash, now=now,
++        )
++    if reference != "exact":
++        async with repo.session_factory() as session:
++            approval = await session.scalar(select(PolicyGateReceiptRecord).where(
++                PolicyGateReceiptRecord.details["command_id"].as_string() == active.command_id,
++            ))
++        details = dict(approval.details)
++        if reference == "missing":
++            details.pop("canary_health_receipt_id")
++        elif reference == "absent":
++            details["canary_health_receipt_id"] = str(uuid4())
++        elif reference == "old_valid":
++            details.update(canary_health_receipt_id=original.receipt_id,
++                           canary_health_evidence_hash=original.evidence_hash)
++        await append_receipt(repo, approval, details=details)
++    return repo, canary, active, original, health
++
++
++@pytest.mark.parametrize("poison", [
++    "sample_count", "cost", "status_unknown", "protocol_hash", "gate_type", "issuer",
++    "model_identity", "data_role", "policy_hash", "runtime_hash", "source_revision",
++    "status_failed", "evidence_hash", "issued_before_deployment", "issued_after_cutoff",
++    "created_after_cutoff", "missing_details", "list_details", "deployment_id",
++    "deployment_version", "bool_version", "metric_contract_version", "bool_contract",
++    "thresholds_hash", "window_id", "missing_window", "gate_cohort", "observation_keys",
++    "candidate_stats", "stable_stats",
++])
++async def test_invalid_exact_canary_blocks_entire_active_consumed_chain(health_repo, poison):
++    repo, canary, active, original, poisoned = await referenced_active(health_repo, poison)
++    assert original.receipt_id != poisoned.receipt_id
++    body = await api_detail(repo, active)
++    assert not sources(body), "invalid exact Canary may not authenticate earlier Shadow consumption"
++    # Canary 的独立历史链仍然合法，不因后续 Active 的坏引用而整段删除。
++    historical = sources(await api_detail(repo, canary))
++    assert historical["shadow_health"]["health_source"]["relation"] == "consumed_chain"
++    assert "complete immutable GET chain" not in str(body)
++
++
++@pytest.mark.parametrize("reference", ["missing", "absent", "old_valid"])
++async def test_reference_does_not_fall_back_to_another_legal_leaf(health_repo, reference):
++    repo, _, active, _, _ = await referenced_active(health_repo, "sample_count", reference)
++    assert not sources(await api_detail(repo, active))
++
++
++async def test_matching_false_evidence_declarations_still_require_a_valid_leaf(health_repo):
++    repo, _, active, _, receipt = await referenced_active(health_repo, "evidence_hash")
++    async with repo.session_factory() as session:
++        approval = await session.scalar(select(PolicyGateReceiptRecord).where(
++            PolicyGateReceiptRecord.details["command_id"].as_string() == active.command_id,
++        ))
++    assert approval.details["canary_health_evidence_hash"] == receipt.evidence_hash
++    assert receipt.evidence_hash != canonical_hash(receipt.details)
++    assert not sources(await api_detail(repo, active))
++
++
++async def test_legal_complete_chain_keeps_both_exact_sources(health_repo):
++    repo, canary, active, original, _ = await referenced_active(health_repo)
++    health = sources(await api_detail(repo, active))
++    assert set(health) == {"shadow_health", "canary_health"}
++    assert all(r["health_source"]["relation"] == "consumed_chain" for r in health.values())
++    assert health["canary_health"]["receipt_id"] == original.receipt_id
++    assert health["canary_health"]["health_source"]["deployment_id"] == str(canary.deployment_id)
++    assert all(r["sample_count"] == 20 and Decimal(r["cost"]) == Decimal(".4") for r in health.values())
++
++
++@pytest.mark.parametrize("kind", ["later_receipt", "later_window", "local_pass", "local_failed", "local_unknown"])
++async def test_complete_chain_cutoff_and_active_local_window_semantics(health_repo, kind):
++    prepared, canary, _ = await real_active_fixture(health_repo, command_prefix="complete-local-" + uuid4().hex)
++    repo, promotion, active = prepared
++    before = sources(await api_detail(repo, active))
++    assert len(before) == 2
++    if kind == "later_receipt":
++        async with repo.session_factory() as session:
++            receipt = await session.get(PolicyGateReceiptRecord, before["canary_health"]["receipt_id"])
++        await append_receipt(repo, receipt, status="unknown", issued_at=datetime.now(UTC))
++    elif kind == "later_window":
++        async with repo.session_factory() as session, session.begin():
++            window = await session.get(PolicyHealthWindowRecord, before["canary_health"]["health_source"]["window_id"])
++            values = {c.name: deepcopy(getattr(window, c.name)) for c in window.__table__.columns}
++            values.update(window_id="9" * 64, decision="hold", evaluated_at=datetime.now(UTC),
++                          created_at=datetime.now(UTC))
++            session.add(PolicyHealthWindowRecord(**values))
++    else:
++        await fill_window(prepared, state="active", stable_count=0,
++                          changes={"observed_at": active.created_at + timedelta(microseconds=1)})
++        assert (await PolicyHealthEvaluator(promotion).evaluate(active.deployment_id)).decision == "pass"
++        if kind != "local_pass":
++            async with repo.session_factory() as session:
++                receipt = await session.scalar(select(PolicyGateReceiptRecord).where(
++                    PolicyGateReceiptRecord.details["deployment_id"].as_string() == str(active.deployment_id),
++                ))
++            await append_receipt(repo, receipt, status=kind.removeprefix("local_"))
++    after = sources(await api_detail(repo, active))
++    assert set(after) == {"shadow_health", "canary_health"}
++    if kind.startswith("local_"):
++        assert after["canary_health"]["health_source"]["relation"] == "local"
++        assert after["canary_health"]["health_source"]["deployment_id"] == str(active.deployment_id)
++        assert after["canary_health"]["status"] == ("passed" if kind == "local_pass" else kind.removeprefix("local_"))
++    else:
++        assert after["canary_health"]["receipt_id"] == before["canary_health"]["receipt_id"]
++        assert after["canary_health"]["health_source"]["deployment_id"] == str(canary.deployment_id)
++        assert after["canary_health"]["health_source"]["is_latest_window"] == (kind != "later_window")
++
++
++@pytest.mark.parametrize("latest", [None, [], {}, {"command_id": True}, "failed", "unknown"])
++async def test_complete_get_latest_bad_approval_masks_legal_chain(health_repo, latest):
++    repo, _, active, _, _ = await referenced_active(health_repo)
++    assert len(sources(await api_detail(repo, active))) == 2
++    async with repo.session_factory() as session:
++        receipt = await session.scalar(select(PolicyGateReceiptRecord).where(
++            PolicyGateReceiptRecord.details["command_id"].as_string() == active.command_id,
++        ))
++    changes = {"status": latest} if isinstance(latest, str) else {"details": latest}
++    await append_receipt(repo, receipt, **changes)
++    assert not sources(await api_detail(repo, active))
++
++
++async def test_complete_get_preserves_local_current_and_historical_independence(health_repo):
++    repo, _, _ = health_repo
++    old, current, old_window, _, receipts = await health_pair(health_repo)
++    assert not sources(await api_detail(repo, current))
++    history = sources(await api_detail(repo, old))
++    expected = next(r for r in receipts if r.details["deployment_id"] == old.deployment_id)
++    assert history["canary_health"]["receipt_id"] == expected.receipt_id
++    assert history["canary_health"]["health_source"]["window_id"] == old_window.window_id
++    assert history["canary_health"]["health_source"]["relation"] == "local"

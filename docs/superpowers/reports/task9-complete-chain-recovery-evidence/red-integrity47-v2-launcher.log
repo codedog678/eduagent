@@ -1,0 +1,40 @@
+{"m3": {"head": "85c2759d54fd55691cf69d98df91c81ad9caf65b", "source_count": 354, "sha": "6fb437fa79b04874756c3a762aa62a2d7a8c8c39193769811eb9a779ecb93e96"}, "primary": {"head": "2ff803c968d64741d149e5a1ce88a823d4d32422", "source_count": 266, "sha": "85a9d519241498368c76f4724c38e7f63b265143c77645230957e7c1279e43d5"}}
+{"m3": {"head": "85c2759d54fd55691cf69d98df91c81ad9caf65b", "source_count": 354, "sha": "6fb437fa79b04874756c3a762aa62a2d7a8c8c39193769811eb9a779ecb93e96"}, "primary": {"head": "2ff803c968d64741d149e5a1ce88a823d4d32422", "source_count": 266, "sha": "85a9d519241498368c76f4724c38e7f63b265143c77645230957e7c1279e43d5"}}
+otion_models.PolicyDeploymentRecord object at 0x10b624510>)
+target = 'active', field = 'gate_type', value = 'formal_holdout'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("field,value", [
+        ("sample_count", 0), ("cost", Decimal(0)), ("status", "unknown"),
+        ("protocol_hash", "e" * 64), ("gate_type", "formal_holdout"),
+    ])
+    async def test_poisoned_referenced_health_cannot_prove_complete_consumption(health_repo, target, field, value):
+        repo, deployed, proof = await transition_fixture(health_repo, target, health_poison={field: value})
+        body = await api_detail(repo, deployed)
+        record("referenced-" + target + "-" + field, {**proof, "poison": {field: value}, "body": body})
+        gate = "shadow_health" if target == "canary" else "canary_health"
+        # A foreign artifact/gate is outside latest's scope; it may not be consumed by Active approval.
+        if target == "canary" and field in {"protocol_hash", "gate_type"}:
+            assert any(r["gate_type"] == gate for r in body["gate_receipts"])
+        else:
+            assert not any(r["gate_type"] == gate for r in body["gate_receipts"])
+        if target == "active":
+>           assert not [r for r in body["gate_receipts"] if r["health_source"]], (
+                "invalid exact canary health must not authenticate an Active consumed chain")
+E           AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+E           assert not [{'receipt_id': '4ac0899d-de2e-4adc-bc09-05604a2a7e1e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-chain-recovery-d7c17eb6-6c53-4bca-9c54-26b53147cd36/test_independent_integrity.py:156: AssertionError
+=========================== short test summary info ============================
+FAILED ::test_poisoned_referenced_health_cannot_prove_complete_consumption[sample_count-0-active] - AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+assert not [{'receipt_id': '1eef353b-8efd-414e-8e96-87aa0c8c87a5', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+FAILED ::test_poisoned_referenced_health_cannot_prove_complete_consumption[cost-value1-active] - AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+assert not [{'receipt_id': '5f5f399a-38d6-4483-b482-99c4284c3a88', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+FAILED ::test_poisoned_referenced_health_cannot_prove_complete_consumption[status-unknown-active] - AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+assert not [{'receipt_id': '6d6c8f3b-d71d-4eb5-8489-f929cf793538', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+FAILED ::test_poisoned_referenced_health_cannot_prove_complete_consumption[protocol_hash-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee-active] - AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+assert not [{'receipt_id': 'd6918635-b171-4d82-bcf5-f7aefa44e53b', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+FAILED ::test_poisoned_referenced_health_cannot_prove_complete_consumption[gate_type-formal_holdout-active] - AssertionError: invalid exact canary health must not authenticate an Active consumed chain
+assert not [{'receipt_id': '4ac0899d-de2e-4adc-bc09-05604a2a7e1e', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+5 failed, 42 passed in 16.18s
+

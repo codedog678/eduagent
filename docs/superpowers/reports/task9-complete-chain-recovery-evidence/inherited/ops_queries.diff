@@ -1,0 +1,60 @@
+diff --git a/python/core/distributed/ops_queries.py b/python/core/distributed/ops_queries.py
+index aa454f8..565a490 100644
+--- a/python/core/distributed/ops_queries.py
++++ b/python/core/distributed/ops_queries.py
+@@ -446,11 +446,12 @@ class OpsQueries:
+                    PolicyGateReceiptRecord.created_at.desc(),
+                    PolicyGateReceiptRecord.receipt_id.desc()).limit(1))
+ 
+-    async def _project_health_sources(self, session, artifact, sources):
++    @classmethod
++    async def _project_health_sources(cls, session, artifact, sources):
+         result = {}
+         for deployment, gate, relation, cutoff, exact_id in sources:
+             # Unidentifiable latest evidence blocks display rather than reviving an old pass.
+-            receipt = await self._latest_health_receipt(session, artifact, deployment, gate, cutoff)
++            receipt = await cls._latest_health_receipt(session, artifact, deployment, gate, cutoff)
+             if receipt is None or (exact_id is not None and receipt.receipt_id != exact_id):
+                 continue
+             details = receipt.details
+@@ -503,7 +504,7 @@ class OpsQueries:
+                         receipt.status != "passed" or window.decision != "pass"
+                         or consumed_latest is None or consumed_latest.window_id != window.window_id
+                     ))
+-                    or not await self._frozen_summary_matches(
++                    or not await cls._frozen_summary_matches(
+                         session, deployment, gate, window, receipt, thresholds,
+                     )
+                 ):
+@@ -517,7 +518,7 @@ class OpsQueries:
+                 )
+             except (ValidationError, ValueError, TypeError, KeyError):
+                 continue
+-            result[gate] = self._gate_receipt(receipt, source)
++            result[gate] = cls._gate_receipt(receipt, source)
+         return list(result.values())
+ 
+     @staticmethod
+@@ -645,6 +646,8 @@ class OpsQueries:
+     @staticmethod
+     async def _consumed_canary(session, deployment, artifact):
+         """Read the exact approval/audit relation, never infer consumption from adjacency."""
++        if artifact is None:
++            return None
+         # 无法识别归属的 latest approval 遮蔽旧 pass；可识别的其它命令不串用。
+         approval = await session.scalar(select(PolicyGateReceiptRecord).where(
+             PolicyGateReceiptRecord.policy_hash == artifact.policy_hash,
+@@ -713,6 +716,13 @@ class OpsQueries:
+                 return None
+         except (ValueError, TypeError):
+             return None
++        # 精确引用的 Canary 自身必须通过叶证据校验，否则整条依赖消费链断开。
++        # Canary 叶校验不回溯 Active；复用有界只读校验，不重放 evaluator 或授权。
++        if not await OpsQueries._project_health_sources(
++            session, artifact,
++            [(canary, "canary_health", "consumed_chain", deployment.created_at, receipt_id)],
++        ):
++            return None
+         return canary, receipt_id
+ 
+     async def list_policy_health_windows(
