@@ -1,0 +1,70 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+........F                                                                [100%]
+=================================== FAILURES ===================================
+______ test_real_migrated_health_fixture_has_fk_and_append_only_triggers _______
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10c02bed0>, <core.distributed.promotion_repository....ionRepository object at 0x10c0b7cd0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10c0dd510>)
+
+    async def test_real_migrated_health_fixture_has_fk_and_append_only_triggers(health_repo):
+        repo, _, deployment = health_repo
+        async with repo.session_factory() as session:
+            db = await session.scalar(text("SELECT current_database()"))
+            constraints = (await session.execute(text("""
+                SELECT rel.relname, con.conname, CAST(con.contype AS text) AS contype, con.convalidated,
+                       pg_get_constraintdef(con.oid) AS definition
+                FROM pg_constraint con
+                JOIN pg_class rel ON rel.oid=con.conrelid
+                WHERE rel.relname IN (
+                    'policy_observations', 'policy_deployments', 'policy_gate_receipts',
+                    'policy_health_windows', 'policy_audit_events'
+                ) ORDER BY rel.relname, con.conname
+            """))).mappings().all()
+            triggers = (await session.execute(text("""
+                SELECT rel.relname, tr.tgname, CAST(tr.tgenabled AS text) AS tgenabled,
+                       pg_get_triggerdef(tr.oid) AS definition
+                FROM pg_trigger tr JOIN pg_class rel ON rel.oid=tr.tgrelid
+                WHERE NOT tr.tgisinternal AND rel.relname IN (
+                    'policy_artifacts', 'policy_deployments', 'policy_gate_receipts',
+                    'policy_observations', 'policy_health_windows', 'policy_audit_events'
+                ) ORDER BY rel.relname, tr.tgname
+            """))).mappings().all()
+            internal_types = (await session.execute(text("""
+                SELECT contype FROM pg_constraint
+                WHERE conrelid='policy_observations'::regclass
+            """))).scalars().all()
+        (E / "real-schema-before-assertions.json").write_text(json.dumps(dict(
+            db=db, constraints=[dict(c) for c in constraints], triggers=[dict(t) for t in triggers],
+            internal_types=[dict(type=type(v).__name__, repr=repr(v)) for v in internal_types]),
+            indent=2, default=str) + "\n")
+        assert db.startswith("m3_t9_spec9efa_")
+        assert any(c["relname"] == "policy_observations" and c["contype"] == "f"
+                   and "distributed_runs" in c["definition"] and c["convalidated"] for c in constraints)
+        required = {"policy_artifacts", "policy_deployments", "policy_gate_receipts",
+                    "policy_observations", "policy_health_windows", "policy_audit_events"}
+>       assert required <= {t["relname"] for t in triggers if t["tgenabled"] == "O"
+                            and "UPDATE OR DELETE" in t["definition"]}
+E       AssertionError: assert {'policy_arti...observations'} <= set()
+E         
+E         Extra items in the left set:
+E         'policy_artifacts'
+E         'policy_audit_events'
+E         'policy_observations'
+E         'policy_gate_receipts'
+E         'policy_deployments'
+E         'policy_health_windows'
+
+/tmp/m3-task9-leaf-spec-9efac2fb-3201-4499-9be6-a10cde0023e7/test_spec_boundary_supplement.py:86: AssertionError
+=========================== short test summary info ============================
+FAILED ::test_real_migrated_health_fixture_has_fk_and_append_only_triggers - AssertionError: assert {'policy_arti...observations'} <= set()
+  
+  Extra items in the left set:
+  'policy_artifacts'
+  'policy_audit_events'
+  'policy_observations'
+  'policy_gate_receipts'
+  'policy_deployments'
+  'policy_health_windows'
+1 failed, 8 passed in 0.35s
