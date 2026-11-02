@@ -128,6 +128,17 @@ def _observation(row):
     })
 
 
+def evaluate_matched_window(candidate, stable, thresholds, *, matched):
+    result = evaluate_window(candidate, stable, thresholds)
+    if matched:
+        return result
+    unqualified = evaluate_window(candidate, [], thresholds)
+    return WindowEvaluation(
+        unqualified.decision, unqualified.reasons + ["matched_window_incomplete"],
+        result.candidate_stats, result.stable_stats,
+    )
+
+
 def proportional_baseline(candidate, pool, thresholds):
     """Largest bounded exact-ratio baseline; newest rows win within each bucket."""
     if not candidate or any(row.rehearsal_id is None for row in candidate):
@@ -384,14 +395,7 @@ class PolicyHealthEvaluator:
                         ).order_by(*ordering).limit(thresholds.window_max_runs)
                     )).all()][::-1]
                 stable, matched = proportional_baseline(candidate, pool, thresholds)
-            result = evaluate_window(candidate, stable, thresholds)
-            if not matched:
-                unqualified = evaluate_window(candidate, [], thresholds)
-                reasons = unqualified.reasons + ["matched_window_incomplete"]
-                result = WindowEvaluation(
-                    unqualified.decision, reasons,
-                    result.candidate_stats, result.stable_stats,
-                )
+            result = evaluate_matched_window(candidate, stable, thresholds, matched=matched)
             if hard_failure is not None and "confirmed_permission_violation" not in result.reasons:
                 result = WindowEvaluation(
                     "fail", ["confirmed_permission_violation", *result.reasons],

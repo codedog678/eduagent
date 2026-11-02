@@ -11,7 +11,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import select
 
-from core.distributed.policy_health import PolicyHealthEvaluator
+from core.distributed.policy_health import PolicyHealthEvaluator, _observation, evaluate_window
 from core.distributed.promotion_contracts import PolicyThresholds, PromotionCommand, canonical_hash
 from core.distributed.promotion_models import (
     PolicyArtifactRecord, PolicyAuditEventRecord, PolicyDeploymentRecord,
@@ -57,6 +57,26 @@ async def frozen_leaf(fixture, candidate_count, stable_count, *,
         flat = keys["candidate"] + keys["stable"]
         rows = list(await session.scalars(select(PolicyObservationRecord).where(
             PolicyObservationRecord.observation_key.in_(flat))))
+    if status != "passed" and decision == "fail":
+        parent, _ = await repo.accept_with_replay(spec("minimum-hard-failure-" + uuid4().hex))
+        by_key = {row.observation_key: row for row in rows}
+        added = []
+        for label in ("candidate", "stable") if deployment.state == "shadow" else ("candidate",):
+            old = by_key[keys[label][0]]
+            values = {c.name: deepcopy(getattr(old, c.name)) for c in old.__table__.columns}
+            values.update(run_id=parent.id, observation_key=observation_key(
+                parent.id, str(deployment.deployment_id), old.cohort, 1))
+            if label == "candidate":
+                values.update(terminal_status="confirmed_permission_violation",
+                              permission_outcome="confirmed_violation",
+                              server_error_code="ConfirmedPermissionViolation")
+            replacement = PolicyObservationRecord(**values)
+            keys[label][0] = replacement.observation_key
+            rows = [replacement if row.observation_key == old.observation_key else row for row in rows]
+            added.append(replacement)
+        async with repo.session_factory() as session, session.begin():
+            session.add_all(added)
+        flat = keys["candidate"] + keys["stable"]
     receipt = original
     if keys != original.details["observation_keys"] or status != original.status or decision != window.decision:
         now = datetime.now(UTC)
@@ -64,12 +84,18 @@ async def frozen_leaf(fixture, candidate_count, stable_count, *,
             "deployment_id", "deployment_version", "metric_contract_version", "thresholds_hash")}
         identity["observation_keys"] = keys
         wid = canonical_hash(identity)
-        candidate_stats = {**window.candidate_stats, "run_count": candidate_count}
-        stable_stats = {**window.stable_stats, "run_count": stable_count}
+        by_key = {row.observation_key: row for row in rows}
+        actual = evaluate_window(
+            [_observation(by_key[key]) for key in keys["candidate"]],
+            [_observation(by_key[key]) for key in keys["stable"]],
+            PolicyThresholds.model_validate(source.thresholds),
+        )
+        candidate_stats, stable_stats = actual.candidate_stats, actual.stable_stats
         details = {**deepcopy(original.details), **identity, "window_id": wid,
                    "candidate_stats": candidate_stats, "stable_stats": stable_stats}
         wvalues.update(window_id=wid, observation_keys=keys, candidate_stats=candidate_stats,
-                       stable_stats=stable_stats, decision=decision, evaluated_at=now, created_at=now,
+                       stable_stats=stable_stats, decision=decision,
+                       triggered_thresholds=actual.reasons, evaluated_at=now, created_at=now,
                        observation_start_key=flat[0] if flat else canonical_hash([]),
                        observation_end_key=flat[-1] if flat else canonical_hash([]))
         rvalues.update(receipt_id=str(uuid4()), details=details, evidence_hash=canonical_hash(details),

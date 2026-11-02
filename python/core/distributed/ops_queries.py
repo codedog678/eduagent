@@ -9,7 +9,7 @@ import re
 from contextlib import asynccontextmanager
 from collections import defaultdict
 from datetime import UTC, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any, get_args
 from uuid import UUID
 
@@ -18,7 +18,7 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from .expert_contracts import ExpertUsage
-from .health_evidence_identity import frozen_leaf_identity_matches
+from .health_evidence_identity import frozen_leaf_identity_matches, same_distribution
 from .expert_models import (
     DistributedExpertJob,
     DistributedExpertResult,
@@ -58,6 +58,7 @@ from .promotion_models import (
     PolicyEnvironmentHeadRecord, PolicyGateReceiptRecord, PolicyHealthWindowRecord,
     PolicyObservationRecord, PolicyShadowExecutionRecord,
 )
+from .policy_health import _observation, evaluate_matched_window
 
 _SAFE_TRACE_ATTRIBUTES = frozenset(
     {
@@ -496,8 +497,8 @@ class OpsQueries:
                     or canonical_hash(identity) != window.window_id
                     or canonical_hash(details) != receipt.evidence_hash
                     or details.get("gate_cohort") != ("shadow" if gate == "shadow_health" else "candidate")
-                    or details.get("candidate_stats") != window.candidate_stats
-                    or details.get("stable_stats") != window.stable_stats
+                    or canonical_hash(details.get("candidate_stats")) != canonical_hash(window.candidate_stats)
+                    or canonical_hash(details.get("stable_stats")) != canonical_hash(window.stable_stats)
                     or not deployment.created_at <= window.evaluated_at <= receipt.issued_at <= cutoff
                     or window.created_at > cutoff
                     or (receipt.status == "passed" and window.decision != "pass")
@@ -517,14 +518,14 @@ class OpsQueries:
                     evaluated_at=window.evaluated_at,
                     is_latest_window=bool(latest and latest.window_id == window.window_id),
                 )
-            except (ValidationError, ValueError, TypeError, KeyError):
+            except (ValidationError, ValueError, TypeError, KeyError, InvalidOperation):
                 continue
             result[gate] = cls._gate_receipt(receipt, source)
         return list(result.values())
 
     @staticmethod
     async def _frozen_summary_matches(session, deployment, gate, window, receipt, thresholds):
-        """只读冻结 key 的有限集合，不重放健康判定，也不从 rounded mean 反推费用。"""
+        """对精确有界观测作纯 schema/指标认证，不调用有写入行为的 evaluator。"""
         keys = window.observation_keys
         if not isinstance(keys, dict) or set(keys) != {"candidate", "stable"}:
             return False
@@ -547,8 +548,11 @@ class OpsQueries:
         if (
             len(set(flat)) != len(flat) or type(receipt.sample_count) is not int
             or receipt.sample_count != len(keys["candidate"])
-            or not isinstance(receipt.cost, Decimal) or not receipt.cost.is_finite()
-            or receipt.cost < 0
+            or (receipt.cost is not None and (
+                not isinstance(receipt.cost, Decimal) or not receipt.cost.is_finite()
+                or receipt.cost < 0
+            ))
+            or (receipt.status == "passed" and receipt.cost is None)
         ):
             return False
         records = list(await session.scalars(select(PolicyObservationRecord).where(
@@ -582,7 +586,7 @@ class OpsQueries:
                 or not set(keys["stable"]).issubset(consumed_window.observation_keys.get("stable", []))
             ):
                 return False
-        total = Decimal(0)
+        total, cost_known = Decimal(0), True
         for label, source, cohort, policy in (
             ("candidate", deployment, "shadow" if gate == "shadow_health" else "candidate",
              deployment.candidate_policy_hash),
@@ -597,11 +601,40 @@ class OpsQueries:
                     or row.policy_hash != policy or row.metric_contract_version != 1
                     or not source.created_at <= row.observed_at <= window.evaluated_at
                     or row.created_at > window.evaluated_at
-                    or not isinstance(row.cost, Decimal) or not row.cost.is_finite() or row.cost < 0
+                    or (row.cost is not None and (
+                        not isinstance(row.cost, Decimal) or not row.cost.is_finite() or row.cost < 0
+                    ))
                 ):
                     return False
-                total += row.cost
-        return receipt.cost == total
+                if row.cost is None:
+                    cost_known = False
+                else:
+                    total += row.cost
+        # 复用发布权威的纯公式和 schema；相同的两份声明本身不是真实性证明。
+        candidate = [_observation(by_key[key]) for key in keys["candidate"]]
+        stable = [_observation(by_key[key]) for key in keys["stable"]]
+        matched = True
+        if (
+            receipt.status != "passed"
+            and isinstance(window.triggered_thresholds, list)
+            and "matched_window_incomplete" in window.triggered_thresholds
+        ):
+            # 只允许精确集合能证明的未配齐诊断，不从相同声明推断资格。
+            matched = (
+                len(candidate) == len(stable) if gate == "shadow_health" else
+                len(stable) >= thresholds.stable_min_runs
+                and same_distribution(candidate, stable)
+            )
+            if matched:
+                return False
+        result = evaluate_matched_window(candidate, stable, thresholds, matched=matched)
+        return (
+            receipt.cost == (total if cost_known else None)
+            and window.decision == result.decision
+            and canonical_hash(window.triggered_thresholds) == canonical_hash(result.reasons)
+            and canonical_hash(window.candidate_stats) == canonical_hash(result.candidate_stats)
+            and canonical_hash(window.stable_stats) == canonical_hash(result.stable_stats)
+        )
 
     @staticmethod
     async def _transition_identity(session, predecessor, deployment):
