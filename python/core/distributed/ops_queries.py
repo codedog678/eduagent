@@ -527,10 +527,15 @@ class OpsQueries:
         keys = window.observation_keys
         if not isinstance(keys, dict) or set(keys) != {"candidate", "stable"}:
             return False
-        for label, stats in (("candidate", window.candidate_stats), ("stable", window.stable_stats)):
+        # passed（含消费来源）须满足所属部署冻结下限；本地非通过低样本仍可展示。
+        for label, stats, minimum in (
+            ("candidate", window.candidate_stats, thresholds.candidate_min_runs),
+            ("stable", window.stable_stats, thresholds.stable_min_runs),
+        ):
             values = keys[label]
             if (
                 not isinstance(values, list) or not 0 <= len(values) <= thresholds.window_max_runs
+                or (receipt.status == "passed" and len(values) < minimum)
                 or any(not isinstance(key, str) or not re.fullmatch(r"[0-9a-f]{64}", key)
                        for key in values)
                 or not isinstance(stats, dict) or type(stats.get("run_count")) is not int
