@@ -2,9 +2,10 @@
 
 ## 当前结论
 
-Task 10 的实现与 fixture-only 验证已完成到可执行阶段；正式 rehearsal 尚未获得
-发布资格。原因是当前工作区没有可用的真实 `state=eligible`、Judge v3、
-`simulation=false` campaign，也没有为该 campaign 确认匹配的模型凭据。
+Task 10 的实现、fixture-only 验证、Compose 动态 smoke 与远程 CI 已完成工程
+验收闭环。正式 rehearsal 尚未获得发布资格，原因是当前工作区没有可用的真实
+`state=eligible`、Judge v3、`simulation=false` campaign，也没有为该 campaign
+确认匹配的模型凭据。
 
 这不是 Task 9 的验收结论。Task 9 仍保持未完整验收，本轮按用户授权跳过。
 
@@ -16,7 +17,7 @@ Task 10 的实现与 fixture-only 验证已完成到可执行阶段；正式 reh
 | policy-health 独立轮询配置 | 聚焦单测通过 | implementation test |
 | Ops 新进程过滤 | 聚焦单测通过 | implementation test |
 | rehearsal driver pre-write rejection 与七文件合同 | 聚焦单测通过 | implementation test |
-| Compose/CI 静态接线 | 已实现，待 Docker CI 动态执行 | validation required |
+| Compose/CI 动态接线 | GitHub Actions Compose smoke 通过并归档结构化证据 | `test_fixture` |
 | 正式 eligible campaign rehearsal | 未执行 | blocked by external prerequisite |
 
 fixture evidence 均必须保持 `release_eligible=false`，model calls 为 0 时不得描述为
@@ -33,12 +34,30 @@ fixture evidence 均必须保持 `release_eligible=false`，model calls 为 0 �
 | `npm run build` | 通过 |
 | `playwright e2e/ops.spec.ts` | 54 passed（desktop + mobile） |
 | `docker-compose --profile distributed config --quiet` | 通过 |
-| Compose 动态 smoke | 本机未执行；等待 GitHub Actions |
+| Compose 动态 smoke | GitHub Actions 通过；进程注册、真实 Run、Ops/Trace/Expert 查询和 worker loss 均通过 |
 | `git diff --check` / Python compile | 通过 |
 
 静态复审覆盖 19 个文件、约 2589 行变更。首轮发现的 token argv、用量来源、
 分页、完整 audit chain、并发发布、CI 扫描后上传、Quick Start secret 持久化、
 真实 registry 和 Shadow queue latency 测试缺口均已修复；复审后无剩余 P0-P2。
+
+## 远程 CI 证据
+
+- Source commit：`f8b8e3c836c00649825ceab53ce0fd50c0549de1`
+- Workflow run：
+  [CI #41457794154](https://github.com/codedog678/eduagent/actions/runs/41457794154)
+- 执行时间：`2026-11-02T13:59:45Z` 至 `2026-11-02T14:13:51Z`
+- 结论：`success`
+- Jobs：`backend`、`frontend`、`package`、`compose-smoke`、
+  `distributed-integration` 全部成功
+- `distributed-integration` 测试步骤运行约 12 分 38 秒，随后成功生成并上传
+  fixture-only promotion evidence
+- Artifacts：
+  - `distributed-test-evidence`，artifact id `13147604229`，22485 bytes
+  - `compose-smoke-evidence`，artifact id `13147736604`，1202 bytes
+
+上述 artifact 均来自 CI fixture/控制面验证，明确
+`release_eligible=false`，不能替代正式 campaign qualification 或真实模型评估。
 
 ## 外部前置条件
 
@@ -84,5 +103,6 @@ commit failure 达冻结阈值；一个自动 rollback audit；旧 Run binding �
 ## 限制
 
 当前结论只支持“实现和 fixture 控制面验证通过”。它不支持“正式策略可发布”、
-“真实模型效果提升”或“学生学习效果提升”。Docker 在本地不可用时，Compose
-动态结果必须等待 GitHub Actions，不能以 YAML 静态检查替代。
+“真实模型效果提升”或“学生学习效果提升”。本地未执行 Docker 动态 smoke；
+该缺口已由绑定 source commit 的 GitHub Actions Compose job 补齐，但仍不等于
+正式 rehearsal。
