@@ -1,0 +1,2124 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+..........FFFF...........................................FFFFFF....      [100%]
+=================================== FAILURES ===================================
+____ test_canonical_transition_and_audit_identity[audit_environment-canary] ____
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10ee22650>, <core.distributed.promotion_repository....ionRepository object at 0x10e8dc6d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10eea4c10>)
+target = 'canary', breakage = 'audit_environment'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("breakage", [
+        "valid", "matching_wrong_hash", "audit_required", "audit_actor", "audit_reason",
+        "audit_environment", "audit_deployment_id", "audit_command_id", "audit_event_type",
+        "audit_created_at", "audit_from_version", "audit_to_version", "audit_command_hash",
+    ])
+    async def test_canonical_transition_and_audit_identity(health_repo, target, breakage):
+        repo, deployment = await synthetic_transition(health_repo, target, breakage)
+>       body = await api_detail(repo, deployment)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/distributed/test_ops_source_integrity.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+repo = <core.distributed.repository.DistributedRunRepository object at 0x10ee22650>
+deployment = <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10eebb410>
+
+    async def api_detail(repo, deployment):
+        app = create_app()
+        app.state.distributed = SimpleNamespace(
+            ops_queries=OpsQueries(repo.session_factory), settings=SimpleNamespace(ops_api_token=""),
+        )
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/ops/policies/deployments/" + str(deployment.deployment_id))
+>       assert response.status_code == 200
+E       assert 503 == 200
+E        +  where 503 = <Response [503 Service Unavailable]>.status_code
+
+tests/distributed/test_ops_source_integrity.py:99: AssertionError
+____ test_canonical_transition_and_audit_identity[audit_environment-active] ____
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10dfe3510>, <core.distributed.promotion_repository....ionRepository object at 0x10e8eaf90>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e8be7d0>)
+target = 'active', breakage = 'audit_environment'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("breakage", [
+        "valid", "matching_wrong_hash", "audit_required", "audit_actor", "audit_reason",
+        "audit_environment", "audit_deployment_id", "audit_command_id", "audit_event_type",
+        "audit_created_at", "audit_from_version", "audit_to_version", "audit_command_hash",
+    ])
+    async def test_canonical_transition_and_audit_identity(health_repo, target, breakage):
+        repo, deployment = await synthetic_transition(health_repo, target, breakage)
+>       body = await api_detail(repo, deployment)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/distributed/test_ops_source_integrity.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+repo = <core.distributed.repository.DistributedRunRepository object at 0x10dfe3510>
+deployment = <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e18d8d0>
+
+    async def api_detail(repo, deployment):
+        app = create_app()
+        app.state.distributed = SimpleNamespace(
+            ops_queries=OpsQueries(repo.session_factory), settings=SimpleNamespace(ops_api_token=""),
+        )
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/ops/policies/deployments/" + str(deployment.deployment_id))
+>       assert response.status_code == 200
+E       assert 503 == 200
+E        +  where 503 = <Response [503 Service Unavailable]>.status_code
+
+tests/distributed/test_ops_source_integrity.py:99: AssertionError
+___ test_canonical_transition_and_audit_identity[audit_deployment_id-canary] ___
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10e956fe0>
+operation = 'INSERT INTO policy_audit_events (event_id, environment, deployment_id, event_type, command_id, actor, reason, details... $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::JSON, $9::TIMESTAMP WITH TIME ZONE)'
+parameters = ('879408e0-5dd1-4736-b39d-665a9b088383', 'rehearsal', 'other-identity', 'promotion_transitioned', 'ops-integrity-4724976044684a0aab77258f088436db', 'test', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "policy_audit_events" violates foreign key constraint "policy_audit_events_deployment_id_fkey"
+E   DETAIL:  Key (deployment_id)=(other-identity) is not present in table "policy_deployments".
+
+asyncpg/protocol/protocol.pyx:197: ForeignKeyViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10eac3b50>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10e702650>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10eb5ba90>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10e9684d0>
+parameters = [('879408e0-5dd1-4736-b39d-665a9b088383', 'rehearsal', 'other-identity', 'promotion_transitioned', 'ops-integrity-4724976044684a0aab77258f088436db', 'test', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10e2a4a90>>
+error = ForeignKeyViolationError('insert or update on table "policy_audit_events" violates foreign key constraint "policy_audit_events_deployment_id_fkey"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "policy_audit_events" violates foreign key constraint "policy_audit_events_deployment_id_fkey"
+E                   DETAIL:  Key (deployment_id)=(other-identity) is not present in table "policy_deployments".
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10e2d8f90>, <core.distributed.promotion_repository....ionRepository object at 0x10edef6d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10eadc190>)
+target = 'canary', breakage = 'audit_deployment_id'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("breakage", [
+        "valid", "matching_wrong_hash", "audit_required", "audit_actor", "audit_reason",
+        "audit_environment", "audit_deployment_id", "audit_command_id", "audit_event_type",
+        "audit_created_at", "audit_from_version", "audit_to_version", "audit_command_hash",
+    ])
+    async def test_canonical_transition_and_audit_identity(health_repo, target, breakage):
+>       repo, deployment = await synthetic_transition(health_repo, target, breakage)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/distributed/test_ops_source_integrity.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_ops_source_integrity.py:80: in synthetic_transition
+    async with repo.session_factory() as session, session.begin():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1885: in __aexit__
+    await greenlet_spawn(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/util.py:147: in __exit__
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/util.py:145: in __exit__
+    self.commit()
+<string>:2: in commit
+    ???
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1316: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1290: in _prepare_impl
+    self.session.flush()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4353: in flush
+    self._flush(objects)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4488: in _flush
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4449: in _flush
+    flush_context.execute()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: in _exec_single_context
+    self.dialect.do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10e2a4a90>>
+error = ForeignKeyViolationError('insert or update on table "policy_audit_events" violates foreign key constraint "policy_audit_events_deployment_id_fkey"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "policy_audit_events" violates foreign key constraint "policy_audit_events_deployment_id_fkey"
+E                   DETAIL:  Key (deployment_id)=(other-identity) is not present in table "policy_deployments".
+E                   [SQL: INSERT INTO policy_audit_events (event_id, environment, deployment_id, event_type, command_id, actor, reason, details, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::JSON, $9::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('879408e0-5dd1-4736-b39d-665a9b088383', 'rehearsal', 'other-identity', 'promotion_transitioned', 'ops-integrity-4724976044684a0aab77258f088436db', 'test', 'append-only exact relationship', '{"from_state": "shadow", "to_state": "canary", "from_version": 4, "to_version": 5, "required_receipts": ["shadow_health"], "command_hash": "023aec6264c48fcd81f1ac6992d9794a4e41bbbf55e00cfb502efc88dc1e1176"}', datetime.datetime(2026, 11, 1, 23, 48, 15, 607226, tzinfo=datetime.timezone.utc))]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+___ test_canonical_transition_and_audit_identity[audit_deployment_id-active] ___
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10ef8eaa0>
+operation = 'INSERT INTO policy_audit_events (event_id, environment, deployment_id, event_type, command_id, actor, reason, details... $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::JSON, $9::TIMESTAMP WITH TIME ZONE)'
+parameters = ('dcd70f74-0d71-4210-b508-7977232c219b', 'rehearsal', 'other-identity', 'promotion_transitioned', 'ops-integrity-ef0ac00f749645fe8787fd1707cb7d09', 'test', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "policy_audit_events" violates foreign key constraint "policy_audit_events_deployment_id_fkey"
+E   DETAIL:  Key (deployment_id)=(other-identity) is not present in table "policy_deployments".
+
+asyncpg/protocol/protocol.pyx:197: ForeignKeyViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10ede2010>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10f9ad110>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10edec390>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10e8ad290>
+parameters = [('dcd70f74-0d71-4210-b508-7977232c219b', 'rehearsal', 'other-identity', 'promotion_transitioned', 'ops-integrity-ef0ac00f749645fe8787fd1707cb7d09', 'test', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10e2a5300>>
+error = ForeignKeyViolationError('insert or update on table "policy_audit_events" violates foreign key constraint "policy_audit_events_deployment_id_fkey"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "policy_audit_events" violates foreign key constraint "policy_audit_events_deployment_id_fkey"
+E                   DETAIL:  Key (deployment_id)=(other-identity) is not present in table "policy_deployments".
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10e11b0d0>, <core.distributed.promotion_repository....ionRepository object at 0x10ec2f990>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10ede9250>)
+target = 'active', breakage = 'audit_deployment_id'
+
+    @pytest.mark.parametrize("target", ["canary", "active"])
+    @pytest.mark.parametrize("breakage", [
+        "valid", "matching_wrong_hash", "audit_required", "audit_actor", "audit_reason",
+        "audit_environment", "audit_deployment_id", "audit_command_id", "audit_event_type",
+        "audit_created_at", "audit_from_version", "audit_to_version", "audit_command_hash",
+    ])
+    async def test_canonical_transition_and_audit_identity(health_repo, target, breakage):
+>       repo, deployment = await synthetic_transition(health_repo, target, breakage)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/distributed/test_ops_source_integrity.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/distributed/test_ops_source_integrity.py:80: in synthetic_transition
+    async with repo.session_factory() as session, session.begin():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1885: in __aexit__
+    await greenlet_spawn(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/util.py:147: in __exit__
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/util.py:145: in __exit__
+    self.commit()
+<string>:2: in commit
+    ???
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1316: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1290: in _prepare_impl
+    self.session.flush()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4353: in flush
+    self._flush(objects)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4488: in _flush
+    with util.safe_reraise():
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4449: in _flush
+    flush_context.execute()
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:465: in execute
+    rec.execute(self)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:641: in execute
+    util.preloaded.orm_persistence.save_obj(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:94: in save_obj
+    _emit_insert_statements(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1049: in _emit_insert_statements
+    result = connection.execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: in _exec_single_context
+    self.dialect.do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10e2a5300>>
+error = ForeignKeyViolationError('insert or update on table "policy_audit_events" violates foreign key constraint "policy_audit_events_deployment_id_fkey"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "policy_audit_events" violates foreign key constraint "policy_audit_events_deployment_id_fkey"
+E                   DETAIL:  Key (deployment_id)=(other-identity) is not present in table "policy_deployments".
+E                   [SQL: INSERT INTO policy_audit_events (event_id, environment, deployment_id, event_type, command_id, actor, reason, details, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::JSON, $9::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('dcd70f74-0d71-4210-b508-7977232c219b', 'rehearsal', 'other-identity', 'promotion_transitioned', 'ops-integrity-ef0ac00f749645fe8787fd1707cb7d09', 'test', 'append-only exact relationship', '{"from_state": "canary", "to_state": "active", "from_version": 5, "to_version": 6, "required_receipts": ["shadow_health", "canary_health", "promotion_approval"], "command_hash": "79ca26b6ef2b6d9cea99553c5e4b4d821a2e0e6424e4eba85c881c76c3aac193"}', datetime.datetime(2026, 11, 1, 23, 48, 16, 237070, tzinfo=datetime.timezone.utc))]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+_______ test_exact_decimal_cost_is_not_rounded_mean_times_count[shadow] ________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x1101e3ad0>, <core.distributed.promotion_repository....ionRepository object at 0x10e992a10>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e799490>)
+state = 'shadow'
+
+    @pytest.mark.parametrize("state", ["shadow", "canary"])
+    async def test_exact_decimal_cost_is_not_rounded_mean_times_count(health_repo, state):
+        fixture, rows = await fill_window(
+            health_repo, state=state, paired=state == "shadow",
+            changes=lambda i: {"cost": Decimal(".01000001") if i == 0 else Decimal(".01")},
+        )
+        repo, promotion, deployment = fixture
+        window = await PolicyHealthEvaluator(promotion).evaluate(deployment.deployment_id)
+        assert window.decision == "pass"
+        body = await api_detail(repo, deployment)
+        shown = next(r for r in body["gate_receipts"] if r["health_source"])
+        actual = sum((row.cost for row in rows), Decimal(0))
+        rounded = sum((Decimal(stats["mean_cost"]) * stats["run_count"]
+                       for stats in (window.candidate_stats, window.stable_stats)), Decimal(0))
+>       assert actual != rounded and Decimal(shown["cost"]) == actual
+E       AssertionError: assert (Decimal('0.40000001') != Decimal('0.4000000100'))
+
+tests/distributed/test_ops_source_integrity.py:205: AssertionError
+_______ test_exact_decimal_cost_is_not_rounded_mean_times_count[canary] ________
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x110280b10>, <core.distributed.promotion_repository....ionRepository object at 0x10dfab490>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e905e90>)
+state = 'canary'
+
+    @pytest.mark.parametrize("state", ["shadow", "canary"])
+    async def test_exact_decimal_cost_is_not_rounded_mean_times_count(health_repo, state):
+        fixture, rows = await fill_window(
+            health_repo, state=state, paired=state == "shadow",
+            changes=lambda i: {"cost": Decimal(".01000001") if i == 0 else Decimal(".01")},
+        )
+        repo, promotion, deployment = fixture
+        window = await PolicyHealthEvaluator(promotion).evaluate(deployment.deployment_id)
+        assert window.decision == "pass"
+        body = await api_detail(repo, deployment)
+        shown = next(r for r in body["gate_receipts"] if r["health_source"])
+        actual = sum((row.cost for row in rows), Decimal(0))
+        rounded = sum((Decimal(stats["mean_cost"]) * stats["run_count"]
+                       for stats in (window.candidate_stats, window.stable_stats)), Decimal(0))
+>       assert actual != rounded and Decimal(shown["cost"]) == actual
+E       AssertionError: assert (Decimal('0.40000001') != Decimal('0.4000000100'))
+
+tests/distributed/test_ops_source_integrity.py:205: AssertionError
+_ test_inconsistent_consumed_summary_is_unavailable[sample_count-shadow_health] _
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10e8403a0>
+operation = 'SELECT policy_gate_receipts.receipt_id, policy_gate_receipts.policy_hash, policy_gate_receipts.gate_type, policy_gate...eipts.issued_at DESC, policy_gate_receipts.created_at DESC, policy_gate_receipts.receipt_id DESC \n LIMIT $18::INTEGER'
+parameters = ('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a53...244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'shadow_health', 'deployment_id', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+>               prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:526: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:773: in _prepare
+    prepared_stmt = await self._connection.prepare(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:661: in prepare
+    return await self._prepare(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:680: in _prepare
+    stmt = await self._get_statement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:466: in _get_statement
+    statement = await self._protocol.prepare(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.UndefinedFunctionError: operator does not exist: character varying = uuid
+E   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+asyncpg/protocol/protocol.pyx:161: UndefinedFunctionError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10f1da5d0>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10eabb5d0>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10f200090>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10f202e90>
+parameters = [('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a5...44795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'shadow_health', 'deployment_id', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10f7ac310>>
+error = UndefinedFunctionError('operator does not exist: character varying = uuid')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.ProgrammingError: <class 'asyncpg.exceptions.UndefinedFunctionError'>: operator does not exist: character varying = uuid
+E                   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: ProgrammingError
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10e71d2d0>, <core.distributed.promotion_repository....ionRepository object at 0x10e9c7350>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10f7faf90>)
+gate = 'shadow_health', field = 'sample_count'
+
+    @pytest.mark.parametrize("gate", ["shadow_health", "canary_health"])
+    @pytest.mark.parametrize("field", ["sample_count", "cost"])
+    async def test_inconsistent_consumed_summary_is_unavailable(health_repo, gate, field):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow" if gate == "shadow_health" else "canary",
+            command_prefix="ops-consumed-summary-" + uuid4().hex,
+        )
+        repo, _, predecessor = fixture
+        async with repo.session_factory() as session:
+            original = await session.scalar(select(PolicyGateReceiptRecord).where(
+                PolicyGateReceiptRecord.gate_type == gate,
+                PolicyGateReceiptRecord.details["deployment_id"].as_string() == str(predecessor.deployment_id),
+            ))
+        # 在消费前 append，不篡改旧 immutable fixture，也不重跑授权 gate。
+        await append_receipt(repo, original, **{field: 0})
+        # 前序关系本身可规范验证，收据仍必须精确匹配冻结窗口。
+        async with repo.session_factory() as session:
+>           latest = await OpsQueries._latest_health_receipt(
+                session, await session.get(PolicyArtifactRecord, predecessor.candidate_policy_hash),
+                predecessor, gate, datetime.now(UTC),
+            )
+
+tests/distributed/test_ops_source_integrity.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+core/distributed/ops_queries.py:426: in _latest_health_receipt
+    return await session.scalar(select(PolicyGateReceiptRecord).where(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:505: in scalar
+    return await greenlet_spawn(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2421: in scalar
+    return self._execute_internal(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2271: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/context.py:306: in orm_execute_statement
+    result = conn.execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: in _exec_single_context
+    self.dialect.do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10f7ac310>>
+error = UndefinedFunctionError('operator does not exist: character varying = uuid')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.UndefinedFunctionError'>: operator does not exist: character varying = uuid
+E                   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+E                   [SQL: SELECT policy_gate_receipts.receipt_id, policy_gate_receipts.policy_hash, policy_gate_receipts.gate_type, policy_gate_receipts.status, policy_gate_receipts.evidence_hash, policy_gate_receipts.protocol_hash, policy_gate_receipts.runtime_hash, policy_gate_receipts.source_revision, policy_gate_receipts.model_identity, policy_gate_receipts.data_role, policy_gate_receipts.sample_count, policy_gate_receipts.cost, policy_gate_receipts.details, policy_gate_receipts.issued_at, policy_gate_receipts.issuer, policy_gate_receipts.created_at 
+E                   FROM policy_gate_receipts 
+E                   WHERE policy_gate_receipts.policy_hash = $1::VARCHAR AND policy_gate_receipts.protocol_hash = $2::VARCHAR AND policy_gate_receipts.runtime_hash = $3::VARCHAR AND policy_gate_receipts.source_revision = $4::VARCHAR AND policy_gate_receipts.gate_type = $5::VARCHAR AND (CAST((policy_gate_receipts.details ->> $6::TEXT) AS VARCHAR) = $7::UUID OR coalesce(json_typeof(policy_gate_receipts.details), $8::VARCHAR) != $9::VARCHAR OR coalesce(json_typeof((policy_gate_receipts.details -> $10::TEXT)), $11::VARCHAR) != $12::VARCHAR OR (CAST((policy_gate_receipts.details ->> $13::TEXT) AS VARCHAR) !~ $14::VARCHAR)) AND policy_gate_receipts.issued_at >= $15::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.issued_at <= $16::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.created_at <= $17::TIMESTAMP WITH TIME ZONE ORDER BY policy_gate_receipts.issued_at DESC, policy_gate_receipts.created_at DESC, policy_gate_receipts.receipt_id DESC 
+E                    LIMIT $18::INTEGER]
+E                   [parameters: ('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', 'cf10f717244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'shadow_health', 'deployment_id', UUID('03b17746-8d48-4dbf-97ff-cc579d282cbb'), 'null', 'object', 'deployment_id', 'null', 'string', 'deployment_id', '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', datetime.datetime(2026, 11, 1, 23, 48, 34, 476626, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 34, 579735, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 34, 579735, tzinfo=datetime.timezone.utc), 1)]
+E                   (Background on this error at: https://sqlalche.me/e/20/f405)
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: ProgrammingError
+_ test_inconsistent_consumed_summary_is_unavailable[sample_count-canary_health] _
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10f44df00>
+operation = 'SELECT policy_gate_receipts.receipt_id, policy_gate_receipts.policy_hash, policy_gate_receipts.gate_type, policy_gate...eipts.issued_at DESC, policy_gate_receipts.created_at DESC, policy_gate_receipts.receipt_id DESC \n LIMIT $18::INTEGER'
+parameters = ('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a53...244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'canary_health', 'deployment_id', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+>               prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:526: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:773: in _prepare
+    prepared_stmt = await self._connection.prepare(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:661: in prepare
+    return await self._prepare(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:680: in _prepare
+    stmt = await self._get_statement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:466: in _get_statement
+    statement = await self._protocol.prepare(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.UndefinedFunctionError: operator does not exist: character varying = uuid
+E   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+asyncpg/protocol/protocol.pyx:161: UndefinedFunctionError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10fbd9450>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10fbf4c50>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10ebf1c90>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x1101d0290>
+parameters = [('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a5...44795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'canary_health', 'deployment_id', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10cdc4f40>>
+error = UndefinedFunctionError('operator does not exist: character varying = uuid')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.ProgrammingError: <class 'asyncpg.exceptions.UndefinedFunctionError'>: operator does not exist: character varying = uuid
+E                   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: ProgrammingError
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10fbf63d0>, <core.distributed.promotion_repository....ionRepository object at 0x10eaa1d50>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10e79b7d0>)
+gate = 'canary_health', field = 'sample_count'
+
+    @pytest.mark.parametrize("gate", ["shadow_health", "canary_health"])
+    @pytest.mark.parametrize("field", ["sample_count", "cost"])
+    async def test_inconsistent_consumed_summary_is_unavailable(health_repo, gate, field):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow" if gate == "shadow_health" else "canary",
+            command_prefix="ops-consumed-summary-" + uuid4().hex,
+        )
+        repo, _, predecessor = fixture
+        async with repo.session_factory() as session:
+            original = await session.scalar(select(PolicyGateReceiptRecord).where(
+                PolicyGateReceiptRecord.gate_type == gate,
+                PolicyGateReceiptRecord.details["deployment_id"].as_string() == str(predecessor.deployment_id),
+            ))
+        # 在消费前 append，不篡改旧 immutable fixture，也不重跑授权 gate。
+        await append_receipt(repo, original, **{field: 0})
+        # 前序关系本身可规范验证，收据仍必须精确匹配冻结窗口。
+        async with repo.session_factory() as session:
+>           latest = await OpsQueries._latest_health_receipt(
+                session, await session.get(PolicyArtifactRecord, predecessor.candidate_policy_hash),
+                predecessor, gate, datetime.now(UTC),
+            )
+
+tests/distributed/test_ops_source_integrity.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+core/distributed/ops_queries.py:426: in _latest_health_receipt
+    return await session.scalar(select(PolicyGateReceiptRecord).where(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:505: in scalar
+    return await greenlet_spawn(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2421: in scalar
+    return self._execute_internal(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2271: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/context.py:306: in orm_execute_statement
+    result = conn.execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: in _exec_single_context
+    self.dialect.do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10cdc4f40>>
+error = UndefinedFunctionError('operator does not exist: character varying = uuid')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.UndefinedFunctionError'>: operator does not exist: character varying = uuid
+E                   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+E                   [SQL: SELECT policy_gate_receipts.receipt_id, policy_gate_receipts.policy_hash, policy_gate_receipts.gate_type, policy_gate_receipts.status, policy_gate_receipts.evidence_hash, policy_gate_receipts.protocol_hash, policy_gate_receipts.runtime_hash, policy_gate_receipts.source_revision, policy_gate_receipts.model_identity, policy_gate_receipts.data_role, policy_gate_receipts.sample_count, policy_gate_receipts.cost, policy_gate_receipts.details, policy_gate_receipts.issued_at, policy_gate_receipts.issuer, policy_gate_receipts.created_at 
+E                   FROM policy_gate_receipts 
+E                   WHERE policy_gate_receipts.policy_hash = $1::VARCHAR AND policy_gate_receipts.protocol_hash = $2::VARCHAR AND policy_gate_receipts.runtime_hash = $3::VARCHAR AND policy_gate_receipts.source_revision = $4::VARCHAR AND policy_gate_receipts.gate_type = $5::VARCHAR AND (CAST((policy_gate_receipts.details ->> $6::TEXT) AS VARCHAR) = $7::UUID OR coalesce(json_typeof(policy_gate_receipts.details), $8::VARCHAR) != $9::VARCHAR OR coalesce(json_typeof((policy_gate_receipts.details -> $10::TEXT)), $11::VARCHAR) != $12::VARCHAR OR (CAST((policy_gate_receipts.details ->> $13::TEXT) AS VARCHAR) !~ $14::VARCHAR)) AND policy_gate_receipts.issued_at >= $15::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.issued_at <= $16::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.created_at <= $17::TIMESTAMP WITH TIME ZONE ORDER BY policy_gate_receipts.issued_at DESC, policy_gate_receipts.created_at DESC, policy_gate_receipts.receipt_id DESC 
+E                    LIMIT $18::INTEGER]
+E                   [parameters: ('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', 'cf10f717244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'canary_health', 'deployment_id', UUID('8ab48e26-1820-4e7f-8045-57666ac18869'), 'null', 'object', 'deployment_id', 'null', 'string', 'deployment_id', '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', datetime.datetime(2026, 11, 1, 23, 48, 35, 133295, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 35, 239324, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 35, 239324, tzinfo=datetime.timezone.utc), 1)]
+E                   (Background on this error at: https://sqlalche.me/e/20/f405)
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: ProgrammingError
+____ test_inconsistent_consumed_summary_is_unavailable[cost-shadow_health] _____
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10f05fe20>
+operation = 'SELECT policy_gate_receipts.receipt_id, policy_gate_receipts.policy_hash, policy_gate_receipts.gate_type, policy_gate...eipts.issued_at DESC, policy_gate_receipts.created_at DESC, policy_gate_receipts.receipt_id DESC \n LIMIT $18::INTEGER'
+parameters = ('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a53...244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'shadow_health', 'deployment_id', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+>               prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:526: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:773: in _prepare
+    prepared_stmt = await self._connection.prepare(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:661: in prepare
+    return await self._prepare(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:680: in _prepare
+    stmt = await self._get_statement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:466: in _get_statement
+    statement = await self._protocol.prepare(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.UndefinedFunctionError: operator does not exist: character varying = uuid
+E   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+asyncpg/protocol/protocol.pyx:161: UndefinedFunctionError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x10ff62650>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10f11b510>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x10f1ff910>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10f1fec90>
+parameters = [('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a5...44795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'shadow_health', 'deployment_id', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10f7afa60>>
+error = UndefinedFunctionError('operator does not exist: character varying = uuid')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.ProgrammingError: <class 'asyncpg.exceptions.UndefinedFunctionError'>: operator does not exist: character varying = uuid
+E                   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: ProgrammingError
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10fc80350>, <core.distributed.promotion_repository....ionRepository object at 0x10fb4fed0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10f7d5590>)
+gate = 'shadow_health', field = 'cost'
+
+    @pytest.mark.parametrize("gate", ["shadow_health", "canary_health"])
+    @pytest.mark.parametrize("field", ["sample_count", "cost"])
+    async def test_inconsistent_consumed_summary_is_unavailable(health_repo, gate, field):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow" if gate == "shadow_health" else "canary",
+            command_prefix="ops-consumed-summary-" + uuid4().hex,
+        )
+        repo, _, predecessor = fixture
+        async with repo.session_factory() as session:
+            original = await session.scalar(select(PolicyGateReceiptRecord).where(
+                PolicyGateReceiptRecord.gate_type == gate,
+                PolicyGateReceiptRecord.details["deployment_id"].as_string() == str(predecessor.deployment_id),
+            ))
+        # 在消费前 append，不篡改旧 immutable fixture，也不重跑授权 gate。
+        await append_receipt(repo, original, **{field: 0})
+        # 前序关系本身可规范验证，收据仍必须精确匹配冻结窗口。
+        async with repo.session_factory() as session:
+>           latest = await OpsQueries._latest_health_receipt(
+                session, await session.get(PolicyArtifactRecord, predecessor.candidate_policy_hash),
+                predecessor, gate, datetime.now(UTC),
+            )
+
+tests/distributed/test_ops_source_integrity.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+core/distributed/ops_queries.py:426: in _latest_health_receipt
+    return await session.scalar(select(PolicyGateReceiptRecord).where(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:505: in scalar
+    return await greenlet_spawn(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2421: in scalar
+    return self._execute_internal(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2271: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/context.py:306: in orm_execute_statement
+    result = conn.execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: in _exec_single_context
+    self.dialect.do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10f7afa60>>
+error = UndefinedFunctionError('operator does not exist: character varying = uuid')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.UndefinedFunctionError'>: operator does not exist: character varying = uuid
+E                   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+E                   [SQL: SELECT policy_gate_receipts.receipt_id, policy_gate_receipts.policy_hash, policy_gate_receipts.gate_type, policy_gate_receipts.status, policy_gate_receipts.evidence_hash, policy_gate_receipts.protocol_hash, policy_gate_receipts.runtime_hash, policy_gate_receipts.source_revision, policy_gate_receipts.model_identity, policy_gate_receipts.data_role, policy_gate_receipts.sample_count, policy_gate_receipts.cost, policy_gate_receipts.details, policy_gate_receipts.issued_at, policy_gate_receipts.issuer, policy_gate_receipts.created_at 
+E                   FROM policy_gate_receipts 
+E                   WHERE policy_gate_receipts.policy_hash = $1::VARCHAR AND policy_gate_receipts.protocol_hash = $2::VARCHAR AND policy_gate_receipts.runtime_hash = $3::VARCHAR AND policy_gate_receipts.source_revision = $4::VARCHAR AND policy_gate_receipts.gate_type = $5::VARCHAR AND (CAST((policy_gate_receipts.details ->> $6::TEXT) AS VARCHAR) = $7::UUID OR coalesce(json_typeof(policy_gate_receipts.details), $8::VARCHAR) != $9::VARCHAR OR coalesce(json_typeof((policy_gate_receipts.details -> $10::TEXT)), $11::VARCHAR) != $12::VARCHAR OR (CAST((policy_gate_receipts.details ->> $13::TEXT) AS VARCHAR) !~ $14::VARCHAR)) AND policy_gate_receipts.issued_at >= $15::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.issued_at <= $16::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.created_at <= $17::TIMESTAMP WITH TIME ZONE ORDER BY policy_gate_receipts.issued_at DESC, policy_gate_receipts.created_at DESC, policy_gate_receipts.receipt_id DESC 
+E                    LIMIT $18::INTEGER]
+E                   [parameters: ('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', 'cf10f717244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'shadow_health', 'deployment_id', UUID('03441ce3-9004-40a5-b576-88bb594146e4'), 'null', 'object', 'deployment_id', 'null', 'string', 'deployment_id', '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', datetime.datetime(2026, 11, 1, 23, 48, 35, 598080, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 35, 683613, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 35, 683613, tzinfo=datetime.timezone.utc), 1)]
+E                   (Background on this error at: https://sqlalche.me/e/20/f405)
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: ProgrammingError
+____ test_inconsistent_consumed_summary_is_unavailable[cost-canary_health] _____
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x10f38dc00>
+operation = 'SELECT policy_gate_receipts.receipt_id, policy_gate_receipts.policy_hash, policy_gate_receipts.gate_type, policy_gate...eipts.issued_at DESC, policy_gate_receipts.created_at DESC, policy_gate_receipts.receipt_id DESC \n LIMIT $18::INTEGER'
+parameters = ('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a53...244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'canary_health', 'deployment_id', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+>               prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:526: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:773: in _prepare
+    prepared_stmt = await self._connection.prepare(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:661: in prepare
+    return await self._prepare(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:680: in _prepare
+    stmt = await self._get_statement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/asyncpg/connection.py:466: in _get_statement
+    statement = await self._protocol.prepare(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.UndefinedFunctionError: operator does not exist: character varying = uuid
+E   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+asyncpg/protocol/protocol.pyx:161: UndefinedFunctionError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x110230cd0>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x10dfd5a50>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x110214750>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x10ff2a150>
+parameters = [('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a5...44795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'canary_health', 'deployment_id', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10e2a75b0>>
+error = UndefinedFunctionError('operator does not exist: character varying = uuid')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.ProgrammingError: <class 'asyncpg.exceptions.UndefinedFunctionError'>: operator does not exist: character varying = uuid
+E                   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: ProgrammingError
+
+The above exception was the direct cause of the following exception:
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10ebc46d0>, <core.distributed.promotion_repository....ionRepository object at 0x10f1724d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x110b2bfd0>)
+gate = 'canary_health', field = 'cost'
+
+    @pytest.mark.parametrize("gate", ["shadow_health", "canary_health"])
+    @pytest.mark.parametrize("field", ["sample_count", "cost"])
+    async def test_inconsistent_consumed_summary_is_unavailable(health_repo, gate, field):
+        fixture, _, _ = await real_active_fixture(
+            health_repo, stop_at="shadow" if gate == "shadow_health" else "canary",
+            command_prefix="ops-consumed-summary-" + uuid4().hex,
+        )
+        repo, _, predecessor = fixture
+        async with repo.session_factory() as session:
+            original = await session.scalar(select(PolicyGateReceiptRecord).where(
+                PolicyGateReceiptRecord.gate_type == gate,
+                PolicyGateReceiptRecord.details["deployment_id"].as_string() == str(predecessor.deployment_id),
+            ))
+        # 在消费前 append，不篡改旧 immutable fixture，也不重跑授权 gate。
+        await append_receipt(repo, original, **{field: 0})
+        # 前序关系本身可规范验证，收据仍必须精确匹配冻结窗口。
+        async with repo.session_factory() as session:
+>           latest = await OpsQueries._latest_health_receipt(
+                session, await session.get(PolicyArtifactRecord, predecessor.candidate_policy_hash),
+                predecessor, gate, datetime.now(UTC),
+            )
+
+tests/distributed/test_ops_source_integrity.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+core/distributed/ops_queries.py:426: in _latest_health_receipt
+    return await session.scalar(select(PolicyGateReceiptRecord).where(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:505: in scalar
+    return await greenlet_spawn(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2421: in scalar
+    return self._execute_internal(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2271: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/orm/context.py:306: in orm_execute_statement
+    result = conn.execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1976: in _exec_single_context
+    self.dialect.do_execute(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x10e2a75b0>>
+error = UndefinedFunctionError('operator does not exist: character varying = uuid')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.UndefinedFunctionError'>: operator does not exist: character varying = uuid
+E                   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+E                   [SQL: SELECT policy_gate_receipts.receipt_id, policy_gate_receipts.policy_hash, policy_gate_receipts.gate_type, policy_gate_receipts.status, policy_gate_receipts.evidence_hash, policy_gate_receipts.protocol_hash, policy_gate_receipts.runtime_hash, policy_gate_receipts.source_revision, policy_gate_receipts.model_identity, policy_gate_receipts.data_role, policy_gate_receipts.sample_count, policy_gate_receipts.cost, policy_gate_receipts.details, policy_gate_receipts.issued_at, policy_gate_receipts.issuer, policy_gate_receipts.created_at 
+E                   FROM policy_gate_receipts 
+E                   WHERE policy_gate_receipts.policy_hash = $1::VARCHAR AND policy_gate_receipts.protocol_hash = $2::VARCHAR AND policy_gate_receipts.runtime_hash = $3::VARCHAR AND policy_gate_receipts.source_revision = $4::VARCHAR AND policy_gate_receipts.gate_type = $5::VARCHAR AND (CAST((policy_gate_receipts.details ->> $6::TEXT) AS VARCHAR) = $7::UUID OR coalesce(json_typeof(policy_gate_receipts.details), $8::VARCHAR) != $9::VARCHAR OR coalesce(json_typeof((policy_gate_receipts.details -> $10::TEXT)), $11::VARCHAR) != $12::VARCHAR OR (CAST((policy_gate_receipts.details ->> $13::TEXT) AS VARCHAR) !~ $14::VARCHAR)) AND policy_gate_receipts.issued_at >= $15::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.issued_at <= $16::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.created_at <= $17::TIMESTAMP WITH TIME ZONE ORDER BY policy_gate_receipts.issued_at DESC, policy_gate_receipts.created_at DESC, policy_gate_receipts.receipt_id DESC 
+E                    LIMIT $18::INTEGER]
+E                   [parameters: ('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', 'cf10f717244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'canary_health', 'deployment_id', UUID('c41593f8-51ef-4a17-86c4-378481c6c1c6'), 'null', 'object', 'deployment_id', 'null', 'string', 'deployment_id', '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', datetime.datetime(2026, 11, 1, 23, 48, 36, 185714, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 36, 309685, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 36, 309685, tzinfo=datetime.timezone.utc), 1)]
+E                   (Background on this error at: https://sqlalche.me/e/20/f405)
+
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: ProgrammingError
+=========================== short test summary info ============================
+FAILED tests/distributed/test_ops_source_integrity.py::test_canonical_transition_and_audit_identity[audit_environment-canary] - assert 503 == 200
+ +  where 503 = <Response [503 Service Unavailable]>.status_code
+FAILED tests/distributed/test_ops_source_integrity.py::test_canonical_transition_and_audit_identity[audit_environment-active] - assert 503 == 200
+ +  where 503 = <Response [503 Service Unavailable]>.status_code
+FAILED tests/distributed/test_ops_source_integrity.py::test_canonical_transition_and_audit_identity[audit_deployment_id-canary] - sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "policy_audit_events" violates foreign key constraint "policy_audit_events_deployment_id_fkey"
+DETAIL:  Key (deployment_id)=(other-identity) is not present in table "policy_deployments".
+[SQL: INSERT INTO policy_audit_events (event_id, environment, deployment_id, event_type, command_id, actor, reason, details, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::JSON, $9::TIMESTAMP WITH TIME ZONE)]
+[parameters: ('879408e0-5dd1-4736-b39d-665a9b088383', 'rehearsal', 'other-identity', 'promotion_transitioned', 'ops-integrity-4724976044684a0aab77258f088436db', 'test', 'append-only exact relationship', '{"from_state": "shadow", "to_state": "canary", "from_version": 4, "to_version": 5, "required_receipts": ["shadow_health"], "command_hash": "023aec6264c48fcd81f1ac6992d9794a4e41bbbf55e00cfb502efc88dc1e1176"}', datetime.datetime(2026, 11, 1, 23, 48, 15, 607226, tzinfo=datetime.timezone.utc))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+FAILED tests/distributed/test_ops_source_integrity.py::test_canonical_transition_and_audit_identity[audit_deployment_id-active] - sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "policy_audit_events" violates foreign key constraint "policy_audit_events_deployment_id_fkey"
+DETAIL:  Key (deployment_id)=(other-identity) is not present in table "policy_deployments".
+[SQL: INSERT INTO policy_audit_events (event_id, environment, deployment_id, event_type, command_id, actor, reason, details, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::JSON, $9::TIMESTAMP WITH TIME ZONE)]
+[parameters: ('dcd70f74-0d71-4210-b508-7977232c219b', 'rehearsal', 'other-identity', 'promotion_transitioned', 'ops-integrity-ef0ac00f749645fe8787fd1707cb7d09', 'test', 'append-only exact relationship', '{"from_state": "canary", "to_state": "active", "from_version": 5, "to_version": 6, "required_receipts": ["shadow_health", "canary_health", "promotion_approval"], "command_hash": "79ca26b6ef2b6d9cea99553c5e4b4d821a2e0e6424e4eba85c881c76c3aac193"}', datetime.datetime(2026, 11, 1, 23, 48, 16, 237070, tzinfo=datetime.timezone.utc))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+FAILED tests/distributed/test_ops_source_integrity.py::test_exact_decimal_cost_is_not_rounded_mean_times_count[shadow] - AssertionError: assert (Decimal('0.40000001') != Decimal('0.4000000100'))
+FAILED tests/distributed/test_ops_source_integrity.py::test_exact_decimal_cost_is_not_rounded_mean_times_count[canary] - AssertionError: assert (Decimal('0.40000001') != Decimal('0.4000000100'))
+FAILED tests/distributed/test_ops_source_integrity.py::test_inconsistent_consumed_summary_is_unavailable[sample_count-shadow_health] - sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.UndefinedFunctionError'>: operator does not exist: character varying = uuid
+HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+[SQL: SELECT policy_gate_receipts.receipt_id, policy_gate_receipts.policy_hash, policy_gate_receipts.gate_type, policy_gate_receipts.status, policy_gate_receipts.evidence_hash, policy_gate_receipts.protocol_hash, policy_gate_receipts.runtime_hash, policy_gate_receipts.source_revision, policy_gate_receipts.model_identity, policy_gate_receipts.data_role, policy_gate_receipts.sample_count, policy_gate_receipts.cost, policy_gate_receipts.details, policy_gate_receipts.issued_at, policy_gate_receipts.issuer, policy_gate_receipts.created_at 
+FROM policy_gate_receipts 
+WHERE policy_gate_receipts.policy_hash = $1::VARCHAR AND policy_gate_receipts.protocol_hash = $2::VARCHAR AND policy_gate_receipts.runtime_hash = $3::VARCHAR AND policy_gate_receipts.source_revision = $4::VARCHAR AND policy_gate_receipts.gate_type = $5::VARCHAR AND (CAST((policy_gate_receipts.details ->> $6::TEXT) AS VARCHAR) = $7::UUID OR coalesce(json_typeof(policy_gate_receipts.details), $8::VARCHAR) != $9::VARCHAR OR coalesce(json_typeof((policy_gate_receipts.details -> $10::TEXT)), $11::VARCHAR) != $12::VARCHAR OR (CAST((policy_gate_receipts.details ->> $13::TEXT) AS VARCHAR) !~ $14::VARCHAR)) AND policy_gate_receipts.issued_at >= $15::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.issued_at <= $16::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.created_at <= $17::TIMESTAMP WITH TIME ZONE ORDER BY policy_gate_receipts.issued_at DESC, policy_gate_receipts.created_at DESC, policy_gate_receipts.receipt_id DESC 
+ LIMIT $18::INTEGER]
+[parameters: ('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', 'cf10f717244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'shadow_health', 'deployment_id', UUID('03b17746-8d48-4dbf-97ff-cc579d282cbb'), 'null', 'object', 'deployment_id', 'null', 'string', 'deployment_id', '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', datetime.datetime(2026, 11, 1, 23, 48, 34, 476626, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 34, 579735, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 34, 579735, tzinfo=datetime.timezone.utc), 1)]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+FAILED tests/distributed/test_ops_source_integrity.py::test_inconsistent_consumed_summary_is_unavailable[sample_count-canary_health] - sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.UndefinedFunctionError'>: operator does not exist: character varying = uuid
+HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+[SQL: SELECT policy_gate_receipts.receipt_id, policy_gate_receipts.policy_hash, policy_gate_receipts.gate_type, policy_gate_receipts.status, policy_gate_receipts.evidence_hash, policy_gate_receipts.protocol_hash, policy_gate_receipts.runtime_hash, policy_gate_receipts.source_revision, policy_gate_receipts.model_identity, policy_gate_receipts.data_role, policy_gate_receipts.sample_count, policy_gate_receipts.cost, policy_gate_receipts.details, policy_gate_receipts.issued_at, policy_gate_receipts.issuer, policy_gate_receipts.created_at 
+FROM policy_gate_receipts 
+WHERE policy_gate_receipts.policy_hash = $1::VARCHAR AND policy_gate_receipts.protocol_hash = $2::VARCHAR AND policy_gate_receipts.runtime_hash = $3::VARCHAR AND policy_gate_receipts.source_revision = $4::VARCHAR AND policy_gate_receipts.gate_type = $5::VARCHAR AND (CAST((policy_gate_receipts.details ->> $6::TEXT) AS VARCHAR) = $7::UUID OR coalesce(json_typeof(policy_gate_receipts.details), $8::VARCHAR) != $9::VARCHAR OR coalesce(json_typeof((policy_gate_receipts.details -> $10::TEXT)), $11::VARCHAR) != $12::VARCHAR OR (CAST((policy_gate_receipts.details ->> $13::TEXT) AS VARCHAR) !~ $14::VARCHAR)) AND policy_gate_receipts.issued_at >= $15::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.issued_at <= $16::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.created_at <= $17::TIMESTAMP WITH TIME ZONE ORDER BY policy_gate_receipts.issued_at DESC, policy_gate_receipts.created_at DESC, policy_gate_receipts.receipt_id DESC 
+ LIMIT $18::INTEGER]
+[parameters: ('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', 'cf10f717244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'canary_health', 'deployment_id', UUID('8ab48e26-1820-4e7f-8045-57666ac18869'), 'null', 'object', 'deployment_id', 'null', 'string', 'deployment_id', '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', datetime.datetime(2026, 11, 1, 23, 48, 35, 133295, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 35, 239324, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 35, 239324, tzinfo=datetime.timezone.utc), 1)]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+FAILED tests/distributed/test_ops_source_integrity.py::test_inconsistent_consumed_summary_is_unavailable[cost-shadow_health] - sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.UndefinedFunctionError'>: operator does not exist: character varying = uuid
+HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+[SQL: SELECT policy_gate_receipts.receipt_id, policy_gate_receipts.policy_hash, policy_gate_receipts.gate_type, policy_gate_receipts.status, policy_gate_receipts.evidence_hash, policy_gate_receipts.protocol_hash, policy_gate_receipts.runtime_hash, policy_gate_receipts.source_revision, policy_gate_receipts.model_identity, policy_gate_receipts.data_role, policy_gate_receipts.sample_count, policy_gate_receipts.cost, policy_gate_receipts.details, policy_gate_receipts.issued_at, policy_gate_receipts.issuer, policy_gate_receipts.created_at 
+FROM policy_gate_receipts 
+WHERE policy_gate_receipts.policy_hash = $1::VARCHAR AND policy_gate_receipts.protocol_hash = $2::VARCHAR AND policy_gate_receipts.runtime_hash = $3::VARCHAR AND policy_gate_receipts.source_revision = $4::VARCHAR AND policy_gate_receipts.gate_type = $5::VARCHAR AND (CAST((policy_gate_receipts.details ->> $6::TEXT) AS VARCHAR) = $7::UUID OR coalesce(json_typeof(policy_gate_receipts.details), $8::VARCHAR) != $9::VARCHAR OR coalesce(json_typeof((policy_gate_receipts.details -> $10::TEXT)), $11::VARCHAR) != $12::VARCHAR OR (CAST((policy_gate_receipts.details ->> $13::TEXT) AS VARCHAR) !~ $14::VARCHAR)) AND policy_gate_receipts.issued_at >= $15::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.issued_at <= $16::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.created_at <= $17::TIMESTAMP WITH TIME ZONE ORDER BY policy_gate_receipts.issued_at DESC, policy_gate_receipts.created_at DESC, policy_gate_receipts.receipt_id DESC 
+ LIMIT $18::INTEGER]
+[parameters: ('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', 'cf10f717244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'shadow_health', 'deployment_id', UUID('03441ce3-9004-40a5-b576-88bb594146e4'), 'null', 'object', 'deployment_id', 'null', 'string', 'deployment_id', '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', datetime.datetime(2026, 11, 1, 23, 48, 35, 598080, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 35, 683613, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 35, 683613, tzinfo=datetime.timezone.utc), 1)]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+FAILED tests/distributed/test_ops_source_integrity.py::test_inconsistent_consumed_summary_is_unavailable[cost-canary_health] - sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.UndefinedFunctionError'>: operator does not exist: character varying = uuid
+HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+[SQL: SELECT policy_gate_receipts.receipt_id, policy_gate_receipts.policy_hash, policy_gate_receipts.gate_type, policy_gate_receipts.status, policy_gate_receipts.evidence_hash, policy_gate_receipts.protocol_hash, policy_gate_receipts.runtime_hash, policy_gate_receipts.source_revision, policy_gate_receipts.model_identity, policy_gate_receipts.data_role, policy_gate_receipts.sample_count, policy_gate_receipts.cost, policy_gate_receipts.details, policy_gate_receipts.issued_at, policy_gate_receipts.issuer, policy_gate_receipts.created_at 
+FROM policy_gate_receipts 
+WHERE policy_gate_receipts.policy_hash = $1::VARCHAR AND policy_gate_receipts.protocol_hash = $2::VARCHAR AND policy_gate_receipts.runtime_hash = $3::VARCHAR AND policy_gate_receipts.source_revision = $4::VARCHAR AND policy_gate_receipts.gate_type = $5::VARCHAR AND (CAST((policy_gate_receipts.details ->> $6::TEXT) AS VARCHAR) = $7::UUID OR coalesce(json_typeof(policy_gate_receipts.details), $8::VARCHAR) != $9::VARCHAR OR coalesce(json_typeof((policy_gate_receipts.details -> $10::TEXT)), $11::VARCHAR) != $12::VARCHAR OR (CAST((policy_gate_receipts.details ->> $13::TEXT) AS VARCHAR) !~ $14::VARCHAR)) AND policy_gate_receipts.issued_at >= $15::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.issued_at <= $16::TIMESTAMP WITH TIME ZONE AND policy_gate_receipts.created_at <= $17::TIMESTAMP WITH TIME ZONE ORDER BY policy_gate_receipts.issued_at DESC, policy_gate_receipts.created_at DESC, policy_gate_receipts.receipt_id DESC 
+ LIMIT $18::INTEGER]
+[parameters: ('2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'a27bdf96ab4b072c324710d85789a8cb316a4841ef798a534fba40030d1d6887', 'cf10f717244795bee1883a0f6abecacc428a7a57a97ea3c56ab00f4ed0114f46', 'revision-qualified', 'canary_health', 'deployment_id', UUID('c41593f8-51ef-4a17-86c4-378481c6c1c6'), 'null', 'object', 'deployment_id', 'null', 'string', 'deployment_id', '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', datetime.datetime(2026, 11, 1, 23, 48, 36, 185714, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 36, 309685, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 11, 1, 23, 48, 36, 309685, tzinfo=datetime.timezone.utc), 1)]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+10 failed, 57 passed in 28.02s

@@ -273,12 +273,15 @@ async def test_active_without_exact_approval_audit_relation_is_unavailable(healt
         expected_version=canary.version, current_state="canary", target_state="active",
         traffic_basis_points=10000, actor="test", reason="synthetic active relationship",
     )
+    command_hash = canonical_hash({"command_type": "transition", "command": command.model_dump(mode="json")})
+    required = ["shadow_health", "canary_health", "promotion_approval"]
     async with repo.session_factory() as session:
         persisted = await session.get(PolicyDeploymentRecord, str(canary.deployment_id))
         values = {c.name: getattr(persisted, c.name) for c in PolicyDeploymentRecord.__table__.columns}
         values.update(deployment_id=str(uuid4()), command_id=command.command_id,
                       version=canary.version + 1, state="active", created_at=now,
-                      traffic_basis_points=10000, actor=command.actor, reason=command.reason)
+                      traffic_basis_points=10000, actor=command.actor, reason=command.reason,
+                      required_receipts=required)
         health = await session.scalar(select(PolicyGateReceiptRecord).where(
             PolicyGateReceiptRecord.gate_type == "canary_health",
             PolicyGateReceiptRecord.details["deployment_id"].as_string() == str(canary.deployment_id),
@@ -294,12 +297,13 @@ async def test_active_without_exact_approval_audit_relation_is_unavailable(healt
                 environment="rehearsal", event_type="promotion_transitioned", actor=command.actor,
                 reason=command.reason, created_at=now,
                 details={"from_state": "canary", "to_state": "active", "from_version": canary.version,
-                         "to_version": forged.version, "command_hash": "a" * 64},
+                         "to_version": forged.version, "command_hash": command_hash,
+                         "required_receipts": required},
             ))
         if breakage != "no_approval":
             await PromotionRepository._create_promotion_approval(
                 session, command=command, artifact=artifact, canary_health=health,
-                command_hash="0" * 64 if breakage == "wrong_command_hash" else "a" * 64, now=now,
+                command_hash="0" * 64 if breakage == "wrong_command_hash" else command_hash, now=now,
             )
     if breakage == "bool_version":
         async with repo.session_factory() as session:

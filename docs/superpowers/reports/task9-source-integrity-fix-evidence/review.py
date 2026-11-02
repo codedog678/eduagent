@@ -1,0 +1,150 @@
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+from datetime import UTC, datetime
+from uuid import uuid4
+from xml.etree import ElementTree as ET
+
+OWN = Path(__file__).parent
+ROOT = Path("/Users/bytedance/Documents/trae_projects/eduagent-m3")
+PRIMARY = ROOT.with_name("eduagent")
+HEAD = "3444cf1967f9b5c9d64fde824dd4b53333a29143"
+PG = "/opt/homebrew/opt/postgresql@16/bin/"
+PY = "/tmp/eduagent-m3-patched-runtime/bin/python"
+
+
+def digest(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def git(root, *args):
+    return subprocess.check_output(["git", *args], cwd=root)
+
+
+def write(name, data):
+    path = OWN / name
+    assert not path.exists(), name
+    path.write_text(json.dumps(data, indent=2) + "\n")
+
+
+def metadata(path):
+    items = []
+    if path.exists():
+        for entry in [path, *sorted(path.rglob("*"))]:
+            stat = entry.lstat()
+            items.append((str(entry.relative_to(path)), stat.st_mode,
+                          stat.st_size, stat.st_mtime_ns, stat.st_ino))
+    return {"entries": len(items), "sha256": digest(json.dumps(items).encode())}
+
+
+def snapshot(label):
+    result = {}
+    for key, root in (("m3", ROOT), ("primary", PRIMARY)):
+        paths = [p.decode() for p in git(root, "ls-files", "-z").split(b"\0") if p]
+        if key == "m3":
+            paths += [p.decode() for p in git(root, "ls-files", "--others",
+                                            "--exclude-standard", "-z").split(b"\0")
+                      if p and p.decode().startswith(("python/", "frontend/"))]
+        mapping = {p: digest((root / p).read_bytes()) for p in paths}
+        source = {p: h for p, h in mapping.items() if p.startswith(("python/", "frontend/"))}
+        index = Path(git(root, "rev-parse", "--git-path", "index").decode().strip())
+        if not index.is_absolute():
+            index = root / index
+        result[key] = {"head": git(root, "rev-parse", "HEAD").decode().strip(),
+                       "status": git(root, "status", "--porcelain").decode(),
+                       "tracked": mapping, "source": source,
+                       "source_sha256": digest(json.dumps(sorted(source.items()), ensure_ascii=True,
+                                                         separators=(",", ":")).encode()),
+                       "index_hash": digest(index.read_bytes()),
+                       "index_mtime": index.stat().st_mtime_ns,
+                       "venv": metadata(root / ".venv"),
+                       "vite": metadata(root / "frontend/node_modules/.vite"),
+                       "vite_temp": metadata(root / "frontend/node_modules/.vite-temp")}
+        if key == "m3":
+            assert result[key]["head"] == HEAD
+            if label.startswith("red"):
+                assert len(source) == 352
+                assert result[key]["source_sha256"] == "78fb2d84827b0e9c32df1bebbee9d4840f5eff301100da0a9f5489a0146b4357"
+                for p in source:
+                    assert digest(git(root, "show", HEAD + ":" + p)) == source[p], p
+    write(label + ".json", result)
+    print(json.dumps({k: {"head": v["head"], "source_count": len(v["source"]),
+                          "sha": v["source_sha256"]} for k, v in result.items()}))
+
+
+def run_pytest(label, args):
+    snapshot(label + "-before")
+    db = "m3_t9_fix_" + uuid4().hex
+    cmd_base = ["-h", "127.0.0.1", "-p", "55432", "-U", "postgres", db]
+    subprocess.run([PG + "createdb", *cmd_base], check=True)
+    env = os.environ.copy()
+    env.pop("DATABASE_URL", None)
+    env.update(DISTRIBUTED_TEST_DATABASE_URL=f"postgresql+asyncpg://postgres@127.0.0.1:55432/{db}",
+               DISTRIBUTED_TEST_REDIS_URL="redis://127.0.0.1:56379/0",
+               PYTHONPATH=f"{ROOT}/python:{OWN}", PYTHONDONTWRITEBYTECODE="1",
+               PYTHONPYCACHEPREFIX=str(OWN / "pycache"), TMPDIR=str(OWN / "tmp"),
+               REVIEW_OWN=str(OWN), EVIDENCE_RUN=label, TZ="UTC")
+    (OWN / "tmp").mkdir(exist_ok=True)
+    cmd = [PY, "-m", "pytest", *args, "-p", "safety",
+           "-o", f"cache_dir={OWN}/cache/{label}", f"--basetemp={OWN}/tmp/{label}",
+           f"--junitxml={OWN}/{label}.xml"]
+    record = {"db": db, "command": cmd, "cwd": str(ROOT / "python"),
+              "started_at": datetime.now(UTC).isoformat()}
+    try:
+        with (OWN / (label + ".log")).open("x") as output:
+            proc = subprocess.run(cmd, cwd=ROOT / "python", env=env, stdout=output,
+                                  stderr=subprocess.STDOUT)
+        record["exit"] = proc.returncode
+    finally:
+        dropped = subprocess.run([PG + "dropdb", *cmd_base])
+        record["drop_exit"] = dropped.returncode
+        record["finished_at"] = datetime.now(UTC).isoformat()
+        write(label + "-command.json", record)
+        snapshot(label + "-after")
+    print((OWN / (label + ".log")).read_text()[-4000:])
+    assert dropped.returncode == 0
+    return proc.returncode
+
+
+def archives():
+    records = {}
+    for directory in sorted((ROOT / "docs/superpowers/reports").glob("task9*")):
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.rglob("*.xml")):
+            tree = ET.parse(path).getroot()
+            cases = list(tree.iter("testcase"))
+            failures = [c for c in cases if c.find("failure") is not None]
+            errors = [c for c in cases if c.find("error") is not None]
+            records[str(path.relative_to(ROOT))] = {
+                "sha256": digest(path.read_bytes()), "tests": len(cases),
+                "failure": len(failures), "error": len(errors),
+                "skip": sum(c.find("skipped") is not None for c in cases),
+                "failure_messages": [{"name": c.get("name"),
+                    "type": (c.find("failure") if c.find("failure") is not None else c.find("error")).get("type"),
+                    "message": (c.find("failure") if c.find("failure") is not None else c.find("error")).get("message")}
+                    for c in failures + errors]}
+    checks = {}
+    for name, field in (("task9-health-binding-fix-evidence", "files_sha256"),
+                         ("task9-code-failure-evidence", "files")):
+        archive = ROOT / "docs/superpowers/reports" / name
+        manifest = json.loads((archive / "manifest.json").read_text())
+        for p, expected in manifest[field].items():
+            assert digest((archive / p).read_bytes()) == expected
+            assert git(ROOT, "show", HEAD + ":" + str((archive / p).relative_to(ROOT))) == (archive / p).read_bytes()
+        checks[name] = {"files": len(manifest[field]), "manifest_sha": digest((archive / "manifest.json").read_bytes())}
+    write("archive-parsed.json", {"xml": records, "checks": checks})
+    print(json.dumps({"xml_count": len(records), "checks": checks}))
+
+
+if __name__ == "__main__":
+    action = sys.argv[1]
+    if action == "snapshot":
+        snapshot(sys.argv[2])
+    elif action == "archives":
+        archives()
+    elif action == "pytest":
+        sys.exit(run_pytest(sys.argv[2], sys.argv[3:]))

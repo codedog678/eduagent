@@ -49,11 +49,13 @@ from .ops_contracts import (
     OpsPolicyDeployment, OpsPolicyDeploymentDetail, OpsPolicyDeploymentPage,
     OpsThresholdCode,
 )
-from .promotion_contracts import DeploymentState, GateType, PolicyThresholds, canonical_hash
+from .promotion_contracts import (
+    DeploymentState, GateType, PolicyThresholds, PromotionCommand, canonical_hash,
+)
 from .promotion_models import (
     PolicyArtifactRecord, PolicyAuditEventRecord, PolicyDeploymentRecord,
     PolicyEnvironmentHeadRecord, PolicyGateReceiptRecord, PolicyHealthWindowRecord,
-    PolicyShadowExecutionRecord,
+    PolicyObservationRecord, PolicyShadowExecutionRecord,
 )
 
 _SAFE_TRACE_ATTRIBUTES = frozenset(
@@ -410,26 +412,12 @@ class OpsQueries:
                 sources.append((canary, "canary_health", "consumed_chain",
                                 deployment.created_at, receipt_id))
         if canary.state == "canary":
-            # This established helper is read-only for Canary; Active would replay evidence.
-            from .promotion_repository import PromotionRepository
-            predecessors = await PromotionRepository(self.session_factory).health_predecessors(
-                session, canary,
-            )
-            for shadow in predecessors[:1]:
-                audit = await session.scalar(select(PolicyAuditEventRecord).where(
-                    PolicyAuditEventRecord.command_id == canary.command_id,
-                    PolicyAuditEventRecord.deployment_id == canary.deployment_id,
-                    PolicyAuditEventRecord.event_type == "promotion_transitioned",
-                ).limit(1))
-                details = audit.details if audit and isinstance(audit.details, dict) else {}
-                required = details.get("required_receipts")
-                if (
-                    not isinstance(required, list) or "shadow_health" not in required
-                    or type(details.get("from_version")) is not int
-                    or type(details.get("to_version")) is not int
-                    or shadow.thresholds != canary.thresholds
-                ):
-                    continue
+            shadow = await session.scalar(select(PolicyDeploymentRecord).where(
+                PolicyDeploymentRecord.environment == canary.environment,
+                PolicyDeploymentRecord.version == canary.version - 1,
+                PolicyDeploymentRecord.state == "shadow",
+            ).limit(1))
+            if shadow is not None and await self._transition_identity(session, shadow, canary):
                 sources.append((shadow, "shadow_health", "consumed_chain", canary.created_at, None))
         return await self._project_health_sources(session, artifact, sources)
 
@@ -515,6 +503,9 @@ class OpsQueries:
                         receipt.status != "passed" or window.decision != "pass"
                         or consumed_latest is None or consumed_latest.window_id != window.window_id
                     ))
+                    or not await self._frozen_summary_matches(
+                        session, deployment, gate, window, receipt, thresholds,
+                    )
                 ):
                     continue
                 source = OpsHealthSource(
@@ -530,23 +521,153 @@ class OpsQueries:
         return list(result.values())
 
     @staticmethod
-    async def _consumed_canary(session, deployment, artifact):
-        """Read the exact approval/audit relation, never infer consumption from adjacency."""
+    async def _frozen_summary_matches(session, deployment, gate, window, receipt, thresholds):
+        """只读冻结 key 的有限集合，不重放健康判定，也不从 rounded mean 反推费用。"""
+        keys = window.observation_keys
+        if not isinstance(keys, dict) or set(keys) != {"candidate", "stable"}:
+            return False
+        for label, stats in (("candidate", window.candidate_stats), ("stable", window.stable_stats)):
+            values = keys[label]
+            if (
+                not isinstance(values, list) or not 0 <= len(values) <= thresholds.window_max_runs
+                or any(not isinstance(key, str) or not re.fullmatch(r"[0-9a-f]{64}", key)
+                       for key in values)
+                or not isinstance(stats, dict) or type(stats.get("run_count")) is not int
+                or stats["run_count"] != len(values)
+            ):
+                return False
+        flat = keys["candidate"] + keys["stable"]
+        if (
+            len(set(flat)) != len(flat) or type(receipt.sample_count) is not int
+            or receipt.sample_count != len(keys["candidate"])
+            or not isinstance(receipt.cost, Decimal) or not receipt.cost.is_finite()
+            or receipt.cost < 0
+        ):
+            return False
+        records = list(await session.scalars(select(PolicyObservationRecord).where(
+            PolicyObservationRecord.observation_key.in_(flat),
+        ).limit(2 * thresholds.window_max_runs)))
+        by_key = {row.observation_key: row for row in records}
+        if len(by_key) != len(flat):
+            return False
+        # Active 的合法基线来自已消费 Canary；其余来源必须绑定本部署。
+        stable_deployment = deployment
+        if deployment.state == "active":
+            artifact = await session.get(PolicyArtifactRecord, deployment.candidate_policy_hash)
+            consumed = await OpsQueries._consumed_canary(session, deployment, artifact)
+            if consumed is None:
+                return False
+            stable_deployment, consumed_id = consumed
+            consumed_receipt = await session.get(PolicyGateReceiptRecord, consumed_id)
+            consumed_details = consumed_receipt.details if consumed_receipt else None
+            consumed_window = await session.get(
+                PolicyHealthWindowRecord, consumed_details.get("window_id"),
+            ) if isinstance(consumed_details, dict) else None
+            if (
+                consumed_window is None or not isinstance(consumed_window.observation_keys, dict)
+                or not set(keys["stable"]).issubset(consumed_window.observation_keys.get("stable", []))
+            ):
+                return False
+        total = Decimal(0)
+        for label, source, cohort, policy in (
+            ("candidate", deployment, "shadow" if gate == "shadow_health" else "candidate",
+             deployment.candidate_policy_hash),
+            ("stable", stable_deployment, "stable", deployment.stable_policy_hash),
+        ):
+            rows = [by_key[key] for key in keys[label]]
+            if rows != sorted(rows, key=lambda row: (row.observed_at, row.observation_key)):
+                return False
+            for row in rows:
+                if (
+                    row.deployment_id != source.deployment_id or row.cohort != cohort
+                    or row.policy_hash != policy or row.metric_contract_version != 1
+                    or not source.created_at <= row.observed_at <= window.evaluated_at
+                    or row.created_at > window.evaluated_at
+                    or not isinstance(row.cost, Decimal) or not row.cost.is_finite() or row.cost < 0
+                ):
+                    return False
+                total += row.cost
+        return receipt.cost == total
+
+    @staticmethod
+    async def _transition_identity(session, predecessor, deployment):
+        """从 immutable snapshot 重建完整命令，并验证消费审计的同一身份。"""
         audit = await session.scalar(select(PolicyAuditEventRecord).where(
             PolicyAuditEventRecord.command_id == deployment.command_id,
             PolicyAuditEventRecord.deployment_id == deployment.deployment_id,
             PolicyAuditEventRecord.environment == deployment.environment,
             PolicyAuditEventRecord.event_type == "promotion_transitioned",
         ).limit(1))
+        if audit is None or not isinstance(audit.details, dict):
+            return None
+        details = audit.details
+        required = deployment.required_receipts
+        health_required = {"shadow_health"} if deployment.state == "canary" else {
+            "shadow_health", "canary_health", "promotion_approval",
+        }
+        try:
+            if (
+                deployment.environment != "rehearsal"
+                or predecessor.environment != deployment.environment
+                or type(predecessor.version) is not int or type(deployment.version) is not int
+                or predecessor.version != deployment.version - 1
+                or (predecessor.state, deployment.state) not in {("shadow", "canary"), ("canary", "active")}
+                or any(getattr(predecessor, key) != getattr(deployment, key) for key in (
+                    "candidate_policy_hash", "stable_policy_hash", "thresholds_hash", "thresholds",
+                    "assignment_salt_id", "previous_stable_deployment_id",
+                ))
+                or predecessor.created_at > deployment.created_at
+                or audit.created_at != deployment.created_at
+                or audit.actor != deployment.actor or audit.reason != deployment.reason
+                or not isinstance(required, list)
+                or any(not isinstance(gate, str) or gate not in get_args(GateType) for gate in required)
+                or len(set(required)) != len(required) or not health_required.issubset(required)
+                or details.get("required_receipts") != required
+                or details.get("from_state") != predecessor.state
+                or details.get("to_state") != deployment.state
+                or type(details.get("from_version")) is not int
+                or type(details.get("to_version")) is not int
+                or details["from_version"] != predecessor.version
+                or details["to_version"] != deployment.version
+            ):
+                return None
+            command = PromotionCommand(
+                command_id=deployment.command_id, environment=deployment.environment,
+                expected_version=predecessor.version, current_state=predecessor.state,
+                target_state=deployment.state, traffic_basis_points=deployment.traffic_basis_points,
+                actor=deployment.actor, reason=deployment.reason,
+            )
+            command_hash = canonical_hash({"command_type": "transition", "command": command.model_dump(mode="json")})
+            return command_hash if details.get("command_hash") == command_hash else None
+        except (ValidationError, ValueError, TypeError, KeyError):
+            return None
+
+    @staticmethod
+    async def _consumed_canary(session, deployment, artifact):
+        """Read the exact approval/audit relation, never infer consumption from adjacency."""
+        # 无法识别归属的 latest approval 遮蔽旧 pass；可识别的其它命令不串用。
         approval = await session.scalar(select(PolicyGateReceiptRecord).where(
             PolicyGateReceiptRecord.policy_hash == artifact.policy_hash,
+            PolicyGateReceiptRecord.protocol_hash == artifact.protocol_hash,
+            PolicyGateReceiptRecord.runtime_hash == artifact.runtime_hash,
+            PolicyGateReceiptRecord.source_revision == artifact.source_revision,
             PolicyGateReceiptRecord.gate_type == "promotion_approval",
-            PolicyGateReceiptRecord.details["command_id"].as_string() == deployment.command_id,
+            or_(
+                PolicyGateReceiptRecord.details["command_id"].as_string() == deployment.command_id,
+                func.coalesce(func.json_typeof(PolicyGateReceiptRecord.details), "null") != "object",
+                func.coalesce(func.json_typeof(
+                    PolicyGateReceiptRecord.details["command_id"],
+                ), "null") != "string",
+                PolicyGateReceiptRecord.details["command_id"].as_string().op("!~")(
+                    r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                ),
+            ),
+            PolicyGateReceiptRecord.issued_at >= deployment.created_at,
+            PolicyGateReceiptRecord.issued_at <= await OpsQueries._db_now(session),
         ).order_by(PolicyGateReceiptRecord.issued_at.desc(),
                    PolicyGateReceiptRecord.created_at.desc(),
                    PolicyGateReceiptRecord.receipt_id.desc()).limit(1))
-        if audit is None or approval is None or not isinstance(audit.details, dict) \
-                or not isinstance(approval.details, dict):
+        if approval is None or not isinstance(approval.details, dict):
             return None
         details = approval.details
         canary_id = details.get("canary_deployment_id")
@@ -556,8 +677,10 @@ class OpsQueries:
         canary = await session.get(PolicyDeploymentRecord, canary_id)
         receipt = await session.get(PolicyGateReceiptRecord, receipt_id)
         try:
+            command_hash = await OpsQueries._transition_identity(session, canary, deployment) \
+                if canary is not None else None
             if (
-                canary is None or receipt is None or deployment.environment != "rehearsal"
+                command_hash is None or canary is None or receipt is None or deployment.environment != "rehearsal"
                 or canary.environment != deployment.environment or canary.state != "canary"
                 or canary.version != deployment.version - 1
                 or canary.candidate_policy_hash != deployment.candidate_policy_hash
@@ -567,21 +690,20 @@ class OpsQueries:
                 or canary.assignment_salt_id != deployment.assignment_salt_id
                 or canary.previous_stable_deployment_id != deployment.previous_stable_deployment_id
                 or canary.created_at > deployment.created_at
-                or audit.created_at != deployment.created_at
                 or approval.issued_at != deployment.created_at
                 or approval.status != "passed"
                 or approval.protocol_hash != artifact.protocol_hash
                 or approval.runtime_hash != artifact.runtime_hash
                 or approval.source_revision != artifact.source_revision
+                or approval.issuer != deployment.actor
+                or approval.model_identity != "authenticated-promotion-command"
+                or approval.data_role != artifact.data_role
+                or approval.cost != Decimal(0)
+                or type(approval.sample_count) is not int
+                or approval.sample_count != receipt.sample_count
                 or approval.evidence_hash != canonical_hash(details)
-                or details.get("command_hash") != audit.details.get("command_hash")
-                or not isinstance(details.get("command_hash"), str)
-                or audit.details.get("from_state") != "canary"
-                or audit.details.get("from_version") != canary.version
-                or type(audit.details.get("from_version")) is not int
-                or audit.details.get("to_state") != "active"
-                or audit.details.get("to_version") != deployment.version
-                or type(audit.details.get("to_version")) is not int
+                or details.get("command_id") != deployment.command_id
+                or details.get("command_hash") != command_hash
                 or details.get("canary_deployment_version") != canary.version
                 or type(details.get("canary_deployment_version")) is not int
                 or details.get("canary_thresholds_hash") != canary.thresholds_hash

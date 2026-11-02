@@ -1,0 +1,107 @@
+/tmp/eduagent-m3-patched-runtime/lib/python3.11/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+______ test_genuine_command_chain_malformed_latest_does_not_restore_green ______
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10ae66690>, <core.distributed.promotion_repository....ionRepository object at 0x10b1257d0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b057810>)
+
+    async def test_genuine_command_chain_malformed_latest_does_not_restore_green(health_repo):
+        repo, active, original, newer = await genuine_malformed_latest(health_repo)
+        body = (await OpsQueries(repo.session_factory).get_policy_deployment(
+            str(active.deployment_id))).model_dump(mode="json")
+        (OWN / "corroboration-final-genuine.json").write_text(json.dumps({
+            "role": "synthetic real command/evaluator chain; no model requests",
+            "original_approval": original, "newer_malformed_approval": newer,
+            "body": body}, indent=2) + "\n")
+>       assert not [r for r in body["gate_receipts"] if r["health_source"]]
+E       AssertionError: assert not [{'receipt_id': 'ab37d5b8-af52-4eb6-b272-aea0ad0fba5a', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-fix-48fc04af-9228-4c6b-90bb-bb7109644afa/test_spec_corroboration.py:45: AssertionError
+_ test_frozen_metadata_disagreement_with_authority_is_unavailable[sample_count] _
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10b8f3310>, <core.distributed.promotion_repository....ionRepository object at 0x10b23a210>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10b388dd0>)
+field = 'sample_count'
+
+    @pytest.mark.parametrize("field", ["sample_count", "cost"])
+    async def test_frozen_metadata_disagreement_with_authority_is_unavailable(health_repo, field):
+        repo, promotion, deployment = health_repo
+        await fill_window(health_repo)
+        window = await PolicyHealthEvaluator(promotion).evaluate(deployment.deployment_id)
+        async with repo.session_factory() as session:
+            original = await session.scalar(select(PolicyGateReceiptRecord))
+            artifact = await session.get(PolicyArtifactRecord, deployment.candidate_policy_hash)
+            positive = await PromotionRepository._validated_health_window(
+                session, artifact=artifact, deployment=deployment,
+                gate_type="canary_health", receipt=original)
+            assert positive is not None
+        latest_id = await append_receipt(repo, original, **{field: 0})
+        async with repo.session_factory() as session:
+            latest = await session.get(PolicyGateReceiptRecord, latest_id)
+            validated = await PromotionRepository._validated_health_window(
+                session, artifact=artifact, deployment=deployment,
+                gate_type="canary_health", receipt=latest)
+            assert validated is None
+        body = (await OpsQueries(repo.session_factory).get_policy_deployment(
+            deployment.deployment_id)).model_dump(mode="json")
+        (OWN / ("corroboration-final-" + field + ".json")).write_text(json.dumps({
+            "role": "synthetic engineering; original evidence authentic evaluator",
+            "original_sample_count": original.sample_count,
+            "original_cost": str(original.cost), "original_id": original.receipt_id,
+            "latest_id": latest_id, "window": {
+                "window_id": window.window_id, "decision": window.decision,
+                "observation_keys": window.observation_keys,
+                "candidate_stats": window.candidate_stats, "stable_stats": window.stable_stats},
+            "authority_before": "valid", "authority_after": "unavailable",
+            "body": body}, indent=2) + "\n")
+>       assert not [r for r in body["gate_receipts"] if r["health_source"]]
+E       AssertionError: assert not [{'receipt_id': 'c968ab65-0ad3-4e7a-b863-661ae5ed0c1b', 'policy_hash': '3e3d9bf5ef723a7d86dc1973ab323feb44e18a8a6184776f8ff9cde76f8ee900', 'gate_type': 'canary_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-fix-48fc04af-9228-4c6b-90bb-bb7109644afa/test_spec_corroboration.py:79: AssertionError
+____ test_frozen_metadata_disagreement_with_authority_is_unavailable[cost] _____
+
+health_repo = (<core.distributed.repository.DistributedRunRepository object at 0x10ba2ee50>, <core.distributed.promotion_repository....ionRepository object at 0x10bab1fd0>, <core.distributed.promotion_models.PolicyDeploymentRecord object at 0x10baed610>)
+field = 'cost'
+
+    @pytest.mark.parametrize("field", ["sample_count", "cost"])
+    async def test_frozen_metadata_disagreement_with_authority_is_unavailable(health_repo, field):
+        repo, promotion, deployment = health_repo
+        await fill_window(health_repo)
+        window = await PolicyHealthEvaluator(promotion).evaluate(deployment.deployment_id)
+        async with repo.session_factory() as session:
+            original = await session.scalar(select(PolicyGateReceiptRecord))
+            artifact = await session.get(PolicyArtifactRecord, deployment.candidate_policy_hash)
+            positive = await PromotionRepository._validated_health_window(
+                session, artifact=artifact, deployment=deployment,
+                gate_type="canary_health", receipt=original)
+            assert positive is not None
+        latest_id = await append_receipt(repo, original, **{field: 0})
+        async with repo.session_factory() as session:
+            latest = await session.get(PolicyGateReceiptRecord, latest_id)
+            validated = await PromotionRepository._validated_health_window(
+                session, artifact=artifact, deployment=deployment,
+                gate_type="canary_health", receipt=latest)
+            assert validated is None
+        body = (await OpsQueries(repo.session_factory).get_policy_deployment(
+            deployment.deployment_id)).model_dump(mode="json")
+        (OWN / ("corroboration-final-" + field + ".json")).write_text(json.dumps({
+            "role": "synthetic engineering; original evidence authentic evaluator",
+            "original_sample_count": original.sample_count,
+            "original_cost": str(original.cost), "original_id": original.receipt_id,
+            "latest_id": latest_id, "window": {
+                "window_id": window.window_id, "decision": window.decision,
+                "observation_keys": window.observation_keys,
+                "candidate_stats": window.candidate_stats, "stable_stats": window.stable_stats},
+            "authority_before": "valid", "authority_after": "unavailable",
+            "body": body}, indent=2) + "\n")
+>       assert not [r for r in body["gate_receipts"] if r["health_source"]]
+E       AssertionError: assert not [{'receipt_id': '4764d4cc-ca16-4991-a31e-6ea4c63dfc9e', 'policy_hash': '4b68146329275c840800e51bd06bc2a76e6b15632ef180757246e7ab323830b6', 'gate_type': 'canary_health', 'status': 'passed', ...}]
+
+/tmp/m3-task9-fix-48fc04af-9228-4c6b-90bb-bb7109644afa/test_spec_corroboration.py:79: AssertionError
+=========================== short test summary info ============================
+FAILED ::test_genuine_command_chain_malformed_latest_does_not_restore_green - AssertionError: assert not [{'receipt_id': 'ab37d5b8-af52-4eb6-b272-aea0ad0fba5a', 'policy_hash': '2537b3d6216e386297a9b26bd1ec76fd496bd815f2a58a...7b3d6216e386297a9b26bd1ec76fd496bd815f2a58abf1402d4c5036c8c76', 'gate_type': 'shadow_health', 'status': 'passed', ...}]
+FAILED ::test_frozen_metadata_disagreement_with_authority_is_unavailable[sample_count] - AssertionError: assert not [{'receipt_id': 'c968ab65-0ad3-4e7a-b863-661ae5ed0c1b', 'policy_hash': '3e3d9bf5ef723a7d86dc1973ab323feb44e18a8a6184776f8ff9cde76f8ee900', 'gate_type': 'canary_health', 'status': 'passed', ...}]
+FAILED ::test_frozen_metadata_disagreement_with_authority_is_unavailable[cost] - AssertionError: assert not [{'receipt_id': '4764d4cc-ca16-4991-a31e-6ea4c63dfc9e', 'policy_hash': '4b68146329275c840800e51bd06bc2a76e6b15632ef180757246e7ab323830b6', 'gate_type': 'canary_health', 'status': 'passed', ...}]
+3 failed in 1.73s
