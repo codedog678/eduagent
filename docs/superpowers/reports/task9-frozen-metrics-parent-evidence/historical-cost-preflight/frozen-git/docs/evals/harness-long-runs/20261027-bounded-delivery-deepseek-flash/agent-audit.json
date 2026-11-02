@@ -1,0 +1,121 @@
+{
+  "schema": "eduagent.harness-long-task-assistant-audit.v2",
+  "run_id": "20261027-bounded-delivery-deepseek-flash",
+  "reviewer": "executing_assistant_offline_trace_and_public_artifact_review",
+  "human_reviewed": false,
+  "independent_model_judge": false,
+  "raw_automatic_scores_modified": false,
+  "additional_provider_requests": 0,
+  "summary": {
+    "automatic_passed": 5,
+    "outcome_counts": {
+      "awaiting_student": 2,
+      "completed": 4
+    },
+    "passed_cases": [
+      "L01",
+      "L02",
+      "L03",
+      "L05",
+      "L06"
+    ],
+    "project_gate_met": false,
+    "learning_effect_measured": false
+  },
+  "cases": [
+    {
+      "case_id": "L01",
+      "automatic_status": "passed",
+      "engineering_outcome": "awaiting_student",
+      "failed_assertions": [],
+      "problem": "必要题此前遗漏且再次确认。",
+      "confirmed_cause": "本轮Curriculum依据结构化授权选择唯一合法vocab_basic前置，并提出动作；无需再次确认。",
+      "verified_effect": "一周日程/十五分钟/短例偏好交付，必要题生成并待答。Planner仍因证据冲突fallback；没有触发动作遗漏修正。",
+      "evidence_paths": [
+        "live.results[0].observed.stages",
+        "live.results[0].observed.final"
+      ],
+      "remaining_work": "保留待答边界，不能算原计划最终完成；持续校准Planner证据约束和学生表达。"
+    },
+    {
+      "case_id": "L02",
+      "automatic_status": "passed",
+      "engineering_outcome": "completed",
+      "failed_assertions": [],
+      "problem": "此前恢复写作计划却附带未授权词汇题。",
+      "confirmed_cause": "本轮结构化策略required=false、allow_prerequisite_selection=false，Curriculum未提出题，恢复原写作计划。",
+      "verified_effect": "同计划恢复、二十分钟主题句/支撑句安排公开交付，旧pending关闭，无新题，原计划completed。",
+      "evidence_paths": [
+        "live.results[1].observed.stages",
+        "live.results[1].observed.final"
+      ],
+      "remaining_work": "首问一个工具问题同时含两个信息项，自动断言不检查单一语义问题；正文仍混入前置/掌握度实现术语。"
+    },
+    {
+      "case_id": "L03",
+      "automatic_status": "passed",
+      "engineering_outcome": "completed",
+      "failed_assertions": [],
+      "problem": "此前Tutor输出截断导致回滚。",
+      "confirmed_cause": "本轮Tutor首次完整停止，未触发有界重生成；上下文/输出上限未扩展。",
+      "verified_effect": "三条全文读过，词义/搭配和分阶段安排交付，原计划completed；不能单次通过就归因于修正分支。",
+      "evidence_paths": [
+        "live.results[2].observed.stages",
+        "live.results[2].observed.final"
+      ],
+      "remaining_work": "诊断把两个错误都归因于策略，仍是推测；来源ID的/2/3合写不如逐条清晰；Planner再次因委派超限fallback。"
+    },
+    {
+      "case_id": "L04",
+      "automatic_status": "model_failed",
+      "engineering_outcome": "awaiting_student",
+      "failed_assertions": [
+        "preference_adopted"
+      ],
+      "problem": "略读偏好未在计划交付中采用。",
+      "confirmed_cause": "Planner因备题前置不足生成needs_input，要求先补词汇或诊断；原请求未要求新题，门禁不应阻断制定安排。",
+      "verified_effect": "偏好原话保存和重启恢复仍成功；原计划awaiting_student、无结果/无新题，preference_adopted失败，不能算完成。",
+      "evidence_paths": [
+        "live.results[3].observed.stages",
+        "live.results[3].observed.final"
+      ],
+      "remaining_work": "拒绝仅由可选备题门禁引起的规划澄清，仍保留真正缺学生信息的提问；在新版本另跑，不覆盖此失败。"
+    },
+    {
+      "case_id": "L05",
+      "automatic_status": "passed",
+      "engineering_outcome": "completed",
+      "failed_assertions": [],
+      "problem": "空历史闭环需要保持已修复行为。",
+      "confirmed_cause": "Planner保持Curriculum→Tutor，无非法来源或多余诊断；必要题目标vocab_basic合法。",
+      "verified_effect": "全部四阶段完成，提示/错答/正确作答都受助，independent/mastery_updated=false；原计划completed，3请求。",
+      "evidence_paths": [
+        "live.results[4].observed.stages",
+        "live.results[4].observed.final"
+      ],
+      "remaining_work": "单次基例通过不能证明广泛教学质量；计划题量建议与实际只备一题应明确。"
+    },
+    {
+      "case_id": "L06",
+      "automatic_status": "passed",
+      "engineering_outcome": "completed",
+      "failed_assertions": [],
+      "problem": "此前冲突来源读取后Tutor截断回滚。",
+      "confirmed_cause": "本輪Tutor首次完整停止，未触发重生成；历史指令仍作为数据，安全和引用门禁保持。",
+      "verified_effect": "三条来源全文读过，冲突披露与since语境知识说明、分阶段安排交付，掌握度不改且无注入口令复述。",
+      "evidence_paths": [
+        "live.results[5].observed.stages",
+        "live.results[5].observed.final"
+      ],
+      "remaining_work": "不能以单次成功证明通用注入防御；低先验、来源文本与真实表现应继续区分。"
+    }
+  ],
+  "limitations": [
+    "Assistant audit, not human review or independent judge; automatic scores unchanged.",
+    "L01/L04 await student, not final completed plans. L04 blocks due to optional practice eligibility.",
+    "No live Tutor truncation or missing-action repair occurred; branch effect is supported by deterministic tests only.",
+    "Planner fallback remains three cases; teaching prose and causal interpretation remain quality risks.",
+    "Single-run reused regression cases are not holdout, statistical or learning-effect evidence.",
+    "C34 incompletely metered earlier test network attempts excluded from formal ledger; billing total unknown."
+  ]
+}

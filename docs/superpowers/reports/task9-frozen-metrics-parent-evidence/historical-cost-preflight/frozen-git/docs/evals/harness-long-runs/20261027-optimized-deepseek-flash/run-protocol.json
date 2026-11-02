@@ -1,0 +1,33 @@
+{
+  "schema": "eduagent.harness-long-task-run-protocol.v2",
+  "run_id": "20261027-optimized-deepseek-flash",
+  "purpose": "single-run regression after approved protocol, retrieval, action and scoring optimization; no evolution",
+  "runtime_git_head": "454a094a646ee21587e96c2d762d5b2b4c3e8b0e",
+  "python_source_sha256": "0a1ce1479b1b97519b369caf0e7a3db93450501826e915c6bf6bcfd3df30d1f1",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "thinking": "disabled",
+  "scorer_version": "eduagent.harness-long-task-scorer.v2",
+  "dataset_sha256": "fe7667c890648b6f9cb8080d0c7dec7fd087b06d8a522a3ced04826cad8b2e9d",
+  "data_role": "reused_engineering_regression_cases_not_holdout",
+  "order": ["L01", "L02", "L03", "L04", "L05", "L06"],
+  "max_requests": 120,
+  "max_cny": 1.5,
+  "max_requests_per_case": 20,
+  "harness_request_limits": {
+    "timeout_seconds": 45,
+    "model_calls": 8,
+    "tool_calls": 16,
+    "delegations": 3,
+    "replans": 1
+  },
+  "deterministic_gate": "D01-D08 all pass; backend 306 passed, 2 existing skips; dataset 6/6 validated",
+  "prior_runs": [
+    "../20261026-deepseek-flash/result.json",
+    "../20261027-deepseek-flash/result.json"
+  ],
+  "failure_policy": "retain failures; one complete run per case; no runtime or scoring changes during execution",
+  "comparison_policy": "apply scorer v2 offline to unchanged prior observed data; write derived comparisons in this archive only",
+  "pricing_policy": "same frozen 2026-10-25 estimated tariff as prior runs; not provider billing",
+  "evolution": false
+}
